@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { isImageAsset } from "./assetType";
 
 export interface RepairImage {

@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Play, Loader2, X, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { withRouteIframe } from "./routeSnapshot";
 import { classifyDestination, getStaticRoutes, type LinkStatus, type LinkType, isComingSoonPath } from "./routeTable";
 import CreatePageDialog from "./CreatePageDialog";

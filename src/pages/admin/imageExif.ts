@@ -3,7 +3,7 @@
 // (fetching the original from a signed URL). Failures are swallowed —
 // we just mark exif_extracted_at so we don't retry forever.
 import exifr from "exifr";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 
 export interface ExifResult {
   taken_at: string | null;

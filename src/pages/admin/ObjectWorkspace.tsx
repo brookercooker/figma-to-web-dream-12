@@ -1,7 +1,7 @@
 import { Suspense, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { objectRegistry } from "@/components/objects/registry";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

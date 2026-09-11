@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { formatSchedule } from "@/pages/admin/landingDates";
 import NotFound from "@/pages/NotFound";

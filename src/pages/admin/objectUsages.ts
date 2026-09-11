@@ -10,7 +10,7 @@
 //   4) Parse App.tsx to map (page file + export name) → route path(s).
 //   5) Cross-check DB `pages` rows to distinguish static vs. landing.
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import appRaw from "@/App.tsx?raw";
 
 // Eager raw import of every source file in the project.

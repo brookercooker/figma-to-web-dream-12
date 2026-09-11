@@ -1,6 +1,6 @@
 // Helpers to download original image/video files (single or bulk .zip).
 import JSZip from "jszip";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { toast } from "sonner";
 import { videoBucketFor } from "@/lib/captureUpload";
 
