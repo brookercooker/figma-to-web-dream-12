@@ -362,6 +362,7 @@ function storageFrom(bucket: string) {
 /** Register a real (bundled or remote) URL for a storage path. */
 export function registerAsset(bucket: string, path: string, url: string) {
   uploads.set(`${bucket}/${path}`, url);
+  pathAssets.set(path, url);
 }
 
 /* ------------------------------------------------------------------ */
