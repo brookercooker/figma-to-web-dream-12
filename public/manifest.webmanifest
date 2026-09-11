@@ -1,0 +1,15 @@
+{
+  "name": "Nova Site Manager — Capture",
+  "short_name": "Capture",
+  "description": "Capture, label and upload photos and videos to the Nova Lighting Site Manager.",
+  "start_url": "/manage/capture",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#212121",
+  "icons": [
+    { "src": "/capture-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/capture-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
