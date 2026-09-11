@@ -201,7 +201,7 @@ class Query implements PromiseLike<Result> {
     switch (op) {
       case "eq": return this.eq(col, v);
       case "neq": return this.neq(col, v);
-      case "in": return this.in(String(v).replace(/[()]/g, "").split(","), []) && this;
+      case "in": return this.in(col, String(v).replace(/[()]/g, "").split(","));
       case "is": return this.is(col, v === "null" ? null : v);
       default: return this.eq(col, v);
     }
