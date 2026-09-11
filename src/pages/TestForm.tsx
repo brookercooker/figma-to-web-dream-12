@@ -1,5 +1,5 @@
 import { useState, FormEvent } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { toast } from "@/hooks/use-toast";
 
 const TestForm = () => {

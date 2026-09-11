@@ -14,7 +14,7 @@
 // the scan on the client so counts stay fresh without a rebuild — same pattern
 // as `object_page_usages`.
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { parseAppRoutes, rawFiles, type ObjectUsage } from "./objectUsages";
 
 export type AssetUsage = ObjectUsage;

@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { FunctionsHttpError } from "@supabase/supabase-js";
 
 const showroomOptions = [

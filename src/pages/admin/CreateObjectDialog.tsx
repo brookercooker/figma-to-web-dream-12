@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { toRouteSlug } from "./slug";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9 _\-]{0,79}$/;

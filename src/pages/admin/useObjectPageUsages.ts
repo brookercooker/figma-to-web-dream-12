@@ -15,7 +15,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { findAllObjectUsages, type ObjectUsage } from "./objectUsages";
 
 const QUERY_KEY = ["admin", "object_page_usages"] as const;

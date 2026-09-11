@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { formatSchedule } from "@/pages/admin/landingDates";
 import NotFound from "./NotFound";
 import { isPublicLandingHost } from "@/lib/publicHost";

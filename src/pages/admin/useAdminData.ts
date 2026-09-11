@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 
 // Shared cached data hooks for the admin UI. Dedupes across tabs and
 // prevents refetching on unrelated re-renders (opening/closing dialogs, etc.).

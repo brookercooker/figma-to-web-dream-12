@@ -7,7 +7,7 @@
 // New image derivatives land in the PRIVATE staging bucket and are only moved
 // into the PUBLIC images-web bucket when the asset is published (see the
 // publish-assets edge function). Originals always stay private.
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { optimizeImagePair } from "@/lib/imageOptimize";
 import { extractAndPersistExif } from "@/pages/admin/imageExif";
 import { probeVideoFile } from "@/pages/admin/videoHelpers";

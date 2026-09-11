@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import AdminAuth from "./AdminAuth";
 import AdminIndex from "./AdminIndex";
 

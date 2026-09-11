@@ -42,7 +42,7 @@ import TagsPanel from "./TagsPanel";
 import Thumbnail from "./Thumbnail";
 import LabelsCell from "./LabelsCell";
 import WorkStatusPopover from "./WorkStatusPopover";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/prototype/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAutoCaptureThumbnails, regenerateThumbnail, isStale } from "./useThumbnailCapture";
 import { type ObjectUsage } from "./objectUsages";
