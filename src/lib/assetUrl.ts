@@ -1,4 +1,3 @@
-import { supabase } from "@/prototype/client";
 
 /**
  * Gated-asset URL resolution.
