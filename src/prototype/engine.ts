@@ -428,18 +428,25 @@ async function invoke(name: string, opts?: { body?: any }) {
           id: uid(),
           email: String(body.email ?? "new.user@novalighting.com").toLowerCase(),
           created_at: nowIso(),
-          last_sign_in_at: null,
-          is_admin: body.role === "admin",
-          is_user: true,
+          last_sign_in_at: nowIso(),
+          roles: body.role === "admin" ? ["admin"] : ["user"],
         });
       } else if (action === "delete_user") {
-        const i = demoUsers.findIndex((u: any) => u.id === body.user_id);
+        const i = demoUsers.findIndex((u) => u.id === body.user_id);
         if (i >= 0) demoUsers.splice(i, 1);
       } else if (action === "set_admin") {
-        const u = demoUsers.find((x: any) => x.id === body.user_id);
-        if (u) u.is_admin = !!body.is_admin;
+        const u = demoUsers.find((x) => x.id === body.user_id);
+        if (u) u.roles = body.is_admin ? ["admin"] : ["user"];
       }
-      return { data: { users: demoUsers, ok: true }, error: null };
+      const users = demoUsers.map((u) => ({
+        id: u.id,
+        email: u.email,
+        created_at: u.created_at,
+        last_sign_in_at: u.last_sign_in_at,
+        is_admin: u.roles.includes("admin"),
+        is_user: true,
+      }));
+      return { data: { users, ok: true }, error: null };
     }
     case "capture-thumbnail":
       return { data: { ok: false, skipped: "prototype", error: "Thumbnail capture is disabled in prototype mode" }, error: null };
