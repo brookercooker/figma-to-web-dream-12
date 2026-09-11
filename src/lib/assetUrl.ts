@@ -36,7 +36,6 @@ export function gatedBucketOf(url?: string | null): string | null {
   return null;
 }
 
-const SIGN_TTL = 60 * 60; // 1 hour
 
 const cache = new Map<string, Promise<string>>();
 
