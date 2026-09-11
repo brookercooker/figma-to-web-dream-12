@@ -421,9 +421,33 @@ async function invoke(name: string, opts?: { body?: any }) {
     case "mailchimp-subscribe":
     case "contact-inquiry":
       return { data: { success: true, prototype: true }, error: null };
-    case "admin-users":
-      if (body?.action === "list" || !body?.action) return { data: { users: demoUsers }, error: null };
-      return { data: { ok: true, prototype: true }, error: null };
+    case "admin-users": {
+      const action = body?.action;
+      if (action === "invite_user" || action === "create_user") {
+        demoUsers.push({
+          id: uid(),
+          email: String(body.email ?? "new.user@novalighting.com").toLowerCase(),
+          created_at: nowIso(),
+          last_sign_in_at: nowIso(),
+          roles: body.role === "admin" ? ["admin"] : ["user"],
+        });
+      } else if (action === "delete_user") {
+        const i = demoUsers.findIndex((u) => u.id === body.user_id);
+        if (i >= 0) demoUsers.splice(i, 1);
+      } else if (action === "set_admin") {
+        const u = demoUsers.find((x) => x.id === body.user_id);
+        if (u) u.roles = body.is_admin ? ["admin"] : ["user"];
+      }
+      const users = demoUsers.map((u) => ({
+        id: u.id,
+        email: u.email,
+        created_at: u.created_at,
+        last_sign_in_at: u.last_sign_in_at,
+        is_admin: u.roles.includes("admin"),
+        is_user: true,
+      }));
+      return { data: { users, ok: true }, error: null };
+    }
     case "capture-thumbnail":
       return { data: { ok: false, skipped: "prototype", error: "Thumbnail capture is disabled in prototype mode" }, error: null };
     case "reverse-geocode":
