@@ -63,30 +63,10 @@ export function publicTwin(url: string): string {
   return url.replace(`/${bucket}/`, `/${GATED_PAIRS[bucket]}/`);
 }
 
+// PROTOTYPE MODE: nothing is actually gated — every asset resolves straight to
+// its bundled URL so images render instantly with no signing round-trip.
 async function resolve(url: string): Promise<string> {
-  if (!isGatedUrl(url)) return url;
-
-  // 1. Published already? The public twin wins — permanent and CDN-cacheable.
-  const twin = publicTwin(url);
-  try {
-    const head = await fetch(twin, { method: "HEAD" });
-    if (head.ok) return twin;
-  } catch {
-    /* network hiccup — fall through to signing */
-  }
-
-  // 2. Still gated: sign it. Fails (empty string) for anonymous visitors.
-  const path = gatedPathFromUrl(url);
-  const bucket = gatedBucketOf(url);
-  if (!path || !bucket) return "";
-  try {
-    const { data } = await (supabase as any).storage
-      .from(bucket)
-      .createSignedUrl(path, SIGN_TTL);
-    return data?.signedUrl ?? "";
-  } catch {
-    return "";
-  }
+  return isGatedUrl(url) ? publicTwin(url) : url;
 }
 
 /** Memoized resolution so repeated renders don't re-sign the same object. */
