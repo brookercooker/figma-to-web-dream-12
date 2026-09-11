@@ -322,11 +322,12 @@ class Query implements PromiseLike<Result> {
 /* ------------------------------------------------------------------ */
 
 const uploads = new Map<string, string>(); // `${bucket}/${path}` -> object URL
+const pathAssets = new Map<string, string>(); // bucket-agnostic path -> bundled URL
 
 function storageFrom(bucket: string) {
   const keyOf = (path: string) => `${bucket}/${path}`;
   const urlFor = (path: string) =>
-    uploads.get(keyOf(path)) ?? `/prototype-asset/${bucket}/${path}`;
+    uploads.get(keyOf(path)) ?? pathAssets.get(path) ?? `/prototype-asset/${bucket}/${path}`;
   return {
     async upload(path: string, file: any) {
       try {
