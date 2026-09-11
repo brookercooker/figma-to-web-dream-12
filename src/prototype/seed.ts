@@ -103,7 +103,7 @@ const seedVideos = [
 /* ---------------- labels ---------------- */
 
 const seedLabels: { scope: string; names: string[] }[] = [
-  { scope: "pages", names: ["Core", "Editorial", "Policy", "Category", "Discovery", "Brands", "Trade", "Internal", "Seasonal"] },
+  { scope: "static", names: ["Core", "Editorial", "Policy", "Category", "Discovery", "Brands", "Trade", "Internal", "Seasonal"] },
   { scope: "objects", names: ["Homepage", "Marketing", "Brand", "Reusable", "Experimental"] },
   { scope: "images", names: ["Editorial", "Showroom", "Products", "Team", "Events", "Homepage", "Outdoor"] },
   { scope: "videos", names: ["Showroom", "Events", "Team", "Editorial", "Seasonal"] },
