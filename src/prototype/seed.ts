@@ -6,7 +6,7 @@
  * edits made in the UI live in memory until the page is refreshed.
  */
 
-import { db, uid } from "./engine";
+import { db, uid, registerAsset } from "./engine";
 import { objectRegistry } from "@/components/objects/registry";
 
 /* ---------------- images: reuse the bundled site artwork -------------- */
@@ -261,6 +261,11 @@ export function seedPrototypeData() {
       created_at: daysAgo(i),
       updated_at: daysAgo(i),
     };
+  });
+
+  db.images.forEach((img: any) => {
+    registerAsset("images-web", img.web_path, img.web_url);
+    registerAsset("images-original", img.original_path, img.original_url);
   });
 
   db.image_page_usages = db.images.slice(0, 30).map((img, i) => ({
