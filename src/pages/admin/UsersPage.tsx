@@ -31,39 +31,12 @@ interface AdminUser {
   is_user: boolean;
 }
 
+// PROTOTYPE MODE — no network call; the in-memory client answers directly.
 async function callAdminUsers(body?: unknown) {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) {
-    await supabase.auth.signOut();
-    throw new Error("Your session has expired. Please sign in again.");
-  }
-
-  const { data: sessionData } = await supabase.auth.getSession();
-  const token = sessionData.session?.access_token;
-  if (!token) {
-    await supabase.auth.signOut();
-    throw new Error("Please sign in again.");
-  }
-
-  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-users`, {
-    method: body ? "POST" : "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  const payload = await response.json().catch(() => ({}));
-  if (response.status === 401) {
-    await supabase.auth.signOut();
-    throw new Error("Your session has expired. Please sign in again.");
-  }
-  if (!response.ok || payload?.error) {
-    throw new Error(payload?.error || `User management failed (${response.status})`);
-  }
-  return payload;
+  const { data, error } = await supabase.functions.invoke("admin-users", { body });
+  if (error) throw new Error(error.message || "User management failed");
+  if (data?.error) throw new Error(data.error);
+  return data;
 }
 
 export default function UsersPage() {
