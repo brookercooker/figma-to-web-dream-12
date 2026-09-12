@@ -83,6 +83,7 @@ export interface CarouselSection {
   type: "carousel";
   heading?: string;
   textStyle?: TextStyle;
+  captionStyle?: TextStyle;
   images: SectionImage[];
 }
 
@@ -100,6 +101,7 @@ export interface CaptionedImagesSection {
   type: "captionedImages";
   heading?: string;
   textStyle?: TextStyle;
+  captionStyle?: TextStyle;
   columns: 1 | 2 | 3;
   images: SectionImage[];
 }
@@ -115,6 +117,8 @@ export interface OverlaySection {
   height: "sm" | "md" | "lg";
   textStyle?: TextStyle;
   bodyStyle?: TextStyle;
+  eyebrowStyle?: TextStyle;
+  labelStyle?: TextStyle;
   buttonLabel?: string;
   buttonHref?: string;
 }
@@ -126,6 +130,8 @@ export interface SplitSection {
   imageSide: "left" | "right";
   textStyle?: TextStyle;
   bodyStyle?: TextStyle;
+  eyebrowStyle?: TextStyle;
+  labelStyle?: TextStyle;
   eyebrow?: string;
   heading: string;
   body?: string;
@@ -140,6 +146,7 @@ export interface ButtonSection {
   href: string;
   align: SectionAlign;
   variant: "solid" | "outline" | "link";
+  labelStyle?: TextStyle;
 }
 
 export type Section =
