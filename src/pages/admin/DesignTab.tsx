@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
-  AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink,
+  AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil,
 } from "lucide-react";
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
@@ -49,6 +49,8 @@ export default function DesignTab() {
   const [createOpen, setCreateOpen] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [showLive, setShowLive] = useState(true);
+
 
   const load = async () => {
     const { data } = await (supabase as any)
@@ -65,10 +67,14 @@ export default function DesignTab() {
   const page = useMemo(() => pages.find((p) => p.id === selectedId) ?? null, [pages, selectedId]);
 
   useEffect(() => {
-    setBlocks(parseBlocks(page?.content));
+    const parsed = parseBlocks(page?.content);
+    setBlocks(parsed);
     setActiveId("");
     setDirty(false);
+    // Pages that already have a design open showing exactly how they look today.
+    setShowLive(!parsed.length);
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -98,6 +104,7 @@ export default function DesignTab() {
           : { ...base, type: "text", text: "Write something here.", size: "md" } as TextBlock;
     setBlocks((prev) => [...prev, block]);
     setActiveId(block.id);
+    setShowLive(false);
     setDirty(true);
     if (type === "image") setPickerFor(block.id);
   };
@@ -181,6 +188,22 @@ export default function DesignTab() {
                   {page.path} <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
+              <div className="inline-flex rounded-md border overflow-hidden mr-1">
+                <button
+                  type="button"
+                  onClick={() => setShowLive(true)}
+                  className={`px-3 py-1.5 text-xs transition-colors ${showLive ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                >
+                  Current page
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLive(false)}
+                  className={`px-3 py-1.5 text-xs transition-colors ${!showLive ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                >
+                  Edit
+                </button>
+              </div>
               <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("heading")}>
                 <Heading className="w-4 h-4" /> Heading
               </Button>
@@ -195,6 +218,26 @@ export default function DesignTab() {
               </Button>
             </div>
 
+            {showLive ? (
+              <div className="border rounded-lg overflow-hidden bg-background">
+                <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
+                  <p className="text-xs text-muted-foreground">
+                    {blocks.length
+                      ? "This is how the page looks right now. Switch to Edit to change it."
+                      : "This is how the page looks right now. Add a heading, text, or an image to design it."}
+                  </p>
+                  <Button variant="ghost" size="sm" className="gap-2" onClick={() => setShowLive(false)}>
+                    <Pencil className="w-4 h-4" /> Edit
+                  </Button>
+                </div>
+                <iframe
+                  key={`${page.id}-${page.updated_at}`}
+                  src={page.path}
+                  title={`${page.name} preview`}
+                  className="w-full h-[70vh] bg-background"
+                />
+              </div>
+            ) : (
             <div className="border rounded-lg bg-background p-6 sm:p-10 min-h-[50vh]">
               {!blocks.length && (
                 <p className="text-sm text-muted-foreground text-center py-16">
@@ -299,6 +342,7 @@ export default function DesignTab() {
                 })}
               </div>
             </div>
+            )}
           </>
         )}
       </section>
