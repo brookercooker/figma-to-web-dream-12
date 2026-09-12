@@ -299,6 +299,12 @@ const alignRow: Record<SectionAlign, string> = {
   right: "justify-end",
 };
 
+const alignTextOnly: Record<SectionAlign, string> = {
+  left: "text-left",
+  center: "text-center",
+  right: "text-right",
+};
+
 const colClass: Record<number, string> = {
   1: "grid-cols-1",
   2: "grid-cols-1 sm:grid-cols-2",
