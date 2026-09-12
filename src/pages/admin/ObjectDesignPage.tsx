@@ -1772,18 +1772,31 @@ export default function ObjectDesignPage() {
           captionStyle: "sans",
           labelStyle: "sans",
         };
+        const kindDefaults = imgTextItem ? IMAGE_TEXT_DEFAULTS[imgTextItem.kind] : null;
         const set = (changes: Partial<TextStyle>) =>
-          extraIdx >= 0
+          imgText
+            ? patchImageText(toolbar.sectionId, imgText.img, imgText.t, { style: { ...style, ...changes } })
+            : extraIdx >= 0
             ? patchExtra(toolbar.sectionId, extraIdx, { style: { ...style, ...changes } })
             : patch(toolbar.sectionId, { [fieldKey]: { ...style, ...changes } });
         return (
           <FloatingToolbar top={anchorTop} left={toolbar.left}>
             <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-              {extraIdx >= 0 ? "Text" : STYLE_FIELD_LABEL[fieldKey]}
+              {imgTextItem
+                ? (IMAGE_TEXT_KINDS.find((k) => k.value === imgTextItem.kind)?.label ?? "Text")
+                : extraIdx >= 0 ? "Text" : STYLE_FIELD_LABEL[fieldKey]}
             </span>
+            {imgText && imgTextItem && (
+              <Dropdown
+                label="Kind"
+                value={imgTextItem.kind}
+                options={IMAGE_TEXT_KINDS.map((k) => ({ value: k.value as string, label: k.label }))}
+                onChange={(v) => patchImageText(toolbar.sectionId, imgText.img, imgText.t, { kind: v as ImageTextKind })}
+              />
+            )}
             <Dropdown
               label="Font"
-              value={style.font ?? defaultFont[fieldKey] ?? "sans"}
+              value={style.font ?? kindDefaults?.font ?? defaultFont[fieldKey] ?? "sans"}
               options={TEXT_FONTS.map((f) => ({ value: f.value as string, label: f.label }))}
               onChange={(v) => set({ font: (v || undefined) as TextFont | undefined })}
             />
