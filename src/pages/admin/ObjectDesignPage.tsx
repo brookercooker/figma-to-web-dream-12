@@ -658,11 +658,12 @@ export default function ObjectDesignPage() {
               defaults={{ font: "serif", color: "ink", size: "lg" }}
               onChange={(v) => patch(section.id, { textStyle: v })}
             />
-          </div>
-        )}
+          </>
+        ) })}
 
-        {hasBody && (
-          <div data-inspector-part="body" className="space-y-2 scroll-mt-24">
+        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", children: (
+          <>
+
 
             <div className="flex items-end gap-2">
               <div className="flex-1">
