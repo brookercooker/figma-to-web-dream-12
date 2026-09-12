@@ -176,7 +176,33 @@ const SIZE_WORD: Record<string, string> = {
 
 function Dropdown({
   label, value, options, onChange,
-}: { label: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) {
+}: { label: string; value: string; options: { value: string; label: string; icon?: LucideIcon }[]; onChange: (v: string) => void }) {
+  if (options.length > 0 && options.every((o) => o.icon)) {
+    return (
+      <span className="flex items-center gap-1.5 text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="inline-flex overflow-hidden rounded-md border">
+          {options.map((o) => {
+            const Icon = o.icon!;
+            return (
+              <button
+                key={o.value}
+                type="button"
+                title={o.label}
+                aria-label={o.label}
+                onClick={() => onChange(o.value)}
+                className={`px-2 py-1.5 transition-colors ${
+                  o.value === value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </button>
+            );
+          })}
+        </span>
+      </span>
+    );
+  }
   return (
     <label className="flex items-center gap-1.5 text-xs">
       <span className="text-muted-foreground">{label}</span>
