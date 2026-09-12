@@ -6,14 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  ArrowLeft, ArrowDown, ArrowUp, Eye, GalleryHorizontal, Image as ImageIcon,
-  Images, LayoutPanelLeft, MousePointerClick, Pencil, Plus, Save, Trash2, Type,
+  ArrowLeft, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import {
   SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, makeSection, parseSections,
-  type Section, type SectionAlign, type SectionImage, type SectionType,
+  type FreeSection, type Section, type SectionAlign, type SectionImage, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
 
@@ -27,14 +26,6 @@ interface ObjectRow {
   updated_at: string;
 }
 
-const PALETTE: { type: SectionType; Icon: typeof Type }[] = [
-  { type: "carousel", Icon: GalleryHorizontal },
-  { type: "imageRow", Icon: Images },
-  { type: "captionedImages", Icon: ImageIcon },
-  { type: "overlay", Icon: Type },
-  { type: "split", Icon: LayoutPanelLeft },
-  { type: "button", Icon: MousePointerClick },
-];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -303,8 +294,235 @@ export default function ObjectDesignPage() {
     </div>
   );
 
+  const Chip = ({ label, onClick }: { label: string; onClick: () => void }) => (
+    <Button variant="outline" size="sm" className="gap-1.5" onClick={onClick}>
+      <Plus className="w-3.5 h-3.5" /> {label}
+    </Button>
+  );
+
+  const freeInspector = (section: FreeSection) => {
+    const hasTitle = section.heading !== undefined;
+    const hasEyebrow = section.eyebrow !== undefined;
+    const hasBody = section.body !== undefined;
+    const hasButton = section.buttonLabel !== undefined;
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          {!hasEyebrow && <Chip label="Eyebrow" onClick={() => patch(section.id, { eyebrow: "Since 1951" })} />}
+          {!hasTitle && <Chip label="Title" onClick={() => patch(section.id, { heading: "A quiet statement" })} />}
+          {!hasBody && <Chip label="Text" onClick={() => patch(section.id, { body: "" })} />}
+          <Chip label="Image" onClick={() => addImageSlot(section.id)} />
+          {!hasButton && <Chip label="Button" onClick={() => patch(section.id, { buttonLabel: "Explore", buttonHref: "/" })} />}
+        </div>
+
+        {hasEyebrow && (
+          <div className="space-y-2">
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Field label="Eyebrow">
+                  <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
+                </Field>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => patch(section.id, { eyebrow: undefined })}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+            <TextStyleFields
+              label="Eyebrow style"
+              value={section.eyebrowStyle}
+              defaults={{ font: "sans", color: "stone", size: "sm" }}
+              onChange={(v) => patch(section.id, { eyebrowStyle: v })}
+            />
+          </div>
+        )}
+
+        {hasTitle && (
+          <div className="space-y-2">
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Field label="Title">
+                  <Input value={section.heading ?? ""} onChange={(e) => patch(section.id, { heading: e.target.value })} />
+                </Field>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => patch(section.id, { heading: undefined })}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+            <TextStyleFields
+              label="Title style"
+              value={section.textStyle}
+              defaults={{ font: "serif", color: "ink", size: "lg" }}
+              onChange={(v) => patch(section.id, { textStyle: v })}
+            />
+          </div>
+        )}
+
+        {hasBody && (
+          <div className="space-y-2">
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <Field label="Text">
+                  <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
+                </Field>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => patch(section.id, { body: undefined })}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+            <TextStyleFields
+              label="Text style"
+              value={section.bodyStyle}
+              defaults={{ font: "sans", color: "stone", size: "md" }}
+              onChange={(v) => patch(section.id, { bodyStyle: v })}
+            />
+          </div>
+        )}
+
+        {section.images.length > 0 && (
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {section.images.map((img, i) => (
+                <div key={i}>{ImageEditor({ section, index: i, image: img, showCaption: true })}</div>
+              ))}
+            </div>
+            <TextStyleFields
+              label="Caption style"
+              value={section.captionStyle}
+              defaults={{ font: "sans", color: "stone", size: "sm" }}
+              onChange={(v) => patch(section.id, { captionStyle: v })}
+            />
+            <div className="flex flex-wrap gap-4">
+              <Field label="Images sit">
+                <div>
+                  <Choice
+                    value={section.layout}
+                    options={[
+                      { value: "stacked" as const, label: "Below text" },
+                      { value: "beside" as const, label: "Beside text" },
+                      { value: "behind" as const, label: "Behind text" },
+                    ]}
+                    onChange={(v) => patch(section.id, { layout: v })}
+                  />
+                </div>
+              </Field>
+              {section.layout === "beside" && (
+                <Field label="Image side">
+                  <div>
+                    <Choice
+                      value={section.imageSide}
+                      options={[
+                        { value: "left" as const, label: "Left" },
+                        { value: "right" as const, label: "Right" },
+                      ]}
+                      onChange={(v) => patch(section.id, { imageSide: v })}
+                    />
+                  </div>
+                </Field>
+              )}
+              {section.layout === "behind" && (
+                <Field label="Height">
+                  <div>
+                    <Choice
+                      value={section.height}
+                      options={[
+                        { value: "sm" as const, label: "Short" },
+                        { value: "md" as const, label: "Medium" },
+                        { value: "lg" as const, label: "Tall" },
+                      ]}
+                      onChange={(v) => patch(section.id, { height: v })}
+                    />
+                  </div>
+                </Field>
+              )}
+              {section.layout !== "behind" && section.images.length > 1 && (
+                <>
+                  <Field label="Show as">
+                    <div>
+                      <Choice
+                        value={section.gallery}
+                        options={[
+                          { value: "grid" as const, label: "Grid" },
+                          { value: "carousel" as const, label: "Carousel" },
+                        ]}
+                        onChange={(v) => patch(section.id, { gallery: v })}
+                      />
+                    </div>
+                  </Field>
+                  {section.gallery === "grid" && section.layout === "stacked" && (
+                    <Field label="Columns">
+                      <div>
+                        <Choice
+                          value={section.columns as number}
+                          options={[1, 2, 3, 4].map((c) => ({ value: c, label: String(c) }))}
+                          onChange={(v) => patch(section.id, { columns: v })}
+                        />
+                      </div>
+                    </Field>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {hasButton && (
+          <div className="space-y-2">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Button label">
+                <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
+              </Field>
+              <Field label="Button link">
+                <Input value={section.buttonHref ?? ""} placeholder="/collections" onChange={(e) => patch(section.id, { buttonHref: e.target.value })} />
+              </Field>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <Field label="Button style">
+                <div>
+                  <Choice
+                    value={section.buttonVariant ?? "solid"}
+                    options={[
+                      { value: "solid" as const, label: "Solid" },
+                      { value: "outline" as const, label: "Outline" },
+                      { value: "link" as const, label: "Text link" },
+                    ]}
+                    onChange={(v) => patch(section.id, { buttonVariant: v })}
+                  />
+                </div>
+              </Field>
+              <Button variant="ghost" size="sm" onClick={() => patch(section.id, { buttonLabel: undefined })}>
+                <Trash2 className="w-4 h-4" /> Remove button
+              </Button>
+            </div>
+            <TextStyleFields
+              label="Button label style"
+              value={section.labelStyle}
+              defaults={{ font: "sans", color: (section.buttonVariant ?? "solid") === "solid" ? "cream" : "ink", size: "sm" }}
+              onChange={(v) => patch(section.id, { labelStyle: v })}
+            />
+          </div>
+        )}
+
+        <Field label="Alignment">
+          <div>
+            <Choice
+              value={section.align}
+              options={[
+                { value: "left" as SectionAlign, label: "Left" },
+                { value: "center" as SectionAlign, label: "Center" },
+                { value: "right" as SectionAlign, label: "Right" },
+              ]}
+              onChange={(v) => patch(section.id, { align: v })}
+            />
+          </div>
+        </Field>
+      </div>
+    );
+  };
+
   const Inspector = ({ section }: { section: Section }) => {
     switch (section.type) {
+      case "free":
+        return freeInspector(section);
       case "carousel":
       case "imageRow":
       case "captionedImages":
@@ -643,17 +861,19 @@ export default function ObjectDesignPage() {
           ) : (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                {PALETTE.map(({ type, Icon }) => (
-                  <Button key={type} variant="outline" size="sm" className="gap-2" onClick={() => add(type)}>
-                    <Icon className="w-4 h-4" /> {SECTION_LABEL[type]}
-                  </Button>
-                ))}
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => add("free")}>
+                  <Plus className="w-4 h-4" /> Add a blank space
+                </Button>
               </div>
 
               {!sections.length && (
-                <div className="border rounded-lg p-12 text-center text-sm text-muted-foreground">
-                  Add a carousel, a row of images, an image with text, or a button to begin.
-                </div>
+                <button
+                  type="button"
+                  onClick={() => add("free")}
+                  className="w-full border border-dashed rounded-lg p-12 text-center text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
+                >
+                  Start with a blank space, then add a title, an eyebrow, text, or images.
+                </button>
               )}
 
               {sections.map((s, i) => {
@@ -682,7 +902,13 @@ export default function ObjectDesignPage() {
                       className="px-4 cursor-pointer"
                       onClick={() => { if (!active) setActiveId(s.id); }}
                     >
-                      <SectionView section={s} />
+                      {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel ? (
+                        <p className="py-12 text-center text-sm text-muted-foreground">
+                          Blank space — add a title, an eyebrow, text, an image, or a button below.
+                        </p>
+                      ) : (
+                        <SectionView section={s} />
+                      )}
                     </div>
 
                     {active && (

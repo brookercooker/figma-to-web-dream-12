@@ -149,17 +149,44 @@ export interface ButtonSection {
   labelStyle?: TextStyle;
 }
 
+/** Freeform block: a blank space you add text and images to. */
+export interface FreeSection {
+  id: string;
+  type: "free";
+  eyebrow?: string;
+  heading?: string;
+  body?: string;
+  eyebrowStyle?: TextStyle;
+  textStyle?: TextStyle;
+  bodyStyle?: TextStyle;
+  captionStyle?: TextStyle;
+  labelStyle?: TextStyle;
+  images: SectionImage[];
+  /** how images sit relative to the text */
+  layout: "stacked" | "beside" | "behind";
+  imageSide: "left" | "right";
+  gallery: "grid" | "carousel";
+  columns: 1 | 2 | 3 | 4;
+  align: SectionAlign;
+  height: "sm" | "md" | "lg";
+  buttonLabel?: string;
+  buttonHref?: string;
+  buttonVariant?: "solid" | "outline" | "link";
+}
+
 export type Section =
   | CarouselSection
   | ImageRowSection
   | CaptionedImagesSection
   | OverlaySection
   | SplitSection
-  | ButtonSection;
+  | ButtonSection
+  | FreeSection;
 
 export type SectionType = Section["type"];
 
 export const SECTION_LABEL: Record<SectionType, string> = {
+  free: "Block",
   carousel: "Carousel",
   imageRow: "Row of images",
   captionedImages: "Images with captions",
@@ -176,6 +203,11 @@ const emptyImage = (): SectionImage => ({ url: "", alt: "" });
 export function makeSection(type: SectionType): Section {
   const id = newSectionId();
   switch (type) {
+    case "free":
+      return {
+        id, type: "free", images: [], layout: "stacked", imageSide: "left",
+        gallery: "grid", columns: 2, align: "left", height: "md",
+      };
     case "carousel":
       return { id, type, heading: "", images: [emptyImage(), emptyImage()] };
     case "imageRow":
@@ -341,6 +373,114 @@ function Carousel({ section }: { section: CarouselSection }) {
   );
 }
 
+function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
+  if (!section.images.length) return null;
+  if (section.gallery === "carousel") {
+    return (
+      <Carousel
+        section={{
+          id: section.id, type: "carousel", images: section.images,
+          captionStyle: section.captionStyle,
+        }}
+      />
+    );
+  }
+  return (
+    <div className={`grid gap-6 ${colClass[section.columns]}`}>
+      {section.images.map((img, i) => (
+        <figure key={i}>
+          <Pic image={img} className="w-full aspect-[4/3] rounded-lg" />
+          {img.caption ? (
+            <figcaption
+              className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, {
+                color: onDark ? "cream" : "stone",
+                size: "sm",
+              })}`}
+            >
+              {img.caption}
+            </figcaption>
+          ) : null}
+        </figure>
+      ))}
+    </div>
+  );
+}
+
+function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
+  const hasText = section.eyebrow || section.heading || section.body || section.buttonLabel;
+  if (!hasText) return null;
+  const base: TextColor = onDark ? "cream" : "ink";
+  return (
+    <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
+      {section.eyebrow ? (
+        <p className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}>
+          {section.eyebrow}
+        </p>
+      ) : null}
+      {section.heading ? (
+        <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}>
+          {section.heading}
+        </h2>
+      ) : null}
+      {section.body ? (
+        <p className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}>
+          {section.body}
+        </p>
+      ) : null}
+      {section.buttonLabel ? (
+        <div className="mt-2">
+          <SectionButton
+            label={section.buttonLabel}
+            href={section.buttonHref || "#"}
+            variant={section.buttonVariant ?? (onDark ? "outline" : "solid")}
+            style={section.labelStyle}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function FreeView({ section }: { section: FreeSection }) {
+  const hasImages = section.images.length > 0;
+
+  if (section.layout === "behind" && hasImages) {
+    return (
+      <section className="py-12">
+        <div className={`relative overflow-hidden rounded-lg ${overlayHeight[section.height]}`}>
+          <Pic image={section.images[0]} className="absolute inset-0 h-full w-full" />
+          <div className="absolute inset-0 bg-ink/35" />
+          <div className={`relative flex h-full flex-col justify-center px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
+            <FreeText section={section} onDark />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (section.layout === "beside" && hasImages) {
+    return (
+      <section className="py-12">
+        <div className="grid gap-8 sm:gap-12 md:grid-cols-2 items-center">
+          <div className={section.imageSide === "right" ? "md:order-2" : ""}>
+            <FreeGallery section={{ ...section, columns: section.images.length > 1 ? 2 : 1 }} />
+          </div>
+          <div className="max-w-xl w-full">
+            <FreeText section={section} />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="py-12 space-y-8">
+      <FreeText section={section} />
+      <FreeGallery section={section} />
+    </section>
+  );
+}
+
 export function SectionView({ section }: { section: Section }) {
   const heading = (text?: string, style?: TextStyle) =>
     text ? (
@@ -348,6 +488,9 @@ export function SectionView({ section }: { section: Section }) {
     ) : null;
 
   switch (section.type) {
+    case "free":
+      return <FreeView section={section} />;
+
     case "carousel":
       return (
         <section className="py-12">
