@@ -1253,6 +1253,7 @@ export default function ObjectDesignPage() {
               <ColorDropdown
                 label="Fill"
                 value={sec.buttonBg ?? ""}
+                fallback="ink"
                 options={TEXT_COLORS}
                 onChange={(v) => patch(toolbar.sectionId, { buttonBg: (v || undefined) as TextColor | undefined })}
               />
