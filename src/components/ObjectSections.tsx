@@ -902,11 +902,6 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
       {...richText(t.text)}
     />
   ) }));
-  (section.dividers ?? []).forEach((d, i) => items.push({ part: `divider:${i}`, node: (
-    <div data-part={`divider:${i}`} className="w-full flex flex-col">
-      <DividerBar divider={d} align={section.align} onDark={onDark} />
-    </div>
-  ) }));
   if (section.buttonLabel) items.push({ part: "button", node: (
     <div data-part="button" className="mt-2">
       <SectionButton
