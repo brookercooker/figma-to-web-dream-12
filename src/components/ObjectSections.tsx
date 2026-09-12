@@ -818,13 +818,14 @@ function FreeView({ section }: { section: FreeSection }) {
             <FreeText section={section} onDark />
           </div>
         </div>
+        <div className="mt-8"><FreeVideos section={section} /></div>
       </section>
     );
   }
 
   if (section.layout === "beside" && hasImages) {
     return (
-      <section className="py-12">
+      <section className="py-12 space-y-8">
         <div className="grid gap-8 sm:gap-12 md:grid-cols-2 items-center">
           <div className={section.imageSide === "right" ? "md:order-2" : ""}>
             <FreeGallery section={{ ...section, columns: section.images.length > 1 ? 2 : 1 }} />
@@ -833,6 +834,7 @@ function FreeView({ section }: { section: FreeSection }) {
             <FreeText section={section} />
           </div>
         </div>
+        <FreeVideos section={section} />
       </section>
     );
   }
@@ -841,6 +843,7 @@ function FreeView({ section }: { section: FreeSection }) {
     <section className="py-12 space-y-8">
       <FreeText section={section} />
       <FreeGallery section={section} />
+      <FreeVideos section={section} />
     </section>
   );
 }
