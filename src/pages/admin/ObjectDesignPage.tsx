@@ -167,7 +167,7 @@ const SIZE_WORD: Record<string, string> = {
   sm: "Small",
   md: "Medium",
   lg: "Large",
-  xl: "Extra large",
+  xl: "Extra Large",
 };
 
 function Dropdown({
