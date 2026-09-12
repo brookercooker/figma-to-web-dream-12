@@ -945,6 +945,18 @@ export default function ObjectDesignPage() {
           />
           <Chip label="Image" icon={ImageIcon} onClick={() => addImageSlot(section.id)} />
           {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => patch(section.id, { buttonLabel: "Explore", buttonHref: "/" })} />}
+          <div className="ml-auto flex gap-2">
+            <Chip
+              label="Expand all"
+              icon={ChevronsUpDown}
+              onClick={() => { setBlocksExpanded(true); setOpenBlocks({}); }}
+            />
+            <Chip
+              label="Collapse all"
+              icon={ChevronsDownUp}
+              onClick={() => { setBlocksExpanded(false); setOpenBlocks({}); setFocusPart(""); }}
+            />
+          </div>
         </div>
 
         {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", children: (
