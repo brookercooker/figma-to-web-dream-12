@@ -190,6 +190,8 @@ export interface FreeSection {
   perView?: number;
   /** shared height for every image in the block */
   imageHeight?: ImageHeight;
+  /** horizontal position of images when they don't fill the width */
+  imageAlign?: SectionAlign;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
@@ -475,14 +477,17 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
   if (section.gallery === "carousel") {
     return <FreeCarousel section={section} onDark={onDark} />;
   }
+  const fixedHeight = (section.imageHeight ?? "auto") !== "auto";
   return (
     <div
-      className="grid gap-6"
-      style={{ gridTemplateColumns: `repeat(${section.images.length}, minmax(0, 1fr))` }}
+      className={`flex flex-wrap gap-6 ${alignRow[section.imageAlign ?? "left"]}`}
     >
       {section.images.map((img, i) => (
-        <figure key={i}>
-          <Pic image={img} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
+        <figure key={i} className={fixedHeight ? "max-w-full" : "flex-1 min-w-0"}>
+          <Pic
+            image={img}
+            className={`rounded-lg ${fixedHeight ? "w-auto max-w-full" : "w-full"} ${imageHeightClass[section.imageHeight ?? "auto"]}`}
+          />
           {img.caption ? (
             <figcaption
               className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, {
