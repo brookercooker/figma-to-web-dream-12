@@ -375,20 +375,76 @@ function Carousel({ section }: { section: CarouselSection }) {
   );
 }
 
+function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
+  const images = section.images;
+  const n = images.length;
+  const perView = Math.min(Math.max(section.perView ?? 1, 1), Math.max(n, 1));
+  const pages = Math.max(n - perView + 1, 1);
+  const [i, setI] = useState(0);
+
+  useEffect(() => { setI((v) => (v < pages ? v : 0)); }, [pages]);
+
+  useEffect(() => {
+    if (pages < 2) return;
+    const t = setInterval(() => setI((v) => (v + 1) % pages), 5000);
+    return () => clearInterval(t);
+  }, [pages]);
+
+  return (
+    <div className="relative">
+      <div className="overflow-hidden rounded-lg">
+        <div
+          className="flex transition-transform duration-700 ease-out"
+          style={{ transform: `translateX(-${(i * 100) / perView}%)` }}
+        >
+          {images.map((img, idx) => (
+            <figure key={idx} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
+              <Pic image={img} className="w-full aspect-[4/3] rounded-lg" />
+              {img.caption ? (
+                <figcaption
+                  className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+                >
+                  {img.caption}
+                </figcaption>
+              ) : null}
+            </figure>
+          ))}
+        </div>
+      </div>
+      {pages > 1 && (
+        <>
+          <button
+            type="button"
+            aria-label="Previous"
+            onClick={() => setI((v) => (v - 1 + pages) % pages)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-cream/85 hover:bg-cream p-2 shadow"
+          >
+            <ChevronLeft className="h-5 w-5 text-ink" />
+          </button>
+          <button
+            type="button"
+            aria-label="Next"
+            onClick={() => setI((v) => (v + 1) % pages)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-cream/85 hover:bg-cream p-2 shadow"
+          >
+            <ChevronRight className="h-5 w-5 text-ink" />
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
   if (!section.images.length) return null;
   if (section.gallery === "carousel") {
-    return (
-      <Carousel
-        section={{
-          id: section.id, type: "carousel", images: section.images,
-          captionStyle: section.captionStyle,
-        }}
-      />
-    );
+    return <FreeCarousel section={section} onDark={onDark} />;
   }
   return (
-    <div className={`grid gap-6 ${colClass[section.columns]}`}>
+    <div
+      className="grid gap-6"
+      style={{ gridTemplateColumns: `repeat(${section.images.length}, minmax(0, 1fr))` }}
+    >
       {section.images.map((img, i) => (
         <figure key={i}>
           <Pic image={img} className="w-full aspect-[4/3] rounded-lg" />
