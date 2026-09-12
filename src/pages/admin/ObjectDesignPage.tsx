@@ -477,6 +477,7 @@ export default function ObjectDesignPage() {
   const [openBlocks, setOpenBlocks] = useState<Record<string, boolean>>({});
   const [blocksExpanded, setBlocksExpanded] = useState(false);
   const [dragPart, setDragPart] = useState<{ sectionId: string; part: string } | null>(null);
+  const [dropAt, setDropAt] = useState<{ sectionId: string; part: string; before: boolean } | null>(null);
   // floating font / size / color toolbar for the clicked text element
   const [toolbar, setToolbar] = useState<
     { sectionId: string; field?: keyof FreeSection; imageIndex?: number; top: number; left: number; width: number } | null
@@ -1229,12 +1230,13 @@ export default function ObjectDesignPage() {
     return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
   };
 
-  const movePartIn = (s: FreeSection, from: string, to: string) => {
+  const movePartIn = (s: FreeSection, from: string, to: string, before = true) => {
     if (from === to) return;
     const parts = orderablePartsOf(s);
     const next = parts.filter((p) => p !== from);
     const at = next.indexOf(to);
-    next.splice(at === -1 ? next.length : at, 0, from);
+    if (at === -1) next.push(from);
+    else next.splice(before ? at : at + 1, 0, from);
     patch(s.id, { order: next });
   };
 
@@ -1257,22 +1259,56 @@ export default function ObjectDesignPage() {
     const open = openBlocks[blockKey] ?? (blocksExpanded || focused);
     const canDrag = !!(flowSection && part && orderablePartsOf(flowSection).includes(part));
     const dragging = canDrag && dragPart?.sectionId === flowSection!.id && dragPart.part === part;
+    const showBar =
+      canDrag && !dragging && dropAt?.sectionId === flowSection!.id && dropAt.part === part
+        ? dropAt.before
+          ? "before"
+          : "after"
+        : null;
+    const bar = (
+      <div className="pointer-events-none absolute inset-x-0 z-10 flex items-center" style={showBar === "before" ? { top: -5 } : { bottom: -5 }}>
+        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+        <span className="h-0.5 flex-1 rounded-full bg-primary" />
+        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+      </div>
+    );
     return (
       <div
         key={key}
         data-inspector-part={part}
-        onDragOver={canDrag ? (e) => { if (dragPart?.sectionId === flowSection!.id) e.preventDefault(); } : undefined}
+        onDragOver={canDrag ? (e) => {
+          if (dragPart?.sectionId !== flowSection!.id) return;
+          e.preventDefault();
+          if (dragPart.part === part) { setDropAt(null); return; }
+          const r = e.currentTarget.getBoundingClientRect();
+          const before = e.clientY < r.top + r.height / 2;
+          setDropAt((d) =>
+            d && d.sectionId === flowSection!.id && d.part === part && d.before === before
+              ? d
+              : { sectionId: flowSection!.id, part: part!, before },
+          );
+        } : undefined}
+        onDragLeave={canDrag ? (e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+          setDropAt((d) => (d && d.part === part && d.sectionId === flowSection!.id ? null : d));
+        } : undefined}
         onDrop={canDrag ? (e) => {
           e.preventDefault();
-          if (dragPart?.sectionId === flowSection!.id) movePartIn(flowSection!, dragPart.part, part!);
+          if (dragPart?.sectionId === flowSection!.id) {
+            const r = e.currentTarget.getBoundingClientRect();
+            const before = e.clientY < r.top + r.height / 2;
+            movePartIn(flowSection!, dragPart.part, part!, before);
+          }
           setDragPart(null);
+          setDropAt(null);
         } : undefined}
-        className={`scroll-mt-24 rounded-lg border bg-background shadow-sm ${dragging ? "border-primary opacity-70" : ""}`}
+        className={`relative scroll-mt-24 rounded-lg border bg-background shadow-sm ${dragging ? "border-primary opacity-70" : ""}`}
       >
+        {showBar ? bar : null}
         <div
           draggable={canDrag}
           onDragStart={canDrag ? () => setDragPart({ sectionId: flowSection!.id, part: part! }) : undefined}
-          onDragEnd={canDrag ? () => setDragPart(null) : undefined}
+          onDragEnd={canDrag ? () => { setDragPart(null); setDropAt(null); } : undefined}
           className="flex items-center gap-1 rounded-t-lg border-b-2 border-foreground/15 bg-muted pr-2 transition-colors hover:bg-muted/80"
         >
           {canDrag ? (
