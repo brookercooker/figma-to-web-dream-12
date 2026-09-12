@@ -800,3 +800,27 @@ export default function ObjectSections({ sections }: { sections: Section[] }) {
     </div>
   );
 }
+
+/** Normalise contentEditable HTML down to plain text + b/i/u/br markup. */
+export function cleanEditedHtml(html: string): string {
+  const root = document.createElement("div");
+  root.innerHTML = html;
+  const esc = (s: string) =>
+    s.replace(/\u00a0/g, " ").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const walk = (n: Node): string => {
+    if (n.nodeType === Node.TEXT_NODE) return esc(n.textContent ?? "");
+    if (n.nodeType !== Node.ELEMENT_NODE) return "";
+    const el = n as HTMLElement;
+    const tag = el.tagName.toLowerCase();
+    const inner = Array.from(el.childNodes).map(walk).join("");
+    if (tag === "br") return "<br>";
+    if (tag === "div" || tag === "p") return inner ? `${inner}<br>` : "";
+    const style = el.getAttribute("style") ?? "";
+    let out = inner;
+    if (tag === "u" || /underline/.test(style)) out = `<u>${out}</u>`;
+    if (tag === "i" || tag === "em" || /font-style:\s*italic/.test(style)) out = `<i>${out}</i>`;
+    if (tag === "b" || tag === "strong" || /font-weight:\s*(bold|[6-9]00)/.test(style)) out = `<b>${out}</b>`;
+    return out;
+  };
+  return Array.from(root.childNodes).map(walk).join("").replace(/(<br>)+$/, "").trim();
+}
