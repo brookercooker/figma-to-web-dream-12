@@ -1,6 +1,6 @@
 import { Suspense, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { matchesLabelFilter } from "./labelPath";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,7 @@ import InlineEdit from "./InlineEdit";
 import {
   Search, AlertCircle, Archive, Trash2, RotateCcw,
   Pencil, Save, AlertTriangle, RefreshCw, ExternalLink, MoreHorizontal, Copy, Type,
+  Palette,
 } from "lucide-react";
 import { RenameDialog } from "./RenameDialog";
 import { renameObject } from "./renameHelpers";
