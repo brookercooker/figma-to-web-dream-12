@@ -474,6 +474,7 @@ export default function ObjectDesignPage() {
   // collapsible editing blocks: explicit overrides plus an expand/collapse-all default
   const [openBlocks, setOpenBlocks] = useState<Record<string, boolean>>({});
   const [blocksExpanded, setBlocksExpanded] = useState(false);
+  const [dragPart, setDragPart] = useState<{ sectionId: string; part: string } | null>(null);
   // floating font / size / color toolbar for the clicked text element
   const [toolbar, setToolbar] = useState<
     { sectionId: string; field?: keyof FreeSection; imageIndex?: number; top: number; left: number; width: number } | null
