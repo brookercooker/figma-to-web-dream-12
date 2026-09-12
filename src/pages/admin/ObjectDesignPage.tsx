@@ -1498,6 +1498,18 @@ export default function ObjectDesignPage() {
               options={TEXT_COLORS}
               onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
             />
+            {toolbar.field === "captionStyle" && (
+              <Dropdown
+                label="Align"
+                value={sec.captionAlign ?? "left"}
+                options={[
+                  { value: "left", label: "Left" },
+                  { value: "center", label: "Center" },
+                  { value: "right", label: "Right" },
+                ]}
+                onChange={(v) => patch(toolbar.sectionId, { captionAlign: v as FreeSection["captionAlign"] })}
+              />
+            )}
             {toolbar.field === "labelStyle" && (
               <Dropdown
                 label="Style"
