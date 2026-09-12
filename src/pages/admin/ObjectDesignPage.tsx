@@ -1367,6 +1367,15 @@ export default function ObjectDesignPage() {
               <Button variant="outline" size="sm" onClick={() => setPicker({ sectionId: sec.id, index: idx })}>
                 Replace
               </Button>
+              <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                Link
+                <Input
+                  value={sec.images?.[idx]?.href ?? ""}
+                  placeholder="/brands or https://…"
+                  className="h-8 w-44 text-xs"
+                  onChange={(e) => patchImage(sec.id, idx, { href: e.target.value })}
+                />
+              </label>
               {sec.layout !== "behind" && (
                 <Dropdown
                   label="Height"
