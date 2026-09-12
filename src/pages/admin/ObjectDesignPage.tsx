@@ -1489,10 +1489,19 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {(section.extras ?? []).map((t, i) =>
-          Block({
-            title: "Text",
-            icon: AlignLeft,
+        {(section.extras ?? []).map((t, i) => {
+          const kind = t.kind ?? "text";
+          const kindLabel = FREE_TEXT_KINDS.find((k) => k.value === kind)?.label ?? "Text";
+          const kindIcon = kind === "title" ? Heading : kind === "eyebrow" ? Tag : AlignLeft;
+          const kindDefaults =
+            kind === "title"
+              ? { font: "serif" as const, color: "ink" as const, size: "xl" as const }
+              : kind === "eyebrow"
+              ? { font: "sans" as const, color: "stone" as const, size: "sm" as const }
+              : { font: "sans" as const, color: "stone" as const, size: "md" as const };
+          return Block({
+            title: kindLabel,
+            icon: kindIcon,
             part: `text:${i}`,
             flowSection: section,
             key: t.id,
@@ -1500,23 +1509,34 @@ export default function ObjectDesignPage() {
             onDuplicate: () => duplicateExtra(section.id, i),
             children: (
               <>
-                <Field label="Text">
+                <Field label="Kind">
+                  <select
+                    className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    value={kind}
+                    onChange={(e) => patchExtra(section.id, i, { kind: e.target.value as FreeTextKind })}
+                  >
+                    {FREE_TEXT_KINDS.map((k) => (
+                      <option key={k.value} value={k.value}>{k.label}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label={kindLabel}>
                   <Textarea
-                    rows={4}
+                    rows={kind === "text" ? 4 : 2}
                     value={t.text}
                     onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
                   />
                 </Field>
                 <TextStyleFields
-                  label="Text style"
-                  value={t.style}
-                  defaults={{ font: "sans", color: "stone", size: "md" }}
+                  label={`${kindLabel} style`}
+                  value={kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style}
+                  defaults={kindDefaults}
                   onChange={(v) => patchExtra(section.id, i, { style: v })}
                 />
               </>
             ),
-          }),
-        )}
+          });
+        })}
 
         {(section.dividers ?? []).map((d, i) =>
           Block({
