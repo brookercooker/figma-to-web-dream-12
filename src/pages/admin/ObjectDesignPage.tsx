@@ -163,6 +163,13 @@ const STYLE_FIELD_LABEL: Record<string, string> = {
   captionStyle: "Caption",
 };
 
+const SIZE_WORD: Record<string, string> = {
+  sm: "Small",
+  md: "Medium",
+  lg: "Large",
+  xl: "Extra large",
+};
+
 function Dropdown({
   label, value, options, onChange,
 }: { label: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) {
