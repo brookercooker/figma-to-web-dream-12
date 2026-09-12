@@ -1118,7 +1118,7 @@ export default function ObjectDesignPage() {
             </div>
             <TextStyleFields
               label="Eyebrow style"
-              value={section.eyebrowStyle}
+              value={withEyebrowDefaults(section.eyebrowStyle)}
               defaults={{ font: "sans", color: "stone", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
             />
@@ -1142,7 +1142,7 @@ export default function ObjectDesignPage() {
             <TextStyleFields
               label="Title style"
               value={section.textStyle}
-              defaults={{ font: "serif", color: "ink", size: "lg" }}
+              defaults={{ font: "serif", color: "ink", size: "xl" }}
               onChange={(v) => patch(section.id, { textStyle: v })}
             />
           </>
@@ -1603,7 +1603,7 @@ export default function ObjectDesignPage() {
             <TextStyleFields
               label="Heading style"
               value={section.textStyle}
-              defaults={{ font: "serif", color: "cream", size: "lg" }}
+              defaults={{ font: "serif", color: "cream", size: "xl" }}
               onChange={(v) => patch(section.id, { textStyle: v })}
             />
             <TextStyleFields
@@ -1614,7 +1614,7 @@ export default function ObjectDesignPage() {
             />
             <TextStyleFields
               label="Eyebrow style"
-              value={section.eyebrowStyle}
+              value={withEyebrowDefaults(section.eyebrowStyle)}
               defaults={{ font: "sans", color: "cream", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
             />
@@ -1691,7 +1691,7 @@ export default function ObjectDesignPage() {
             <TextStyleFields
               label="Heading style"
               value={section.textStyle}
-              defaults={{ font: "serif", color: "ink", size: "lg" }}
+              defaults={{ font: "serif", color: "ink", size: "xl" }}
               onChange={(v) => patch(section.id, { textStyle: v })}
             />
             <TextStyleFields
@@ -1702,7 +1702,7 @@ export default function ObjectDesignPage() {
             />
             <TextStyleFields
               label="Eyebrow style"
-              value={section.eyebrowStyle}
+              value={withEyebrowDefaults(section.eyebrowStyle)}
               defaults={{ font: "sans", color: "stone", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
             />
