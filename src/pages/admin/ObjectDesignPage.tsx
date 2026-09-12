@@ -59,13 +59,35 @@ function Choice<T extends string | number>({
   );
 }
 
+function ColorSwatches({ value, onChange }: { value: TextColor; onChange: (v: TextColor) => void }) {
+  return (
+    <div className="flex items-center gap-2 pt-1">
+      {TEXT_COLORS.map((c) => (
+        <button
+          key={c.value}
+          type="button"
+          title={c.label}
+          aria-label={c.label}
+          aria-pressed={value === c.value}
+          onClick={() => onChange(c.value)}
+          className={`h-5 w-5 rounded-full border border-border transition-transform hover:scale-110 ${
+            value === c.value ? "ring-2 ring-offset-1 ring-foreground/60" : ""
+          }`}
+          style={{ background: c.swatch }}
+        />
+      ))}
+    </div>
+  );
+}
+
 function TextStyleFields({
-  label, value, defaults, onChange,
+  label, value, defaults, onChange, colorOnly,
 }: {
   label: string;
   value: TextStyle | undefined;
   defaults: { font: TextFont; color: TextColor; size: TextSize };
   onChange: (next: TextStyle) => void;
+  colorOnly?: boolean;
 }) {
   const style = value ?? {};
   const set = (changes: Partial<TextStyle>) => onChange({ ...style, ...changes });
@@ -73,24 +95,28 @@ function TextStyleFields({
     <div className="rounded-md border p-3 space-y-3">
       <p className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</p>
       <div className="flex flex-wrap gap-4">
-        <Field label="Font">
-          <div>
-            <Choice
-              value={style.font ?? defaults.font}
-              options={TEXT_FONTS}
-              onChange={(v) => set({ font: v })}
-            />
-          </div>
-        </Field>
-        <Field label="Size">
-          <div>
-            <Choice
-              value={style.size ?? defaults.size}
-              options={TEXT_SIZES}
-              onChange={(v) => set({ size: v })}
-            />
-          </div>
-        </Field>
+        {!colorOnly && (
+          <Field label="Font">
+            <div>
+              <Choice
+                value={style.font ?? defaults.font}
+                options={TEXT_FONTS}
+                onChange={(v) => set({ font: v })}
+              />
+            </div>
+          </Field>
+        )}
+        {!colorOnly && (
+          <Field label="Size">
+            <div>
+              <Choice
+                value={style.size ?? defaults.size}
+                options={TEXT_SIZES}
+                onChange={(v) => set({ size: v })}
+              />
+            </div>
+          </Field>
+        )}
         <Field label="Color">
           <div className="flex items-center gap-2 pt-1">
             {TEXT_COLORS.map((c) => {
