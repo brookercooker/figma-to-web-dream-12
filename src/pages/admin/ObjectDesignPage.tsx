@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
+  Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
+  type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
