@@ -764,9 +764,37 @@ function FreeVideos({ section, onDark }: { section: FreeSection; onDark?: boolea
   );
 }
 
+const dividerBg: Record<TextColor, string> = {
+  ink: "bg-ink",
+  stone: "bg-stone",
+  brass: "bg-brass",
+  garnet: "bg-garnet",
+  cream: "bg-cream",
+};
+
+const dividerSelf: Record<SectionAlign, string> = {
+  left: "self-start",
+  center: "self-center",
+  right: "self-end",
+};
+
+export function DividerBar({
+  divider, align, onDark,
+}: { divider: FreeDivider; align: SectionAlign; onDark?: boolean }) {
+  const color = divider.color ?? (onDark ? "cream" : "sand" as TextColor);
+  const cls = dividerBg[(color in dividerBg ? color : "stone") as TextColor];
+  return (
+    <div
+      className={`${cls} ${divider.width === "short" ? `w-24 ${dividerSelf[align]}` : "w-full"} my-2 rounded-full`}
+      style={{ height: `${divider.thickness ?? 1}px` }}
+    />
+  );
+}
+
 function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
   const hasText =
-    section.eyebrow || section.heading || section.body || section.buttonLabel || (section.extras ?? []).length;
+    section.eyebrow || section.heading || section.body || section.buttonLabel ||
+    (section.extras ?? []).length || (section.dividers ?? []).length;
   if (!hasText) return null;
   const base: TextColor = onDark ? "cream" : "ink";
   return (
