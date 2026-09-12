@@ -701,7 +701,12 @@ export default function ObjectDesignPage() {
     return ((s as any).images[index]?.texts ?? []) as ImageText[];
   };
 
-  const openBlock = (key: string) => setOpenBlocks((o) => ({ ...o, [key]: true }));
+  // Opening a newly added element collapses every other panel.
+  const openBlock = (key: string) => {
+    setBlocksExpanded(false);
+    setFocusPart("");
+    setOpenBlocks({ [key]: true });
+  };
 
   const addImageText = (sectionId: string, index: number, kind: ImageTextKind) => {
     const texts = imageTextsOf(sectionId, index);
