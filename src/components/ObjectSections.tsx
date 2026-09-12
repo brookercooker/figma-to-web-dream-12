@@ -169,7 +169,7 @@ export interface ButtonSection {
 }
 
 /** Freeform block: a blank space you add text and images to. */
-export interface FreeText {
+export interface FreeParagraph {
   id: string;
   text: string;
   style?: TextStyle;
@@ -182,7 +182,7 @@ export interface FreeSection {
   heading?: string;
   body?: string;
   /** additional paragraphs, each with its own styling */
-  extras?: FreeText[];
+  extras?: FreeParagraph[];
   eyebrowStyle?: TextStyle;
   textStyle?: TextStyle;
   bodyStyle?: TextStyle;
@@ -528,7 +528,8 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
 }
 
 function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
-  const hasText = section.eyebrow || section.heading || section.body || section.buttonLabel;
+  const hasText =
+    section.eyebrow || section.heading || section.body || section.buttonLabel || (section.extras ?? []).length;
   if (!hasText) return null;
   const base: TextColor = onDark ? "cream" : "ink";
   return (
@@ -548,6 +549,15 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
           {section.body}
         </p>
       ) : null}
+      {(section.extras ?? []).map((t, i) => (
+        <p
+          key={t.id}
+          data-part={`text:${i}`}
+          className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
+        >
+          {t.text}
+        </p>
+      ))}
       {section.buttonLabel ? (
         <div data-part="button" className="mt-2">
           <SectionButton
