@@ -26,14 +26,6 @@ interface ObjectRow {
   updated_at: string;
 }
 
-const PALETTE: { type: SectionType; Icon: typeof Type }[] = [
-  { type: "carousel", Icon: GalleryHorizontal },
-  { type: "imageRow", Icon: Images },
-  { type: "captionedImages", Icon: ImageIcon },
-  { type: "overlay", Icon: Type },
-  { type: "split", Icon: LayoutPanelLeft },
-  { type: "button", Icon: MousePointerClick },
-];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
