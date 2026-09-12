@@ -892,6 +892,16 @@ export default function ObjectDesignPage() {
         >
           {image.url ? "Replace" : "Choose image"}
         </Button>
+        <Button
+          variant={image.href || linkOpen[`${section.id}:${index}`] ? "secondary" : "ghost"}
+          size="sm"
+          title={image.href ? "Edit link" : "Add link"}
+          onClick={() =>
+            setLinkOpen((s) => ({ ...s, [`${section.id}:${index}`]: !s[`${section.id}:${index}`] }))
+          }
+        >
+          <LinkIcon className="w-4 h-4" />
+        </Button>
         {index >= 0 && "images" in section && (section as any).images.length > 1 && (
           <Button variant="ghost" size="sm" onClick={() => removeImageSlot(section.id, index)}>
             <Trash2 className="w-4 h-4" />
@@ -903,11 +913,13 @@ export default function ObjectDesignPage() {
         placeholder="Describe the image"
         onChange={(e) => patchImage(section.id, index, { alt: e.target.value })}
       />
-      <Input
-        value={image.href ?? ""}
-        placeholder="Link (optional)"
-        onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
-      />
+      {(linkOpen[`${section.id}:${index}`] || image.href) && (
+        <Input
+          value={image.href ?? ""}
+          placeholder="Link (optional)"
+          onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
+        />
+      )}
       {showCaption && (
         <div className="space-y-2 rounded-md border border-dashed p-2">
           {(image.texts ?? []).map((t, ti) => (
