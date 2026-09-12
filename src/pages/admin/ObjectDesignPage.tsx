@@ -9,7 +9,7 @@ import {
   ArrowLeft, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
-  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline,
+  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
