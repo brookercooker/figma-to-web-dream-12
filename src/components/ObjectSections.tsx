@@ -556,7 +556,9 @@ function FreeView({ section }: { section: FreeSection }) {
     return (
       <section className="py-12">
         <div className={`relative overflow-hidden rounded-lg ${overlayHeight[section.height]}`}>
-          <Pic image={section.images[0]} className="absolute inset-0 h-full w-full" />
+          <div data-part="image:0" className="absolute inset-0">
+            <Pic image={section.images[0]} className="absolute inset-0 h-full w-full" />
+          </div>
           <div className="absolute inset-0 bg-ink/35" />
           <div className={`relative flex h-full flex-col justify-center px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
             <FreeText section={section} onDark />
