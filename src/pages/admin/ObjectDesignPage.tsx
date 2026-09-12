@@ -614,8 +614,9 @@ export default function ObjectDesignPage() {
           {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => patch(section.id, { buttonLabel: "Explore", buttonHref: "/" })} />}
         </div>
 
-        {hasEyebrow && (
-          <div data-inspector-part="eyebrow" className="space-y-2 scroll-mt-24">
+        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", children: (
+          <>
+
 
             <div className="flex items-end gap-2">
               <div className="flex-1">
