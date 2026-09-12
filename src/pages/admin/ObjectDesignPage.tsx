@@ -9,7 +9,7 @@ import {
   ArrowLeft, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
-  LayoutGrid, GalleryHorizontal,
+  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
@@ -124,6 +124,11 @@ function TextStyleFields({
             </div>
           </Field>
         )}
+        <Field label="Emphasis">
+          <div className="pt-1">
+            <EmphasisToggles style={style} set={set} />
+          </div>
+        </Field>
         <Field label="Color">
           <div className="flex items-center gap-2 pt-1">
             {TEXT_COLORS.map((c) => {
@@ -173,6 +178,36 @@ const SIZE_WORD: Record<string, string> = {
   lg: "Large",
   xl: "Extra Large",
 };
+
+function EmphasisToggles({
+  style, set, underlineDefault = false,
+}: { style: TextStyle; set: (changes: Partial<TextStyle>) => void; underlineDefault?: boolean }) {
+  const underlined = style.underline ?? underlineDefault;
+  const items: { key: string; on: boolean; icon: LucideIcon; label: string; toggle: () => void }[] = [
+    { key: "b", on: !!style.bold, icon: Bold, label: "Bold", toggle: () => set({ bold: !style.bold || undefined }) },
+    { key: "i", on: !!style.italic, icon: Italic, label: "Italic", toggle: () => set({ italic: !style.italic || undefined }) },
+    { key: "u", on: underlined, icon: Underline, label: "Underline", toggle: () => set({ underline: !underlined }) },
+  ];
+  return (
+    <span className="inline-flex overflow-hidden rounded-md border">
+      {items.map((it) => (
+        <button
+          key={it.key}
+          type="button"
+          title={it.label}
+          aria-label={it.label}
+          aria-pressed={it.on}
+          onClick={it.toggle}
+          className={`px-2 py-1.5 transition-colors ${
+            it.on ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+          }`}
+        >
+          <it.icon className="h-3.5 w-3.5" />
+        </button>
+      ))}
+    </span>
+  );
+}
 
 function IconSelect<T extends string>({
   label, value, options, onChange,
@@ -1569,6 +1604,11 @@ export default function ObjectDesignPage() {
               fallback={(defaultColor[fieldKey] ?? (extraIdx >= 0 ? "stone" : "ink")) as TextColor}
               options={TEXT_COLORS}
               onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
+            />
+            <EmphasisToggles
+              style={style}
+              set={set}
+              underlineDefault={fieldKey === "labelStyle" && (sec.buttonVariant ?? "solid") === "link"}
             />
             {toolbar.field === "captionStyle" && (
               <Dropdown
