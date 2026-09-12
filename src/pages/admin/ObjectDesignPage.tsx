@@ -911,11 +911,6 @@ export default function ObjectDesignPage() {
           </Button>
         )}
       </div>
-      <Input
-        value={image.alt}
-        placeholder="Describe the image"
-        onChange={(e) => patchImage(section.id, index, { alt: e.target.value })}
-      />
       {(linkOpen[`${section.id}:${index}`] || image.href) && (
         <Input
           value={image.href ?? ""}
