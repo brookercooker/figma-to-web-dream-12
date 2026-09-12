@@ -318,11 +318,11 @@ export default function ObjectDesignPage() {
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2">
-          {!hasEyebrow && <Chip label="Eyebrow" onClick={() => patch(section.id, { eyebrow: "Since 1951" })} />}
-          {!hasTitle && <Chip label="Title" onClick={() => patch(section.id, { heading: "A quiet statement" })} />}
-          {!hasBody && <Chip label="Text" onClick={() => patch(section.id, { body: "" })} />}
-          <Chip label="Image" onClick={() => addImageSlot(section.id)} />
-          {!hasButton && <Chip label="Button" onClick={() => patch(section.id, { buttonLabel: "Explore", buttonHref: "/" })} />}
+          {!hasEyebrow && <Chip label="Eyebrow" icon={Tag} onClick={() => patch(section.id, { eyebrow: "Since 1951" })} />}
+          {!hasTitle && <Chip label="Title" icon={Heading} onClick={() => patch(section.id, { heading: "A quiet statement" })} />}
+          {!hasBody && <Chip label="Text" icon={AlignLeft} onClick={() => patch(section.id, { body: "" })} />}
+          <Chip label="Image" icon={ImageIcon} onClick={() => addImageSlot(section.id)} />
+          {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => patch(section.id, { buttonLabel: "Explore", buttonHref: "/" })} />}
         </div>
 
         {hasEyebrow && (
