@@ -480,7 +480,7 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
               {img.caption ? (
                 <figcaption
                   data-part={`caption:${idx}`}
-                  className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+                  className={`mt-3 leading-relaxed ${alignTextOnly[section.captionAlign ?? "left"]} ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
                 >
                   {img.caption}
                 </figcaption>
