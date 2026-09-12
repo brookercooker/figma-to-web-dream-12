@@ -777,6 +777,7 @@ export default function ObjectDesignPage() {
     );
     setDirty(true);
     openBlock("Images");
+    setOpenSub({ [`img:${id}:${newIndex}`]: true });
     setPicker({ sectionId: id, index: newIndex });
   };
 
