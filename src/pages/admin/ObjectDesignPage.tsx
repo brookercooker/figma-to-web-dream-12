@@ -2284,18 +2284,6 @@ export default function ObjectDesignPage() {
                 }
               />
             )}
-            {toolbar.field === "captionStyle" && (
-              <Dropdown
-                label="Align"
-                value={sec.captionAlign ?? "left"}
-                options={[
-                  { value: "left", label: "Left", icon: AlignLeft },
-                  { value: "center", label: "Center", icon: AlignCenter },
-                  { value: "right", label: "Right", icon: AlignRight },
-                ]}
-                onChange={(v) => patch(toolbar.sectionId, { captionAlign: v as FreeSection["captionAlign"] })}
-              />
-            )}
             {toolbar.field === "labelStyle" && (
               <Dropdown
                 label="Style"
