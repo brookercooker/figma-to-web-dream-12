@@ -1178,6 +1178,18 @@ export default function ObjectDesignPage() {
               options={[{ value: "", label: "Default" }, ...TEXT_COLORS.map((c) => ({ value: c.value as string, label: c.label }))]}
               onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
             />
+            {toolbar.field === "labelStyle" && (
+              <Dropdown
+                label="Style"
+                value={sec.buttonVariant ?? "solid"}
+                options={[
+                  { value: "solid", label: "Solid" },
+                  { value: "outline", label: "Outline" },
+                  { value: "link", label: "Text link" },
+                ]}
+                onChange={(v) => patch(toolbar.sectionId, { buttonVariant: v as FreeSection["buttonVariant"] })}
+              />
+            )}
             {toolbar.field === "labelStyle" && (sec.buttonVariant ?? "solid") === "solid" && (
               <Dropdown
                 label="Fill"
