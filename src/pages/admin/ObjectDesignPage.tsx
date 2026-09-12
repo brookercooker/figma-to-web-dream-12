@@ -801,11 +801,12 @@ export default function ObjectDesignPage() {
                 </>
               )}
             </div>
-          </div>
-        )}
+          </>
+        ) })}
 
-        {hasButton && (
-          <div data-inspector-part="button" className="space-y-2 scroll-mt-24">
+        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", children: (
+          <>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Button label">
                 <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
