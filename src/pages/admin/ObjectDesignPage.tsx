@@ -1885,6 +1885,22 @@ export default function ObjectDesignPage() {
               </div>
             </Field>
             {parts.length > 1 && (
+              <Field label="Same row alignment">
+                <div>
+                  <Choice
+                    value={section.rowVAlign ?? "middle"}
+                    options={[
+                      { value: "top" as RowVAlign, label: "Top", icon: AlignVerticalJustifyStart },
+                      { value: "middle" as RowVAlign, label: "Middle", icon: AlignVerticalJustifyCenter },
+                      { value: "bottom" as RowVAlign, label: "Bottom", icon: AlignVerticalJustifyEnd },
+                      { value: "baseline" as RowVAlign, label: "Text line", icon: Baseline },
+                    ]}
+                    onChange={(v) => patch(section.id, { rowVAlign: v })}
+                  />
+                </div>
+              </Field>
+            )}
+
               <p className="text-xs text-muted-foreground">
                 Drag an element's header below to move it up or down.
               </p>
