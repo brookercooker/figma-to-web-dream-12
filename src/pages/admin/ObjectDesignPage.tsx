@@ -157,6 +157,33 @@ export default function ObjectDesignPage() {
   const [q, setQ] = useState("");
   // { sectionId, index } — index -1 means the section's single image
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
+  // which element of the active section the user clicked on in the preview
+  const [focusPart, setFocusPart] = useState("");
+
+  // Clicking an element in the preview jumps to (and focuses) its controls.
+  useEffect(() => {
+    if (!focusPart || !activeId) return;
+    const t = window.setTimeout(() => {
+      const group = document.querySelector<HTMLElement>(
+        `[data-inspector-section="${activeId}"] [data-inspector-part="${focusPart}"]`,
+      );
+      if (!group) return;
+      group.scrollIntoView({ behavior: "smooth", block: "center" });
+      group.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea")?.focus();
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, [focusPart, activeId]);
+
+  const pickPart = (sectionId: string, e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
+    if ((e.target as HTMLElement).closest?.("a")) e.preventDefault();
+    setActiveId(sectionId);
+    if (!el) return;
+    const part = el.getAttribute("data-part") ?? "";
+    // captions are edited alongside their image
+    setFocusPart(part.startsWith("caption:") ? part.replace("caption:", "image:") : part);
+  };
+
 
   const load = async () => {
     const { data } = await (supabase as any)
