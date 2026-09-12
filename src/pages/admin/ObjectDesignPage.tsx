@@ -1124,7 +1124,7 @@ export default function ObjectDesignPage() {
         ) })}
 
 
-        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", children: (
+        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, children: (
           <>
 
 
@@ -1147,7 +1147,7 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", children: (
+        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, children: (
           <>
 
 
@@ -1173,7 +1173,7 @@ export default function ObjectDesignPage() {
 
 
 
-        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", children: (
+        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, children: (
           <>
 
 
@@ -1201,6 +1201,7 @@ export default function ObjectDesignPage() {
             title: "Text",
             icon: AlignLeft,
             part: `text:${i}`,
+            flowSection: section,
             key: t.id,
             children: (
               <>
@@ -1234,6 +1235,7 @@ export default function ObjectDesignPage() {
             title: "Divider",
             icon: Minus,
             part: `divider:${i}`,
+            flowSection: section,
             key: d.id,
             children: (
               <>
@@ -1496,7 +1498,7 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", children: (
+        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", flowSection: section, children: (
           <>
 
             <div className="grid gap-3 sm:grid-cols-2">
