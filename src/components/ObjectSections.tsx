@@ -140,10 +140,39 @@ export const imageHeightClass: Record<ImageHeight, string> = {
   xl: "h-96 sm:h-[32rem]",
 };
 
+/** Extra text boxes that sit under an image and scroll with it. */
+export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text";
+
+export const IMAGE_TEXT_KINDS: { value: ImageTextKind; label: string }[] = [
+  { value: "eyebrow", label: "Eyebrow" },
+  { value: "title", label: "Title" },
+  { value: "subheading", label: "Subheading" },
+  { value: "text", label: "Text" },
+];
+
+export interface ImageText {
+  id: string;
+  kind: ImageTextKind;
+  text: string;
+  style?: TextStyle;
+}
+
+export const IMAGE_TEXT_DEFAULTS: Record<
+  ImageTextKind,
+  { font: TextFont; color: TextColor; size: TextSize; heading: boolean }
+> = {
+  eyebrow: { font: "sans", color: "stone", size: "sm", heading: false },
+  title: { font: "serif", color: "ink", size: "md", heading: true },
+  subheading: { font: "serif", color: "ink", size: "sm", heading: true },
+  text: { font: "sans", color: "stone", size: "sm", heading: false },
+};
+
 export interface SectionImage {
   url: string;
   alt: string;
   caption?: string;
+  /** extra text boxes shown under the image */
+  texts?: ImageText[];
   /** optional destination opened when the image is clicked */
   href?: string;
 }
@@ -253,6 +282,8 @@ export interface FreeSection {
   imageAlign?: SectionAlign;
   /** horizontal alignment of image captions */
   captionAlign?: SectionAlign;
+  /** draw a border around each image and its text */
+  imageBorder?: boolean;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
@@ -497,6 +528,46 @@ function Carousel({ section }: { section: CarouselSection }) {
   );
 }
 
+/** An image plus its caption and any extra text boxes, optionally boxed by a border. */
+function FreeFigureBody({
+  section, image, index, onDark,
+}: { section: FreeSection; image: SectionImage; index: number; onDark?: boolean }) {
+  const align = alignTextOnly[section.captionAlign ?? "left"];
+  const baseColor: TextColor = onDark ? "cream" : "stone";
+  const texts = image.texts ?? [];
+  const bordered = !!section.imageBorder;
+
+  return (
+    <div className={bordered ? "overflow-hidden rounded-lg border border-sand p-3" : ""}>
+      <div data-part={`image:${index}`}>
+        <Pic image={image} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
+      </div>
+      {image.caption ? (
+        <figcaption
+          data-part={`caption:${index}`}
+          className={`mt-3 leading-relaxed ${align} ${bodyClasses(section.captionStyle, { color: baseColor, size: "sm" })}`}
+          style={textInlineStyle(section.captionStyle)}
+          {...richText(image.caption)}
+        />
+      ) : null}
+      {texts.map((t, ti) => {
+        const d = IMAGE_TEXT_DEFAULTS[t.kind];
+        const fallback = { color: onDark ? ("cream" as TextColor) : d.color, size: d.size };
+        const cls = d.heading ? headingClasses(t.style, fallback) : bodyClasses(t.style, fallback);
+        return (
+          <p
+            key={t.id}
+            data-part={`imagetext:${index}:${ti}`}
+            className={`mt-3 leading-relaxed ${align} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
+            style={textInlineStyle(t.style)}
+            {...richText(t.text)}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
   const images = section.images;
   const n = images.length;
@@ -521,17 +592,7 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
         >
           {images.map((img, idx) => (
             <figure key={idx} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
-              <div data-part={`image:${idx}`}>
-                <Pic image={img} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
-              </div>
-              {img.caption ? (
-                <figcaption
-                  data-part={`caption:${idx}`}
-                  className={`mt-3 leading-relaxed ${alignTextOnly[section.captionAlign ?? "left"]} ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
-                  style={textInlineStyle(section.captionStyle)}
-                  {...richText(img.caption)}
-                />
-              ) : null}
+              <FreeFigureBody section={section} image={img} index={idx} onDark={onDark} />
             </figure>
           ))}
 
@@ -573,23 +634,7 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
     >
       {section.images.map((img, i) => (
         <figure key={i} className="basis-0 grow min-w-0">
-          <div data-part={`image:${i}`}>
-            <Pic
-              image={img}
-              className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`}
-            />
-          </div>
-          {img.caption ? (
-            <figcaption
-              data-part={`caption:${i}`}
-              className={`mt-3 leading-relaxed ${alignTextOnly[section.captionAlign ?? "left"]} ${bodyClasses(section.captionStyle, {
-                color: onDark ? "cream" : "stone",
-                size: "sm",
-              })}`}
-              style={textInlineStyle(section.captionStyle)}
-              {...richText(img.caption)}
-            />
-          ) : null}
+          <FreeFigureBody section={section} image={img} index={i} onDark={onDark} />
         </figure>
       ))}
     </div>

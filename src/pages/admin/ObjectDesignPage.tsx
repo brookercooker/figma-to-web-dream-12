@@ -18,8 +18,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections,
-  type FreeSection, type Section, type SectionAlign, type SectionImage, type SectionType,
+  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections,
+  type FreeSection, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
 
@@ -508,6 +508,9 @@ export default function ObjectDesignPage() {
     const part = el.getAttribute("data-part") ?? "";
     const captionIdx = part.startsWith("caption:") ? Number(part.split(":")[1]) : -1;
     const extraIdx = part.startsWith("text:") ? Number(part.split(":")[1]) : -1;
+    const imgText = part.startsWith("imagetext:")
+      ? { img: Number(part.split(":")[1]), t: Number(part.split(":")[2]) }
+      : null;
     const field =
       part === "eyebrow" ? "eyebrow"
       : part === "heading" ? "heading"
@@ -515,6 +518,7 @@ export default function ObjectDesignPage() {
       : part === "button" ? "buttonLabel"
       : captionIdx >= 0 ? "caption"
       : extraIdx >= 0 ? "extra"
+      : imgText ? "imageText"
       : "";
     if (!field) return;
     e.preventDefault();
@@ -546,7 +550,8 @@ export default function ObjectDesignPage() {
       target.removeEventListener("blur", commit);
       target.removeEventListener("keydown", onKey);
       target.removeEventListener("click", stop);
-      if (captionIdx >= 0) patchImage(sectionId, captionIdx, { caption: value });
+      if (imgText) patchImageText(sectionId, imgText.img, imgText.t, { text: value });
+      else if (captionIdx >= 0) patchImage(sectionId, captionIdx, { caption: value });
       else if (extraIdx >= 0) patchExtra(sectionId, extraIdx, { text: value });
       else patch(sectionId, { [field]: value });
     };
@@ -573,12 +578,18 @@ export default function ObjectDesignPage() {
     setActiveId(sectionId);
     if (!el) return;
     const part = el.getAttribute("data-part") ?? "";
-    // captions are edited alongside their image
-    setFocusPart(part.startsWith("caption:") ? part.replace("caption:", "image:") : part);
+    // captions and image text boxes are edited alongside their image
+    setFocusPart(
+      part.startsWith("caption:") ? part.replace("caption:", "image:")
+      : part.startsWith("imagetext:") ? `image:${part.split(":")[1]}`
+      : part,
+    );
 
     // Text elements get a floating font / size / color toolbar.
     const field = part.startsWith("text:")
       ? (`extra:${Number(part.split(":")[1]) || 0}` as keyof FreeSection)
+      : part.startsWith("imagetext:")
+      ? (part as unknown as keyof FreeSection)
       : STYLE_FIELD[part.startsWith("caption:") ? "caption" : part];
     const r = el.getBoundingClientRect();
     if (field) {
@@ -679,6 +690,30 @@ export default function ObjectDesignPage() {
       }),
     );
     setDirty(true);
+  };
+
+  const imageTextsOf = (sectionId: string, index: number): ImageText[] => {
+    const s = sections.find((x) => x.id === sectionId);
+    if (!s || !("images" in s)) return [];
+    return ((s as any).images[index]?.texts ?? []) as ImageText[];
+  };
+
+  const addImageText = (sectionId: string, index: number, kind: ImageTextKind) => {
+    const texts = imageTextsOf(sectionId, index);
+    patchImage(sectionId, index, {
+      texts: [...texts, { id: newSectionId(), kind, text: "" }],
+    });
+  };
+
+  const patchImageText = (
+    sectionId: string, index: number, tIdx: number, changes: Partial<ImageText>,
+  ) => {
+    const texts = imageTextsOf(sectionId, index).map((t, i) => (i === tIdx ? { ...t, ...changes } : t));
+    patchImage(sectionId, index, { texts });
+  };
+
+  const removeImageText = (sectionId: string, index: number, tIdx: number) => {
+    patchImage(sectionId, index, { texts: imageTextsOf(sectionId, index).filter((_, i) => i !== tIdx) });
   };
 
   const addImageSlot = (id: string) => {
@@ -787,6 +822,58 @@ export default function ObjectDesignPage() {
         placeholder="Link (optional)"
         onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
       />
+      {showCaption && (
+        <div className="space-y-2 rounded-md border border-dashed p-2">
+          {(image.texts ?? []).map((t, ti) => (
+            <div key={t.id} className="space-y-2 rounded border bg-muted/30 p-2">
+              <div className="flex items-center gap-2">
+                <IconSelect
+                  value={t.kind}
+                  options={IMAGE_TEXT_KINDS.map((k) => ({ value: k.value, label: k.label }))}
+                  onChange={(v) => patchImageText(section.id, index, ti, { kind: v })}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto"
+                  onClick={() => removeImageText(section.id, index, ti)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+              <Textarea
+                rows={2}
+                value={t.text}
+                placeholder={`${IMAGE_TEXT_KINDS.find((k) => k.value === t.kind)?.label ?? "Text"}…`}
+                onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
+              />
+              <TextStyleFields
+                label="Style"
+                value={t.style}
+                defaults={{
+                  font: IMAGE_TEXT_DEFAULTS[t.kind].font,
+                  color: IMAGE_TEXT_DEFAULTS[t.kind].color,
+                  size: IMAGE_TEXT_DEFAULTS[t.kind].size,
+                }}
+                onChange={(v) => patchImageText(section.id, index, ti, { style: v })}
+              />
+            </div>
+          ))}
+          <div className="flex flex-wrap gap-1.5">
+            {IMAGE_TEXT_KINDS.map((k) => (
+              <Button
+                key={k.value}
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => addImageText(section.id, index, k.value)}
+              >
+                <Plus className="w-3 h-3" /> {k.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -971,6 +1058,18 @@ export default function ObjectDesignPage() {
                     { value: "right" as const, label: "Right", icon: AlignRight },
                   ]}
                   onChange={(v) => patch(section.id, { captionAlign: v })}
+                />
+              </div>
+            </Field>
+            <Field label="Border around image and text">
+              <div>
+                <Choice
+                  value={section.imageBorder ? "on" : "off"}
+                  options={[
+                    { value: "off" as const, label: "None" },
+                    { value: "on" as const, label: "Border" },
+                  ]}
+                  onChange={(v) => patch(section.id, { imageBorder: v === "on" || undefined })}
                 />
               </div>
             </Field>
@@ -1648,7 +1747,14 @@ export default function ObjectDesignPage() {
 
         const fieldKey = String(toolbar.field);
         const extraIdx = fieldKey.startsWith("extra:") ? Number(fieldKey.split(":")[1]) : -1;
-        const style = (extraIdx >= 0
+        const imgText = fieldKey.startsWith("imagetext:")
+          ? { img: Number(fieldKey.split(":")[1]), t: Number(fieldKey.split(":")[2]) }
+          : null;
+        const imgTextItem = imgText ? (sec.images?.[imgText.img]?.texts ?? [])[imgText.t] : undefined;
+        if (imgText && !imgTextItem) return null;
+        const style = (imgTextItem
+          ? (imgTextItem.style ?? {})
+          : extraIdx >= 0
           ? ((sec.extras ?? [])[extraIdx]?.style ?? {})
           : ((sec as any)[fieldKey] ?? {})) as TextStyle;
         const solid = (sec.buttonVariant ?? "solid") === "solid";
@@ -1666,18 +1772,31 @@ export default function ObjectDesignPage() {
           captionStyle: "sans",
           labelStyle: "sans",
         };
+        const kindDefaults = imgTextItem ? IMAGE_TEXT_DEFAULTS[imgTextItem.kind] : null;
         const set = (changes: Partial<TextStyle>) =>
-          extraIdx >= 0
+          imgText
+            ? patchImageText(toolbar.sectionId, imgText.img, imgText.t, { style: { ...style, ...changes } })
+            : extraIdx >= 0
             ? patchExtra(toolbar.sectionId, extraIdx, { style: { ...style, ...changes } })
             : patch(toolbar.sectionId, { [fieldKey]: { ...style, ...changes } });
         return (
           <FloatingToolbar top={anchorTop} left={toolbar.left}>
             <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-              {extraIdx >= 0 ? "Text" : STYLE_FIELD_LABEL[fieldKey]}
+              {imgTextItem
+                ? (IMAGE_TEXT_KINDS.find((k) => k.value === imgTextItem.kind)?.label ?? "Text")
+                : extraIdx >= 0 ? "Text" : STYLE_FIELD_LABEL[fieldKey]}
             </span>
+            {imgText && imgTextItem && (
+              <Dropdown
+                label="Kind"
+                value={imgTextItem.kind}
+                options={IMAGE_TEXT_KINDS.map((k) => ({ value: k.value as string, label: k.label }))}
+                onChange={(v) => patchImageText(toolbar.sectionId, imgText.img, imgText.t, { kind: v as ImageTextKind })}
+              />
+            )}
             <Dropdown
               label="Font"
-              value={style.font ?? defaultFont[fieldKey] ?? "sans"}
+              value={style.font ?? kindDefaults?.font ?? defaultFont[fieldKey] ?? "sans"}
               options={TEXT_FONTS.map((f) => ({ value: f.value as string, label: f.label }))}
               onChange={(v) => set({ font: (v || undefined) as TextFont | undefined })}
             />
@@ -1689,14 +1808,14 @@ export default function ObjectDesignPage() {
             />
             <SizeControl
               style={style}
-              defaultSize={fieldKey === "textStyle" ? "lg" : fieldKey === "bodyStyle" || extraIdx >= 0 ? "md" : "sm"}
-              heading={fieldKey === "textStyle"}
+              defaultSize={kindDefaults?.size ?? (fieldKey === "textStyle" ? "lg" : fieldKey === "bodyStyle" || extraIdx >= 0 ? "md" : "sm")}
+              heading={kindDefaults ? kindDefaults.heading : fieldKey === "textStyle"}
               set={set}
             />
             <ColorDropdown
               label="Color"
               value={style.color ?? ""}
-              fallback={(defaultColor[fieldKey] ?? (extraIdx >= 0 ? "stone" : "ink")) as TextColor}
+              fallback={(kindDefaults?.color ?? defaultColor[fieldKey] ?? (extraIdx >= 0 ? "stone" : "ink")) as TextColor}
               options={TEXT_COLORS}
               onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
             />
