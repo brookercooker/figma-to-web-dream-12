@@ -18,10 +18,26 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  IMAGE_HEIGHTS, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, makeSection, newSectionId, parseSections,
+  IMAGE_HEIGHTS, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections,
   type FreeSection, type Section, type SectionAlign, type SectionImage, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
+
+/**
+ * When part of a text element is selected inside an inline editor, apply the
+ * format to just that selection instead of the whole element.
+ */
+function formatSelection(command: "bold" | "italic" | "underline") {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
+  const node = sel.anchorNode;
+  const el = (node instanceof HTMLElement ? node : node?.parentElement) ?? null;
+  const host = el?.closest<HTMLElement>('[contenteditable="true"]');
+  if (!host) return false;
+  document.execCommand(command);
+  host.dispatchEvent(new Event("input", { bubbles: true }));
+  return true;
+}
 
 interface ObjectRow {
   id: string;
