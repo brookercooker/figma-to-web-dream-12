@@ -18,7 +18,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  IMAGE_HEIGHTS, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections,
+  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections,
   type FreeSection, type Section, type SectionAlign, type SectionImage, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
@@ -103,6 +103,32 @@ function ColorSwatches({ value, onChange }: { value: TextColor; onChange: (v: Te
   );
 }
 
+/** Exact font size in px, alongside the S / M / L / XL presets. */
+function SizeControl({
+  style, defaultSize, heading, set,
+}: { style: TextStyle; defaultSize: TextSize; heading?: boolean; set: (changes: Partial<TextStyle>) => void }) {
+  const preset = (heading ? HEADING_PX : BODY_PX)[style.size ?? defaultSize];
+  const px = style.sizePx ?? preset;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <input
+        type="number"
+        min={MIN_TEXT_PX}
+        max={MAX_TEXT_PX}
+        value={px}
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          if (!v) return;
+          set({ sizePx: Math.min(MAX_TEXT_PX, Math.max(MIN_TEXT_PX, Math.round(v))) });
+        }}
+        className="w-16 rounded-md border bg-background px-2 py-1 text-xs"
+        aria-label="Text size in pixels"
+      />
+      <span className="text-[11px] text-muted-foreground">px</span>
+    </span>
+  );
+}
+
 function TextStyleFields({
   label, value, defaults, onChange, colorOnly,
 }: {
@@ -131,11 +157,17 @@ function TextStyleFields({
         )}
         {!colorOnly && (
           <Field label="Size">
-            <div>
+            <div className="flex items-center gap-2">
               <Choice
-                value={style.size ?? defaults.size}
+                value={style.sizePx ? ("" as unknown as TextSize) : (style.size ?? defaults.size)}
                 options={TEXT_SIZES}
-                onChange={(v) => set({ size: v })}
+                onChange={(v) => set({ size: v, sizePx: undefined })}
+              />
+              <SizeControl
+                style={style}
+                defaultSize={defaults.size}
+                heading={defaults.font === "serif"}
+                set={set}
               />
             </div>
           </Field>
@@ -1621,9 +1653,15 @@ export default function ObjectDesignPage() {
             />
             <Dropdown
               label="Size"
-              value={style.size ?? ""}
+              value={style.sizePx ? "" : (style.size ?? "")}
               options={[{ value: "", label: "Default" }, ...TEXT_SIZES.map((s) => ({ value: s.value as string, label: SIZE_WORD[s.value] ?? s.label }))]}
-              onChange={(v) => set({ size: (v || undefined) as TextSize | undefined })}
+              onChange={(v) => set({ size: (v || undefined) as TextSize | undefined, sizePx: undefined })}
+            />
+            <SizeControl
+              style={style}
+              defaultSize={fieldKey === "textStyle" ? "lg" : fieldKey === "bodyStyle" || extraIdx >= 0 ? "md" : "sm"}
+              heading={fieldKey === "textStyle"}
+              set={set}
             />
             <ColorDropdown
               label="Color"

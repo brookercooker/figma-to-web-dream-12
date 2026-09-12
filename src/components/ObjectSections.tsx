@@ -13,9 +13,23 @@ export interface TextStyle {
   font?: TextFont;
   color?: TextColor;
   size?: TextSize;
+  /** exact size in px — overrides the preset size when set */
+  sizePx?: number;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+}
+
+export const MIN_TEXT_PX = 10;
+export const MAX_TEXT_PX = 96;
+
+/** Approximate px behind each preset, so the number input starts from the current look. */
+export const HEADING_PX: Record<TextSize, number> = { sm: 24, md: 30, lg: 36, xl: 48 };
+export const BODY_PX: Record<TextSize, number> = { sm: 14, md: 16, lg: 18, xl: 20 };
+
+/** Inline font-size for text that uses an exact px value. */
+export function textInlineStyle(style: TextStyle | undefined) {
+  return style?.sizePx ? { fontSize: `${style.sizePx}px` } : undefined;
 }
 
 /** Bold / italic / underline classes shared by every text element. */
@@ -93,7 +107,7 @@ export function headingClasses(style: TextStyle | undefined, fallback: { color: 
   return [
     fontClass[style?.font ?? "serif"],
     colorClass[style?.color ?? fallback.color],
-    headingSizeClass[style?.size ?? fallback.size],
+    style?.sizePx ? "" : headingSizeClass[style?.size ?? fallback.size],
     emphasisClasses(style),
   ].join(" ");
 }
@@ -102,7 +116,7 @@ export function bodyClasses(style: TextStyle | undefined, fallback: { color: Tex
   return [
     fontClass[style?.font ?? "sans"],
     colorClass[style?.color ?? fallback.color],
-    bodySizeClass[style?.size ?? fallback.size],
+    style?.sizePx ? "" : bodySizeClass[style?.size ?? fallback.size],
     emphasisClasses(style),
   ].join(" ");
 }
@@ -414,7 +428,7 @@ function SectionButton({
         : `${bgClass[fill]} px-7 py-3`;
   const text = bodyClasses(style, { color: variant === "solid" ? bgTextColor[fill] : "ink", size: "sm" });
   return (
-    <a href={href || "#"} className={`${base} ${styles} ${text}`} {...richText(label)} />
+    <a href={href || "#"} className={`${base} ${styles} ${text}`} style={textInlineStyle(style)} {...richText(label)} />
   );
 }
 
@@ -514,6 +528,7 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
                 <figcaption
                   data-part={`caption:${idx}`}
                   className={`mt-3 leading-relaxed ${alignTextOnly[section.captionAlign ?? "left"]} ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+                  style={textInlineStyle(section.captionStyle)}
                   {...richText(img.caption)}
                 />
               ) : null}
@@ -571,6 +586,7 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
                 color: onDark ? "cream" : "stone",
                 size: "sm",
               })}`}
+              style={textInlineStyle(section.captionStyle)}
               {...richText(img.caption)}
             />
           ) : null}
@@ -592,6 +608,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
         <p
           data-part="eyebrow"
           className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+          style={textInlineStyle(section.eyebrowStyle)}
           {...richText(section.eyebrow)}
         />
       ) : null}
@@ -599,6 +616,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
         <h2
           data-part="heading"
           className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}
+          style={textInlineStyle(section.textStyle)}
           {...richText(section.heading)}
         />
       ) : null}
@@ -606,6 +624,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
         <p
           data-part="body"
           className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}
+          style={textInlineStyle(section.bodyStyle)}
           {...richText(section.body)}
         />
       ) : null}
@@ -614,6 +633,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
           key={t.id}
           data-part={`text:${i}`}
           className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
+          style={textInlineStyle(t.style)}
           {...richText(t.text)}
         />
       ))}
