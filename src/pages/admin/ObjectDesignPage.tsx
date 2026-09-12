@@ -746,6 +746,10 @@ export default function ObjectDesignPage() {
       texts: [...texts, { id: newSectionId(), kind, text: "" }],
     });
     openBlock("Images");
+    setOpenSub({
+      [`img:${sectionId}:${index}`]: true,
+      [`txt:${sectionId}:${index}:${texts.length}`]: true,
+    });
   };
 
   const patchImageText = (
