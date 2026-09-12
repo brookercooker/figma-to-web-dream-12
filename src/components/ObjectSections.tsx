@@ -531,14 +531,29 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
 
 }
 
-function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
+function FreeText({
+  section,
+  onDark,
+  slot = "all",
+}: {
+  section: FreeSection;
+  onDark?: boolean;
+  /** which placement group to render: text above the images, below them, or everything */
+  slot?: "above" | "below" | "all";
+}) {
+  const mainPos = section.textPosition ?? "above";
+  const showMain = slot === "all" || slot === mainPos;
+  const extras = (section.extras ?? [])
+    .map((t, i) => ({ t, i }))
+    .filter(({ t }) => slot === "all" || (t.position ?? mainPos) === slot);
   const hasText =
-    section.eyebrow || section.heading || section.body || section.buttonLabel || (section.extras ?? []).length;
+    (showMain && (section.eyebrow || section.heading || section.body || section.buttonLabel)) ||
+    extras.length;
   if (!hasText) return null;
   const base: TextColor = onDark ? "cream" : "ink";
   return (
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
-      {section.eyebrow ? (
+      {showMain && section.eyebrow ? (
         <p data-part="eyebrow" className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}>
           {section.eyebrow}
         </p>
