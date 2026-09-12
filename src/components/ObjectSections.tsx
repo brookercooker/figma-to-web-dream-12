@@ -83,6 +83,7 @@ export interface CarouselSection {
   type: "carousel";
   heading?: string;
   textStyle?: TextStyle;
+  captionStyle?: TextStyle;
   images: SectionImage[];
 }
 
@@ -100,6 +101,7 @@ export interface CaptionedImagesSection {
   type: "captionedImages";
   heading?: string;
   textStyle?: TextStyle;
+  captionStyle?: TextStyle;
   columns: 1 | 2 | 3;
   images: SectionImage[];
 }
@@ -115,6 +117,8 @@ export interface OverlaySection {
   height: "sm" | "md" | "lg";
   textStyle?: TextStyle;
   bodyStyle?: TextStyle;
+  eyebrowStyle?: TextStyle;
+  labelStyle?: TextStyle;
   buttonLabel?: string;
   buttonHref?: string;
 }
@@ -126,6 +130,8 @@ export interface SplitSection {
   imageSide: "left" | "right";
   textStyle?: TextStyle;
   bodyStyle?: TextStyle;
+  eyebrowStyle?: TextStyle;
+  labelStyle?: TextStyle;
   eyebrow?: string;
   heading: string;
   body?: string;
@@ -140,6 +146,7 @@ export interface ButtonSection {
   href: string;
   align: SectionAlign;
   variant: "solid" | "outline" | "link";
+  labelStyle?: TextStyle;
 }
 
 export type Section =
@@ -252,17 +259,18 @@ function Pic({ image, className }: { image: SectionImage; className: string }) {
 }
 
 function SectionButton({
-  label, href, variant = "solid",
-}: { label: string; href: string; variant?: ButtonSection["variant"] }) {
-  const base = "inline-flex items-center justify-center text-xs uppercase tracking-[0.18em] transition-colors";
+  label, href, variant = "solid", style,
+}: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle }) {
+  const base = "inline-flex items-center justify-center uppercase tracking-[0.18em] transition-colors";
   const styles =
     variant === "outline"
-      ? "border border-ink text-ink px-7 py-3 hover:bg-ink hover:text-cream"
+      ? "border border-ink px-7 py-3 hover:bg-ink hover:text-cream"
       : variant === "link"
-        ? "text-ink underline underline-offset-4 hover:text-brass"
-        : "bg-ink text-cream px-7 py-3 hover:bg-ink/90";
+        ? "underline underline-offset-4 hover:text-brass"
+        : "bg-ink px-7 py-3 hover:bg-ink/90";
+  const text = bodyClasses(style, { color: variant === "solid" ? "cream" : "ink", size: "sm" });
   return (
-    <a href={href || "#"} className={`${base} ${styles}`}>
+    <a href={href || "#"} className={`${base} ${styles} ${text}`}>
       {label}
     </a>
   );
@@ -290,7 +298,9 @@ function Carousel({ section }: { section: CarouselSection }) {
         >
           <Pic image={img} className="h-full w-full" />
           {img.caption ? (
-            <div className="absolute bottom-0 inset-x-0 bg-ink/50 px-6 py-3 text-cream text-sm">
+            <div
+              className={`absolute bottom-0 inset-x-0 bg-ink/50 px-6 py-3 ${bodyClasses(section.captionStyle, { color: "cream", size: "sm" })}`}
+            >
               {img.caption}
             </div>
           ) : null}
@@ -367,7 +377,7 @@ export function SectionView({ section }: { section: Section }) {
               <figure key={i}>
                 <Pic image={img} className="w-full aspect-[4/3] rounded-lg" />
                 {img.caption ? (
-                  <figcaption className="mt-3 text-sm text-stone leading-relaxed">{img.caption}</figcaption>
+                  <figcaption className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: "stone", size: "sm" })}`}>{img.caption}</figcaption>
                 ) : null}
               </figure>
             ))}
@@ -385,7 +395,7 @@ export function SectionView({ section }: { section: Section }) {
               className={`relative flex h-full flex-col justify-center gap-4 px-8 sm:px-14 py-16 ${alignText[section.align]} ${overlayHeight[section.height]}`}
             >
               {section.eyebrow ? (
-                <p className="text-[11px] uppercase tracking-[0.24em] text-cream/80">{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: "cream", size: "sm" })}`}>{section.eyebrow}</p>
               ) : null}
               <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "lg" })}`}>
                 {section.heading}
@@ -396,7 +406,7 @@ export function SectionView({ section }: { section: Section }) {
               {section.buttonLabel ? (
                 <a
                   href={section.buttonHref || "#"}
-                  className="mt-2 inline-flex items-center border border-cream px-7 py-3 text-xs uppercase tracking-[0.18em] text-cream transition-colors hover:bg-cream hover:text-ink"
+                  className={`mt-2 inline-flex items-center border border-cream px-7 py-3 uppercase tracking-[0.18em] transition-colors hover:bg-cream hover:text-ink ${bodyClasses(section.labelStyle, { color: "cream", size: "sm" })}`}
                 >
                   {section.buttonLabel}
                 </a>
@@ -415,7 +425,7 @@ export function SectionView({ section }: { section: Section }) {
             </div>
             <div className="max-w-xl">
               {section.eyebrow ? (
-                <p className="text-[11px] uppercase tracking-[0.24em] text-stone mb-3">{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] mb-3 ${bodyClasses(section.eyebrowStyle, { color: "stone", size: "sm" })}`}>{section.eyebrow}</p>
               ) : null}
               <h2 className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "lg" })}`}>{section.heading}</h2>
               {section.body ? (
@@ -423,7 +433,7 @@ export function SectionView({ section }: { section: Section }) {
               ) : null}
               {section.buttonLabel ? (
                 <div className="mt-6">
-                  <SectionButton label={section.buttonLabel} href={section.buttonHref || "#"} variant="outline" />
+                  <SectionButton label={section.buttonLabel} href={section.buttonHref || "#"} variant="outline" style={section.labelStyle} />
                 </div>
               ) : null}
             </div>
@@ -436,7 +446,7 @@ export function SectionView({ section }: { section: Section }) {
       const s = section as ButtonSection;
       return (
         <section className={`py-10 flex ${alignRow[s.align]}`}>
-          <SectionButton label={s.label} href={s.href} variant={s.variant} />
+          <SectionButton label={s.label} href={s.href} variant={s.variant} style={s.labelStyle} />
         </section>
       );
     }

@@ -349,6 +349,14 @@ export default function ObjectDesignPage() {
                 </div>
               ))}
             </div>
+            {section.type !== "imageRow" && (
+              <TextStyleFields
+                label="Caption style"
+                value={section.captionStyle}
+                defaults={{ font: "sans", color: section.type === "carousel" ? "cream" : "stone", size: "sm" }}
+                onChange={(v) => patch(section.id, { captionStyle: v })}
+              />
+            )}
             <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id)}>
               <Plus className="w-4 h-4" /> Add image
             </Button>
@@ -379,6 +387,18 @@ export default function ObjectDesignPage() {
               value={section.bodyStyle}
               defaults={{ font: "sans", color: "cream", size: "md" }}
               onChange={(v) => patch(section.id, { bodyStyle: v })}
+            />
+            <TextStyleFields
+              label="Eyebrow style"
+              value={section.eyebrowStyle}
+              defaults={{ font: "sans", color: "cream", size: "sm" }}
+              onChange={(v) => patch(section.id, { eyebrowStyle: v })}
+            />
+            <TextStyleFields
+              label="Button label style"
+              value={section.labelStyle}
+              defaults={{ font: "sans", color: "cream", size: "sm" }}
+              onChange={(v) => patch(section.id, { labelStyle: v })}
             />
             <div className="flex flex-wrap gap-4">
               <Field label="Text position">
@@ -456,6 +476,18 @@ export default function ObjectDesignPage() {
               defaults={{ font: "sans", color: "stone", size: "md" }}
               onChange={(v) => patch(section.id, { bodyStyle: v })}
             />
+            <TextStyleFields
+              label="Eyebrow style"
+              value={section.eyebrowStyle}
+              defaults={{ font: "sans", color: "stone", size: "sm" }}
+              onChange={(v) => patch(section.id, { eyebrowStyle: v })}
+            />
+            <TextStyleFields
+              label="Button label style"
+              value={section.labelStyle}
+              defaults={{ font: "sans", color: "ink", size: "sm" }}
+              onChange={(v) => patch(section.id, { labelStyle: v })}
+            />
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Button label (optional)">
                 <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
@@ -507,6 +539,12 @@ export default function ObjectDesignPage() {
                 </div>
               </Field>
             </div>
+            <TextStyleFields
+              label="Label style"
+              value={section.labelStyle}
+              defaults={{ font: "sans", color: section.variant === "solid" ? "cream" : "ink", size: "sm" }}
+              onChange={(v) => patch(section.id, { labelStyle: v })}
+            />
           </div>
         );
     }
