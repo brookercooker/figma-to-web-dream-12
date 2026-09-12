@@ -1266,7 +1266,7 @@ export default function ObjectDesignPage() {
           : "after"
         : null;
     const bar = (
-      <div className="pointer-events-none absolute inset-x-0 z-10 flex items-center" style={showBar === "before" ? { top: -5 } : { bottom: -5 }}>
+      <div className="pointer-events-none absolute inset-x-0 z-10 flex items-center" style={showBar === "before" ? { top: -14 } : { bottom: -14 }}>
         <span className="h-1.5 w-1.5 rounded-full bg-primary" />
         <span className="h-0.5 flex-1 rounded-full bg-primary" />
         <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -1302,7 +1302,7 @@ export default function ObjectDesignPage() {
           setDragPart(null);
           setDropAt(null);
         } : undefined}
-        className={`relative scroll-mt-24 rounded-lg border bg-background shadow-sm ${dragging ? "border-primary opacity-70" : ""}`}
+        className={`relative scroll-mt-24 rounded-lg border bg-background shadow-sm transition-[margin] ${dragging ? "border-primary opacity-70" : ""} ${showBar === "before" ? "mt-4" : ""} ${showBar === "after" ? "mb-4" : ""}`}
       >
         {showBar ? bar : null}
         <div
