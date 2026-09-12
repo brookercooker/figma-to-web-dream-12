@@ -377,7 +377,7 @@ export function SectionView({ section }: { section: Section }) {
               <figure key={i}>
                 <Pic image={img} className="w-full aspect-[4/3] rounded-lg" />
                 {img.caption ? (
-                  <figcaption className="mt-3 text-sm text-stone leading-relaxed">{img.caption}</figcaption>
+                  <figcaption className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: "stone", size: "sm" })}`}>{img.caption}</figcaption>
                 ) : null}
               </figure>
             ))}
