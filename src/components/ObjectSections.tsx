@@ -571,9 +571,8 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
                 color: onDark ? "cream" : "stone",
                 size: "sm",
               })}`}
-            >
-              {img.caption}
-            </figcaption>
+              {...richText(img.caption)}
+            />
           ) : null}
         </figure>
       ))}
@@ -590,28 +589,33 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
   return (
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
       {section.eyebrow ? (
-        <p data-part="eyebrow" className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}>
-          {section.eyebrow}
-        </p>
+        <p
+          data-part="eyebrow"
+          className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+          {...richText(section.eyebrow)}
+        />
       ) : null}
       {section.heading ? (
-        <h2 data-part="heading" className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}>
-          {section.heading}
-        </h2>
+        <h2
+          data-part="heading"
+          className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}
+          {...richText(section.heading)}
+        />
       ) : null}
       {section.body ? (
-        <p data-part="body" className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}>
-          {section.body}
-        </p>
+        <p
+          data-part="body"
+          className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}
+          {...richText(section.body)}
+        />
       ) : null}
       {(section.extras ?? []).map((t, i) => (
         <p
           key={t.id}
           data-part={`text:${i}`}
           className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
-        >
-          {t.text}
-        </p>
+          {...richText(t.text)}
+        />
       ))}
       {section.buttonLabel ? (
         <div data-part="button" className="mt-2">
