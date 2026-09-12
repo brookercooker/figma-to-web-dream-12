@@ -304,9 +304,9 @@ export default function ObjectDesignPage() {
     </div>
   );
 
-  const Chip = ({ label, onClick }: { label: string; onClick: () => void }) => (
+  const Chip = ({ label, icon: Icon, onClick }: { label: string; icon: LucideIcon; onClick: () => void }) => (
     <Button variant="outline" size="sm" className="gap-1.5" onClick={onClick}>
-      <Plus className="w-3.5 h-3.5" /> {label}
+      <Icon className="w-3.5 h-3.5" /> {label}
     </Button>
   );
 
