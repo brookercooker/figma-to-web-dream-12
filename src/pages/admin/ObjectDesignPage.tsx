@@ -508,6 +508,9 @@ export default function ObjectDesignPage() {
     const part = el.getAttribute("data-part") ?? "";
     const captionIdx = part.startsWith("caption:") ? Number(part.split(":")[1]) : -1;
     const extraIdx = part.startsWith("text:") ? Number(part.split(":")[1]) : -1;
+    const imgText = part.startsWith("imagetext:")
+      ? { img: Number(part.split(":")[1]), t: Number(part.split(":")[2]) }
+      : null;
     const field =
       part === "eyebrow" ? "eyebrow"
       : part === "heading" ? "heading"
@@ -515,6 +518,7 @@ export default function ObjectDesignPage() {
       : part === "button" ? "buttonLabel"
       : captionIdx >= 0 ? "caption"
       : extraIdx >= 0 ? "extra"
+      : imgText ? "imageText"
       : "";
     if (!field) return;
     e.preventDefault();
