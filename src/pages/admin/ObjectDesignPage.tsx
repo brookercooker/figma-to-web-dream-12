@@ -1697,6 +1697,14 @@ export default function ObjectDesignPage() {
                     >
                       Replace
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Duplicate video"
+                      onClick={() => duplicateVideo(section.id, i)}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
                 <Field label="Video link">
