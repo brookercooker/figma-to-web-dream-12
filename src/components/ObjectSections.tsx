@@ -558,7 +558,7 @@ function FreeText({
           {section.eyebrow}
         </p>
       ) : null}
-      {section.heading ? (
+      {showMain && section.heading ? (
         <h2 data-part="heading" className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}>
           {section.heading}
         </h2>
