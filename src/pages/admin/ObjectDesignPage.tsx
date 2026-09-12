@@ -143,6 +143,42 @@ function TextStyleFields({
   );
 }
 
+// Which style field on a section each clickable text part maps to.
+const STYLE_FIELD: Record<string, keyof FreeSection | undefined> = {
+  eyebrow: "eyebrowStyle",
+  heading: "textStyle",
+  body: "bodyStyle",
+  button: "labelStyle",
+  caption: "captionStyle",
+};
+
+const STYLE_FIELD_LABEL: Record<string, string> = {
+  eyebrowStyle: "Eyebrow",
+  textStyle: "Title",
+  bodyStyle: "Text",
+  labelStyle: "Button label",
+  captionStyle: "Caption",
+};
+
+function Dropdown<T extends string>({
+  label, value, options, onChange,
+}: { label: string; value: T | ""; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
+  return (
+    <label className="flex items-center gap-1.5 text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="h-7 rounded-md border bg-background px-2 text-xs"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export default function ObjectDesignPage() {
   const [params, setParams] = useSearchParams();
   const selectedId = params.get("object") ?? "";
