@@ -995,20 +995,44 @@ export default function ObjectDesignPage() {
   );
 
   /** Inline / separate control for one element inside a block. */
-  const flowField = (section: FreeSection, part: string) => (
-    <Field label="Placement">
-      <div>
-        <Choice
-          value={(section.flows?.[part] ?? "separate") as SectionFlow}
-          options={[
-            { value: "separate" as SectionFlow, label: "Separate", icon: Rows2 },
-            { value: "inline" as SectionFlow, label: "Inline", icon: Columns2 },
-          ]}
-          onChange={(v) => patch(section.id, { flows: { ...(section.flows ?? {}), [part]: v } })}
-        />
-      </div>
-    </Field>
-  );
+  const flowField = (section: FreeSection, part: string) => {
+    const flow = (section.flows?.[part] ?? "separate") as SectionFlow;
+    return (
+      <Field label="Placement">
+        <div className="flex items-center gap-3">
+          <Choice
+            value={flow}
+            options={[
+              { value: "separate" as SectionFlow, label: "Separate", icon: Rows2 },
+              { value: "inline" as SectionFlow, label: "Inline", icon: Columns2 },
+            ]}
+            onChange={(v) => patch(section.id, { flows: { ...(section.flows ?? {}), [part]: v } })}
+          />
+          {flow === "inline" && (
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              Width
+              <Input
+                type="number"
+                min={5}
+                max={100}
+                className="h-8 w-20"
+                placeholder="Auto"
+                value={section.flowWidths?.[part] ?? ""}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const next = { ...(section.flowWidths ?? {}) };
+                  if (raw === "") delete next[part];
+                  else next[part] = Math.min(100, Math.max(5, Number(raw) || 0));
+                  patch(section.id, { flowWidths: next });
+                }}
+              />
+              %
+            </label>
+          )}
+        </div>
+      </Field>
+    );
+  };
 
   const Block = ({
     title,
