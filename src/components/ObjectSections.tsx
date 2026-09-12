@@ -428,7 +428,7 @@ function SectionButton({
         : `${bgClass[fill]} px-7 py-3`;
   const text = bodyClasses(style, { color: variant === "solid" ? bgTextColor[fill] : "ink", size: "sm" });
   return (
-    <a href={href || "#"} className={`${base} ${styles} ${text}`} {...richText(label)} />
+    <a href={href || "#"} className={`${base} ${styles} ${text}`} style={textInlineStyle(style)} {...richText(label)} />
   );
 }
 
@@ -528,6 +528,7 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
                 <figcaption
                   data-part={`caption:${idx}`}
                   className={`mt-3 leading-relaxed ${alignTextOnly[section.captionAlign ?? "left"]} ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+                  style={textInlineStyle(section.captionStyle)}
                   {...richText(img.caption)}
                 />
               ) : null}
@@ -585,6 +586,7 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
                 color: onDark ? "cream" : "stone",
                 size: "sm",
               })}`}
+              style={textInlineStyle(section.captionStyle)}
               {...richText(img.caption)}
             />
           ) : null}
@@ -606,6 +608,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
         <p
           data-part="eyebrow"
           className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+          style={textInlineStyle(section.eyebrowStyle)}
           {...richText(section.eyebrow)}
         />
       ) : null}
@@ -613,6 +616,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
         <h2
           data-part="heading"
           className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}
+          style={textInlineStyle(section.textStyle)}
           {...richText(section.heading)}
         />
       ) : null}
@@ -620,6 +624,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
         <p
           data-part="body"
           className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}
+          style={textInlineStyle(section.bodyStyle)}
           {...richText(section.body)}
         />
       ) : null}
@@ -628,6 +633,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
           key={t.id}
           data-part={`text:${i}`}
           className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
+          style={textInlineStyle(t.style)}
           {...richText(t.text)}
         />
       ))}
