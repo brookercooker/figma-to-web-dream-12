@@ -877,93 +877,134 @@ export default function ObjectDesignPage() {
 
   const ImageEditor = ({
     section, index, image, showCaption,
-  }: { section: Section; index: number; image: SectionImage; showCaption?: boolean }) => (
+  }: { section: Section; index: number; image: SectionImage; showCaption?: boolean }) => {
+    const imgKey = `img:${section.id}:${index}`;
+    const imgFocused =
+      focusPart === `image:${index}` ||
+      focusPart === `caption:${index}` ||
+      focusPart.startsWith(`imagetext:${index}:`);
+    const imgOpen = openSub[imgKey] ?? imgFocused;
+    const label = image.alt?.trim() || (image.url ? image.url.split("/").pop() : "No image selected");
+
+    return (
     <div className="rounded-md border p-3 space-y-2 bg-background">
       <div className="flex items-center gap-2">
-        <div className="h-12 w-16 shrink-0 overflow-hidden rounded bg-muted">
-          {image.url ? (
-            <img src={image.url} alt="" className="h-full w-full object-cover" />
-          ) : null}
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setPicker({ sectionId: section.id, index })}
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          onClick={() => setOpenSub((s) => ({ ...s, [imgKey]: !imgOpen }))}
         >
-          {image.url ? "Replace" : "Choose image"}
-        </Button>
-        <Button
-          variant={image.href || linkOpen[`${section.id}:${index}`] ? "secondary" : "ghost"}
-          size="sm"
-          title={image.href ? "Edit link" : "Add link"}
-          onClick={() =>
-            setLinkOpen((s) => ({ ...s, [`${section.id}:${index}`]: !s[`${section.id}:${index}`] }))
-          }
-        >
-          <LinkIcon className="w-4 h-4" />
-        </Button>
+          <div className="h-12 w-16 shrink-0 overflow-hidden rounded bg-muted">
+            {image.url ? (
+              <img src={image.url} alt="" className="h-full w-full object-cover" />
+            ) : null}
+          </div>
+          <span className="min-w-0 flex-1 truncate text-[11px] uppercase tracking-wide text-muted-foreground">
+            {label}
+          </span>
+          <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${imgOpen ? "rotate-180" : ""}`} />
+        </button>
         {index >= 0 && "images" in section && (section as any).images.length > 1 && (
           <Button variant="ghost" size="sm" onClick={() => removeImageSlot(section.id, index)}>
             <Trash2 className="w-4 h-4" />
           </Button>
         )}
       </div>
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground truncate">
-        {image.alt?.trim() || (image.url ? image.url.split("/").pop() : "No image selected")}
-      </p>
-      {(linkOpen[`${section.id}:${index}`] || image.href) && (
-        <Input
-          value={image.href ?? ""}
-          placeholder="Link (optional)"
-          onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
-        />
+      {imgOpen && (
+        <>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPicker({ sectionId: section.id, index })}
+            >
+              {image.url ? "Replace" : "Choose image"}
+            </Button>
+            <Button
+              variant={image.href || linkOpen[`${section.id}:${index}`] ? "secondary" : "ghost"}
+              size="sm"
+              title={image.href ? "Edit link" : "Add link"}
+              onClick={() =>
+                setLinkOpen((s) => ({ ...s, [`${section.id}:${index}`]: !s[`${section.id}:${index}`] }))
+              }
+            >
+              <LinkIcon className="w-4 h-4" />
+            </Button>
+          </div>
+          {(linkOpen[`${section.id}:${index}`] || image.href) && (
+            <Input
+              value={image.href ?? ""}
+              placeholder="Link (optional)"
+              onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
+            />
+          )}
+        </>
       )}
-      {showCaption && (
+      {showCaption && imgOpen && (
         <div className="space-y-2 rounded-md border border-dashed p-2">
-          {(image.texts ?? []).map((t, ti) => (
+          {(image.texts ?? []).map((t, ti) => {
+            const tKey = `txt:${section.id}:${index}:${ti}`;
+            const tOpen = openSub[tKey] ?? focusPart === `imagetext:${index}:${ti}`;
+            const kindLabel = IMAGE_TEXT_KINDS.find((k) => k.value === t.kind)?.label ?? "Text";
+            return (
             <div key={t.id} className="space-y-2 rounded border bg-muted/30 p-2">
               <div className="flex items-center gap-2">
-                <IconSelect
-                  value={t.kind}
-                  options={IMAGE_TEXT_KINDS.map((k) => ({ value: k.value, label: k.label }))}
-                  onChange={(v) => patchImageText(section.id, index, ti, { kind: v })}
-                />
+                <button
+                  type="button"
+                  className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                  onClick={() => setOpenSub((s) => ({ ...s, [tKey]: !tOpen }))}
+                >
+                  <span className="text-xs font-medium">{kindLabel}</span>
+                  <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                    {t.text?.replace(/<[^>]*>/g, "") || "Empty"}
+                  </span>
+                  <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${tOpen ? "rotate-180" : ""}`} />
+                </button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-auto"
                   onClick={() => removeImageText(section.id, index, ti)}
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
-              <Textarea
-                rows={2}
-                value={t.text}
-                placeholder={`${IMAGE_TEXT_KINDS.find((k) => k.value === t.kind)?.label ?? "Text"}…`}
-                onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
-              />
-              <Choice
-                value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
-                options={[
-                  { value: "left" as const, label: "Left", icon: AlignLeft },
-                  { value: "center" as const, label: "Center", icon: AlignCenter },
-                  { value: "right" as const, label: "Right", icon: AlignRight },
-                ]}
-                onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
-              />
-              <TextStyleFields
-                label="Style"
-                value={t.style}
-                defaults={{
-                  font: IMAGE_TEXT_DEFAULTS[t.kind].font,
-                  color: IMAGE_TEXT_DEFAULTS[t.kind].color,
-                  size: IMAGE_TEXT_DEFAULTS[t.kind].size,
-                }}
-                onChange={(v) => patchImageText(section.id, index, ti, { style: v })}
-              />
+              {tOpen && (
+                <>
+                  <IconSelect
+                    value={t.kind}
+                    options={IMAGE_TEXT_KINDS.map((k) => ({ value: k.value, label: k.label }))}
+                    onChange={(v) => patchImageText(section.id, index, ti, { kind: v })}
+                  />
+                  <Textarea
+                    rows={2}
+                    value={t.text}
+                    placeholder={`${kindLabel}…`}
+                    onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
+                  />
+                  <Choice
+                    value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
+                    options={[
+                      { value: "left" as const, label: "Left", icon: AlignLeft },
+                      { value: "center" as const, label: "Center", icon: AlignCenter },
+                      { value: "right" as const, label: "Right", icon: AlignRight },
+                    ]}
+                    onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
+                  />
+                  <TextStyleFields
+                    label="Style"
+                    value={t.style}
+                    defaults={{
+                      font: IMAGE_TEXT_DEFAULTS[t.kind].font,
+                      color: IMAGE_TEXT_DEFAULTS[t.kind].color,
+                      size: IMAGE_TEXT_DEFAULTS[t.kind].size,
+                    }}
+                    onChange={(v) => patchImageText(section.id, index, ti, { style: v })}
+                  />
+                </>
+              )}
             </div>
-          ))}
+            );
+          })}
           <div className="flex flex-wrap gap-1.5">
             {IMAGE_TEXT_KINDS.map((k) => (
               <Button
@@ -980,7 +1021,8 @@ export default function ObjectDesignPage() {
         </div>
       )}
     </div>
-  );
+    );
+  };
 
   const Chip = ({ label, icon: Icon, onClick }: { label: string; icon: LucideIcon; onClick: () => void }) => (
     <Button variant="outline" size="sm" className="gap-1.5" onClick={onClick}>
