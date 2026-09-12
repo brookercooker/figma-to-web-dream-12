@@ -999,8 +999,8 @@ export default function ObjectDesignPage() {
                     </div>
 
                     <div
-                      className="px-4 cursor-pointer"
-                      onClick={() => { if (!active) setActiveId(s.id); }}
+                      className="px-4 cursor-pointer [&_[data-part]]:cursor-pointer [&_[data-part]]:rounded-sm [&_[data-part]]:transition-shadow [&_[data-part]:hover]:ring-2 [&_[data-part]:hover]:ring-primary/50 [&_[data-part]:hover]:ring-offset-2"
+                      onClick={(e) => pickPart(s.id, e)}
                     >
                       {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel ? (
                         <p className="py-12 text-center text-sm text-muted-foreground">
@@ -1012,10 +1012,11 @@ export default function ObjectDesignPage() {
                     </div>
 
                     {active && (
-                      <div className="border-t bg-muted/20 p-4">
+                      <div data-inspector-section={s.id} className="border-t bg-muted/20 p-4">
                         {Inspector({ section: s })}
                       </div>
                     )}
+
                   </div>
                 );
               })}
