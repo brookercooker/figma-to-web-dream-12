@@ -663,7 +663,33 @@ export default function ObjectDesignPage() {
     setParams(next, { replace: true });
   };
 
+  // keep an editing panel expanded while its content is being changed
+  const keepBlockOpen = (key?: string) => {
+    if (!key) return;
+    setOpenBlocks((b) => (b[key] ? b : { ...b, [key]: true }));
+  };
+
+  const BLOCK_FOR_FIELD: Record<string, string> = {
+    eyebrow: "eyebrow",
+    eyebrowStyle: "eyebrow",
+    heading: "heading",
+    textStyle: "heading",
+    body: "body",
+    bodyStyle: "body",
+    buttonLabel: "button",
+    buttonHref: "button",
+    buttonStyle: "button",
+    buttonBg: "button",
+    labelStyle: "button",
+    images: "images",
+    videos: "videos",
+  };
+
   const patch = (id: string, changes: Record<string, unknown>) => {
+    for (const k of Object.keys(changes)) {
+      const blockKey = BLOCK_FOR_FIELD[k];
+      if (blockKey) keepBlockOpen(blockKey);
+    }
     setSections((prev) => prev.map((s) => (s.id === id ? ({ ...s, ...changes } as Section) : s)));
     setDirty(true);
   };
@@ -673,6 +699,7 @@ export default function ObjectDesignPage() {
       prev.map((s) => {
         if (s.id !== id || s.type !== "free") return s;
         const extras = (s.extras ?? []).map((t, i) => (i === index ? { ...t, ...changes } : t));
+        keepBlockOpen(extras[index]?.id);
         return { ...s, extras } as Section;
       }),
     );
@@ -695,6 +722,7 @@ export default function ObjectDesignPage() {
       prev.map((s) => {
         if (s.id !== id || s.type !== "free") return s;
         const dividers = (s.dividers ?? []).map((d, i) => (i === index ? { ...d, ...changes } : d));
+        keepBlockOpen(dividers[index]?.id);
         return { ...s, dividers } as Section;
       }),
     );
