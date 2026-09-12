@@ -5,6 +5,73 @@
 
 export type SectionAlign = "left" | "center" | "right";
 
+export type TextFont = "serif" | "sans";
+export type TextColor = "ink" | "stone" | "brass" | "garnet" | "cream";
+export type TextSize = "sm" | "md" | "lg" | "xl";
+
+export interface TextStyle {
+  font?: TextFont;
+  color?: TextColor;
+  size?: TextSize;
+}
+
+export const TEXT_FONTS: { value: TextFont; label: string }[] = [
+  { value: "serif", label: "Serif" },
+  { value: "sans", label: "Sans" },
+];
+
+export const TEXT_COLORS: { value: TextColor; label: string; swatch: string }[] = [
+  { value: "ink", label: "Ink", swatch: "hsl(var(--nova-ink))" },
+  { value: "stone", label: "Stone", swatch: "hsl(var(--nova-stone))" },
+  { value: "brass", label: "Tan", swatch: "hsl(var(--nova-brass))" },
+  { value: "garnet", label: "Garnet", swatch: "hsl(var(--nova-garnet))" },
+  { value: "cream", label: "White", swatch: "hsl(var(--nova-cream))" },
+];
+
+export const TEXT_SIZES: { value: TextSize; label: string }[] = [
+  { value: "sm", label: "S" },
+  { value: "md", label: "M" },
+  { value: "lg", label: "L" },
+  { value: "xl", label: "XL" },
+];
+
+const fontClass: Record<TextFont, string> = { serif: "font-serif font-light", sans: "font-sans" };
+const colorClass: Record<TextColor, string> = {
+  ink: "text-ink",
+  stone: "text-stone",
+  brass: "text-brass",
+  garnet: "text-garnet",
+  cream: "text-cream",
+};
+const headingSizeClass: Record<TextSize, string> = {
+  sm: "text-xl sm:text-2xl",
+  md: "text-2xl sm:text-3xl",
+  lg: "text-3xl sm:text-4xl",
+  xl: "text-4xl sm:text-5xl",
+};
+const bodySizeClass: Record<TextSize, string> = {
+  sm: "text-sm",
+  md: "text-base",
+  lg: "text-lg",
+  xl: "text-xl",
+};
+
+export function headingClasses(style: TextStyle | undefined, fallback: { color: TextColor; size: TextSize }) {
+  return [
+    fontClass[style?.font ?? "serif"],
+    colorClass[style?.color ?? fallback.color],
+    headingSizeClass[style?.size ?? fallback.size],
+  ].join(" ");
+}
+
+export function bodyClasses(style: TextStyle | undefined, fallback: { color: TextColor; size: TextSize }) {
+  return [
+    fontClass[style?.font ?? "sans"],
+    colorClass[style?.color ?? fallback.color],
+    bodySizeClass[style?.size ?? fallback.size],
+  ].join(" ");
+}
+
 export interface SectionImage {
   url: string;
   alt: string;
