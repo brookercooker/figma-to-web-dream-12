@@ -1312,7 +1312,7 @@ export default function ObjectDesignPage() {
           labelStyle: "sans",
         };
         const set = (changes: Partial<TextStyle>) =>
-          patch(toolbar.sectionId, { [toolbar.field]: { ...style, ...changes } });
+          patch(toolbar.sectionId, { [String(toolbar.field)]: { ...style, ...changes } });
         return (
           <div
             className="fixed z-50 flex items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
