@@ -375,6 +375,8 @@ export interface FreeSection {
   flows?: Record<string, SectionFlow>;
   /** per-element inline width percentage, keyed by the same parts */
   flowWidths?: Record<string, number>;
+  /** per-element alignment within its inline column, keyed by the same parts */
+  flowAligns?: Record<string, SectionAlign>;
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
   eyebrow?: string;
@@ -921,13 +923,14 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
       {groups.map((group) =>
         group.length > 1 ? (
-          <div key={group[0].part} className={`-mx-3 flex flex-wrap items-start ${alignRow[section.align]}`}>
+          <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap items-center ${alignRow[section.align]}`}>
             {group.map((it) => {
               const w = section.flowWidths?.[it.part];
+              const a = section.flowAligns?.[it.part] ?? section.align;
               return (
                 <div
                   key={it.part}
-                  className={`px-3 ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
+                  className={`flex flex-col px-3 ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
                   style={flowWidthStyle(w)}
                 >
                   {it.node}
