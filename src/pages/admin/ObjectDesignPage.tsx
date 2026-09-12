@@ -778,6 +778,19 @@ export default function ObjectDesignPage() {
               defaults={{ font: "sans", color: "stone", size: "sm" }}
               onChange={(v) => patch(section.id, { captionStyle: v })}
             />
+            <Field label="Caption alignment">
+              <div>
+                <Choice
+                  value={section.captionAlign ?? "left"}
+                  options={[
+                    { value: "left" as const, label: "Left" },
+                    { value: "center" as const, label: "Center" },
+                    { value: "right" as const, label: "Right" },
+                  ]}
+                  onChange={(v) => patch(section.id, { captionAlign: v })}
+                />
+              </div>
+            </Field>
             <div className="flex flex-wrap gap-4">
               <Field label="Images sit">
                 <div>
