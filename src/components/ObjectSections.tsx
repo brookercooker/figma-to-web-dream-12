@@ -313,7 +313,14 @@ function Placeholder({ className = "" }: { className?: string }) {
 function Pic({ image, className }: { image: SectionImage; className: string }) {
   if (!image?.url) return <Placeholder className={className} />;
   return (
-    <img src={image.url} alt={image.alt || ""} loading="lazy" className={`${className} object-cover`} />
+    <div className={`${className} group/pic overflow-hidden`}>
+      <img
+        src={image.url}
+        alt={image.alt || ""}
+        loading="lazy"
+        className="block h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]"
+      />
+    </div>
   );
 }
 
