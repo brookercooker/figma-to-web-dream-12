@@ -236,6 +236,44 @@ function ColorDropdown({
   );
 }
 
+// Floating toolbar that keeps itself fully inside the viewport.
+function FloatingToolbar({
+  top, left, children,
+}: { top: number; left: number; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top, left, ready: false });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const place = () => {
+      const r = el.getBoundingClientRect();
+      const m = 8;
+      const maxLeft = Math.max(m, window.innerWidth - r.width - m);
+      const maxTop = Math.max(m, window.innerHeight - r.height - m);
+      const nextLeft = Math.min(Math.max(m, left), maxLeft);
+      // if there is no room above the element, drop the toolbar below it
+      const nextTop = top < m ? Math.min(top + 104, maxTop) : Math.min(Math.max(m, top), maxTop);
+      setPos({ top: nextTop, left: nextLeft, ready: true });
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [top, left]);
+
+  return (
+    <div
+      ref={ref}
+      className="fixed z-50 flex max-w-[calc(100vw-1rem)] flex-wrap items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
+      style={{ top: pos.top, left: pos.left, visibility: pos.ready ? "visible" : "hidden" }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function ObjectDesignPage() {
   const [params, setParams] = useSearchParams();
   const selectedId = params.get("object") ?? "";
