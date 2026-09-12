@@ -155,6 +155,8 @@ export interface ImageText {
   kind: ImageTextKind;
   text: string;
   style?: TextStyle;
+  /** overrides the block-wide caption alignment for this text */
+  align?: SectionAlign;
 }
 
 export const IMAGE_TEXT_DEFAULTS: Record<
