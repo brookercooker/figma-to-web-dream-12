@@ -1646,11 +1646,11 @@ export default function ObjectDesignPage() {
                       active ? "border-primary/50 shadow-lg" : "border-border shadow-sm hover:border-primary/25"
                     }`}
                   >
-                    <div className={`flex items-center gap-2 border-b px-3 py-2 ${active ? "bg-primary/5" : "bg-muted/40"}`}>
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-foreground/10 text-[10px] font-semibold tabular-nums">
+                    <div className={`flex items-center gap-2.5 border-b-2 px-3 py-3 ${active ? "border-primary/40 bg-primary/10" : "border-foreground/15 bg-muted"}`}>
+                      <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold tabular-nums ${active ? "bg-primary text-primary-foreground" : "bg-foreground text-background"}`}>
                         {i + 1}
                       </span>
-                      <span className="text-xs font-medium uppercase tracking-wide">{SECTION_LABEL[s.type]}</span>
+                      <span className="text-sm font-bold uppercase tracking-[0.14em] text-foreground">{SECTION_LABEL[s.type]}</span>
                       <div className="ml-auto flex items-center gap-1">
 
                         <Button variant="ghost" size="sm" onClick={() => setActiveId(active ? "" : s.id)}>
