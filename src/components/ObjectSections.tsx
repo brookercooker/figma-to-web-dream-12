@@ -480,10 +480,10 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
   const fixedHeight = (section.imageHeight ?? "auto") !== "auto";
   return (
     <div
-      className={`flex flex-wrap gap-6 ${alignRow[section.imageAlign ?? "left"]}`}
+      className={`flex flex-nowrap items-start gap-6 ${alignRow[section.imageAlign ?? "left"]}`}
     >
       {section.images.map((img, i) => (
-        <figure key={i} className={fixedHeight ? "max-w-full" : "flex-1 min-w-0"}>
+        <figure key={i} className={fixedHeight ? "shrink min-w-0" : "flex-1 min-w-0"}>
           <Pic
             image={img}
             className={`rounded-lg ${fixedHeight ? "w-auto max-w-full" : "w-full"} ${imageHeightClass[section.imageHeight ?? "auto"]}`}
