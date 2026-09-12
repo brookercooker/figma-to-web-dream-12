@@ -471,6 +471,17 @@ export default function ObjectDesignPage() {
                   </div>
                 </Field>
               )}
+              {section.layout !== "behind" && section.images.length > 0 && (
+                <Field label="Image height">
+                  <div>
+                    <Choice
+                      value={section.imageHeight ?? "auto"}
+                      options={IMAGE_HEIGHTS.map((h) => ({ value: h.value, label: h.label }))}
+                      onChange={(v) => patch(section.id, { imageHeight: v })}
+                    />
+                  </div>
+                </Field>
+              )}
               {section.layout !== "behind" && section.images.length > 1 && (
                 <>
                   <Field label="Show as">
