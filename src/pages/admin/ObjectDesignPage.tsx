@@ -927,6 +927,15 @@ export default function ObjectDesignPage() {
                 placeholder={`${IMAGE_TEXT_KINDS.find((k) => k.value === t.kind)?.label ?? "Text"}…`}
                 onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
               />
+              <Choice
+                value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
+                options={[
+                  { value: "left" as const, label: "Left", icon: AlignLeft },
+                  { value: "center" as const, label: "Center", icon: AlignCenter },
+                  { value: "right" as const, label: "Right", icon: AlignRight },
+                ]}
+                onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
+              />
               <TextStyleFields
                 label="Style"
                 value={t.style}
