@@ -12,8 +12,9 @@ import {
 import CreateObjectDialog from "./CreateObjectDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import {
-  SECTION_LABEL, SectionView, makeSection, parseSections,
+  SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, makeSection, parseSections,
   type Section, type SectionAlign, type SectionImage, type SectionType,
+  type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
 
 interface ObjectRow {
@@ -61,6 +62,64 @@ function Choice<T extends string | number>({
           {o.label}
         </button>
       ))}
+    </div>
+  );
+}
+
+function TextStyleFields({
+  label, value, defaults, onChange,
+}: {
+  label: string;
+  value: TextStyle | undefined;
+  defaults: { font: TextFont; color: TextColor; size: TextSize };
+  onChange: (next: TextStyle) => void;
+}) {
+  const style = value ?? {};
+  const set = (changes: Partial<TextStyle>) => onChange({ ...style, ...changes });
+  return (
+    <div className="rounded-md border p-3 space-y-3">
+      <p className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</p>
+      <div className="flex flex-wrap gap-4">
+        <Field label="Font">
+          <div>
+            <Choice
+              value={style.font ?? defaults.font}
+              options={TEXT_FONTS}
+              onChange={(v) => set({ font: v })}
+            />
+          </div>
+        </Field>
+        <Field label="Size">
+          <div>
+            <Choice
+              value={style.size ?? defaults.size}
+              options={TEXT_SIZES}
+              onChange={(v) => set({ size: v })}
+            />
+          </div>
+        </Field>
+        <Field label="Color">
+          <div className="flex items-center gap-2 pt-1">
+            {TEXT_COLORS.map((c) => {
+              const selected = (style.color ?? defaults.color) === c.value;
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  title={c.label}
+                  aria-label={`${c.label} text`}
+                  aria-pressed={selected}
+                  onClick={() => set({ color: c.value })}
+                  className={`h-5 w-5 rounded-full border border-border transition-transform hover:scale-110 ${
+                    selected ? "ring-2 ring-offset-1 ring-foreground/60" : ""
+                  }`}
+                  style={{ background: c.swatch }}
+                />
+              );
+            })}
+          </div>
+        </Field>
+      </div>
     </div>
   );
 }
@@ -257,6 +316,14 @@ export default function ObjectDesignPage() {
                 onChange={(e) => patch(section.id, { heading: e.target.value })}
               />
             </Field>
+            {section.heading ? (
+              <TextStyleFields
+                label="Heading style"
+                value={section.textStyle}
+                defaults={{ font: "serif", color: "ink", size: "md" }}
+                onChange={(v) => patch(section.id, { textStyle: v })}
+              />
+            ) : null}
             {section.type !== "carousel" && (
               <Field label="Columns">
                 <div>
@@ -301,6 +368,18 @@ export default function ObjectDesignPage() {
             <Field label="Text (optional)">
               <Textarea rows={3} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
             </Field>
+            <TextStyleFields
+              label="Heading style"
+              value={section.textStyle}
+              defaults={{ font: "serif", color: "cream", size: "lg" }}
+              onChange={(v) => patch(section.id, { textStyle: v })}
+            />
+            <TextStyleFields
+              label="Text style"
+              value={section.bodyStyle}
+              defaults={{ font: "sans", color: "cream", size: "md" }}
+              onChange={(v) => patch(section.id, { bodyStyle: v })}
+            />
             <div className="flex flex-wrap gap-4">
               <Field label="Text position">
                 <div>
@@ -365,6 +444,18 @@ export default function ObjectDesignPage() {
             <Field label="Text (optional)">
               <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
             </Field>
+            <TextStyleFields
+              label="Heading style"
+              value={section.textStyle}
+              defaults={{ font: "serif", color: "ink", size: "lg" }}
+              onChange={(v) => patch(section.id, { textStyle: v })}
+            />
+            <TextStyleFields
+              label="Text style"
+              value={section.bodyStyle}
+              defaults={{ font: "sans", color: "stone", size: "md" }}
+              onChange={(v) => patch(section.id, { bodyStyle: v })}
+            />
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Button label (optional)">
                 <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
