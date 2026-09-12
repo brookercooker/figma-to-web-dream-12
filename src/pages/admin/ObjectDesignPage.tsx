@@ -917,12 +917,12 @@ export default function ObjectDesignPage() {
         <button
           type="button"
           onClick={() => setOpenBlocks((o) => ({ ...o, [blockKey]: !open }))}
-          className="flex w-full items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-left"
+          className="flex w-full items-center gap-2 rounded-t-lg border-b-2 border-foreground/15 bg-muted px-3 py-2.5 text-left transition-colors hover:bg-muted/80"
         >
-          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{title}</span>
+          <Icon className="h-4 w-4 text-foreground" />
+          <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">{title}</span>
           <ChevronDown
-            className={`ml-auto h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "" : "-rotate-90"}`}
+            className={`ml-auto h-4 w-4 text-foreground/70 transition-transform ${open ? "" : "-rotate-90"}`}
           />
         </button>
         {open ? <div className="space-y-3 p-3">{children}</div> : null}
