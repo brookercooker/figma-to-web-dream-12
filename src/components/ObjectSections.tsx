@@ -243,7 +243,7 @@ export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
 /** Flex style for an inline item with an optional width percentage. */
 export function flowWidthStyle(width?: number): React.CSSProperties {
   if (!width || width <= 0) return {};
-  const w = Math.min(100, Math.max(5, width));
+  const w = Math.min(100, Math.max(1, width));
   return { flex: `0 0 ${w}%`, maxWidth: `${w}%` };
 }
 
