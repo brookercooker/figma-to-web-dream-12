@@ -701,11 +701,14 @@ export default function ObjectDesignPage() {
     return ((s as any).images[index]?.texts ?? []) as ImageText[];
   };
 
+  const openBlock = (key: string) => setOpenBlocks((o) => ({ ...o, [key]: true }));
+
   const addImageText = (sectionId: string, index: number, kind: ImageTextKind) => {
     const texts = imageTextsOf(sectionId, index);
     patchImage(sectionId, index, {
       texts: [...texts, { id: newSectionId(), kind, text: "" }],
     });
+    openBlock("Images");
   };
 
   const patchImageText = (
