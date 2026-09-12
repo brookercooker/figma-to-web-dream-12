@@ -425,7 +425,7 @@ export function SectionView({ section }: { section: Section }) {
             </div>
             <div className="max-w-xl">
               {section.eyebrow ? (
-                <p className="text-[11px] uppercase tracking-[0.24em] text-stone mb-3">{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] mb-3 ${bodyClasses(section.eyebrowStyle, { color: "stone", size: "sm" })}`}>{section.eyebrow}</p>
               ) : null}
               <h2 className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "lg" })}`}>{section.heading}</h2>
               {section.body ? (
@@ -433,7 +433,7 @@ export function SectionView({ section }: { section: Section }) {
               ) : null}
               {section.buttonLabel ? (
                 <div className="mt-6">
-                  <SectionButton label={section.buttonLabel} href={section.buttonHref || "#"} variant="outline" />
+                  <SectionButton label={section.buttonLabel} href={section.buttonHref || "#"} variant="outline" style={section.labelStyle} />
                 </div>
               ) : null}
             </div>
