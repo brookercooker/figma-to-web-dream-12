@@ -887,10 +887,14 @@ export function DividerBar({
   );
 }
 
-function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
+function FreeText({
+  section,
+  onDark,
+  media,
+}: { section: FreeSection; onDark?: boolean; media?: { part: string; node: React.ReactNode }[] }) {
   const hasText =
     section.eyebrow || section.heading || section.body || section.buttonLabel ||
-    (section.extras ?? []).length || (section.dividers ?? []).length;
+    (section.extras ?? []).length || (section.dividers ?? []).length || (media ?? []).length;
   if (!hasText) return null;
   const base: TextColor = onDark ? "cream" : "ink";
   const boxSelf = (part: string) => {
