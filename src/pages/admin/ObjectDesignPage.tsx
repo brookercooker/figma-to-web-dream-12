@@ -1849,50 +1849,6 @@ export default function ObjectDesignPage() {
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2">
-          <Chip label="Eyebrow" icon={Tag} onClick={() => {
-            if (hasEyebrow) {
-              const id = newSectionId();
-              patch(section.id, { extras: [...(section.extras ?? []), { id, text: "Since 1951", kind: "eyebrow" as const }] });
-              openBlock(id);
-            } else { patch(section.id, { eyebrow: "Since 1951" }); openBlock("eyebrow"); }
-          }} />
-          <Chip label="Title" icon={Heading} onClick={() => {
-            if (hasTitle) {
-              const id = newSectionId();
-              patch(section.id, { extras: [...(section.extras ?? []), { id, text: "A quiet statement", kind: "title" as const }] });
-              openBlock(id);
-            } else { patch(section.id, { heading: "A quiet statement" }); openBlock("heading"); }
-          }} />
-          <Chip
-            label="Text"
-            icon={AlignLeft}
-            onClick={() => {
-              if (hasBody) {
-                const id = newSectionId();
-                patch(section.id, {
-                  extras: [...(section.extras ?? []), { id, text: "" }],
-                });
-                openBlock(id);
-              } else {
-                patch(section.id, { body: "" });
-                openBlock("body");
-              }
-            }}
-          />
-          <Chip label="Image" icon={ImageIcon} onClick={() => addImageSlot(section.id)} />
-          <Chip label="Video" icon={VideoIcon} onClick={() => addVideoSlot(section.id)} />
-          <Chip
-            label="Divider"
-            icon={Minus}
-            onClick={() => {
-              const id = newSectionId();
-              patch(section.id, {
-                dividers: [...(section.dividers ?? []), { id, color: "stone", width: "full", thickness: 1 }],
-              });
-              openBlock(id);
-            }}
-          />
-          {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => { patch(section.id, { buttonLabel: "Explore", buttonHref: "/" }); openBlock("button"); }} />}
           <div className="ml-auto flex gap-2">
             <Chip
               label="Expand all"
