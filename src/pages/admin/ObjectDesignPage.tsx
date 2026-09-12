@@ -456,11 +456,7 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
-  const patchExtra = (
-    id: string,
-    index: number,
-    changes: { text?: string; style?: TextStyle; position?: "above" | "below" },
-  ) => {
+  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle }) => {
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id || s.type !== "free") return s;
@@ -755,20 +751,6 @@ export default function ObjectDesignPage() {
                   defaults={{ font: "sans", color: "stone", size: "md" }}
                   onChange={(v) => patchExtra(section.id, i, { style: v })}
                 />
-                {section.images.length > 0 && section.layout === "stacked" && (
-                  <Field label="Position">
-                    <div>
-                      <Choice
-                        value={t.position ?? section.textPosition ?? "above"}
-                        options={[
-                          { value: "above" as const, label: "Above images" },
-                          { value: "below" as const, label: "Below images" },
-                        ]}
-                        onChange={(v) => patchExtra(section.id, i, { position: v })}
-                      />
-                    </div>
-                  </Field>
-                )}
               </>
             ),
           }),
@@ -942,35 +924,19 @@ export default function ObjectDesignPage() {
         ) })}
 
         {Block({ title: "Layout", icon: AlignLeft, children: (
-          <>
-            <Field label="Alignment">
-              <div>
-                <Choice
-                  value={section.align}
-                  options={[
-                    { value: "left" as SectionAlign, label: "Left" },
-                    { value: "center" as SectionAlign, label: "Center" },
-                    { value: "right" as SectionAlign, label: "Right" },
-                  ]}
-                  onChange={(v) => patch(section.id, { align: v })}
-                />
-              </div>
-            </Field>
-            {section.images.length > 0 && section.layout === "stacked" && (
-              <Field label="Text position">
-                <div>
-                  <Choice
-                    value={section.textPosition ?? "above"}
-                    options={[
-                      { value: "above" as const, label: "Above images" },
-                      { value: "below" as const, label: "Below images" },
-                    ]}
-                    onChange={(v) => patch(section.id, { textPosition: v })}
-                  />
-                </div>
-              </Field>
-            )}
-          </>
+          <Field label="Alignment">
+            <div>
+              <Choice
+                value={section.align}
+                options={[
+                  { value: "left" as SectionAlign, label: "Left" },
+                  { value: "center" as SectionAlign, label: "Center" },
+                  { value: "right" as SectionAlign, label: "Right" },
+                ]}
+                onChange={(v) => patch(section.id, { align: v })}
+              />
+            </div>
+          </Field>
         ) })}
       </div>
     );
