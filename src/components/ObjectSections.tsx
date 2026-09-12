@@ -1071,13 +1071,32 @@ export function SectionView({ section }: { section: Section }) {
   }
 }
 
+/** Lays sections out in rows: inline neighbours share a row, separate ones stand alone. */
+export function SectionFlowList({ sections }: { sections: Section[] }) {
+  return (
+    <>
+      {groupByFlow(sections, (s) => s.flow).map((group) =>
+        group.length > 1 ? (
+          <div key={group[0].id} className="flex flex-wrap items-start gap-8">
+            {group.map((s) => (
+              <div key={s.id} className="min-w-[16rem] flex-1 basis-0">
+                <SectionView section={s} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <SectionView key={group[0].id} section={group[0]} />
+        )
+      )}
+    </>
+  );
+}
+
 export default function ObjectSections({ sections }: { sections: Section[] }) {
   if (!sections.length) return null;
   return (
     <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
-      {sections.map((s) => (
-        <SectionView key={s.id} section={s} />
-      ))}
+      <SectionFlowList sections={sections} />
     </div>
   );
 }
