@@ -1309,7 +1309,11 @@ export default function ObjectDesignPage() {
       if (p === "heading") return "Title";
       if (p === "body") return "Text";
       if (p === "button") return "Button";
-      if (p.startsWith("text:")) return `Paragraph ${Number(p.slice(5)) + 1}`;
+      if (p.startsWith("text:")) {
+        const k = (section.extras ?? [])[Number(p.slice(5))]?.kind ?? "text";
+        const l = FREE_TEXT_KINDS.find((x) => x.value === k)?.label ?? "Text";
+        return k === "text" ? `Paragraph ${Number(p.slice(5)) + 1}` : l;
+      }
       if (p.startsWith("divider:")) return `Divider ${Number(p.slice(8)) + 1}`;
       return p;
     };
