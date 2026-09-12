@@ -49,6 +49,8 @@ export default function DesignTab() {
   const [createOpen, setCreateOpen] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [showLive, setShowLive] = useState(true);
+
 
   const load = async () => {
     const { data } = await (supabase as any)
@@ -65,10 +67,14 @@ export default function DesignTab() {
   const page = useMemo(() => pages.find((p) => p.id === selectedId) ?? null, [pages, selectedId]);
 
   useEffect(() => {
-    setBlocks(parseBlocks(page?.content));
+    const parsed = parseBlocks(page?.content);
+    setBlocks(parsed);
     setActiveId("");
     setDirty(false);
+    // Pages that already have a design open showing exactly how they look today.
+    setShowLive(!parsed.length);
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
