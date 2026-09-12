@@ -917,12 +917,12 @@ export default function ObjectDesignPage() {
         <button
           type="button"
           onClick={() => setOpenBlocks((o) => ({ ...o, [blockKey]: !open }))}
-          className="flex w-full items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-left"
+          className="flex w-full items-center gap-2 rounded-t-lg border-b-2 border-foreground/15 bg-muted px-3 py-2.5 text-left transition-colors hover:bg-muted/80"
         >
-          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{title}</span>
+          <Icon className="h-4 w-4 text-foreground" />
+          <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">{title}</span>
           <ChevronDown
-            className={`ml-auto h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "" : "-rotate-90"}`}
+            className={`ml-auto h-4 w-4 text-foreground/70 transition-transform ${open ? "" : "-rotate-90"}`}
           />
         </button>
         {open ? <div className="space-y-3 p-3">{children}</div> : null}
@@ -1646,11 +1646,11 @@ export default function ObjectDesignPage() {
                       active ? "border-primary/50 shadow-lg" : "border-border shadow-sm hover:border-primary/25"
                     }`}
                   >
-                    <div className={`flex items-center gap-2 border-b px-3 py-2 ${active ? "bg-primary/5" : "bg-muted/40"}`}>
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-foreground/10 text-[10px] font-semibold tabular-nums">
+                    <div className={`flex items-center gap-2.5 border-b-2 px-3 py-3 ${active ? "border-primary/40 bg-primary/10" : "border-foreground/15 bg-muted"}`}>
+                      <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold tabular-nums ${active ? "bg-primary text-primary-foreground" : "bg-foreground text-background"}`}>
                         {i + 1}
                       </span>
-                      <span className="text-xs font-medium uppercase tracking-wide">{SECTION_LABEL[s.type]}</span>
+                      <span className="text-sm font-bold uppercase tracking-[0.14em] text-foreground">{SECTION_LABEL[s.type]}</span>
                       <div className="ml-auto flex items-center gap-1">
 
                         <Button variant="ghost" size="sm" onClick={() => setActiveId(active ? "" : s.id)}>
