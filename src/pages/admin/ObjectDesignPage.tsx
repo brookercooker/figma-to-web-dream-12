@@ -538,7 +538,17 @@ export default function ObjectDesignPage() {
               value={section.labelStyle}
               defaults={{ font: "sans", color: (section.buttonVariant ?? "solid") === "solid" ? "cream" : "ink", size: "sm" }}
               onChange={(v) => patch(section.id, { labelStyle: v })}
+              colorOnly
             />
+            {(section.buttonVariant ?? "solid") === "solid" && (
+              <div className="rounded-md border p-3 space-y-2">
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Button background</p>
+                <ColorSwatches
+                  value={section.buttonBg ?? "ink"}
+                  onChange={(v) => patch(section.id, { buttonBg: v })}
+                />
+              </div>
+            )}
           </div>
         )}
 
