@@ -578,12 +578,18 @@ export default function ObjectDesignPage() {
     setActiveId(sectionId);
     if (!el) return;
     const part = el.getAttribute("data-part") ?? "";
-    // captions are edited alongside their image
-    setFocusPart(part.startsWith("caption:") ? part.replace("caption:", "image:") : part);
+    // captions and image text boxes are edited alongside their image
+    setFocusPart(
+      part.startsWith("caption:") ? part.replace("caption:", "image:")
+      : part.startsWith("imagetext:") ? `image:${part.split(":")[1]}`
+      : part,
+    );
 
     // Text elements get a floating font / size / color toolbar.
     const field = part.startsWith("text:")
       ? (`extra:${Number(part.split(":")[1]) || 0}` as keyof FreeSection)
+      : part.startsWith("imagetext:")
+      ? (part as unknown as keyof FreeSection)
       : STYLE_FIELD[part.startsWith("caption:") ? "caption" : part];
     const r = el.getBoundingClientRect();
     if (field) {
