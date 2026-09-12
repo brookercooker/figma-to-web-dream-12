@@ -964,9 +964,9 @@ export function SectionView({ section }: { section: Section }) {
               className={`relative flex h-full flex-col justify-center gap-4 px-8 sm:px-14 py-16 ${alignText[section.align]} ${overlayHeight[section.height]}`}
             >
               {section.eyebrow ? (
-                <p className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: "cream", size: "sm" })}`}>{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "cream", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}>{section.eyebrow}</p>
               ) : null}
-              <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "lg" })}`}>
+              <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "xl" })}`}>
                 {section.heading}
               </h2>
               {section.body ? (
