@@ -984,6 +984,8 @@ function FreeText({
     ),
   }));
 
+  (media ?? []).forEach((m) => items.push(m));
+
   const ordered = orderParts(items, section.order);
 
   const groups = groupByFlow(ordered, (it) => flowOf(it.part));
