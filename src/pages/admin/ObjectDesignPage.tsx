@@ -1522,7 +1522,7 @@ export default function ObjectDesignPage() {
                   />
                 </Field>
                 <p className="text-xs text-muted-foreground">
-                  Drag this bar in the Arrangement list to move it between items.
+                  Drag this block's header to move the bar between items.
                 </p>
               </>
             ),
