@@ -1393,7 +1393,7 @@ export default function ObjectDesignPage() {
               />
             )}
             <Button variant="ghost" size="sm" onClick={() => setToolbar(null)}>Done</Button>
-          </div>
+          </FloatingToolbar>
         );
       })()}
 
