@@ -1219,6 +1219,12 @@ export default function ObjectDesignPage() {
           </Field>
         ) })}
 
+        {parts.length > 1 && Block({ title: "Arrangement", icon: GripVertical, children: (
+          <Field label="Drag to reorder">
+            {arrangeList()}
+          </Field>
+        ) })}
+
 
         {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, children: (
           <>
