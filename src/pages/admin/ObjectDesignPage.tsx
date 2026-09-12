@@ -763,6 +763,10 @@ export default function ObjectDesignPage() {
     sectionId: string, index: number, tIdx: number, changes: Partial<ImageText>,
   ) => {
     const texts = imageTextsOf(sectionId, index).map((t, i) => (i === tIdx ? { ...t, ...changes } : t));
+    // keep this text box expanded while it is being edited
+    setOpenSub((s) =>
+      s[`txt:${sectionId}:${index}:${tIdx}`] ? s : { ...s, [`txt:${sectionId}:${index}:${tIdx}`]: true },
+    );
     patchImage(sectionId, index, { texts });
   };
 
