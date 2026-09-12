@@ -580,6 +580,25 @@ export default function ObjectDesignPage() {
     </Button>
   );
 
+  const Block = ({
+    title,
+    icon: Icon,
+    part,
+    children,
+  }: { title: string; icon: LucideIcon; part?: string; children: React.ReactNode }) => (
+    <div
+      data-inspector-part={part}
+      className="scroll-mt-24 rounded-lg border bg-background shadow-sm"
+    >
+      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{title}</span>
+      </div>
+      <div className="space-y-3 p-3">{children}</div>
+    </div>
+  );
+
+
   const freeInspector = (section: FreeSection) => {
     const hasTitle = section.heading !== undefined;
     const hasEyebrow = section.eyebrow !== undefined;
@@ -595,8 +614,9 @@ export default function ObjectDesignPage() {
           {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => patch(section.id, { buttonLabel: "Explore", buttonHref: "/" })} />}
         </div>
 
-        {hasEyebrow && (
-          <div data-inspector-part="eyebrow" className="space-y-2 scroll-mt-24">
+        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", children: (
+          <>
+
 
             <div className="flex items-end gap-2">
               <div className="flex-1">
@@ -615,11 +635,12 @@ export default function ObjectDesignPage() {
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
               colorOnly
             />
-          </div>
-        )}
+          </>
+        ) })}
 
-        {hasTitle && (
-          <div data-inspector-part="heading" className="space-y-2 scroll-mt-24">
+        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", children: (
+          <>
+
 
             <div className="flex items-end gap-2">
               <div className="flex-1">
@@ -637,11 +658,12 @@ export default function ObjectDesignPage() {
               defaults={{ font: "serif", color: "ink", size: "lg" }}
               onChange={(v) => patch(section.id, { textStyle: v })}
             />
-          </div>
-        )}
+          </>
+        ) })}
 
-        {hasBody && (
-          <div data-inspector-part="body" className="space-y-2 scroll-mt-24">
+        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", children: (
+          <>
+
 
             <div className="flex items-end gap-2">
               <div className="flex-1">
@@ -659,11 +681,12 @@ export default function ObjectDesignPage() {
               defaults={{ font: "sans", color: "stone", size: "md" }}
               onChange={(v) => patch(section.id, { bodyStyle: v })}
             />
-          </div>
-        )}
+          </>
+        ) })}
 
-        {section.images.length > 0 && (
-          <div className="space-y-3">
+        {section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, children: (
+          <>
+
             <div className="grid gap-3 sm:grid-cols-2">
               {section.images.map((img, i) => (
                 <div key={i} data-inspector-part={`image:${i}`} className="scroll-mt-24">
@@ -778,11 +801,12 @@ export default function ObjectDesignPage() {
                 </>
               )}
             </div>
-          </div>
-        )}
+          </>
+        ) })}
 
-        {hasButton && (
-          <div data-inspector-part="button" className="space-y-2 scroll-mt-24">
+        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", children: (
+          <>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Button label">
                 <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
@@ -824,22 +848,24 @@ export default function ObjectDesignPage() {
                 />
               </div>
             )}
-          </div>
-        )}
+          </>
+        ) })}
 
-        <Field label="Alignment">
-          <div>
-            <Choice
-              value={section.align}
-              options={[
-                { value: "left" as SectionAlign, label: "Left" },
-                { value: "center" as SectionAlign, label: "Center" },
-                { value: "right" as SectionAlign, label: "Right" },
-              ]}
-              onChange={(v) => patch(section.id, { align: v })}
-            />
-          </div>
-        </Field>
+        {Block({ title: "Layout", icon: AlignLeft, children: (
+          <Field label="Alignment">
+            <div>
+              <Choice
+                value={section.align}
+                options={[
+                  { value: "left" as SectionAlign, label: "Left" },
+                  { value: "center" as SectionAlign, label: "Center" },
+                  { value: "right" as SectionAlign, label: "Right" },
+                ]}
+                onChange={(v) => patch(section.id, { align: v })}
+              />
+            </div>
+          </Field>
+        ) })}
       </div>
     );
   };
