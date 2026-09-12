@@ -169,6 +169,12 @@ export interface ButtonSection {
 }
 
 /** Freeform block: a blank space you add text and images to. */
+export interface FreeText {
+  id: string;
+  text: string;
+  style?: TextStyle;
+}
+
 export interface FreeSection {
   id: string;
   type: "free";
