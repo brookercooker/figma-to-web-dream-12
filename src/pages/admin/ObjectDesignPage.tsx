@@ -751,6 +751,20 @@ export default function ObjectDesignPage() {
                   defaults={{ font: "sans", color: "stone", size: "md" }}
                   onChange={(v) => patchExtra(section.id, i, { style: v })}
                 />
+                {section.images.length > 0 && section.layout === "stacked" && (
+                  <Field label="Position">
+                    <div>
+                      <Choice
+                        value={t.position ?? section.textPosition ?? "above"}
+                        options={[
+                          { value: "above" as const, label: "Above images" },
+                          { value: "below" as const, label: "Below images" },
+                        ]}
+                        onChange={(v) => patchExtra(section.id, i, { position: v })}
+                      />
+                    </div>
+                  </Field>
+                )}
               </>
             ),
           }),
