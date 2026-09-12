@@ -449,8 +449,11 @@ export default function ObjectDesignPage() {
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               {section.images.map((img, i) => (
-                <div key={i}>{ImageEditor({ section, index: i, image: img, showCaption: true })}</div>
+                <div key={i} data-inspector-part={`image:${i}`} className="scroll-mt-24">
+                  {ImageEditor({ section, index: i, image: img, showCaption: true })}
+                </div>
               ))}
+
             </div>
             <TextStyleFields
               label="Caption style"
