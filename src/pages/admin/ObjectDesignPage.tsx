@@ -369,7 +369,7 @@ function Dropdown({
 function ColorDot({ swatch }: { swatch?: string }) {
   return (
     <span
-      className="inline-block h-3 w-3 shrink-0 rounded-full border"
+      className="inline-block h-3.5 w-3.5 shrink-0 rounded-full border border-foreground/50 ring-1 ring-inset ring-white/60"
       style={swatch ? { background: swatch } : { background: "transparent" }}
     />
   );
