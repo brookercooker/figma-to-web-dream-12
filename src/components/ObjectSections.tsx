@@ -377,6 +377,15 @@ export interface FreeDivider {
   after?: string;
 }
 
+export type RowVAlign = "top" | "middle" | "bottom" | "baseline";
+
+export const ROW_VALIGN_CLASS: Record<RowVAlign, string> = {
+  top: "items-start",
+  middle: "items-center",
+  bottom: "items-end",
+  baseline: "items-baseline",
+};
+
 export interface FreeSection {
   id: string;
   type: "free";
