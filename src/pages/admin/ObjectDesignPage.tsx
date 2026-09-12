@@ -752,10 +752,11 @@ export default function ObjectDesignPage() {
       texts: [...texts, { id: newSectionId(), kind, text: "" }],
     });
     openBlock("Images");
-    setOpenSub({
+    setOpenSub((s) => ({
+      ...s,
       [`img:${sectionId}:${index}`]: true,
       [`txt:${sectionId}:${index}:${texts.length}`]: true,
-    });
+    }));
   };
 
   const patchImageText = (
