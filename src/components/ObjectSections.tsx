@@ -167,6 +167,8 @@ export interface FreeSection {
   imageSide: "left" | "right";
   gallery: "grid" | "carousel";
   columns: 1 | 2 | 3 | 4;
+  /** how many images show at once in carousel mode */
+  perView?: number;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
