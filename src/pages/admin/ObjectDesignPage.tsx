@@ -1021,6 +1021,22 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
+        {Block({ title: "Block alignment", icon: AlignLeft, children: (
+          <Field label="Alignment">
+            <div>
+              <Choice
+                value={section.align}
+                options={[
+                  { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
+                  { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
+                  { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
+                ]}
+                onChange={(v) => patch(section.id, { align: v })}
+              />
+            </div>
+          </Field>
+        ) })}
+
         {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", children: (
           <>
 
