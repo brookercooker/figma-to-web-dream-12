@@ -889,19 +889,34 @@ export default function ObjectDesignPage() {
     part,
     key,
     children,
-  }: { title: string; icon: LucideIcon; part?: string; key?: string; children: React.ReactNode }) => (
-    <div
-      key={key}
-      data-inspector-part={part}
-      className="scroll-mt-24 rounded-lg border bg-background shadow-sm"
-    >
-      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5">
-        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{title}</span>
+  }: { title: string; icon: LucideIcon; part?: string; key?: string; children: React.ReactNode }) => {
+    const blockKey = key ?? part ?? title;
+    const focused =
+      !!focusPart &&
+      (focusPart === part ||
+        (title === "Images" && (focusPart.startsWith("image:") || focusPart.startsWith("caption:") || focusPart.startsWith("imagetext:"))));
+    const open = openBlocks[blockKey] ?? (blocksExpanded || focused);
+    return (
+      <div
+        key={key}
+        data-inspector-part={part}
+        className="scroll-mt-24 rounded-lg border bg-background shadow-sm"
+      >
+        <button
+          type="button"
+          onClick={() => setOpenBlocks((o) => ({ ...o, [blockKey]: !open }))}
+          className="flex w-full items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-left"
+        >
+          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{title}</span>
+          <ChevronDown
+            className={`ml-auto h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "" : "-rotate-90"}`}
+          />
+        </button>
+        {open ? <div className="space-y-3 p-3">{children}</div> : null}
       </div>
-      <div className="space-y-3 p-3">{children}</div>
-    </div>
-  );
+    );
+  };
 
 
   const freeInspector = (section: FreeSection) => {
