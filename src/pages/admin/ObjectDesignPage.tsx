@@ -550,7 +550,8 @@ export default function ObjectDesignPage() {
       target.removeEventListener("blur", commit);
       target.removeEventListener("keydown", onKey);
       target.removeEventListener("click", stop);
-      if (captionIdx >= 0) patchImage(sectionId, captionIdx, { caption: value });
+      if (imgText) patchImageText(sectionId, imgText.img, imgText.t, { text: value });
+      else if (captionIdx >= 0) patchImage(sectionId, captionIdx, { caption: value });
       else if (extraIdx >= 0) patchExtra(sectionId, extraIdx, { text: value });
       else patch(sectionId, { [field]: value });
     };
