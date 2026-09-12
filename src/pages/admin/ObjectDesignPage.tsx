@@ -10,7 +10,7 @@ import {
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
   LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
-  Video as VideoIcon, Minus, Link as LinkIcon,
+  Video as VideoIcon, Minus, Link as LinkIcon, Copy,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
@@ -793,6 +793,78 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  /** Insert a copy of item at `index` right after it. */
+  const insertCopy = <T,>(list: T[], index: number, copy: T): T[] => {
+    const next = [...list];
+    next.splice(index + 1, 0, copy);
+    return next;
+  };
+
+  const duplicateImageSlot = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || !("images" in s)) return s;
+        const images = (s as any).images as SectionImage[];
+        const src = images[index];
+        if (!src) return s;
+        const copy: SectionImage = {
+          ...src,
+          texts: (src.texts ?? []).map((t) => ({ ...t, id: newSectionId(), style: { ...(t.style ?? {}) } })),
+        };
+        return { ...s, images: insertCopy(images, index, copy) } as Section;
+      }),
+    );
+    setDirty(true);
+    openBlock("Images");
+    setOpenSub({ [`img:${id}:${index + 1}`]: true });
+  };
+
+  const duplicateImageText = (sectionId: string, index: number, tIdx: number) => {
+    const texts = imageTextsOf(sectionId, index);
+    const src = texts[tIdx];
+    if (!src) return;
+    patchImage(sectionId, index, {
+      texts: insertCopy(texts, tIdx, { ...src, id: newSectionId(), style: { ...(src.style ?? {}) } }),
+    });
+    setOpenSub((s) => ({ ...s, [`txt:${sectionId}:${index}:${tIdx + 1}`]: true }));
+  };
+
+  const duplicateExtra = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const extras = s.extras ?? [];
+        const src = extras[index];
+        if (!src) return s;
+        return {
+          ...s,
+          extras: insertCopy(extras, index, { ...src, id: newSectionId(), style: { ...(src.style ?? {}) } }),
+        } as Section;
+      }),
+    );
+    setDirty(true);
+  };
+
+  const duplicateDivider = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const dividers = s.dividers ?? [];
+        const src = dividers[index];
+        if (!src) return s;
+        return { ...s, dividers: insertCopy(dividers, index, { ...src, id: newSectionId() }) } as Section;
+      }),
+    );
+    setDirty(true);
+  };
+
+  /** Copy a single text element into a new paragraph, keeping its styling. */
+  const duplicateTextInto = (section: FreeSection, text: string | undefined, style?: TextStyle) => {
+    patch(section.id, {
+      extras: [...(section.extras ?? []), { id: newSectionId(), text: text ?? "", style: { ...(style ?? {}) } }],
+    });
+  };
+
   const videosOf = (sectionId: string): SectionVideo[] => {
     const s = sections.find((x) => x.id === sectionId);
     return s && s.type === "free" ? (s.videos ?? []) : [];
@@ -862,6 +934,46 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  const duplicateVideo = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const videos = s.videos ?? [];
+        const src = videos[index];
+        if (!src) return s;
+        return { ...s, videos: insertCopy(videos, index, { ...src, id: newSectionId() }) } as Section;
+      }),
+    );
+    setDirty(true);
+  };
+
+  /** Deep copy a whole block, giving every nested item a fresh id. */
+  const duplicateSection = (id: string) => {
+    let copyId = "";
+    setSections((prev) => {
+      const i = prev.findIndex((s) => s.id === id);
+      if (i < 0) return prev;
+      const src = prev[i];
+      const clone = JSON.parse(JSON.stringify(src)) as Section;
+      clone.id = newSectionId();
+      copyId = clone.id;
+      if ("images" in clone && Array.isArray((clone as any).images)) {
+        (clone as any).images = ((clone as any).images as SectionImage[]).map((img) => ({
+          ...img,
+          texts: (img.texts ?? []).map((t) => ({ ...t, id: newSectionId() })),
+        }));
+      }
+      if (clone.type === "free") {
+        clone.extras = (clone.extras ?? []).map((t) => ({ ...t, id: newSectionId() }));
+        clone.dividers = (clone.dividers ?? []).map((d) => ({ ...d, id: newSectionId() }));
+        clone.videos = (clone.videos ?? []).map((v) => ({ ...v, id: newSectionId() }));
+      }
+      return insertCopy(prev, i, clone);
+    });
+    setDirty(true);
+    if (copyId) setActiveId(copyId);
+  };
+
   const save = async () => {
     if (!object) return;
     setSaving(true);
@@ -910,6 +1022,16 @@ export default function ObjectDesignPage() {
           </span>
           <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${imgOpen ? "rotate-180" : ""}`} />
         </button>
+        {index >= 0 && "images" in section && (
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Duplicate image and its text"
+            onClick={() => duplicateImageSlot(section.id, index)}
+          >
+            <Copy className="w-4 h-4" />
+          </Button>
+        )}
         {index >= 0 && "images" in section && (section as any).images.length > 1 && (
           <Button variant="ghost" size="sm" onClick={() => removeImageSlot(section.id, index)}>
             <Trash2 className="w-4 h-4" />
@@ -966,6 +1088,14 @@ export default function ObjectDesignPage() {
                   </span>
                   <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${tOpen ? "rotate-180" : ""}`} />
                 </button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  title="Duplicate text"
+                  onClick={() => duplicateImageText(section.id, index, ti)}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1094,8 +1224,9 @@ export default function ObjectDesignPage() {
     key,
     flowSection,
     onDelete,
+    onDuplicate,
     children,
-  }: { title: string; icon: LucideIcon; part?: string; key?: string; flowSection?: FreeSection; onDelete?: () => void; children: React.ReactNode }) => {
+  }: { title: string; icon: LucideIcon; part?: string; key?: string; flowSection?: FreeSection; onDelete?: () => void; onDuplicate?: () => void; children: React.ReactNode }) => {
     const blockKey = key ?? part ?? title;
     const focused =
       !!focusPart &&
@@ -1121,6 +1252,18 @@ export default function ObjectDesignPage() {
               className={`ml-auto h-4 w-4 text-foreground/70 transition-transform ${open ? "" : "-rotate-90"}`}
             />
           </button>
+          {onDuplicate ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`Duplicate ${title}`}
+              title={`Duplicate ${title}`}
+              className="h-7 w-7 p-0 text-foreground/60 hover:text-foreground"
+              onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          ) : null}
           {onDelete ? (
             <Button
               variant="ghost"
@@ -1283,7 +1426,7 @@ export default function ObjectDesignPage() {
 
 
 
-        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, onDelete: () => patch(section.id, { eyebrow: undefined }), children: (
+        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, onDelete: () => patch(section.id, { eyebrow: undefined }), onDuplicate: () => duplicateTextInto(section, section.eyebrow, withEyebrowDefaults(section.eyebrowStyle)), children: (
           <>
 
 
@@ -1299,7 +1442,7 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, onDelete: () => patch(section.id, { heading: undefined }), children: (
+        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, onDelete: () => patch(section.id, { heading: undefined }), onDuplicate: () => duplicateTextInto(section, section.heading, section.textStyle), children: (
           <>
 
 
@@ -1318,7 +1461,7 @@ export default function ObjectDesignPage() {
 
 
 
-        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, onDelete: () => patch(section.id, { body: undefined }), children: (
+        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, onDelete: () => patch(section.id, { body: undefined }), onDuplicate: () => duplicateTextInto(section, section.body, section.bodyStyle), children: (
           <>
 
 
@@ -1342,6 +1485,7 @@ export default function ObjectDesignPage() {
             flowSection: section,
             key: t.id,
             onDelete: () => removeExtra(section.id, i),
+            onDuplicate: () => duplicateExtra(section.id, i),
             children: (
               <>
                 <Field label="Text">
@@ -1370,6 +1514,7 @@ export default function ObjectDesignPage() {
             flowSection: section,
             key: d.id,
             onDelete: () => removeDivider(section.id, i),
+            onDuplicate: () => duplicateDivider(section.id, i),
             children: (
               <>
                 <div className="flex flex-wrap items-center gap-3">
@@ -1551,6 +1696,14 @@ export default function ObjectDesignPage() {
                       onClick={() => setVideoPicker({ sectionId: section.id, index: i })}
                     >
                       Replace
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Duplicate video"
+                      onClick={() => duplicateVideo(section.id, i)}
+                    >
+                      <Copy className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
@@ -2058,6 +2211,9 @@ export default function ObjectDesignPage() {
                         </Button>
                         <Button variant="ghost" size="sm" disabled={i === sections.length - 1} onClick={() => move(s.id, 1)}>
                           <ArrowDown className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" title="Duplicate block" onClick={() => duplicateSection(s.id)}>
+                          <Copy className="w-4 h-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => remove(s.id)}>
                           <Trash2 className="w-4 h-4" />
