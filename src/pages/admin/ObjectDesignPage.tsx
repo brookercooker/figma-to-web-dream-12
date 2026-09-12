@@ -2056,12 +2056,14 @@ export default function ObjectDesignPage() {
           labelStyle: "sans",
         };
         const kindDefaults = imgTextItem ? IMAGE_TEXT_DEFAULTS[imgTextItem.kind] : null;
+        const isEyebrow = imgTextItem ? imgTextItem.kind === "eyebrow" : fieldKey === "eyebrowStyle";
+        const es = isEyebrow ? withEyebrowDefaults(style) : style;
         const set = (changes: Partial<TextStyle>) =>
           imgText
-            ? patchImageText(toolbar.sectionId, imgText.img, imgText.t, { style: { ...style, ...changes } })
+            ? patchImageText(toolbar.sectionId, imgText.img, imgText.t, { style: { ...es, ...changes } })
             : extraIdx >= 0
-            ? patchExtra(toolbar.sectionId, extraIdx, { style: { ...style, ...changes } })
-            : patch(toolbar.sectionId, { [fieldKey]: { ...style, ...changes } });
+            ? patchExtra(toolbar.sectionId, extraIdx, { style: { ...es, ...changes } })
+            : patch(toolbar.sectionId, { [fieldKey]: { ...es, ...changes } });
         return (
           <FloatingToolbar top={anchorTop} left={toolbar.left}>
             <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
