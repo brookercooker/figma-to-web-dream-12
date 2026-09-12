@@ -173,6 +173,8 @@ export interface FreeParagraph {
   id: string;
   text: string;
   style?: TextStyle;
+  /** whether this paragraph sits above or below the images */
+  position?: "above" | "below";
 }
 
 export interface FreeSection {
