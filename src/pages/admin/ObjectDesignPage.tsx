@@ -902,24 +902,6 @@ export default function ObjectDesignPage() {
         placeholder="Describe the image"
         onChange={(e) => patchImage(section.id, index, { alt: e.target.value })}
       />
-      {showCaption && (
-        <Input
-          value={image.caption ?? ""}
-          placeholder="Caption (optional)"
-          onChange={(e) => patchImage(section.id, index, { caption: e.target.value })}
-        />
-      )}
-      {showCaption && (
-        <Choice
-          value={image.captionAlign ?? (section as any).captionAlign ?? "left"}
-          options={[
-            { value: "left" as const, label: "Left", icon: AlignLeft },
-            { value: "center" as const, label: "Center", icon: AlignCenter },
-            { value: "right" as const, label: "Right", icon: AlignRight },
-          ]}
-          onChange={(v) => patchImage(section.id, index, { captionAlign: v })}
-        />
-      )}
       <Input
         value={image.href ?? ""}
         placeholder="Link (optional)"
