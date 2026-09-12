@@ -120,36 +120,43 @@ function SizeControl({
     set({ sizePx: Math.min(MAX_TEXT_PX, Math.max(MIN_TEXT_PX, Math.round(v))) });
   };
 
+  const [open, setOpen] = useState(false);
+
   return (
-    <span className="inline-flex items-center rounded-md border bg-background">
+    <span className="relative inline-flex items-center rounded-md border bg-background">
       <input
-        type="number"
-        min={MIN_TEXT_PX}
-        max={MAX_TEXT_PX}
+        type="text"
+        inputMode="numeric"
         value={draft}
+        onFocus={() => setOpen(true)}
+        onClick={() => setOpen(true)}
         onChange={(e) => setDraft(e.target.value)}
-        onBlur={(e) => commit(e.target.value)}
+        onBlur={(e) => { commit(e.target.value); setTimeout(() => setOpen(false), 120); }}
         onKeyDown={(e) => {
-          if (e.key === "Enter") { e.preventDefault(); commit((e.target as HTMLInputElement).value); }
+          if (e.key === "Enter") { e.preventDefault(); commit((e.target as HTMLInputElement).value); setOpen(false); }
+          if (e.key === "Escape") setOpen(false);
         }}
         className="w-14 bg-transparent px-2 py-1 text-xs outline-none"
         aria-label="Text size in pixels"
       />
-      <span className="pr-1 text-[11px] text-muted-foreground">px</span>
-      <DropdownMenu>
-        <DropdownMenuTrigger className="border-l px-1.5 py-1 text-[11px] text-muted-foreground hover:text-foreground" aria-label="Common text sizes">
-          ▾
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="max-h-64 min-w-[5rem] overflow-auto">
+      <span className="pr-2 text-[11px] text-muted-foreground">px</span>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-56 min-w-[5rem] overflow-auto rounded-md border bg-popover p-1 shadow-md">
           {COMMON_TEXT_PX.map((v) => (
-            <DropdownMenuItem key={v} onSelect={() => set({ sizePx: v })}>
+            <button
+              key={v}
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); set({ sizePx: v }); setOpen(false); }}
+              className={`block w-full rounded px-2 py-1 text-left text-xs hover:bg-accent ${v === px ? "bg-accent/60" : ""}`}
+            >
               {v} px
-            </DropdownMenuItem>
+            </button>
           ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </div>
+      )}
     </span>
   );
+
 }
 
 
