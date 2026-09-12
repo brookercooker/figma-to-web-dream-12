@@ -174,6 +174,8 @@ export interface FreeSection {
   buttonLabel?: string;
   buttonHref?: string;
   buttonVariant?: "solid" | "outline" | "link";
+  /** background color for the button */
+  buttonBg?: TextColor;
 }
 
 export type Section =
