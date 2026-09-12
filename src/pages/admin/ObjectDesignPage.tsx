@@ -1590,7 +1590,7 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", flowSection: section, children: (
+        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", flowSection: section, onDelete: () => patch(section.id, { buttonLabel: undefined }), children: (
           <>
 
             <div className="grid gap-3 sm:grid-cols-2">
