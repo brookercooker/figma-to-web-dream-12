@@ -577,7 +577,7 @@ function FreeText({
           {t.text}
         </p>
       ))}
-      {section.buttonLabel ? (
+      {showMain && section.buttonLabel ? (
         <div data-part="button" className="mt-2">
           <SectionButton
             label={section.buttonLabel}
