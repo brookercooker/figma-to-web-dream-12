@@ -74,6 +74,7 @@ export default function CreateObjectDialog({
       toast.success(`Object "${data.name}" created at ${route}`);
       qc.invalidateQueries({ queryKey: ["admin", "object_registry"] });
       onOpenChange(false);
+      onCreated?.(data);
       if (navigateOnCreate) navigate(`/objects/${data.slug_id}`);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to create object");
