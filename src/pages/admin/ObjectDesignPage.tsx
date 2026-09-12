@@ -728,16 +728,22 @@ export default function ObjectDesignPage() {
   };
 
   const addImageSlot = (id: string) => {
+    let newIndex = 0;
     setSections((prev) =>
-      prev.map((s) =>
-        s.id === id && "images" in s
-          ? ({ ...s, images: [...(s as any).images, { url: "", alt: "" }] } as Section)
-          : s,
-      ),
+      prev.map((s) => {
+        if (s.id === id && "images" in s) {
+          const images = [...(s as any).images, { url: "", alt: "" }];
+          newIndex = images.length - 1;
+          return { ...s, images } as Section;
+        }
+        return s;
+      }),
     );
     setDirty(true);
     openBlock("Images");
+    setPicker({ sectionId: id, index: newIndex });
   };
+
 
   const removeImageSlot = (id: string, index: number) => {
     setSections((prev) =>
