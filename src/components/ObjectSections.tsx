@@ -477,7 +477,7 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
   if (section.gallery === "carousel") {
     return <FreeCarousel section={section} onDark={onDark} />;
   }
-  const fixedHeight = (section.imageHeight ?? "auto") !== "auto";
+  
   return (
     <div
       className={`flex flex-nowrap items-start gap-6 ${alignRow[section.imageAlign ?? "left"]}`}
