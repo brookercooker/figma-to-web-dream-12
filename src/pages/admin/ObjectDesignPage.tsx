@@ -10,7 +10,7 @@ import {
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
   LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
-  Video as VideoIcon, Minus, Link as LinkIcon, Copy,
+  Video as VideoIcon, Minus, Link as LinkIcon, Copy, PanelLeftClose, PanelLeftOpen,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
@@ -465,6 +465,7 @@ export default function ObjectDesignPage() {
   const [preview, setPreview] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [libraryOpen, setLibraryOpen] = useState(true);
   // { sectionId, index } — index -1 means the section's single image
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
   const [linkOpen, setLinkOpen] = useState<Record<string, boolean>>({});
@@ -887,6 +888,72 @@ export default function ObjectDesignPage() {
     openBlock("Videos");
     setVideoPicker({ sectionId: id, index: newIndex });
   };
+
+  type AddKind = "eyebrow" | "title" | "text" | "image" | "video" | "divider" | "button";
+
+  /** Add an element to a section (defaults to the active or last free section). */
+  const addElement = (kind: AddKind, sectionId?: string) => {
+    const target =
+      (sectionId ? sections.find((s) => s.id === sectionId) : undefined) ??
+      sections.find((s) => s.id === activeId) ??
+      [...sections].reverse().find((s) => s.type === "free");
+    if (!target || target.type !== "free") return;
+    const s = target as FreeSection;
+    if (s.id !== activeId) setActiveId(s.id);
+    if (kind === "image") return addImageSlot(s.id);
+    if (kind === "video") return addVideoSlot(s.id);
+    if (kind === "divider") {
+      const id = newSectionId();
+      patch(s.id, { dividers: [...(s.dividers ?? []), { id, color: "stone", width: "full", thickness: 1 }] });
+      openBlock(id);
+      return;
+    }
+    if (kind === "button") {
+      if (s.buttonLabel === undefined) patch(s.id, { buttonLabel: "Explore", buttonHref: "/" });
+      openBlock("button");
+      return;
+    }
+    if (kind === "eyebrow") {
+      if (s.eyebrow === undefined) {
+        patch(s.id, { eyebrow: "Since 1951" });
+        openBlock("eyebrow");
+      } else {
+        const id = newSectionId();
+        patch(s.id, { extras: [...(s.extras ?? []), { id, text: "Since 1951", kind: "eyebrow" as const }] });
+        openBlock(id);
+      }
+      return;
+    }
+    if (kind === "title") {
+      if (s.heading === undefined) {
+        patch(s.id, { heading: "A quiet statement" });
+        openBlock("heading");
+      } else {
+        const id = newSectionId();
+        patch(s.id, { extras: [...(s.extras ?? []), { id, text: "A quiet statement", kind: "title" as const }] });
+        openBlock(id);
+      }
+      return;
+    }
+    if (s.body === undefined) {
+      patch(s.id, { body: "" });
+      openBlock("body");
+    } else {
+      const id = newSectionId();
+      patch(s.id, { extras: [...(s.extras ?? []), { id, text: "" }] });
+      openBlock(id);
+    }
+  };
+
+  const ADD_ITEMS: { kind: AddKind; label: string; icon: LucideIcon }[] = [
+    { kind: "eyebrow", label: "Eyebrow", icon: Tag },
+    { kind: "title", label: "Title", icon: Heading },
+    { kind: "text", label: "Text", icon: AlignLeft },
+    { kind: "image", label: "Image", icon: ImageIcon },
+    { kind: "video", label: "Video", icon: VideoIcon },
+    { kind: "divider", label: "Divider", icon: Minus },
+    { kind: "button", label: "Button", icon: MousePointerClick },
+  ];
 
   const patchVideo = (id: string, index: number, changes: Partial<SectionVideo>) => {
     setSections((prev) =>
@@ -2177,11 +2244,32 @@ export default function ObjectDesignPage() {
         </div>
       </header>
 
-      <main className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 px-4 py-6">
+      <main
+        className={`grid grid-cols-1 gap-6 px-4 py-6 ${
+          libraryOpen ? "lg:grid-cols-[260px_1fr_auto]" : "lg:grid-cols-[44px_1fr_auto]"
+        }`}
+      >
+        {!libraryOpen ? (
+          <aside className="lg:sticky lg:top-4 lg:self-start">
+            <Button
+              variant="outline"
+              size="icon"
+              title="Show objects"
+              onClick={() => setLibraryOpen(true)}
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </Button>
+          </aside>
+        ) : (
         <aside className="space-y-3">
-          <Button className="w-full gap-2" onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4" /> New object
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button className="flex-1 gap-2" onClick={() => setCreateOpen(true)}>
+              <Plus className="w-4 h-4" /> New object
+            </Button>
+            <Button variant="outline" size="icon" title="Hide objects" onClick={() => setLibraryOpen(false)}>
+              <PanelLeftClose className="w-4 h-4" />
+            </Button>
+          </div>
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search objects" />
           <div className="border rounded-lg divide-y max-h-[70vh] overflow-y-auto">
             {filtered.map((o) => (
@@ -2205,6 +2293,7 @@ export default function ObjectDesignPage() {
             {!filtered.length && <p className="p-3 text-sm text-muted-foreground">No objects found.</p>}
           </div>
         </aside>
+        )}
 
         <section className="min-w-0">
           {!object ? (
@@ -2324,6 +2413,30 @@ export default function ObjectDesignPage() {
             </div>
           )}
         </section>
+
+        {object && !preview && (
+          <aside className="hidden lg:block lg:sticky lg:top-4 lg:self-start">
+            <div className="w-[84px] rounded-lg border bg-background p-2 shadow-sm">
+              <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Add
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {ADD_ITEMS.map((item) => (
+                  <button
+                    key={item.kind}
+                    type="button"
+                    title={`Add ${item.label.toLowerCase()}`}
+                    onClick={() => addElement(item.kind)}
+                    className="flex flex-col items-center gap-1 rounded-md border border-transparent px-1 py-2 text-[10px] text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
+        )}
       </main>
 
       {toolbar && (() => {
