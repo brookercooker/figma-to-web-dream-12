@@ -594,23 +594,7 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
     >
       {section.images.map((img, i) => (
         <figure key={i} className="basis-0 grow min-w-0">
-          <div data-part={`image:${i}`}>
-            <Pic
-              image={img}
-              className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`}
-            />
-          </div>
-          {img.caption ? (
-            <figcaption
-              data-part={`caption:${i}`}
-              className={`mt-3 leading-relaxed ${alignTextOnly[section.captionAlign ?? "left"]} ${bodyClasses(section.captionStyle, {
-                color: onDark ? "cream" : "stone",
-                size: "sm",
-              })}`}
-              style={textInlineStyle(section.captionStyle)}
-              {...richText(img.caption)}
-            />
-          ) : null}
+          <FreeFigureBody section={section} image={img} index={i} onDark={onDark} />
         </figure>
       ))}
     </div>
