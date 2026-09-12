@@ -1225,6 +1225,8 @@ export default function ObjectDesignPage() {
     if (s.heading !== undefined) base.push("heading");
     if (s.body !== undefined) base.push("body");
     (s.extras ?? []).forEach((_, i) => base.push(`text:${i}`));
+    if (s.images.length) base.push("images");
+    if ((s.videos ?? []).length) base.push("videos");
     if (s.buttonLabel !== undefined) base.push("button");
     (s.dividers ?? []).forEach((_, i) => base.push(`divider:${i}`));
     return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
@@ -1564,113 +1566,13 @@ export default function ObjectDesignPage() {
             ),
           });
       }
+      if (p === "images") return imagesBlock();
+      if (p === "videos") return videosBlock();
       return null;
     };
 
-
-
-    return (
-      <div className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <Chip label="Eyebrow" icon={Tag} onClick={() => {
-            if (hasEyebrow) {
-              const id = newSectionId();
-              patch(section.id, { extras: [...(section.extras ?? []), { id, text: "Since 1951", kind: "eyebrow" as const }] });
-              openBlock(id);
-            } else { patch(section.id, { eyebrow: "Since 1951" }); openBlock("eyebrow"); }
-          }} />
-          <Chip label="Title" icon={Heading} onClick={() => {
-            if (hasTitle) {
-              const id = newSectionId();
-              patch(section.id, { extras: [...(section.extras ?? []), { id, text: "A quiet statement", kind: "title" as const }] });
-              openBlock(id);
-            } else { patch(section.id, { heading: "A quiet statement" }); openBlock("heading"); }
-          }} />
-          <Chip
-            label="Text"
-            icon={AlignLeft}
-            onClick={() => {
-              if (hasBody) {
-                const id = newSectionId();
-                patch(section.id, {
-                  extras: [...(section.extras ?? []), { id, text: "" }],
-                });
-                openBlock(id);
-              } else {
-                patch(section.id, { body: "" });
-                openBlock("body");
-              }
-            }}
-          />
-          <Chip label="Image" icon={ImageIcon} onClick={() => addImageSlot(section.id)} />
-          <Chip label="Video" icon={VideoIcon} onClick={() => addVideoSlot(section.id)} />
-          <Chip
-            label="Divider"
-            icon={Minus}
-            onClick={() => {
-              const id = newSectionId();
-              patch(section.id, {
-                dividers: [...(section.dividers ?? []), { id, color: "stone", width: "full", thickness: 1 }],
-              });
-              openBlock(id);
-            }}
-          />
-          {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => { patch(section.id, { buttonLabel: "Explore", buttonHref: "/" }); openBlock("button"); }} />}
-          <div className="ml-auto flex gap-2">
-            <Chip
-              label="Expand all"
-              icon={ChevronsUpDown}
-              onClick={() => { setBlocksExpanded(true); setOpenBlocks({}); }}
-            />
-            <Chip
-              label="Collapse all"
-              icon={ChevronsDownUp}
-              onClick={() => { setBlocksExpanded(false); setOpenBlocks({}); setFocusPart(""); }}
-            />
-          </div>
-        </div>
-
-        {Block({ title: "Edit Block", icon: AlignLeft, children: (
-          <>
-            <Field label="Alignment">
-              <div>
-                <Choice
-                  value={section.align}
-                  options={[
-                    { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
-                    { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
-                    { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
-                  ]}
-                  onChange={(v) => patch(section.id, { align: v })}
-                />
-              </div>
-            </Field>
-            {parts.length > 1 && (
-              <p className="text-xs text-muted-foreground">
-                Drag an element's header below to move it up or down.
-              </p>
-            )}
-          </>
-        ) })}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        {parts.map((p) => <Fragment key={p}>{renderPart(p)}</Fragment>)}
-
-        {section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, onDelete: () => patch(section.id, { images: [] }), children: (
+    const imagesBlock = () => (
+        section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, part: "images", flowSection: section, onDelete: () => patch(section.id, { images: [] }), children: (
           <>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -1794,9 +1696,11 @@ export default function ObjectDesignPage() {
               )}
             </div>
           </>
-        ) })}
+        ) })
+    );
 
-        {(section.videos ?? []).length > 0 && Block({ title: "Videos", icon: VideoIcon, onDelete: () => patch(section.id, { videos: [] }), children: (
+    const videosBlock = () => (
+        (section.videos ?? []).length > 0 && Block({ title: "Videos", icon: VideoIcon, part: "videos", flowSection: section, onDelete: () => patch(section.id, { videos: [] }), children: (
           <>
             {(section.videos ?? []).map((v, i) => (
               <div key={v.id} className="rounded-md border p-3 space-y-3">
@@ -1873,7 +1777,110 @@ export default function ObjectDesignPage() {
               <Plus className="w-4 h-4" /> Add video
             </Button>
           </>
+        ) })
+    );
+
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <Chip label="Eyebrow" icon={Tag} onClick={() => {
+            if (hasEyebrow) {
+              const id = newSectionId();
+              patch(section.id, { extras: [...(section.extras ?? []), { id, text: "Since 1951", kind: "eyebrow" as const }] });
+              openBlock(id);
+            } else { patch(section.id, { eyebrow: "Since 1951" }); openBlock("eyebrow"); }
+          }} />
+          <Chip label="Title" icon={Heading} onClick={() => {
+            if (hasTitle) {
+              const id = newSectionId();
+              patch(section.id, { extras: [...(section.extras ?? []), { id, text: "A quiet statement", kind: "title" as const }] });
+              openBlock(id);
+            } else { patch(section.id, { heading: "A quiet statement" }); openBlock("heading"); }
+          }} />
+          <Chip
+            label="Text"
+            icon={AlignLeft}
+            onClick={() => {
+              if (hasBody) {
+                const id = newSectionId();
+                patch(section.id, {
+                  extras: [...(section.extras ?? []), { id, text: "" }],
+                });
+                openBlock(id);
+              } else {
+                patch(section.id, { body: "" });
+                openBlock("body");
+              }
+            }}
+          />
+          <Chip label="Image" icon={ImageIcon} onClick={() => addImageSlot(section.id)} />
+          <Chip label="Video" icon={VideoIcon} onClick={() => addVideoSlot(section.id)} />
+          <Chip
+            label="Divider"
+            icon={Minus}
+            onClick={() => {
+              const id = newSectionId();
+              patch(section.id, {
+                dividers: [...(section.dividers ?? []), { id, color: "stone", width: "full", thickness: 1 }],
+              });
+              openBlock(id);
+            }}
+          />
+          {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => { patch(section.id, { buttonLabel: "Explore", buttonHref: "/" }); openBlock("button"); }} />}
+          <div className="ml-auto flex gap-2">
+            <Chip
+              label="Expand all"
+              icon={ChevronsUpDown}
+              onClick={() => { setBlocksExpanded(true); setOpenBlocks({}); }}
+            />
+            <Chip
+              label="Collapse all"
+              icon={ChevronsDownUp}
+              onClick={() => { setBlocksExpanded(false); setOpenBlocks({}); setFocusPart(""); }}
+            />
+          </div>
+        </div>
+
+        {Block({ title: "Edit Block", icon: AlignLeft, children: (
+          <>
+            <Field label="Alignment">
+              <div>
+                <Choice
+                  value={section.align}
+                  options={[
+                    { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
+                    { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
+                    { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
+                  ]}
+                  onChange={(v) => patch(section.id, { align: v })}
+                />
+              </div>
+            </Field>
+            {parts.length > 1 && (
+              <p className="text-xs text-muted-foreground">
+                Drag an element's header below to move it up or down.
+              </p>
+            )}
+          </>
         ) })}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        {parts.map((p) => <Fragment key={p}>{renderPart(p)}</Fragment>)}
+
 
 
 

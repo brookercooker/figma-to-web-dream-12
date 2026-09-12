@@ -887,10 +887,14 @@ export function DividerBar({
   );
 }
 
-function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
+function FreeText({
+  section,
+  onDark,
+  media,
+}: { section: FreeSection; onDark?: boolean; media?: { part: string; node: React.ReactNode }[] }) {
   const hasText =
     section.eyebrow || section.heading || section.body || section.buttonLabel ||
-    (section.extras ?? []).length || (section.dividers ?? []).length;
+    (section.extras ?? []).length || (section.dividers ?? []).length || (media ?? []).length;
   if (!hasText) return null;
   const base: TextColor = onDark ? "cream" : "ink";
   const boxSelf = (part: string) => {
@@ -980,6 +984,8 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
     ),
   }));
 
+  (media ?? []).forEach((m) => items.push(m));
+
   const ordered = orderParts(items, section.order);
 
   const groups = groupByFlow(ordered, (it) => flowOf(it.part));
@@ -1065,11 +1071,13 @@ function FreeView({ section }: { section: FreeSection }) {
     );
   }
 
+  const media: { part: string; node: React.ReactNode }[] = [];
+  if (hasImages) media.push({ part: "images", node: <div data-part="images" className="w-full"><FreeGallery section={section} /></div> });
+  if ((section.videos ?? []).length) media.push({ part: "videos", node: <div data-part="videos" className="w-full"><FreeVideos section={section} /></div> });
+
   return (
     <section className="py-12 space-y-8">
-      <FreeText section={section} />
-      <FreeGallery section={section} />
-      <FreeVideos section={section} />
+      <FreeText section={section} media={media} />
     </section>
   );
 }
