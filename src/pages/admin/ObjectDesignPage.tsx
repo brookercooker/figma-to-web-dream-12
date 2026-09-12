@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -232,6 +232,44 @@ function ColorDropdown({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+    </div>
+  );
+}
+
+// Floating toolbar that keeps itself fully inside the viewport.
+function FloatingToolbar({
+  top, left, children,
+}: { top: number; left: number; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top, left, ready: false });
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const place = () => {
+      const r = el.getBoundingClientRect();
+      const m = 8;
+      const maxLeft = Math.max(m, window.innerWidth - r.width - m);
+      const maxTop = Math.max(m, window.innerHeight - r.height - m);
+      const nextLeft = Math.min(Math.max(m, left), maxLeft);
+      // if there is no room above the element, drop the toolbar below it
+      const nextTop = top < m ? Math.min(top + 104, maxTop) : Math.min(Math.max(m, top), maxTop);
+      setPos({ top: nextTop, left: nextLeft, ready: true });
+    };
+    place();
+    const ro = new ResizeObserver(place);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [top, left]);
+
+  return (
+    <div
+      ref={ref}
+      className="fixed z-50 flex max-w-[calc(100vw-1rem)] flex-wrap items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
+      style={{ top: pos.top, left: pos.left, visibility: pos.ready ? "visible" : "hidden" }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {children}
     </div>
   );
 }
@@ -1207,16 +1245,12 @@ export default function ObjectDesignPage() {
       {toolbar && (() => {
         const sec = sections.find((s) => s.id === toolbar.sectionId) as FreeSection | undefined;
         if (!sec) return null;
-        const pos = { top: Math.max(8, toolbar.top - 52), left: Math.max(8, toolbar.left) };
+        const anchorTop = toolbar.top - 52;
 
         if (toolbar.imageIndex !== undefined) {
           const idx = toolbar.imageIndex;
           return (
-            <div
-              className="fixed z-50 flex items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
-              style={pos}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <FloatingToolbar top={anchorTop} left={toolbar.left}>
               <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Image</span>
               <Button variant="outline" size="sm" onClick={() => setPicker({ sectionId: sec.id, index: idx })}>
                 Replace
@@ -1291,7 +1325,7 @@ export default function ObjectDesignPage() {
                 Remove
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setToolbar(null)}>Done</Button>
-            </div>
+            </FloatingToolbar>
           );
         }
 
@@ -1314,11 +1348,7 @@ export default function ObjectDesignPage() {
         const set = (changes: Partial<TextStyle>) =>
           patch(toolbar.sectionId, { [String(toolbar.field)]: { ...style, ...changes } });
         return (
-          <div
-            className="fixed z-50 flex items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
-            style={{ top: Math.max(8, toolbar.top - 52), left: Math.max(8, toolbar.left) }}
-            onClick={(e) => e.stopPropagation()}
-          >
+          <FloatingToolbar top={anchorTop} left={toolbar.left}>
             <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
               {STYLE_FIELD_LABEL[String(toolbar.field)]}
             </span>
@@ -1363,7 +1393,7 @@ export default function ObjectDesignPage() {
               />
             )}
             <Button variant="ghost" size="sm" onClick={() => setToolbar(null)}>Done</Button>
-          </div>
+          </FloatingToolbar>
         );
       })()}
 
