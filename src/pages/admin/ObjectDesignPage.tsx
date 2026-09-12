@@ -493,6 +493,8 @@ export default function ObjectDesignPage() {
   // Clicking an element in the preview jumps to (and focuses) its controls.
   useEffect(() => {
     if (!focusPart || !activeId) return;
+    // Selecting an image shouldn't yank the view down into its alt/link fields.
+    if (focusPart.startsWith("image:")) return;
     const t = window.setTimeout(() => {
       const group = document.querySelector<HTMLElement>(
         `[data-inspector-section="${activeId}"] [data-inspector-part="${focusPart}"]`,
@@ -501,6 +503,7 @@ export default function ObjectDesignPage() {
       group.scrollIntoView({ behavior: "smooth", block: "center" });
       group.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea")?.focus();
     }, 60);
+
     return () => window.clearTimeout(t);
   }, [focusPart, activeId]);
 
