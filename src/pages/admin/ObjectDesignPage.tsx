@@ -1302,7 +1302,7 @@ export default function ObjectDesignPage() {
           setDragPart(null);
           setDropAt(null);
         } : undefined}
-        className={`relative scroll-mt-24 rounded-lg border bg-background shadow-sm ${dragging ? "border-primary opacity-70" : ""}`}
+        className={`relative scroll-mt-24 rounded-lg border bg-background shadow-sm transition-[margin] ${dragging ? "border-primary opacity-70" : ""} ${showBar === "before" ? "mt-4" : ""} ${showBar === "after" ? "mb-4" : ""}`}
       >
         {showBar ? bar : null}
         <div
