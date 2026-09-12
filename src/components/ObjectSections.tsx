@@ -682,6 +682,71 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
 
 }
 
+export function VideoPlayer({ video, className = "" }: { video: SectionVideo; className?: string }) {
+  const embed = videoEmbedUrl(video.url);
+  const box = `w-full overflow-hidden rounded-lg bg-muted aspect-video ${className}`;
+  if (!video.url?.trim()) {
+    return (
+      <div className={`${box} flex items-center justify-center text-xs text-muted-foreground`}>Video</div>
+    );
+  }
+  if (embed) {
+    const params = new URLSearchParams();
+    if (video.autoplay) { params.set("autoplay", "1"); params.set("muted", "1"); params.set("mute", "1"); }
+    if (video.loop) params.set("loop", "1");
+    const q = params.toString();
+    return (
+      <div className={box}>
+        <iframe
+          src={q ? `${embed}?${q}` : embed}
+          title={video.caption || "Video"}
+          className="h-full w-full"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+  return (
+    <div className={box}>
+      <video
+        src={video.url}
+        poster={video.poster || undefined}
+        className="h-full w-full object-cover"
+        controls={video.controls !== false}
+        autoPlay={!!video.autoplay}
+        loop={!!video.loop}
+        muted={video.muted ?? !!video.autoplay}
+        playsInline
+        preload="metadata"
+      />
+    </div>
+  );
+}
+
+function FreeVideos({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
+  const videos = section.videos ?? [];
+  if (!videos.length) return null;
+  const align = alignTextOnly[section.captionAlign ?? "left"];
+  return (
+    <div className="space-y-8">
+      {videos.map((v, i) => (
+        <figure key={v.id} data-part={`video:${i}`}>
+          <VideoPlayer video={v} />
+          {v.caption ? (
+            <figcaption
+              className={`mt-3 leading-relaxed ${align} ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+              style={textInlineStyle(section.captionStyle)}
+              {...richText(v.caption)}
+            />
+          ) : null}
+        </figure>
+      ))}
+    </div>
+  );
+}
+
 function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
   const hasText =
     section.eyebrow || section.heading || section.body || section.buttonLabel || (section.extras ?? []).length;
