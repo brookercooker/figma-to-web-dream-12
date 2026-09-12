@@ -1647,15 +1647,35 @@ export default function ObjectDesignPage() {
                 <Field label="Width">
                   <div>
                     <Choice
-                      value={d.width ?? "full"}
+                      value={typeof d.widthPct === "number" ? "percent" : (d.width ?? "full")}
                       options={[
                         { value: "full" as const, label: "Full width", icon: Minus },
                         { value: "short" as const, label: "Short", icon: Minus },
+                        { value: "percent" as const, label: "Percent", icon: Minus },
                       ]}
-                      onChange={(v) => patchDivider(section.id, i, { width: v })}
+                      onChange={(v) =>
+                        v === "percent"
+                          ? patchDivider(section.id, i, { widthPct: d.widthPct ?? 50 })
+                          : patchDivider(section.id, i, { width: v as "full" | "short", widthPct: undefined })
+                      }
                     />
                   </div>
                 </Field>
+                {typeof d.widthPct === "number" && (
+                  <Field label="Width (% of full width)">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={d.widthPct}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw === "") return patchDivider(section.id, i, { widthPct: 1 });
+                        patchDivider(section.id, i, { widthPct: Math.min(100, Math.max(1, Number(raw) || 1)) });
+                      }}
+                    />
+                  </Field>
+                )}
                 <Field label="Thickness (px)">
                   <Input
                     type="number"
