@@ -908,6 +908,9 @@ export default function ObjectDesignPage() {
           </Button>
         )}
       </div>
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground truncate">
+        {image.alt?.trim() || (image.url ? image.url.split("/").pop() : "No image selected")}
+      </p>
       {(linkOpen[`${section.id}:${index}`] || image.href) && (
         <Input
           value={image.href ?? ""}
