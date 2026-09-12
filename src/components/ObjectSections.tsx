@@ -5,6 +5,73 @@
 
 export type SectionAlign = "left" | "center" | "right";
 
+export type TextFont = "serif" | "sans";
+export type TextColor = "ink" | "stone" | "brass" | "garnet" | "cream";
+export type TextSize = "sm" | "md" | "lg" | "xl";
+
+export interface TextStyle {
+  font?: TextFont;
+  color?: TextColor;
+  size?: TextSize;
+}
+
+export const TEXT_FONTS: { value: TextFont; label: string }[] = [
+  { value: "serif", label: "Serif" },
+  { value: "sans", label: "Sans" },
+];
+
+export const TEXT_COLORS: { value: TextColor; label: string; swatch: string }[] = [
+  { value: "ink", label: "Ink", swatch: "hsl(var(--nova-ink))" },
+  { value: "stone", label: "Stone", swatch: "hsl(var(--nova-stone))" },
+  { value: "brass", label: "Tan", swatch: "hsl(var(--nova-brass))" },
+  { value: "garnet", label: "Garnet", swatch: "hsl(var(--nova-garnet))" },
+  { value: "cream", label: "White", swatch: "hsl(var(--nova-cream))" },
+];
+
+export const TEXT_SIZES: { value: TextSize; label: string }[] = [
+  { value: "sm", label: "S" },
+  { value: "md", label: "M" },
+  { value: "lg", label: "L" },
+  { value: "xl", label: "XL" },
+];
+
+const fontClass: Record<TextFont, string> = { serif: "font-serif font-light", sans: "font-sans" };
+const colorClass: Record<TextColor, string> = {
+  ink: "text-ink",
+  stone: "text-stone",
+  brass: "text-brass",
+  garnet: "text-garnet",
+  cream: "text-cream",
+};
+const headingSizeClass: Record<TextSize, string> = {
+  sm: "text-xl sm:text-2xl",
+  md: "text-2xl sm:text-3xl",
+  lg: "text-3xl sm:text-4xl",
+  xl: "text-4xl sm:text-5xl",
+};
+const bodySizeClass: Record<TextSize, string> = {
+  sm: "text-sm",
+  md: "text-base",
+  lg: "text-lg",
+  xl: "text-xl",
+};
+
+export function headingClasses(style: TextStyle | undefined, fallback: { color: TextColor; size: TextSize }) {
+  return [
+    fontClass[style?.font ?? "serif"],
+    colorClass[style?.color ?? fallback.color],
+    headingSizeClass[style?.size ?? fallback.size],
+  ].join(" ");
+}
+
+export function bodyClasses(style: TextStyle | undefined, fallback: { color: TextColor; size: TextSize }) {
+  return [
+    fontClass[style?.font ?? "sans"],
+    colorClass[style?.color ?? fallback.color],
+    bodySizeClass[style?.size ?? fallback.size],
+  ].join(" ");
+}
+
 export interface SectionImage {
   url: string;
   alt: string;
@@ -15,6 +82,7 @@ export interface CarouselSection {
   id: string;
   type: "carousel";
   heading?: string;
+  textStyle?: TextStyle;
   images: SectionImage[];
 }
 
@@ -22,6 +90,7 @@ export interface ImageRowSection {
   id: string;
   type: "imageRow";
   heading?: string;
+  textStyle?: TextStyle;
   columns: 2 | 3 | 4;
   images: SectionImage[];
 }
@@ -30,6 +99,7 @@ export interface CaptionedImagesSection {
   id: string;
   type: "captionedImages";
   heading?: string;
+  textStyle?: TextStyle;
   columns: 1 | 2 | 3;
   images: SectionImage[];
 }
@@ -43,6 +113,8 @@ export interface OverlaySection {
   body?: string;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
+  textStyle?: TextStyle;
+  bodyStyle?: TextStyle;
   buttonLabel?: string;
   buttonHref?: string;
 }
@@ -52,6 +124,8 @@ export interface SplitSection {
   type: "split";
   image: SectionImage;
   imageSide: "left" | "right";
+  textStyle?: TextStyle;
+  bodyStyle?: TextStyle;
   eyebrow?: string;
   heading: string;
   body?: string;
@@ -258,16 +332,16 @@ function Carousel({ section }: { section: CarouselSection }) {
 }
 
 export function SectionView({ section }: { section: Section }) {
-  const heading = (text?: string) =>
+  const heading = (text?: string, style?: TextStyle) =>
     text ? (
-      <h2 className="font-serif font-light text-2xl sm:text-3xl text-ink mb-8">{text}</h2>
+      <h2 className={`mb-8 ${headingClasses(style, { color: "ink", size: "md" })}`}>{text}</h2>
     ) : null;
 
   switch (section.type) {
     case "carousel":
       return (
         <section className="py-12">
-          {heading(section.heading)}
+          {heading(section.heading, section.textStyle)}
           <Carousel section={section} />
         </section>
       );
@@ -275,7 +349,7 @@ export function SectionView({ section }: { section: Section }) {
     case "imageRow":
       return (
         <section className="py-12">
-          {heading(section.heading)}
+          {heading(section.heading, section.textStyle)}
           <div className={`grid gap-4 ${colClass[section.columns]}`}>
             {section.images.map((img, i) => (
               <Pic key={i} image={img} className="w-full aspect-[4/5] rounded-lg" />
@@ -287,7 +361,7 @@ export function SectionView({ section }: { section: Section }) {
     case "captionedImages":
       return (
         <section className="py-12">
-          {heading(section.heading)}
+          {heading(section.heading, section.textStyle)}
           <div className={`grid gap-8 ${colClass[section.columns]}`}>
             {section.images.map((img, i) => (
               <figure key={i}>
@@ -313,11 +387,11 @@ export function SectionView({ section }: { section: Section }) {
               {section.eyebrow ? (
                 <p className="text-[11px] uppercase tracking-[0.24em] text-cream/80">{section.eyebrow}</p>
               ) : null}
-              <h2 className="font-serif font-light text-3xl sm:text-4xl text-cream max-w-2xl">
+              <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "lg" })}`}>
                 {section.heading}
               </h2>
               {section.body ? (
-                <p className="text-cream/85 max-w-xl leading-relaxed whitespace-pre-wrap">{section.body}</p>
+                <p className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "cream", size: "md" })}`}>{section.body}</p>
               ) : null}
               {section.buttonLabel ? (
                 <a
@@ -343,9 +417,9 @@ export function SectionView({ section }: { section: Section }) {
               {section.eyebrow ? (
                 <p className="text-[11px] uppercase tracking-[0.24em] text-stone mb-3">{section.eyebrow}</p>
               ) : null}
-              <h2 className="font-serif font-light text-3xl text-ink mb-4">{section.heading}</h2>
+              <h2 className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "lg" })}`}>{section.heading}</h2>
               {section.body ? (
-                <p className="text-stone leading-relaxed whitespace-pre-wrap">{section.body}</p>
+                <p className={`leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "stone", size: "md" })}`}>{section.body}</p>
               ) : null}
               {section.buttonLabel ? (
                 <div className="mt-6">
