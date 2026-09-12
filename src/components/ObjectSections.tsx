@@ -535,7 +535,7 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
           {img.caption ? (
             <figcaption
               data-part={`caption:${i}`}
-              className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, {
+              className={`mt-3 leading-relaxed ${alignTextOnly[section.captionAlign ?? "left"]} ${bodyClasses(section.captionStyle, {
                 color: onDark ? "cream" : "stone",
                 size: "sm",
               })}`}
