@@ -476,6 +476,18 @@ export default function ObjectDesignPage() {
               defaults={{ font: "sans", color: "stone", size: "md" }}
               onChange={(v) => patch(section.id, { bodyStyle: v })}
             />
+            <TextStyleFields
+              label="Eyebrow style"
+              value={section.eyebrowStyle}
+              defaults={{ font: "sans", color: "stone", size: "sm" }}
+              onChange={(v) => patch(section.id, { eyebrowStyle: v })}
+            />
+            <TextStyleFields
+              label="Button label style"
+              value={section.labelStyle}
+              defaults={{ font: "sans", color: "ink", size: "sm" }}
+              onChange={(v) => patch(section.id, { labelStyle: v })}
+            />
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Button label (optional)">
                 <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
