@@ -1207,6 +1207,54 @@ export default function ObjectDesignPage() {
           }),
         )}
 
+        {(section.dividers ?? []).map((d, i) =>
+          Block({
+            title: "Divider",
+            icon: Minus,
+            part: `divider:${i}`,
+            key: d.id,
+            children: (
+              <>
+                <div className="flex flex-wrap items-center gap-3">
+                  <ColorDropdown
+                    label="Color"
+                    value={d.color ?? ""}
+                    fallback="stone"
+                    options={TEXT_COLORS}
+                    onChange={(v) => patchDivider(section.id, i, { color: v as TextColor })}
+                  />
+                  <Button variant="ghost" size="sm" className="ml-auto" onClick={() => removeDivider(section.id, i)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+                <Field label="Width">
+                  <div>
+                    <Choice
+                      value={d.width ?? "full"}
+                      options={[
+                        { value: "full" as const, label: "Full width", icon: Minus },
+                        { value: "short" as const, label: "Short", icon: Minus },
+                      ]}
+                      onChange={(v) => patchDivider(section.id, i, { width: v })}
+                    />
+                  </div>
+                </Field>
+                <Field label="Thickness (px)">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={d.thickness ?? 1}
+                    onChange={(e) =>
+                      patchDivider(section.id, i, { thickness: Math.min(12, Math.max(1, Number(e.target.value) || 1)) })
+                    }
+                  />
+                </Field>
+              </>
+            ),
+          }),
+        )}
+
         {section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, children: (
           <>
 
