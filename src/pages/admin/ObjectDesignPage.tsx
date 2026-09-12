@@ -9,7 +9,7 @@ import {
   ArrowLeft, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
-  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline,
+  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
@@ -467,6 +467,9 @@ export default function ObjectDesignPage() {
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
   // which element of the active section the user clicked on in the preview
   const [focusPart, setFocusPart] = useState("");
+  // collapsible editing blocks: explicit overrides plus an expand/collapse-all default
+  const [openBlocks, setOpenBlocks] = useState<Record<string, boolean>>({});
+  const [blocksExpanded, setBlocksExpanded] = useState(false);
   // floating font / size / color toolbar for the clicked text element
   const [toolbar, setToolbar] = useState<
     { sectionId: string; field?: keyof FreeSection; imageIndex?: number; top: number; left: number; width: number } | null
@@ -889,19 +892,34 @@ export default function ObjectDesignPage() {
     part,
     key,
     children,
-  }: { title: string; icon: LucideIcon; part?: string; key?: string; children: React.ReactNode }) => (
-    <div
-      key={key}
-      data-inspector-part={part}
-      className="scroll-mt-24 rounded-lg border bg-background shadow-sm"
-    >
-      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5">
-        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{title}</span>
+  }: { title: string; icon: LucideIcon; part?: string; key?: string; children: React.ReactNode }) => {
+    const blockKey = key ?? part ?? title;
+    const focused =
+      !!focusPart &&
+      (focusPart === part ||
+        (title === "Images" && (focusPart.startsWith("image:") || focusPart.startsWith("caption:") || focusPart.startsWith("imagetext:"))));
+    const open = openBlocks[blockKey] ?? (blocksExpanded || focused);
+    return (
+      <div
+        key={key}
+        data-inspector-part={part}
+        className="scroll-mt-24 rounded-lg border bg-background shadow-sm"
+      >
+        <button
+          type="button"
+          onClick={() => setOpenBlocks((o) => ({ ...o, [blockKey]: !open }))}
+          className="flex w-full items-center gap-2 border-b bg-muted/40 px-3 py-1.5 text-left"
+        >
+          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{title}</span>
+          <ChevronDown
+            className={`ml-auto h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "" : "-rotate-90"}`}
+          />
+        </button>
+        {open ? <div className="space-y-3 p-3">{children}</div> : null}
       </div>
-      <div className="space-y-3 p-3">{children}</div>
-    </div>
-  );
+    );
+  };
 
 
   const freeInspector = (section: FreeSection) => {
@@ -927,6 +945,18 @@ export default function ObjectDesignPage() {
           />
           <Chip label="Image" icon={ImageIcon} onClick={() => addImageSlot(section.id)} />
           {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => patch(section.id, { buttonLabel: "Explore", buttonHref: "/" })} />}
+          <div className="ml-auto flex gap-2">
+            <Chip
+              label="Expand all"
+              icon={ChevronsUpDown}
+              onClick={() => { setBlocksExpanded(true); setOpenBlocks({}); }}
+            />
+            <Chip
+              label="Collapse all"
+              icon={ChevronsDownUp}
+              onClick={() => { setBlocksExpanded(false); setOpenBlocks({}); setFocusPart(""); }}
+            />
+          </div>
         </div>
 
         {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", children: (
