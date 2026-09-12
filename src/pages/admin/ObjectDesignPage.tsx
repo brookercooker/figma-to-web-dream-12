@@ -1566,6 +1566,8 @@ export default function ObjectDesignPage() {
             ),
           });
       }
+      if (p === "images") return imagesBlock();
+      if (p === "videos") return videosBlock();
       return null;
     };
 
