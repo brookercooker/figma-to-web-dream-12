@@ -202,6 +202,8 @@ export interface FreeSection {
   imageHeight?: ImageHeight;
   /** horizontal position of images when they don't fill the width */
   imageAlign?: SectionAlign;
+  /** horizontal alignment of image captions */
+  captionAlign?: SectionAlign;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
@@ -295,6 +297,12 @@ const alignRow: Record<SectionAlign, string> = {
   left: "justify-start",
   center: "justify-center",
   right: "justify-end",
+};
+
+const alignTextOnly: Record<SectionAlign, string> = {
+  left: "text-left",
+  center: "text-center",
+  right: "text-right",
 };
 
 const colClass: Record<number, string> = {
@@ -472,7 +480,7 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
               {img.caption ? (
                 <figcaption
                   data-part={`caption:${idx}`}
-                  className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+                  className={`mt-3 leading-relaxed ${alignTextOnly[section.captionAlign ?? "left"]} ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
                 >
                   {img.caption}
                 </figcaption>
@@ -527,7 +535,7 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
           {img.caption ? (
             <figcaption
               data-part={`caption:${i}`}
-              className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, {
+              className={`mt-3 leading-relaxed ${alignTextOnly[section.captionAlign ?? "left"]} ${bodyClasses(section.captionStyle, {
                 color: onDark ? "cream" : "stone",
                 size: "sm",
               })}`}
