@@ -107,7 +107,7 @@ export function headingClasses(style: TextStyle | undefined, fallback: { color: 
   return [
     fontClass[style?.font ?? "serif"],
     colorClass[style?.color ?? fallback.color],
-    headingSizeClass[style?.size ?? fallback.size],
+    style?.sizePx ? "" : headingSizeClass[style?.size ?? fallback.size],
     emphasisClasses(style),
   ].join(" ");
 }
@@ -116,7 +116,7 @@ export function bodyClasses(style: TextStyle | undefined, fallback: { color: Tex
   return [
     fontClass[style?.font ?? "sans"],
     colorClass[style?.color ?? fallback.color],
-    bodySizeClass[style?.size ?? fallback.size],
+    style?.sizePx ? "" : bodySizeClass[style?.size ?? fallback.size],
     emphasisClasses(style),
   ].join(" ");
 }
