@@ -446,7 +446,7 @@ export function SectionView({ section }: { section: Section }) {
       const s = section as ButtonSection;
       return (
         <section className={`py-10 flex ${alignRow[s.align]}`}>
-          <SectionButton label={s.label} href={s.href} variant={s.variant} />
+          <SectionButton label={s.label} href={s.href} variant={s.variant} style={s.labelStyle} />
         </section>
       );
     }
