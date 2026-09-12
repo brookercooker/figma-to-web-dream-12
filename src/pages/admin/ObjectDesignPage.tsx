@@ -103,6 +103,32 @@ function ColorSwatches({ value, onChange }: { value: TextColor; onChange: (v: Te
   );
 }
 
+/** Exact font size in px, alongside the S / M / L / XL presets. */
+function SizeControl({
+  style, defaultSize, heading, set,
+}: { style: TextStyle; defaultSize: TextSize; heading?: boolean; set: (changes: Partial<TextStyle>) => void }) {
+  const preset = (heading ? HEADING_PX : BODY_PX)[style.size ?? defaultSize];
+  const px = style.sizePx ?? preset;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <input
+        type="number"
+        min={MIN_TEXT_PX}
+        max={MAX_TEXT_PX}
+        value={px}
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          if (!v) return;
+          set({ sizePx: Math.min(MAX_TEXT_PX, Math.max(MIN_TEXT_PX, Math.round(v))) });
+        }}
+        className="w-16 rounded-md border bg-background px-2 py-1 text-xs"
+        aria-label="Text size in pixels"
+      />
+      <span className="text-[11px] text-muted-foreground">px</span>
+    </span>
+  );
+}
+
 function TextStyleFields({
   label, value, defaults, onChange, colorOnly,
 }: {
