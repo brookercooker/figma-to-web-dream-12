@@ -366,6 +366,8 @@ export interface FreeSection {
   flowWidth?: number;
   /** per-element flow, keyed by part (eyebrow, heading, body, text:i, divider:i, button) */
   flows?: Record<string, SectionFlow>;
+  /** per-element inline width percentage, keyed by the same parts */
+  flowWidths?: Record<string, number>;
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
   eyebrow?: string;
