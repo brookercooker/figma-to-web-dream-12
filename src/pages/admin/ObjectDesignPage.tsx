@@ -1747,7 +1747,14 @@ export default function ObjectDesignPage() {
 
         const fieldKey = String(toolbar.field);
         const extraIdx = fieldKey.startsWith("extra:") ? Number(fieldKey.split(":")[1]) : -1;
-        const style = (extraIdx >= 0
+        const imgText = fieldKey.startsWith("imagetext:")
+          ? { img: Number(fieldKey.split(":")[1]), t: Number(fieldKey.split(":")[2]) }
+          : null;
+        const imgTextItem = imgText ? (sec.images?.[imgText.img]?.texts ?? [])[imgText.t] : undefined;
+        if (imgText && !imgTextItem) return null;
+        const style = (imgTextItem
+          ? (imgTextItem.style ?? {})
+          : extraIdx >= 0
           ? ((sec.extras ?? [])[extraIdx]?.style ?? {})
           : ((sec as any)[fieldKey] ?? {})) as TextStyle;
         const solid = (sec.buttonVariant ?? "solid") === "solid";
