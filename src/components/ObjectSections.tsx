@@ -832,6 +832,11 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
           {...richText(t.text)}
         />
       ))}
+      {(section.dividers ?? []).map((d, i) => (
+        <div key={d.id} data-part={`divider:${i}`} className="w-full flex flex-col">
+          <DividerBar divider={d} align={section.align} onDark={onDark} />
+        </div>
+      ))}
       {section.buttonLabel ? (
         <div data-part="button" className="mt-2">
           <SectionButton
