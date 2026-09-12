@@ -436,9 +436,12 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
         >
           {images.map((img, idx) => (
             <figure key={idx} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
-              <Pic image={img} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
+              <div data-part={`image:${idx}`}>
+                <Pic image={img} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
+              </div>
               {img.caption ? (
                 <figcaption
+                  data-part={`caption:${idx}`}
                   className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
                 >
                   {img.caption}
@@ -446,6 +449,7 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
               ) : null}
             </figure>
           ))}
+
         </div>
       </div>
       {pages > 1 && (
@@ -484,12 +488,15 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
     >
       {section.images.map((img, i) => (
         <figure key={i} className="basis-0 grow min-w-0">
-          <Pic
-            image={img}
-            className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`}
-          />
+          <div data-part={`image:${i}`}>
+            <Pic
+              image={img}
+              className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`}
+            />
+          </div>
           {img.caption ? (
             <figcaption
+              data-part={`caption:${i}`}
               className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, {
                 color: onDark ? "cream" : "stone",
                 size: "sm",
@@ -502,6 +509,7 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
       ))}
     </div>
   );
+
 }
 
 function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
@@ -511,22 +519,22 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
   return (
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
       {section.eyebrow ? (
-        <p className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}>
+        <p data-part="eyebrow" className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}>
           {section.eyebrow}
         </p>
       ) : null}
       {section.heading ? (
-        <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}>
+        <h2 data-part="heading" className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}>
           {section.heading}
         </h2>
       ) : null}
       {section.body ? (
-        <p className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}>
+        <p data-part="body" className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}>
           {section.body}
         </p>
       ) : null}
       {section.buttonLabel ? (
-        <div className="mt-2">
+        <div data-part="button" className="mt-2">
           <SectionButton
             label={section.buttonLabel}
             href={section.buttonHref || "#"}
@@ -536,6 +544,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
           />
         </div>
       ) : null}
+
     </div>
   );
 }
@@ -547,7 +556,9 @@ function FreeView({ section }: { section: FreeSection }) {
     return (
       <section className="py-12">
         <div className={`relative overflow-hidden rounded-lg ${overlayHeight[section.height]}`}>
-          <Pic image={section.images[0]} className="absolute inset-0 h-full w-full" />
+          <div data-part="image:0" className="absolute inset-0">
+            <Pic image={section.images[0]} className="absolute inset-0 h-full w-full" />
+          </div>
           <div className="absolute inset-0 bg-ink/35" />
           <div className={`relative flex h-full flex-col justify-center px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
             <FreeText section={section} onDark />

@@ -157,6 +157,33 @@ export default function ObjectDesignPage() {
   const [q, setQ] = useState("");
   // { sectionId, index } — index -1 means the section's single image
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
+  // which element of the active section the user clicked on in the preview
+  const [focusPart, setFocusPart] = useState("");
+
+  // Clicking an element in the preview jumps to (and focuses) its controls.
+  useEffect(() => {
+    if (!focusPart || !activeId) return;
+    const t = window.setTimeout(() => {
+      const group = document.querySelector<HTMLElement>(
+        `[data-inspector-section="${activeId}"] [data-inspector-part="${focusPart}"]`,
+      );
+      if (!group) return;
+      group.scrollIntoView({ behavior: "smooth", block: "center" });
+      group.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea")?.focus();
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, [focusPart, activeId]);
+
+  const pickPart = (sectionId: string, e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
+    if ((e.target as HTMLElement).closest?.("a")) e.preventDefault();
+    setActiveId(sectionId);
+    if (!el) return;
+    const part = el.getAttribute("data-part") ?? "";
+    // captions are edited alongside their image
+    setFocusPart(part.startsWith("caption:") ? part.replace("caption:", "image:") : part);
+  };
+
 
   const load = async () => {
     const { data } = await (supabase as any)
@@ -352,7 +379,8 @@ export default function ObjectDesignPage() {
         </div>
 
         {hasEyebrow && (
-          <div className="space-y-2">
+          <div data-inspector-part="eyebrow" className="space-y-2 scroll-mt-24">
+
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Field label="Eyebrow">
@@ -374,7 +402,8 @@ export default function ObjectDesignPage() {
         )}
 
         {hasTitle && (
-          <div className="space-y-2">
+          <div data-inspector-part="heading" className="space-y-2 scroll-mt-24">
+
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Field label="Title">
@@ -395,7 +424,8 @@ export default function ObjectDesignPage() {
         )}
 
         {hasBody && (
-          <div className="space-y-2">
+          <div data-inspector-part="body" className="space-y-2 scroll-mt-24">
+
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Field label="Text">
@@ -419,8 +449,11 @@ export default function ObjectDesignPage() {
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               {section.images.map((img, i) => (
-                <div key={i}>{ImageEditor({ section, index: i, image: img, showCaption: true })}</div>
+                <div key={i} data-inspector-part={`image:${i}`} className="scroll-mt-24">
+                  {ImageEditor({ section, index: i, image: img, showCaption: true })}
+                </div>
               ))}
+
             </div>
             <TextStyleFields
               label="Caption style"
@@ -532,7 +565,7 @@ export default function ObjectDesignPage() {
         )}
 
         {hasButton && (
-          <div className="space-y-2">
+          <div data-inspector-part="button" className="space-y-2 scroll-mt-24">
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Button label">
                 <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
@@ -966,8 +999,8 @@ export default function ObjectDesignPage() {
                     </div>
 
                     <div
-                      className="px-4 cursor-pointer"
-                      onClick={() => { if (!active) setActiveId(s.id); }}
+                      className="px-4 cursor-pointer [&_[data-part]]:cursor-pointer [&_[data-part]]:rounded-sm [&_[data-part]]:transition-shadow [&_[data-part]:hover]:ring-2 [&_[data-part]:hover]:ring-primary/50 [&_[data-part]:hover]:ring-offset-2"
+                      onClick={(e) => pickPart(s.id, e)}
                     >
                       {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel ? (
                         <p className="py-12 text-center text-sm text-muted-foreground">
@@ -979,10 +1012,11 @@ export default function ObjectDesignPage() {
                     </div>
 
                     {active && (
-                      <div className="border-t bg-muted/20 p-4">
+                      <div data-inspector-section={s.id} className="border-t bg-muted/20 p-4">
                         {Inspector({ section: s })}
                       </div>
                     )}
+
                   </div>
                 );
               })}
