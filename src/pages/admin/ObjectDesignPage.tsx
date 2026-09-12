@@ -1410,9 +1410,9 @@ export default function ObjectDesignPage() {
               </div>
             </Field>
             {parts.length > 1 && (
-              <Field label="Drag to reorder">
-                {arrangeList()}
-              </Field>
+              <p className="text-xs text-muted-foreground">
+                Drag an element's header below to move it up or down.
+              </p>
             )}
           </>
         ) })}
