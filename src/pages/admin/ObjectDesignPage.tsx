@@ -43,18 +43,20 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function Choice<T extends string | number>({
   value, options, onChange,
-}: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
+}: { value: T; options: { value: T; label: string; icon?: LucideIcon }[]; onChange: (v: T) => void }) {
   return (
     <div className="inline-flex rounded-md border overflow-hidden">
       {options.map((o) => (
         <button
           key={String(o.value)}
           type="button"
+          title={o.label}
           onClick={() => onChange(o.value)}
-          className={`px-3 py-1.5 text-xs transition-colors ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs transition-colors ${
             o.value === value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
           }`}
         >
+          {o.icon ? <o.icon className="h-3.5 w-3.5" /> : null}
           {o.label}
         </button>
       ))}
