@@ -1203,27 +1203,29 @@ export default function ObjectDesignPage() {
           </div>
         </div>
 
-        {Block({ title: "Block alignment", icon: AlignLeft, children: (
-          <Field label="Alignment">
-            <div>
-              <Choice
-                value={section.align}
-                options={[
-                  { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
-                  { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
-                  { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
-                ]}
-                onChange={(v) => patch(section.id, { align: v })}
-              />
-            </div>
-          </Field>
+        {Block({ title: "Block alignment & arrangement", icon: AlignLeft, children: (
+          <>
+            <Field label="Alignment">
+              <div>
+                <Choice
+                  value={section.align}
+                  options={[
+                    { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
+                    { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
+                    { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
+                  ]}
+                  onChange={(v) => patch(section.id, { align: v })}
+                />
+              </div>
+            </Field>
+            {parts.length > 1 && (
+              <Field label="Drag to reorder">
+                {arrangeList()}
+              </Field>
+            )}
+          </>
         ) })}
 
-        {parts.length > 1 && Block({ title: "Arrangement", icon: GripVertical, children: (
-          <Field label="Drag to reorder">
-            {arrangeList()}
-          </Field>
-        ) })}
 
 
         {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, children: (
