@@ -558,7 +558,7 @@ function FreeFigureBody({
           <p
             key={t.id}
             data-part={`imagetext:${index}:${ti}`}
-            className={`mt-3 leading-relaxed ${align} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
+            className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${align} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
             style={textInlineStyle(t.style)}
             {...richText(t.text)}
           />
