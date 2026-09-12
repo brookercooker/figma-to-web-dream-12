@@ -484,12 +484,15 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
     >
       {section.images.map((img, i) => (
         <figure key={i} className="basis-0 grow min-w-0">
-          <Pic
-            image={img}
-            className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`}
-          />
+          <div data-part={`image:${i}`}>
+            <Pic
+              image={img}
+              className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`}
+            />
+          </div>
           {img.caption ? (
             <figcaption
+              data-part={`caption:${i}`}
               className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, {
                 color: onDark ? "cream" : "stone",
                 size: "sm",
@@ -502,6 +505,7 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
       ))}
     </div>
   );
+
 }
 
 function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
