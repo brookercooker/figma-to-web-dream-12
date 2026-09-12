@@ -873,19 +873,10 @@ export default function ObjectDesignPage() {
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => add("free")}>
-                  <Plus className="w-4 h-4" /> Add a blank space
+                  <Plus className="w-4 h-4" /> Add another section
                 </Button>
               </div>
 
-              {!sections.length && (
-                <button
-                  type="button"
-                  onClick={() => add("free")}
-                  className="w-full border border-dashed rounded-lg p-12 text-center text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
-                >
-                  Start with a blank space, then add a title, an eyebrow, text, or images.
-                </button>
-              )}
 
               {sections.map((s, i) => {
                 const active = s.id === activeId;
