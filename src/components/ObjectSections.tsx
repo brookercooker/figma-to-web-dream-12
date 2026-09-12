@@ -506,6 +506,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
             href={section.buttonHref || "#"}
             variant={section.buttonVariant ?? (onDark ? "outline" : "solid")}
             style={section.labelStyle}
+            bg={section.buttonBg}
           />
         </div>
       ) : null}
