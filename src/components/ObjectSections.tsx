@@ -297,9 +297,21 @@ export interface FreeParagraph {
   style?: TextStyle;
 }
 
+/** A separating bar placed between content. */
+export interface FreeDivider {
+  id: string;
+  color?: TextColor;
+  /** full = spans the block, short = a small centered/aligned rule */
+  width?: "full" | "short";
+  /** bar thickness in px */
+  thickness?: number;
+}
+
 export interface FreeSection {
   id: string;
   type: "free";
+  /** separating bars shown under the text content */
+  dividers?: FreeDivider[];
   eyebrow?: string;
   heading?: string;
   body?: string;
@@ -752,9 +764,37 @@ function FreeVideos({ section, onDark }: { section: FreeSection; onDark?: boolea
   );
 }
 
+const dividerBg: Record<TextColor, string> = {
+  ink: "bg-ink",
+  stone: "bg-stone",
+  brass: "bg-brass",
+  garnet: "bg-garnet",
+  cream: "bg-cream",
+};
+
+const dividerSelf: Record<SectionAlign, string> = {
+  left: "self-start",
+  center: "self-center",
+  right: "self-end",
+};
+
+export function DividerBar({
+  divider, align, onDark,
+}: { divider: FreeDivider; align: SectionAlign; onDark?: boolean }) {
+  const color: TextColor = divider.color ?? (onDark ? "cream" : "stone");
+  const cls = dividerBg[color];
+  return (
+    <div
+      className={`${cls} ${divider.width === "short" ? `w-24 ${dividerSelf[align]}` : "w-full"} my-2 rounded-full`}
+      style={{ height: `${divider.thickness ?? 1}px` }}
+    />
+  );
+}
+
 function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
   const hasText =
-    section.eyebrow || section.heading || section.body || section.buttonLabel || (section.extras ?? []).length;
+    section.eyebrow || section.heading || section.body || section.buttonLabel ||
+    (section.extras ?? []).length || (section.dividers ?? []).length;
   if (!hasText) return null;
   const base: TextColor = onDark ? "cream" : "ink";
   return (
@@ -791,6 +831,11 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
           style={textInlineStyle(t.style)}
           {...richText(t.text)}
         />
+      ))}
+      {(section.dividers ?? []).map((d, i) => (
+        <div key={d.id} data-part={`divider:${i}`} className="w-full flex flex-col">
+          <DividerBar divider={d} align={section.align} onDark={onDark} />
+        </div>
       ))}
       {section.buttonLabel ? (
         <div data-part="button" className="mt-2">

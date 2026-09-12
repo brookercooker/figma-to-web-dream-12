@@ -10,7 +10,7 @@ import {
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
   LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown,
-  Video as VideoIcon,
+  Video as VideoIcon, Minus,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections,
-  type FreeSection, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
+  type FreeDivider, type FreeSection, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
 
@@ -683,6 +683,28 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  const patchDivider = (id: string, index: number, changes: Partial<FreeDivider>) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const dividers = (s.dividers ?? []).map((d, i) => (i === index ? { ...d, ...changes } : d));
+        return { ...s, dividers } as Section;
+      }),
+    );
+    setDirty(true);
+  };
+
+  const removeDivider = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === id && s.type === "free"
+          ? ({ ...s, dividers: (s.dividers ?? []).filter((_, i) => i !== index) } as Section)
+          : s,
+      ),
+    );
+    setDirty(true);
+  };
+
   const patchImage = (id: string, index: number, changes: Partial<SectionImage>) => {
     setSections((prev) =>
       prev.map((s) => {
@@ -1037,6 +1059,17 @@ export default function ObjectDesignPage() {
           />
           <Chip label="Image" icon={ImageIcon} onClick={() => addImageSlot(section.id)} />
           <Chip label="Video" icon={VideoIcon} onClick={() => addVideoSlot(section.id)} />
+          <Chip
+            label="Divider"
+            icon={Minus}
+            onClick={() => {
+              const id = newSectionId();
+              patch(section.id, {
+                dividers: [...(section.dividers ?? []), { id, color: "stone", width: "full", thickness: 1 }],
+              });
+              openBlock(id);
+            }}
+          />
           {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => { patch(section.id, { buttonLabel: "Explore", buttonHref: "/" }); openBlock("button"); }} />}
           <div className="ml-auto flex gap-2">
             <Chip
@@ -1169,6 +1202,54 @@ export default function ObjectDesignPage() {
                   defaults={{ font: "sans", color: "stone", size: "md" }}
                   onChange={(v) => patchExtra(section.id, i, { style: v })}
                 />
+              </>
+            ),
+          }),
+        )}
+
+        {(section.dividers ?? []).map((d, i) =>
+          Block({
+            title: "Divider",
+            icon: Minus,
+            part: `divider:${i}`,
+            key: d.id,
+            children: (
+              <>
+                <div className="flex flex-wrap items-center gap-3">
+                  <ColorDropdown
+                    label="Color"
+                    value={d.color ?? ""}
+                    fallback="stone"
+                    options={TEXT_COLORS}
+                    onChange={(v) => patchDivider(section.id, i, { color: v as TextColor })}
+                  />
+                  <Button variant="ghost" size="sm" className="ml-auto" onClick={() => removeDivider(section.id, i)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+                <Field label="Width">
+                  <div>
+                    <Choice
+                      value={d.width ?? "full"}
+                      options={[
+                        { value: "full" as const, label: "Full width", icon: Minus },
+                        { value: "short" as const, label: "Short", icon: Minus },
+                      ]}
+                      onChange={(v) => patchDivider(section.id, i, { width: v })}
+                    />
+                  </div>
+                </Field>
+                <Field label="Thickness (px)">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={d.thickness ?? 1}
+                    onChange={(e) =>
+                      patchDivider(section.id, i, { thickness: Math.min(12, Math.max(1, Number(e.target.value) || 1)) })
+                    }
+                  />
+                </Field>
               </>
             ),
           }),
