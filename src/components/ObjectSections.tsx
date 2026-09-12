@@ -371,6 +371,8 @@ export interface FreeDivider {
   color?: TextColor;
   /** full = spans the block, short = a small centered/aligned rule */
   width?: "full" | "short";
+  /** width as a percentage of the available width (1-100); overrides width when set */
+  widthPct?: number;
   /** bar thickness in px */
   thickness?: number;
   /** @deprecated placement is now controlled by FreeSection.order */
