@@ -1245,10 +1245,10 @@ export default function ObjectDesignPage() {
               />
             )}
             {toolbar.field === "labelStyle" && (sec.buttonVariant ?? "solid") === "solid" && (
-              <Dropdown
+              <ColorDropdown
                 label="Fill"
                 value={sec.buttonBg ?? ""}
-                options={[{ value: "", label: "Default" }, ...TEXT_COLORS.map((c) => ({ value: c.value as string, label: c.label }))]}
+                options={TEXT_COLORS}
                 onChange={(v) => patch(toolbar.sectionId, { buttonBg: (v || undefined) as TextColor | undefined })}
               />
             )}
