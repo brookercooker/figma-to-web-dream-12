@@ -13,9 +13,23 @@ export interface TextStyle {
   font?: TextFont;
   color?: TextColor;
   size?: TextSize;
+  /** exact size in px — overrides the preset size when set */
+  sizePx?: number;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+}
+
+export const MIN_TEXT_PX = 10;
+export const MAX_TEXT_PX = 96;
+
+/** Approximate px behind each preset, so the number input starts from the current look. */
+export const HEADING_PX: Record<TextSize, number> = { sm: 24, md: 30, lg: 36, xl: 48 };
+export const BODY_PX: Record<TextSize, number> = { sm: 14, md: 16, lg: 18, xl: 20 };
+
+/** Inline font-size for text that uses an exact px value. */
+export function textInlineStyle(style: TextStyle | undefined) {
+  return style?.sizePx ? { fontSize: `${style.sizePx}px` } : undefined;
 }
 
 /** Bold / italic / underline classes shared by every text element. */
