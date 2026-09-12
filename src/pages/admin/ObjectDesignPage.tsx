@@ -784,7 +784,7 @@ export default function ObjectDesignPage() {
     );
     setDirty(true);
     openBlock("Images");
-    setOpenSub({ [`img:${id}:${newIndex}`]: true });
+    setOpenSub((s) => ({ ...s, [`img:${id}:${newIndex}`]: true }));
     setPicker({ sectionId: id, index: newIndex });
   };
 
@@ -823,7 +823,7 @@ export default function ObjectDesignPage() {
     );
     setDirty(true);
     openBlock("Images");
-    setOpenSub({ [`img:${id}:${index + 1}`]: true });
+    setOpenSub((s) => ({ ...s, [`img:${id}:${index + 1}`]: true }));
   };
 
   const duplicateImageText = (sectionId: string, index: number, tIdx: number) => {
