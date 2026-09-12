@@ -388,7 +388,14 @@ export default function ObjectsTab() {
           archivedCount={archived.length}
         />
 
-        <AddButtonRow label="Object" onClick={() => setCreating(true)} />
+        <div className="flex flex-wrap items-center gap-3">
+          <AddButtonRow label="Object" onClick={() => setCreating(true)} />
+          <Button asChild variant="outline" size="sm" className="gap-2">
+            <Link to="/manage/objects/design">
+              <Palette className="w-4 h-4" /> Design an object
+            </Link>
+          </Button>
+        </div>
 
 
 
