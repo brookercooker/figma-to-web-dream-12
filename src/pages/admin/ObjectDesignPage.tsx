@@ -2312,16 +2312,20 @@ export default function ObjectDesignPage() {
                           <label className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Input
                               type="number"
-                              min={5}
+                              min={1}
                               max={100}
                               className="h-8 w-20"
                               placeholder="Auto"
                               value={s.flowWidth ?? ""}
                               onChange={(e) => {
                                 const raw = e.target.value;
-                                patch(s.id, {
-                                  flowWidth: raw === "" ? undefined : Math.min(100, Math.max(5, Number(raw) || 0)),
-                                } as Partial<Section>);
+                                if (raw === "") {
+                                  patch(s.id, { flowWidth: undefined } as Partial<Section>);
+                                  return;
+                                }
+                                const n = Number(raw);
+                                if (Number.isNaN(n)) return;
+                                patch(s.id, { flowWidth: Math.min(100, Math.max(0, n)) } as Partial<Section>);
                               }}
                             />
                             %
