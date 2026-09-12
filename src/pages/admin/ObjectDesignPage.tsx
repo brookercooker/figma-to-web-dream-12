@@ -721,6 +721,39 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
+        {(section.extras ?? []).map((t, i) =>
+          Block({
+            title: "Text",
+            icon: AlignLeft,
+            part: `text:${i}`,
+            key: t.id,
+            children: (
+              <>
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Field label="Text">
+                      <Textarea
+                        rows={4}
+                        value={t.text}
+                        onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                      />
+                    </Field>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => removeExtra(section.id, i)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+                <TextStyleFields
+                  label="Text style"
+                  value={t.style}
+                  defaults={{ font: "sans", color: "stone", size: "md" }}
+                  onChange={(v) => patchExtra(section.id, i, { style: v })}
+                />
+              </>
+            ),
+          }),
+        )}
+
         {section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, children: (
           <>
 
@@ -1401,7 +1434,11 @@ export default function ObjectDesignPage() {
           );
         }
 
-        const style = ((sec as any)[toolbar.field as string] ?? {}) as TextStyle;
+        const fieldKey = String(toolbar.field);
+        const extraIdx = fieldKey.startsWith("extra:") ? Number(fieldKey.split(":")[1]) : -1;
+        const style = (extraIdx >= 0
+          ? ((sec.extras ?? [])[extraIdx]?.style ?? {})
+          : ((sec as any)[fieldKey] ?? {})) as TextStyle;
         const solid = (sec.buttonVariant ?? "solid") === "solid";
         const defaultColor: Record<string, string> = {
           eyebrowStyle: "stone",
@@ -1418,15 +1455,17 @@ export default function ObjectDesignPage() {
           labelStyle: "sans",
         };
         const set = (changes: Partial<TextStyle>) =>
-          patch(toolbar.sectionId, { [String(toolbar.field)]: { ...style, ...changes } });
+          extraIdx >= 0
+            ? patchExtra(toolbar.sectionId, extraIdx, { style: { ...style, ...changes } })
+            : patch(toolbar.sectionId, { [fieldKey]: { ...style, ...changes } });
         return (
           <FloatingToolbar top={anchorTop} left={toolbar.left}>
             <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
-              {STYLE_FIELD_LABEL[String(toolbar.field)]}
+              {extraIdx >= 0 ? "Text" : STYLE_FIELD_LABEL[fieldKey]}
             </span>
             <Dropdown
               label="Font"
-              value={style.font ?? defaultFont[String(toolbar.field)] ?? "sans"}
+              value={style.font ?? defaultFont[fieldKey] ?? "sans"}
               options={TEXT_FONTS.map((f) => ({ value: f.value as string, label: f.label }))}
               onChange={(v) => set({ font: (v || undefined) as TextFont | undefined })}
             />
@@ -1439,7 +1478,7 @@ export default function ObjectDesignPage() {
             <ColorDropdown
               label="Color"
               value={style.color ?? ""}
-              fallback={defaultColor[String(toolbar.field)] ?? "ink"}
+              fallback={(defaultColor[fieldKey] ?? (extraIdx >= 0 ? "stone" : "ink")) as TextColor}
               options={TEXT_COLORS}
               onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
             />
