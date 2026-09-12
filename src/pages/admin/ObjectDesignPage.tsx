@@ -1226,10 +1226,10 @@ export default function ObjectDesignPage() {
               options={[{ value: "", label: "Default" }, ...TEXT_SIZES.map((s) => ({ value: s.value as string, label: s.label }))]}
               onChange={(v) => set({ size: (v || undefined) as TextSize | undefined })}
             />
-            <Dropdown
+            <ColorDropdown
               label="Color"
               value={style.color ?? ""}
-              options={[{ value: "", label: "Default" }, ...TEXT_COLORS.map((c) => ({ value: c.value as string, label: c.label }))]}
+              options={TEXT_COLORS}
               onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
             />
             {toolbar.field === "labelStyle" && (
