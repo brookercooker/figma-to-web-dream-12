@@ -923,7 +923,13 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
         group.length > 1 ? (
           <div key={group[0].part} className={`flex flex-wrap items-start gap-6 ${alignRow[section.align]}`}>
             {group.map((it) => (
-              <div key={it.part} className="min-w-[10rem] flex-1 basis-0">{it.node}</div>
+              <div
+                key={it.part}
+                className="min-w-[10rem] flex-1 basis-0"
+                style={flowWidthStyle(section.flowWidths?.[it.part])}
+              >
+                {it.node}
+              </div>
             ))}
           </div>
         ) : (
