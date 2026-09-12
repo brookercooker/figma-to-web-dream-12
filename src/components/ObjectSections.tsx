@@ -381,6 +381,8 @@ export interface FreeSection {
   flowAligns?: Record<string, SectionAlign>;
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
+  /** explicit stacking order of text parts (eyebrow, heading, body, text:i, divider:i, button) */
+  order?: string[];
   eyebrow?: string;
   heading?: string;
   body?: string;
