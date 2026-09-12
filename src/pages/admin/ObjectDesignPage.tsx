@@ -598,6 +598,11 @@ export default function ObjectDesignPage() {
           onChange={(e) => patchImage(section.id, index, { caption: e.target.value })}
         />
       )}
+      <Input
+        value={image.href ?? ""}
+        placeholder="Link when clicked (optional), e.g. /brands"
+        onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
+      />
     </div>
   );
 
