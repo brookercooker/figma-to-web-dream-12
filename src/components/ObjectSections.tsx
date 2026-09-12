@@ -994,9 +994,9 @@ export function SectionView({ section }: { section: Section }) {
             </div>
             <div className="max-w-xl">
               {section.eyebrow ? (
-                <p className={`uppercase tracking-[0.24em] mb-3 ${bodyClasses(section.eyebrowStyle, { color: "stone", size: "sm" })}`}>{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] mb-3 ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "stone", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}>{section.eyebrow}</p>
               ) : null}
-              <h2 className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "lg" })}`}>{section.heading}</h2>
+              <h2 className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "xl" })}`}>{section.heading}</h2>
               {section.body ? (
                 <p className={`leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "stone", size: "md" })}`}>{section.body}</p>
               ) : null}
