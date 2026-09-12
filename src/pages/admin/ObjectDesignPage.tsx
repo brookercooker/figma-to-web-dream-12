@@ -161,13 +161,14 @@ function SizeControl({
 
 
 function TextStyleFields({
-  label, value, defaults, onChange, colorOnly,
+  label, value, defaults, onChange, colorOnly, showCaps,
 }: {
   label: string;
   value: TextStyle | undefined;
   defaults: { font: TextFont; color: TextColor; size: TextSize };
   onChange: (next: TextStyle) => void;
   colorOnly?: boolean;
+  showCaps?: boolean;
 }) {
   const style = value ?? {};
   const set = (changes: Partial<TextStyle>) => onChange({ ...style, ...changes });
@@ -201,6 +202,19 @@ function TextStyleFields({
                 set={set}
               />
             </div>
+          </Field>
+        )}
+        {showCaps && (
+          <Field label="Caps">
+            <label className="flex items-center gap-2 pt-1 text-xs">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-foreground"
+                checked={style.caps !== false}
+                onChange={(e) => set({ caps: e.target.checked })}
+              />
+              All caps
+            </label>
           </Field>
         )}
         <Field label="Emphasis">
@@ -861,6 +875,7 @@ export default function ObjectDesignPage() {
               value={section.eyebrowStyle}
               defaults={{ font: "sans", color: "stone", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
+              showCaps
             />
           </>
         ) })}
@@ -1235,6 +1250,7 @@ export default function ObjectDesignPage() {
               value={section.eyebrowStyle}
               defaults={{ font: "sans", color: "cream", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
+              showCaps
             />
             <TextStyleFields
               label="Button label style"
@@ -1323,6 +1339,7 @@ export default function ObjectDesignPage() {
               value={section.eyebrowStyle}
               defaults={{ font: "sans", color: "stone", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
+              showCaps
             />
             <TextStyleFields
               label="Button label style"
@@ -1693,6 +1710,17 @@ export default function ObjectDesignPage() {
               heading={fieldKey === "textStyle"}
               set={set}
             />
+            {fieldKey === "eyebrowStyle" && (
+              <label className="flex items-center gap-1.5 text-xs">
+                <input
+                  type="checkbox"
+                  className="h-3.5 w-3.5 accent-foreground"
+                  checked={style.caps !== false}
+                  onChange={(e) => set({ caps: e.target.checked })}
+                />
+                All caps
+              </label>
+            )}
             <ColorDropdown
               label="Color"
               value={style.color ?? ""}
