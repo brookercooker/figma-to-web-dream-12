@@ -681,11 +681,12 @@ export default function ObjectDesignPage() {
               defaults={{ font: "sans", color: "stone", size: "md" }}
               onChange={(v) => patch(section.id, { bodyStyle: v })}
             />
-          </div>
-        )}
+          </>
+        ) })}
 
-        {section.images.length > 0 && (
-          <div className="space-y-3">
+        {section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, children: (
+          <>
+
             <div className="grid gap-3 sm:grid-cols-2">
               {section.images.map((img, i) => (
                 <div key={i} data-inspector-part={`image:${i}`} className="scroll-mt-24">
