@@ -395,7 +395,7 @@ export function SectionView({ section }: { section: Section }) {
               className={`relative flex h-full flex-col justify-center gap-4 px-8 sm:px-14 py-16 ${alignText[section.align]} ${overlayHeight[section.height]}`}
             >
               {section.eyebrow ? (
-                <p className="text-[11px] uppercase tracking-[0.24em] text-cream/80">{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: "cream", size: "sm" })}`}>{section.eyebrow}</p>
               ) : null}
               <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "lg" })}`}>
                 {section.heading}
@@ -406,7 +406,7 @@ export function SectionView({ section }: { section: Section }) {
               {section.buttonLabel ? (
                 <a
                   href={section.buttonHref || "#"}
-                  className="mt-2 inline-flex items-center border border-cream px-7 py-3 text-xs uppercase tracking-[0.18em] text-cream transition-colors hover:bg-cream hover:text-ink"
+                  className={`mt-2 inline-flex items-center border border-cream px-7 py-3 uppercase tracking-[0.18em] transition-colors hover:bg-cream hover:text-ink ${bodyClasses(section.labelStyle, { color: "cream", size: "sm" })}`}
                 >
                   {section.buttonLabel}
                 </a>
