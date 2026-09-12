@@ -1911,7 +1911,17 @@ export default function ObjectDesignPage() {
                         {i + 1}
                       </span>
                       <span className="text-sm font-bold uppercase tracking-[0.14em] text-foreground">{SECTION_LABEL[s.type]}</span>
-                      <div className="ml-auto flex items-center gap-1">
+                      <div className="ml-auto flex items-center gap-2">
+                        <IconSelect
+                          label="Placement"
+                          value={(s.flow ?? "separate") as SectionFlow}
+                          options={[
+                            { value: "separate" as SectionFlow, label: "Separate", icon: Rows2 },
+                            { value: "inline" as SectionFlow, label: "Inline", icon: Columns2 },
+                          ]}
+                          onChange={(v) => patch(s.id, { flow: v } as Partial<Section>)}
+                        />
+
 
                         <Button variant="ghost" size="sm" onClick={() => setActiveId(active ? "" : s.id)}>
                           {active ? "Done" : "Edit"}
