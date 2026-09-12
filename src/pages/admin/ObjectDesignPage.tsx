@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowLeft, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
+  Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
+  type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
@@ -302,9 +304,9 @@ export default function ObjectDesignPage() {
     </div>
   );
 
-  const Chip = ({ label, onClick }: { label: string; onClick: () => void }) => (
+  const Chip = ({ label, icon: Icon, onClick }: { label: string; icon: LucideIcon; onClick: () => void }) => (
     <Button variant="outline" size="sm" className="gap-1.5" onClick={onClick}>
-      <Plus className="w-3.5 h-3.5" /> {label}
+      <Icon className="w-3.5 h-3.5" /> {label}
     </Button>
   );
 
@@ -316,11 +318,11 @@ export default function ObjectDesignPage() {
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2">
-          {!hasEyebrow && <Chip label="Eyebrow" onClick={() => patch(section.id, { eyebrow: "Since 1951" })} />}
-          {!hasTitle && <Chip label="Title" onClick={() => patch(section.id, { heading: "A quiet statement" })} />}
-          {!hasBody && <Chip label="Text" onClick={() => patch(section.id, { body: "" })} />}
-          <Chip label="Image" onClick={() => addImageSlot(section.id)} />
-          {!hasButton && <Chip label="Button" onClick={() => patch(section.id, { buttonLabel: "Explore", buttonHref: "/" })} />}
+          {!hasEyebrow && <Chip label="Eyebrow" icon={Tag} onClick={() => patch(section.id, { eyebrow: "Since 1951" })} />}
+          {!hasTitle && <Chip label="Title" icon={Heading} onClick={() => patch(section.id, { heading: "A quiet statement" })} />}
+          {!hasBody && <Chip label="Text" icon={AlignLeft} onClick={() => patch(section.id, { body: "" })} />}
+          <Chip label="Image" icon={ImageIcon} onClick={() => addImageSlot(section.id)} />
+          {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => patch(section.id, { buttonLabel: "Explore", buttonHref: "/" })} />}
         </div>
 
         {hasEyebrow && (
