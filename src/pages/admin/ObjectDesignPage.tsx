@@ -1217,6 +1217,27 @@ export default function ObjectDesignPage() {
     );
   };
 
+  /** Parts of a free section that can be reordered, in their current order. */
+  const orderablePartsOf = (s: FreeSection) => {
+    const base: string[] = [];
+    if (s.eyebrow !== undefined) base.push("eyebrow");
+    if (s.heading !== undefined) base.push("heading");
+    if (s.body !== undefined) base.push("body");
+    (s.extras ?? []).forEach((_, i) => base.push(`text:${i}`));
+    if (s.buttonLabel !== undefined) base.push("button");
+    (s.dividers ?? []).forEach((_, i) => base.push(`divider:${i}`));
+    return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
+  };
+
+  const movePartIn = (s: FreeSection, from: string, to: string) => {
+    if (from === to) return;
+    const parts = orderablePartsOf(s);
+    const next = parts.filter((p) => p !== from);
+    const at = next.indexOf(to);
+    next.splice(at === -1 ? next.length : at, 0, from);
+    patch(s.id, { order: next });
+  };
+
   const Block = ({
     title,
     icon: Icon,
@@ -1234,17 +1255,33 @@ export default function ObjectDesignPage() {
         (title === "Images" && (focusPart.startsWith("image:") || focusPart.startsWith("caption:") || focusPart.startsWith("imagetext:"))) ||
         (title === "Videos" && focusPart.startsWith("video:")));
     const open = openBlocks[blockKey] ?? (blocksExpanded || focused);
+    const canDrag = !!(flowSection && part && orderablePartsOf(flowSection).includes(part));
+    const dragging = canDrag && dragPart?.sectionId === flowSection!.id && dragPart.part === part;
     return (
       <div
         key={key}
         data-inspector-part={part}
-        className="scroll-mt-24 rounded-lg border bg-background shadow-sm"
+        onDragOver={canDrag ? (e) => { if (dragPart?.sectionId === flowSection!.id) e.preventDefault(); } : undefined}
+        onDrop={canDrag ? (e) => {
+          e.preventDefault();
+          if (dragPart?.sectionId === flowSection!.id) movePartIn(flowSection!, dragPart.part, part!);
+          setDragPart(null);
+        } : undefined}
+        className={`scroll-mt-24 rounded-lg border bg-background shadow-sm ${dragging ? "border-primary opacity-70" : ""}`}
       >
-        <div className="flex items-center gap-1 rounded-t-lg border-b-2 border-foreground/15 bg-muted pr-2 transition-colors hover:bg-muted/80">
+        <div
+          draggable={canDrag}
+          onDragStart={canDrag ? () => setDragPart({ sectionId: flowSection!.id, part: part! }) : undefined}
+          onDragEnd={canDrag ? () => setDragPart(null) : undefined}
+          className="flex items-center gap-1 rounded-t-lg border-b-2 border-foreground/15 bg-muted pr-2 transition-colors hover:bg-muted/80"
+        >
+          {canDrag ? (
+            <GripVertical className="ml-2 h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />
+          ) : null}
           <button
             type="button"
             onClick={() => setOpenBlocks((o) => ({ ...o, [blockKey]: !open }))}
-            className="flex flex-1 items-center gap-2 px-3 py-2.5 text-left"
+            className={`flex flex-1 items-center gap-2 py-2.5 pr-3 text-left ${canDrag ? "pl-1" : "pl-3"}`}
           >
             <Icon className="h-4 w-4 text-foreground" />
             <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">{title}</span>
