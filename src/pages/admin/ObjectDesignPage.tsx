@@ -238,6 +238,15 @@ export default function ObjectDesignPage() {
     const part = el.getAttribute("data-part") ?? "";
     // captions are edited alongside their image
     setFocusPart(part.startsWith("caption:") ? part.replace("caption:", "image:") : part);
+
+    // Text elements get a floating font / size / color toolbar.
+    const field = STYLE_FIELD[part.startsWith("caption:") ? "caption" : part];
+    if (field) {
+      const r = el.getBoundingClientRect();
+      setToolbar({ sectionId, field, top: r.top, left: r.left, width: r.width });
+    } else {
+      setToolbar(null);
+    }
   };
 
 
