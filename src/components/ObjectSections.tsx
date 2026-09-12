@@ -350,6 +350,8 @@ export interface FreeSection {
   id: string;
   type: "free";
   flow?: SectionFlow;
+  /** per-element flow, keyed by part (eyebrow, heading, body, text:i, divider:i, button) */
+  flows?: Record<string, SectionFlow>;
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
   eyebrow?: string;
