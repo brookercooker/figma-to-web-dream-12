@@ -254,7 +254,7 @@ export default function ObjectDesignPage() {
   const [focusPart, setFocusPart] = useState("");
   // floating font / size / color toolbar for the clicked text element
   const [toolbar, setToolbar] = useState<
-    { sectionId: string; field: keyof FreeSection; top: number; left: number; width: number } | null
+    { sectionId: string; field?: keyof FreeSection; imageIndex?: number; top: number; left: number; width: number } | null
   >(null);
 
   useEffect(() => {
