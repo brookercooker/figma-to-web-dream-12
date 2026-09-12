@@ -488,6 +488,9 @@ export function SectionView({ section }: { section: Section }) {
     ) : null;
 
   switch (section.type) {
+    case "free":
+      return <FreeView section={section} />;
+
     case "carousel":
       return (
         <section className="py-12">
