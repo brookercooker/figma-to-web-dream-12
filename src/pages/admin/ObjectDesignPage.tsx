@@ -1259,18 +1259,52 @@ export default function ObjectDesignPage() {
     const open = openBlocks[blockKey] ?? (blocksExpanded || focused);
     const canDrag = !!(flowSection && part && orderablePartsOf(flowSection).includes(part));
     const dragging = canDrag && dragPart?.sectionId === flowSection!.id && dragPart.part === part;
+    const showBar =
+      canDrag && !dragging && dropAt?.sectionId === flowSection!.id && dropAt.part === part
+        ? dropAt.before
+          ? "before"
+          : "after"
+        : null;
+    const bar = (
+      <div className="pointer-events-none absolute inset-x-0 z-10 flex items-center" style={showBar === "before" ? { top: -5 } : { bottom: -5 }}>
+        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+        <span className="h-0.5 flex-1 rounded-full bg-primary" />
+        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+      </div>
+    );
     return (
       <div
         key={key}
         data-inspector-part={part}
-        onDragOver={canDrag ? (e) => { if (dragPart?.sectionId === flowSection!.id) e.preventDefault(); } : undefined}
+        onDragOver={canDrag ? (e) => {
+          if (dragPart?.sectionId !== flowSection!.id) return;
+          e.preventDefault();
+          if (dragPart.part === part) { setDropAt(null); return; }
+          const r = e.currentTarget.getBoundingClientRect();
+          const before = e.clientY < r.top + r.height / 2;
+          setDropAt((d) =>
+            d && d.sectionId === flowSection!.id && d.part === part && d.before === before
+              ? d
+              : { sectionId: flowSection!.id, part: part!, before },
+          );
+        } : undefined}
+        onDragLeave={canDrag ? (e) => {
+          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+          setDropAt((d) => (d && d.part === part && d.sectionId === flowSection!.id ? null : d));
+        } : undefined}
         onDrop={canDrag ? (e) => {
           e.preventDefault();
-          if (dragPart?.sectionId === flowSection!.id) movePartIn(flowSection!, dragPart.part, part!);
+          if (dragPart?.sectionId === flowSection!.id) {
+            const r = e.currentTarget.getBoundingClientRect();
+            const before = e.clientY < r.top + r.height / 2;
+            movePartIn(flowSection!, dragPart.part, part!, before);
+          }
           setDragPart(null);
+          setDropAt(null);
         } : undefined}
-        className={`scroll-mt-24 rounded-lg border bg-background shadow-sm ${dragging ? "border-primary opacity-70" : ""}`}
+        className={`relative scroll-mt-24 rounded-lg border bg-background shadow-sm ${dragging ? "border-primary opacity-70" : ""}`}
       >
+        {showBar ? bar : null}
         <div
           draggable={canDrag}
           onDragStart={canDrag ? () => setDragPart({ sectionId: flowSection!.id, part: part! }) : undefined}
