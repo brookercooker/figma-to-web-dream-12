@@ -477,16 +477,16 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
   if (section.gallery === "carousel") {
     return <FreeCarousel section={section} onDark={onDark} />;
   }
-  const fixedHeight = (section.imageHeight ?? "auto") !== "auto";
+  
   return (
     <div
       className={`flex flex-nowrap items-start gap-6 ${alignRow[section.imageAlign ?? "left"]}`}
     >
       {section.images.map((img, i) => (
-        <figure key={i} className={fixedHeight ? "shrink min-w-0" : "flex-1 min-w-0"}>
+        <figure key={i} className="basis-0 grow min-w-0">
           <Pic
             image={img}
-            className={`rounded-lg ${fixedHeight ? "w-auto max-w-full" : "w-full"} ${imageHeightClass[section.imageHeight ?? "auto"]}`}
+            className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`}
           />
           {img.caption ? (
             <figcaption
