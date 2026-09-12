@@ -72,6 +72,25 @@ export function bodyClasses(style: TextStyle | undefined, fallback: { color: Tex
   ].join(" ");
 }
 
+export type ImageHeight = "auto" | "sm" | "md" | "lg" | "xl";
+
+export const IMAGE_HEIGHTS: { value: ImageHeight; label: string }[] = [
+  { value: "auto", label: "Auto" },
+  { value: "sm", label: "S" },
+  { value: "md", label: "M" },
+  { value: "lg", label: "L" },
+  { value: "xl", label: "XL" },
+];
+
+/** Fixed heights so every image in a row lines up. */
+export const imageHeightClass: Record<ImageHeight, string> = {
+  auto: "aspect-[4/3]",
+  sm: "h-40 sm:h-48",
+  md: "h-56 sm:h-64",
+  lg: "h-72 sm:h-96",
+  xl: "h-96 sm:h-[32rem]",
+};
+
 export interface SectionImage {
   url: string;
   alt: string;
