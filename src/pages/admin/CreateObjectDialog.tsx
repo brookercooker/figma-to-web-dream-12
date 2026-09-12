@@ -16,7 +16,7 @@ const NAME_RE = /^[A-Za-z0-9][A-Za-z0-9 _\-]{0,79}$/;
  */
 export default function CreateObjectDialog({
   open, onOpenChange, initialName, title = "Add an object",
-  submitLabel = "Create object", navigateOnCreate = false,
+  submitLabel = "Create object", navigateOnCreate = false, onCreated,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -24,6 +24,7 @@ export default function CreateObjectDialog({
   title?: string;
   submitLabel?: string;
   navigateOnCreate?: boolean;
+  onCreated?: (row: any) => void;
 }) {
   const [name, setName] = useState("");
   const [takenSlugs, setTakenSlugs] = useState<Set<string>>(new Set());
