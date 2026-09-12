@@ -9,7 +9,7 @@ import {
   ArrowLeft, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
-  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown,
+  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
   Video as VideoIcon, Minus,
   type LucideIcon,
 } from "lucide-react";
@@ -20,7 +20,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections, withEyebrowDefaults,
+  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
@@ -474,6 +474,7 @@ export default function ObjectDesignPage() {
   // collapsible editing blocks: explicit overrides plus an expand/collapse-all default
   const [openBlocks, setOpenBlocks] = useState<Record<string, boolean>>({});
   const [blocksExpanded, setBlocksExpanded] = useState(false);
+  const [dragPart, setDragPart] = useState<{ sectionId: string; part: string } | null>(null);
   // floating font / size / color toolbar for the clicked text element
   const [toolbar, setToolbar] = useState<
     { sectionId: string; field?: keyof FreeSection; imageIndex?: number; top: number; left: number; width: number } | null
@@ -1093,6 +1094,66 @@ export default function ObjectDesignPage() {
     const hasEyebrow = section.eyebrow !== undefined;
     const hasBody = section.body !== undefined;
     const hasButton = section.buttonLabel !== undefined;
+
+    const basePartsOf = (s: FreeSection) => {
+      const base: string[] = [];
+      if (s.eyebrow !== undefined) base.push("eyebrow");
+      if (s.heading !== undefined) base.push("heading");
+      if (s.body !== undefined) base.push("body");
+      (s.extras ?? []).forEach((_, i) => base.push(`text:${i}`));
+      if (s.buttonLabel !== undefined) base.push("button");
+      (s.dividers ?? []).forEach((_, i) => base.push(`divider:${i}`));
+      return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
+    };
+
+    const partLabel = (p: string) => {
+      if (p === "eyebrow") return "Eyebrow";
+      if (p === "heading") return "Title";
+      if (p === "body") return "Text";
+      if (p === "button") return "Button";
+      if (p.startsWith("text:")) return `Paragraph ${Number(p.slice(5)) + 1}`;
+      if (p.startsWith("divider:")) return `Divider ${Number(p.slice(8)) + 1}`;
+      return p;
+    };
+
+    const parts = basePartsOf(section);
+
+    const movePart = (from: string, to: string) => {
+      if (from === to) return;
+      const next = parts.filter((p) => p !== from);
+      const at = next.indexOf(to);
+      next.splice(at === -1 ? next.length : at, 0, from);
+      patch(section.id, { order: next });
+    };
+
+    const arrangeList = () => (
+      <ul className="space-y-1">
+        {parts.map((p) => (
+          <li
+            key={p}
+            draggable
+            onDragStart={() => setDragPart({ sectionId: section.id, part: p })}
+            onDragEnd={() => setDragPart(null)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (dragPart?.sectionId === section.id) movePart(dragPart.part, p);
+              setDragPart(null);
+            }}
+            onClick={() => setFocusPart(p)}
+            className={`flex cursor-grab items-center gap-2 rounded-md border px-3 py-2 text-sm ${
+              dragPart?.part === p && dragPart.sectionId === section.id
+                ? "border-primary bg-primary/5"
+                : "border-border bg-background"
+            }`}
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+            {partLabel(p)}
+          </li>
+        ))}
+      </ul>
+    );
+
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2">
@@ -1155,6 +1216,12 @@ export default function ObjectDesignPage() {
                 onChange={(v) => patch(section.id, { align: v })}
               />
             </div>
+          </Field>
+        ) })}
+
+        {parts.length > 1 && Block({ title: "Arrangement", icon: GripVertical, children: (
+          <Field label="Drag to reorder">
+            {arrangeList()}
           </Field>
         ) })}
 
@@ -1309,23 +1376,9 @@ export default function ObjectDesignPage() {
                     }
                   />
                 </Field>
-                <Field label="Position">
-                  <select
-                    className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
-                    value={d.after ?? "end"}
-                    onChange={(e) => patchDivider(section.id, i, { after: e.target.value })}
-                  >
-                    <option value="start">Above everything</option>
-                    {section.eyebrow ? <option value="eyebrow">Below eyebrow</option> : null}
-                    {section.heading ? <option value="heading">Below title</option> : null}
-                    {section.body ? <option value="body">Below text</option> : null}
-                    {(section.extras ?? []).map((_, xi) => (
-                      <option key={xi} value={`text:${xi}`}>{`Below paragraph ${xi + 1}`}</option>
-                    ))}
-                    {section.buttonLabel ? <option value="button">Below button</option> : null}
-                    <option value="end">Below all text</option>
-                  </select>
-                </Field>
+                <p className="text-xs text-muted-foreground">
+                  Drag this bar in the Arrangement list to move it between items.
+                </p>
               </>
             ),
           }),

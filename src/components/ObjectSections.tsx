@@ -363,7 +363,7 @@ export interface FreeDivider {
   width?: "full" | "short";
   /** bar thickness in px */
   thickness?: number;
-  /** which element this bar sits under: "start", a part key (eyebrow/heading/body/text:i), or "end" */
+  /** @deprecated placement is now controlled by FreeSection.order */
   after?: string;
 }
 
@@ -381,6 +381,8 @@ export interface FreeSection {
   flowAligns?: Record<string, SectionAlign>;
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
+  /** explicit stacking order of text parts (eyebrow, heading, body, text:i, divider:i, button) */
+  order?: string[];
   eyebrow?: string;
   heading?: string;
   body?: string;
@@ -848,6 +850,20 @@ const dividerSelf: Record<SectionAlign, string> = {
   right: "self-end",
 };
 
+/** Sort rendered parts by an explicit order list; unlisted parts keep their default spot. */
+export function orderParts<T extends { part: string }>(items: T[], order?: string[]): T[] {
+  if (!order?.length) return items;
+  const rank = new Map(order.map((p, i) => [p, i]));
+  return items
+    .map((it, i) => ({ it, i }))
+    .sort((a, b) => {
+      const ra = rank.has(a.it.part) ? (rank.get(a.it.part) as number) : order.length + a.i;
+      const rb = rank.has(b.it.part) ? (rank.get(b.it.part) as number) : order.length + b.i;
+      return ra - rb || a.i - b.i;
+    })
+    .map((x) => x.it);
+}
+
 export function DividerBar({
   divider, align, onDark,
 }: { divider: FreeDivider; align: SectionAlign; onDark?: boolean }) {
@@ -914,27 +930,18 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
     </div>
   ) });
 
-  // Place each divider under the element it was anchored to.
-  (section.dividers ?? []).forEach((d, i) => {
-    const node = {
-      part: `divider:${i}`,
-      node: (
-        <div data-part={`divider:${i}`} className="w-full flex flex-col">
-          <DividerBar divider={d} align={section.align} onDark={onDark} />
-        </div>
-      ),
-    };
-    const anchor = d.after ?? "end";
-    if (anchor === "start") {
-      items.unshift(node);
-      return;
-    }
-    const at = items.findIndex((it) => it.part === anchor);
-    if (anchor === "end" || at === -1) items.push(node);
-    else items.splice(at + 1, 0, node);
-  });
+  (section.dividers ?? []).forEach((d, i) => items.push({
+    part: `divider:${i}`,
+    node: (
+      <div data-part={`divider:${i}`} className="w-full flex flex-col">
+        <DividerBar divider={d} align={section.align} onDark={onDark} />
+      </div>
+    ),
+  }));
 
-  const groups = groupByFlow(items, (it) => flowOf(it.part));
+  const ordered = orderParts(items, section.order);
+
+  const groups = groupByFlow(ordered, (it) => flowOf(it.part));
 
   return (
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
