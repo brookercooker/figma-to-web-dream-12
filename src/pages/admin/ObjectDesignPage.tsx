@@ -1016,6 +1016,7 @@ export default function ObjectDesignPage() {
             }}
           />
           <Chip label="Image" icon={ImageIcon} onClick={() => addImageSlot(section.id)} />
+          <Chip label="Video" icon={VideoIcon} onClick={() => addVideoSlot(section.id)} />
           {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => { patch(section.id, { buttonLabel: "Explore", buttonHref: "/" }); openBlock("button"); }} />}
           <div className="ml-auto flex gap-2">
             <Chip
