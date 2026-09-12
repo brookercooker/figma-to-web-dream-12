@@ -570,8 +570,7 @@ export default function ObjectDesignPage() {
 
       <CreateObjectDialog
         open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={undefined as never}
+        onOpenChange={(v) => { setCreateOpen(v); if (!v) load(); }}
       />
       <ImagePickerDialog
         open={!!picker}
