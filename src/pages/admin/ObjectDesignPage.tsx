@@ -160,9 +160,9 @@ const STYLE_FIELD_LABEL: Record<string, string> = {
   captionStyle: "Caption",
 };
 
-function Dropdown<T extends string>({
+function Dropdown({
   label, value, options, onChange,
-}: { label: string; value: T | ""; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
+}: { label: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) {
   return (
     <label className="flex items-center gap-1.5 text-xs">
       <span className="text-muted-foreground">{label}</span>
