@@ -297,9 +297,21 @@ export interface FreeParagraph {
   style?: TextStyle;
 }
 
+/** A separating bar placed between content. */
+export interface FreeDivider {
+  id: string;
+  color?: TextColor;
+  /** full = spans the block, short = a small centered/aligned rule */
+  width?: "full" | "short";
+  /** bar thickness in px */
+  thickness?: number;
+}
+
 export interface FreeSection {
   id: string;
   type: "free";
+  /** separating bars shown under the text content */
+  dividers?: FreeDivider[];
   eyebrow?: string;
   heading?: string;
   body?: string;
