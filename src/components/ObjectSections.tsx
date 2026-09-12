@@ -174,6 +174,8 @@ export interface FreeSection {
   buttonLabel?: string;
   buttonHref?: string;
   buttonVariant?: "solid" | "outline" | "link";
+  /** background color for the button */
+  buttonBg?: TextColor;
 }
 
 export type Section =
@@ -292,17 +294,29 @@ function Pic({ image, className }: { image: SectionImage; className: string }) {
   );
 }
 
+const bgClass: Record<TextColor, string> = {
+  ink: "bg-ink hover:bg-ink/90",
+  stone: "bg-stone hover:bg-stone/90",
+  brass: "bg-brass hover:bg-brass/90",
+  garnet: "bg-garnet hover:bg-garnet/90",
+  cream: "bg-cream hover:bg-cream/90",
+};
+const bgTextColor: Record<TextColor, TextColor> = {
+  ink: "cream", stone: "cream", brass: "ink", garnet: "cream", cream: "ink",
+};
+
 function SectionButton({
-  label, href, variant = "solid", style,
-}: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle }) {
+  label, href, variant = "solid", style, bg,
+}: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle; bg?: TextColor }) {
   const base = "inline-flex items-center justify-center uppercase tracking-[0.18em] transition-colors";
+  const fill = bg ?? "ink";
   const styles =
     variant === "outline"
       ? "border border-ink px-7 py-3 hover:bg-ink hover:text-cream"
       : variant === "link"
         ? "underline underline-offset-4 hover:text-brass"
-        : "bg-ink px-7 py-3 hover:bg-ink/90";
-  const text = bodyClasses(style, { color: variant === "solid" ? "cream" : "ink", size: "sm" });
+        : `${bgClass[fill]} px-7 py-3`;
+  const text = bodyClasses(style, { color: variant === "solid" ? bgTextColor[fill] : "ink", size: "sm" });
   return (
     <a href={href || "#"} className={`${base} ${styles} ${text}`}>
       {label}
@@ -492,6 +506,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
             href={section.buttonHref || "#"}
             variant={section.buttonVariant ?? (onDark ? "outline" : "solid")}
             style={section.labelStyle}
+            bg={section.buttonBg}
           />
         </div>
       ) : null}
