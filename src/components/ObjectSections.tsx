@@ -528,6 +528,46 @@ function Carousel({ section }: { section: CarouselSection }) {
   );
 }
 
+/** An image plus its caption and any extra text boxes, optionally boxed by a border. */
+function FreeFigureBody({
+  section, image, index, onDark,
+}: { section: FreeSection; image: SectionImage; index: number; onDark?: boolean }) {
+  const align = alignTextOnly[section.captionAlign ?? "left"];
+  const baseColor: TextColor = onDark ? "cream" : "stone";
+  const texts = image.texts ?? [];
+  const bordered = !!section.imageBorder;
+
+  return (
+    <div className={bordered ? "overflow-hidden rounded-lg border border-sand p-3" : ""}>
+      <div data-part={`image:${index}`}>
+        <Pic image={image} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
+      </div>
+      {image.caption ? (
+        <figcaption
+          data-part={`caption:${index}`}
+          className={`mt-3 leading-relaxed ${align} ${bodyClasses(section.captionStyle, { color: baseColor, size: "sm" })}`}
+          style={textInlineStyle(section.captionStyle)}
+          {...richText(image.caption)}
+        />
+      ) : null}
+      {texts.map((t, ti) => {
+        const d = IMAGE_TEXT_DEFAULTS[t.kind];
+        const fallback = { color: onDark ? ("cream" as TextColor) : d.color, size: d.size };
+        const cls = d.heading ? headingClasses(t.style, fallback) : bodyClasses(t.style, fallback);
+        return (
+          <p
+            key={t.id}
+            data-part={`imagetext:${index}:${ti}`}
+            className={`mt-3 leading-relaxed ${align} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
+            style={textInlineStyle(t.style)}
+            {...richText(t.text)}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
   const images = section.images;
   const n = images.length;
