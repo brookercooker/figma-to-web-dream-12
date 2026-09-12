@@ -468,6 +468,7 @@ export default function ObjectDesignPage() {
   // { sectionId, index } — index -1 means the section's single image
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
   const [linkOpen, setLinkOpen] = useState<Record<string, boolean>>({});
+  const [openSub, setOpenSub] = useState<Record<string, boolean>>({});
   // which video slot the video chooser is filling
   const [videoPicker, setVideoPicker] = useState<{ sectionId: string; index: number } | null>(null);
   // which element of the active section the user clicked on in the preview
