@@ -681,6 +681,30 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  const imageTextsOf = (sectionId: string, index: number): ImageText[] => {
+    const s = sections.find((x) => x.id === sectionId);
+    if (!s || !("images" in s)) return [];
+    return ((s as any).images[index]?.texts ?? []) as ImageText[];
+  };
+
+  const addImageText = (sectionId: string, index: number, kind: ImageTextKind) => {
+    const texts = imageTextsOf(sectionId, index);
+    patchImage(sectionId, index, {
+      texts: [...texts, { id: newSectionId(), kind, text: "" }],
+    });
+  };
+
+  const patchImageText = (
+    sectionId: string, index: number, tIdx: number, changes: Partial<ImageText>,
+  ) => {
+    const texts = imageTextsOf(sectionId, index).map((t, i) => (i === tIdx ? { ...t, ...changes } : t));
+    patchImage(sectionId, index, { texts });
+  };
+
+  const removeImageText = (sectionId: string, index: number, tIdx: number) => {
+    patchImage(sectionId, index, { texts: imageTextsOf(sectionId, index).filter((_, i) => i !== tIdx) });
+  };
+
   const addImageSlot = (id: string) => {
     setSections((prev) =>
       prev.map((s) =>
