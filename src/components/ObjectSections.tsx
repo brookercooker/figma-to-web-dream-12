@@ -256,6 +256,8 @@ export interface CarouselSection {
   id: string;
   type: "carousel";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   heading?: string;
   textStyle?: TextStyle;
   captionStyle?: TextStyle;
@@ -266,6 +268,8 @@ export interface ImageRowSection {
   id: string;
   type: "imageRow";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   heading?: string;
   textStyle?: TextStyle;
   columns: 2 | 3 | 4;
@@ -276,6 +280,8 @@ export interface CaptionedImagesSection {
   id: string;
   type: "captionedImages";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   heading?: string;
   textStyle?: TextStyle;
   captionStyle?: TextStyle;
@@ -287,6 +293,8 @@ export interface OverlaySection {
   id: string;
   type: "overlay";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   image: SectionImage;
   eyebrow?: string;
   heading: string;
@@ -305,6 +313,8 @@ export interface SplitSection {
   id: string;
   type: "split";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   image: SectionImage;
   imageSide: "left" | "right";
   textStyle?: TextStyle;
@@ -322,6 +332,8 @@ export interface ButtonSection {
   id: string;
   type: "button";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   label: string;
   href: string;
   align: SectionAlign;
@@ -350,6 +362,8 @@ export interface FreeSection {
   id: string;
   type: "free";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   /** per-element flow, keyed by part (eyebrow, heading, body, text:i, divider:i, button) */
   flows?: Record<string, SectionFlow>;
   /** separating bars shown under the text content */
