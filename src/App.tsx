@@ -32,6 +32,7 @@ const AdminIndex = lazyRetry(() => import("./pages/admin/AdminIndex.tsx"));
 const AdminUsersPage = lazyRetry(() => import("./pages/admin/UsersPage.tsx"));
 const ObjectPreview = lazyRetry(() => import("./pages/admin/ObjectPreview.tsx"));
 const ObjectWorkspace = lazyRetry(() => import("./pages/admin/ObjectWorkspace.tsx"));
+const ObjectDesignPage = lazyRetry(() => import("./pages/admin/ObjectDesignPage.tsx"));
 const CapturePage = lazyRetry(() => import("./pages/admin/CapturePage.tsx"));
 
 const ComingSoonPage = lazyRetry(() => import("./pages/ComingSoonPage.tsx"));
@@ -98,6 +99,7 @@ const AppShell = () => {
             <Route path="/manage/pages" element={<AdminIndex />} />
             <Route path="/manage/design" element={<AdminIndex />} />
             <Route path="/manage/objects" element={<AdminIndex />} />
+            <Route path="/manage/objects/design" element={<ObjectDesignPage />} />
             <Route path="/manage/objects/workspace/:slugId" element={<ObjectWorkspace />} />
             <Route path="/manage/images" element={<AdminIndex />} />
             <Route path="/manage/videos" element={<AdminIndex />} />
