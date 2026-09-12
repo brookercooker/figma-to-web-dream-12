@@ -173,6 +173,8 @@ export interface SectionImage {
   url: string;
   alt: string;
   caption?: string;
+  /** overrides the block-wide caption alignment for this image's caption */
+  captionAlign?: SectionAlign;
   /** extra text boxes shown under the image */
   texts?: ImageText[];
   /** optional destination opened when the image is clicked */
