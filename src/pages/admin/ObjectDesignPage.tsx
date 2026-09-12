@@ -731,6 +731,7 @@ export default function ObjectDesignPage() {
       ),
     );
     setDirty(true);
+    openBlock("Images");
   };
 
   const removeImageSlot = (id: string, index: number) => {
