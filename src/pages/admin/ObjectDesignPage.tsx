@@ -467,6 +467,9 @@ export default function ObjectDesignPage() {
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
   // which element of the active section the user clicked on in the preview
   const [focusPart, setFocusPart] = useState("");
+  // collapsible editing blocks: explicit overrides plus an expand/collapse-all default
+  const [openBlocks, setOpenBlocks] = useState<Record<string, boolean>>({});
+  const [blocksExpanded, setBlocksExpanded] = useState(false);
   // floating font / size / color toolbar for the clicked text element
   const [toolbar, setToolbar] = useState<
     { sectionId: string; field?: keyof FreeSection; imageIndex?: number; top: number; left: number; width: number } | null
