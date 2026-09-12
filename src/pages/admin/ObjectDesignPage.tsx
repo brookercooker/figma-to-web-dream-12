@@ -1057,6 +1057,7 @@ export default function ObjectDesignPage() {
                     <div
                       className="px-4 cursor-pointer [&_[data-part]]:cursor-pointer [&_[data-part]]:rounded-sm [&_[data-part]]:transition-shadow [&_[data-part]:hover]:ring-2 [&_[data-part]:hover]:ring-primary/50 [&_[data-part]:hover]:ring-offset-2"
                       onClick={(e) => pickPart(s.id, e)}
+                      onDoubleClick={(e) => editInline(s.id, e)}
                     >
                       {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel ? (
                         <p className="py-12 text-center text-sm text-muted-foreground">
