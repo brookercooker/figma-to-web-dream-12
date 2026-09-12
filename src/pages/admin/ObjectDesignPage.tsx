@@ -1184,7 +1184,7 @@ export default function ObjectDesignPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-8">
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => add("free")}>
                   <Plus className="w-4 h-4" /> Add another section
@@ -1195,10 +1195,19 @@ export default function ObjectDesignPage() {
               {sections.map((s, i) => {
                 const active = s.id === activeId;
                 return (
-                  <div key={s.id} className={`border rounded-lg ${active ? "ring-2 ring-primary/40" : ""}`}>
-                    <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
-                      <span className="text-xs font-medium">{SECTION_LABEL[s.type]}</span>
+                  <div
+                    key={s.id}
+                    className={`overflow-hidden rounded-lg border-2 bg-background transition-shadow ${
+                      active ? "border-primary/50 shadow-lg" : "border-border shadow-sm hover:border-primary/25"
+                    }`}
+                  >
+                    <div className={`flex items-center gap-2 border-b px-3 py-2 ${active ? "bg-primary/5" : "bg-muted/40"}`}>
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-foreground/10 text-[10px] font-semibold tabular-nums">
+                        {i + 1}
+                      </span>
+                      <span className="text-xs font-medium uppercase tracking-wide">{SECTION_LABEL[s.type]}</span>
                       <div className="ml-auto flex items-center gap-1">
+
                         <Button variant="ghost" size="sm" onClick={() => setActiveId(active ? "" : s.id)}>
                           {active ? "Done" : "Edit"}
                         </Button>
