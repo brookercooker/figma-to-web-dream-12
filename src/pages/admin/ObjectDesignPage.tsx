@@ -13,6 +13,9 @@ import {
 import CreateObjectDialog from "./CreateObjectDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   IMAGE_HEIGHTS, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, makeSection, parseSections,
   type FreeSection, type Section, type SectionAlign, type SectionImage, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
@@ -176,6 +179,57 @@ function Dropdown({
         ))}
       </select>
     </label>
+  );
+}
+
+function ColorDot({ swatch }: { swatch?: string }) {
+  return (
+    <span
+      className="inline-block h-3 w-3 shrink-0 rounded-full border"
+      style={swatch ? { background: swatch } : { background: "transparent" }}
+    />
+  );
+}
+
+function ColorDropdown({
+  label, value, options, onChange, includeDefault = true,
+}: {
+  label: string;
+  value: string;
+  options: { value: string; label: string; swatch: string }[];
+  onChange: (v: string) => void;
+  includeDefault?: boolean;
+}) {
+  const current = options.find((o) => o.value === value);
+  return (
+    <div className="flex items-center gap-1.5 text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex h-7 items-center gap-1.5 rounded-md border bg-background px-2 text-xs"
+          >
+            <ColorDot swatch={current?.swatch} />
+            <span>{current?.label ?? "Default"}</span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[9rem]">
+          {includeDefault && (
+            <DropdownMenuItem className="gap-2 text-xs" onSelect={() => onChange("")}>
+              <ColorDot />
+              Default
+            </DropdownMenuItem>
+          )}
+          {options.map((o) => (
+            <DropdownMenuItem key={o.value} className="gap-2 text-xs" onSelect={() => onChange(o.value)}>
+              <ColorDot swatch={o.swatch} />
+              {o.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
@@ -1172,10 +1226,10 @@ export default function ObjectDesignPage() {
               options={[{ value: "", label: "Default" }, ...TEXT_SIZES.map((s) => ({ value: s.value as string, label: s.label }))]}
               onChange={(v) => set({ size: (v || undefined) as TextSize | undefined })}
             />
-            <Dropdown
+            <ColorDropdown
               label="Color"
               value={style.color ?? ""}
-              options={[{ value: "", label: "Default" }, ...TEXT_COLORS.map((c) => ({ value: c.value as string, label: c.label }))]}
+              options={TEXT_COLORS}
               onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
             />
             {toolbar.field === "labelStyle" && (
@@ -1191,10 +1245,10 @@ export default function ObjectDesignPage() {
               />
             )}
             {toolbar.field === "labelStyle" && (sec.buttonVariant ?? "solid") === "solid" && (
-              <Dropdown
+              <ColorDropdown
                 label="Fill"
                 value={sec.buttonBg ?? ""}
-                options={[{ value: "", label: "Default" }, ...TEXT_COLORS.map((c) => ({ value: c.value as string, label: c.label }))]}
+                options={TEXT_COLORS}
                 onChange={(v) => patch(toolbar.sectionId, { buttonBg: (v || undefined) as TextColor | undefined })}
               />
             )}
