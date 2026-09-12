@@ -27,6 +27,27 @@ export function emphasisClasses(style: TextStyle | undefined) {
   ].filter(Boolean).join(" ");
 }
 
+/**
+ * Text fields may contain light inline markup (bold / italic / underline applied
+ * to a portion of the text). Everything else is escaped before rendering.
+ */
+const ALLOWED_INLINE = /^(b|strong|i|em|u|s|br)$/i;
+
+export function sanitizeInline(input: string): string {
+  const escaped = input
+    .replace(/&(?!(amp|lt|gt|nbsp|#\d+);)/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return escaped.replace(/&lt;(\/?)([a-zA-Z]+)\s*\/?&gt;/g, (m, slash: string, tag: string) =>
+    ALLOWED_INLINE.test(tag) ? `<${slash}${tag.toLowerCase()}>` : m,
+  );
+}
+
+/** Spread onto an element to render text with its inline formatting. */
+export function richText(text: string) {
+  return { dangerouslySetInnerHTML: { __html: sanitizeInline(text) } };
+}
+
 export const TEXT_FONTS: { value: TextFont; label: string }[] = [
   { value: "serif", label: "Serif" },
   { value: "sans", label: "Sans" },
