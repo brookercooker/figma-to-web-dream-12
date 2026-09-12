@@ -635,11 +635,12 @@ export default function ObjectDesignPage() {
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
               colorOnly
             />
-          </div>
-        )}
+          </>
+        ) })}
 
-        {hasTitle && (
-          <div data-inspector-part="heading" className="space-y-2 scroll-mt-24">
+        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", children: (
+          <>
+
 
             <div className="flex items-end gap-2">
               <div className="flex-1">
