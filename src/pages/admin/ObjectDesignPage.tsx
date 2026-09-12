@@ -763,6 +763,50 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  const videosOf = (sectionId: string): SectionVideo[] => {
+    const s = sections.find((x) => x.id === sectionId);
+    return s && s.type === "free" ? (s.videos ?? []) : [];
+  };
+
+  const addVideoSlot = (id: string) => {
+    let newIndex = 0;
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id === id && s.type === "free") {
+          const videos = [...(s.videos ?? []), { id: newSectionId(), url: "" } as SectionVideo];
+          newIndex = videos.length - 1;
+          return { ...s, videos } as Section;
+        }
+        return s;
+      }),
+    );
+    setDirty(true);
+    openBlock("Videos");
+    setVideoPicker({ sectionId: id, index: newIndex });
+  };
+
+  const patchVideo = (id: string, index: number, changes: Partial<SectionVideo>) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === id && s.type === "free"
+          ? ({ ...s, videos: (s.videos ?? []).map((v, i) => (i === index ? { ...v, ...changes } : v)) } as Section)
+          : s,
+      ),
+    );
+    setDirty(true);
+  };
+
+  const removeVideo = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === id && s.type === "free"
+          ? ({ ...s, videos: (s.videos ?? []).filter((_, i) => i !== index) } as Section)
+          : s,
+      ),
+    );
+    setDirty(true);
+  };
+
   const add = (type: SectionType) => {
     const s = makeSection(type);
     setSections((prev) => [...prev, s]);
