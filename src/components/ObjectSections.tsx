@@ -231,6 +231,7 @@ export function videoEmbedUrl(url: string): string | null {
 export interface CarouselSection {
   id: string;
   type: "carousel";
+  flow?: SectionFlow;
   heading?: string;
   textStyle?: TextStyle;
   captionStyle?: TextStyle;
@@ -240,6 +241,7 @@ export interface CarouselSection {
 export interface ImageRowSection {
   id: string;
   type: "imageRow";
+  flow?: SectionFlow;
   heading?: string;
   textStyle?: TextStyle;
   columns: 2 | 3 | 4;
@@ -249,6 +251,7 @@ export interface ImageRowSection {
 export interface CaptionedImagesSection {
   id: string;
   type: "captionedImages";
+  flow?: SectionFlow;
   heading?: string;
   textStyle?: TextStyle;
   captionStyle?: TextStyle;
@@ -259,6 +262,7 @@ export interface CaptionedImagesSection {
 export interface OverlaySection {
   id: string;
   type: "overlay";
+  flow?: SectionFlow;
   image: SectionImage;
   eyebrow?: string;
   heading: string;
@@ -276,6 +280,7 @@ export interface OverlaySection {
 export interface SplitSection {
   id: string;
   type: "split";
+  flow?: SectionFlow;
   image: SectionImage;
   imageSide: "left" | "right";
   textStyle?: TextStyle;
@@ -292,6 +297,7 @@ export interface SplitSection {
 export interface ButtonSection {
   id: string;
   type: "button";
+  flow?: SectionFlow;
   label: string;
   href: string;
   align: SectionAlign;
@@ -319,6 +325,7 @@ export interface FreeDivider {
 export interface FreeSection {
   id: string;
   type: "free";
+  flow?: SectionFlow;
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
   eyebrow?: string;
