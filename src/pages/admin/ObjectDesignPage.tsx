@@ -888,6 +888,72 @@ export default function ObjectDesignPage() {
     setVideoPicker({ sectionId: id, index: newIndex });
   };
 
+  type AddKind = "eyebrow" | "title" | "text" | "image" | "video" | "divider" | "button";
+
+  /** Add an element to a section (defaults to the active or last free section). */
+  const addElement = (kind: AddKind, sectionId?: string) => {
+    const target =
+      (sectionId ? sections.find((s) => s.id === sectionId) : undefined) ??
+      sections.find((s) => s.id === activeId) ??
+      [...sections].reverse().find((s) => s.type === "free");
+    if (!target || target.type !== "free") return;
+    const s = target as FreeSection;
+    if (s.id !== activeId) setActiveId(s.id);
+    if (kind === "image") return addImageSlot(s.id);
+    if (kind === "video") return addVideoSlot(s.id);
+    if (kind === "divider") {
+      const id = newSectionId();
+      patch(s.id, { dividers: [...(s.dividers ?? []), { id, color: "stone", width: "full", thickness: 1 }] });
+      openBlock(id);
+      return;
+    }
+    if (kind === "button") {
+      if (s.buttonLabel === undefined) patch(s.id, { buttonLabel: "Explore", buttonHref: "/" });
+      openBlock("button");
+      return;
+    }
+    if (kind === "eyebrow") {
+      if (s.eyebrow === undefined) {
+        patch(s.id, { eyebrow: "Since 1951" });
+        openBlock("eyebrow");
+      } else {
+        const id = newSectionId();
+        patch(s.id, { extras: [...(s.extras ?? []), { id, text: "Since 1951", kind: "eyebrow" as const }] });
+        openBlock(id);
+      }
+      return;
+    }
+    if (kind === "title") {
+      if (s.heading === undefined) {
+        patch(s.id, { heading: "A quiet statement" });
+        openBlock("heading");
+      } else {
+        const id = newSectionId();
+        patch(s.id, { extras: [...(s.extras ?? []), { id, text: "A quiet statement", kind: "title" as const }] });
+        openBlock(id);
+      }
+      return;
+    }
+    if (s.body === undefined) {
+      patch(s.id, { body: "" });
+      openBlock("body");
+    } else {
+      const id = newSectionId();
+      patch(s.id, { extras: [...(s.extras ?? []), { id, text: "" }] });
+      openBlock(id);
+    }
+  };
+
+  const ADD_ITEMS: { kind: AddKind; label: string; icon: LucideIcon }[] = [
+    { kind: "eyebrow", label: "Eyebrow", icon: Tag },
+    { kind: "title", label: "Title", icon: Heading },
+    { kind: "text", label: "Text", icon: AlignLeft },
+    { kind: "image", label: "Image", icon: ImageIcon },
+    { kind: "video", label: "Video", icon: VideoIcon },
+    { kind: "divider", label: "Divider", icon: Minus },
+    { kind: "button", label: "Button", icon: MousePointerClick },
+  ];
+
   const patchVideo = (id: string, index: number, changes: Partial<SectionVideo>) => {
     setSections((prev) =>
       prev.map((s) =>
