@@ -448,13 +448,16 @@ export default function ObjectDesignPage() {
                       />
                     </div>
                   </Field>
-                  {section.gallery === "grid" && section.layout === "stacked" && (
-                    <Field label="Columns">
+                  {section.gallery === "carousel" && (
+                    <Field label="Show at once">
                       <div>
                         <Choice
-                          value={section.columns as number}
-                          options={[1, 2, 3, 4].map((c) => ({ value: c, label: String(c) }))}
-                          onChange={(v) => patch(section.id, { columns: v })}
+                          value={Math.min(section.perView ?? 1, section.images.length)}
+                          options={Array.from(
+                            { length: Math.min(section.images.length, 6) },
+                            (_, k) => ({ value: k + 1, label: String(k + 1) }),
+                          )}
+                          onChange={(v) => patch(section.id, { perView: v })}
                         />
                       </div>
                     </Field>
