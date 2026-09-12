@@ -1299,6 +1299,80 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
+        {(section.videos ?? []).length > 0 && Block({ title: "Videos", icon: VideoIcon, children: (
+          <>
+            {(section.videos ?? []).map((v, i) => (
+              <div key={v.id} className="rounded-md border p-3 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Video {i + 1}</span>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVideoPicker({ sectionId: section.id, index: i })}
+                    >
+                      Replace
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => removeVideo(section.id, i)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                <Field label="Video link">
+                  <Input
+                    value={v.url}
+                    placeholder="YouTube, Vimeo, or video file link"
+                    onChange={(e) => patchVideo(section.id, i, { url: e.target.value })}
+                  />
+                </Field>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Caption (optional)">
+                    <Input
+                      value={v.caption ?? ""}
+                      onChange={(e) => patchVideo(section.id, i, { caption: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Cover image link (optional)">
+                    <Input
+                      value={v.poster ?? ""}
+                      onChange={(e) => patchVideo(section.id, i, { poster: e.target.value })}
+                    />
+                  </Field>
+                </div>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={!!v.autoplay}
+                      onChange={(e) => patchVideo(section.id, i, { autoplay: e.target.checked })}
+                    />
+                    Autoplay (muted)
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={!!v.loop}
+                      onChange={(e) => patchVideo(section.id, i, { loop: e.target.checked })}
+                    />
+                    Loop
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={v.controls !== false}
+                      onChange={(e) => patchVideo(section.id, i, { controls: e.target.checked })}
+                    />
+                    Show controls
+                  </label>
+                </div>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => addVideoSlot(section.id)}>
+              <Plus className="w-4 h-4" /> Add video
+            </Button>
+          </>
+        ) })}
+
         {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", children: (
           <>
 
