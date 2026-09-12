@@ -236,8 +236,8 @@ export function videoEmbedUrl(url: string): string | null {
 export type SectionFlow = "inline" | "separate";
 
 export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
-  { value: "separate", label: "Separate" },
-  { value: "inline", label: "Inline" },
+  { value: "separate", label: "Own row" },
+  { value: "inline", label: "Same row" },
 ];
 
 /** Flex style for an inline item with an optional width percentage. */
