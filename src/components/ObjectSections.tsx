@@ -204,6 +204,8 @@ export interface FreeSection {
   imageAlign?: SectionAlign;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
+  /** whether the main text sits above or below the images */
+  textPosition?: "above" | "below";
   buttonLabel?: string;
   buttonHref?: string;
   buttonVariant?: "solid" | "outline" | "link";
