@@ -1199,6 +1199,14 @@ export default function ObjectDesignPage() {
         const sec = sections.find((s) => s.id === toolbar.sectionId) as FreeSection | undefined;
         if (!sec) return null;
         const style = ((sec as any)[toolbar.field] ?? {}) as TextStyle;
+        const solid = (sec.buttonVariant ?? "solid") === "solid";
+        const defaultColor: Record<string, string> = {
+          eyebrowStyle: "stone",
+          textStyle: "ink",
+          bodyStyle: "stone",
+          captionStyle: "stone",
+          labelStyle: solid ? "cream" : "ink",
+        };
         const set = (changes: Partial<TextStyle>) =>
           patch(toolbar.sectionId, { [toolbar.field]: { ...style, ...changes } });
         return (
