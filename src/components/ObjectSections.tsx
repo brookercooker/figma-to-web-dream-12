@@ -259,17 +259,18 @@ function Pic({ image, className }: { image: SectionImage; className: string }) {
 }
 
 function SectionButton({
-  label, href, variant = "solid",
-}: { label: string; href: string; variant?: ButtonSection["variant"] }) {
-  const base = "inline-flex items-center justify-center text-xs uppercase tracking-[0.18em] transition-colors";
+  label, href, variant = "solid", style,
+}: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle }) {
+  const base = "inline-flex items-center justify-center uppercase tracking-[0.18em] transition-colors";
   const styles =
     variant === "outline"
-      ? "border border-ink text-ink px-7 py-3 hover:bg-ink hover:text-cream"
+      ? "border border-ink px-7 py-3 hover:bg-ink hover:text-cream"
       : variant === "link"
-        ? "text-ink underline underline-offset-4 hover:text-brass"
-        : "bg-ink text-cream px-7 py-3 hover:bg-ink/90";
+        ? "underline underline-offset-4 hover:text-brass"
+        : "bg-ink px-7 py-3 hover:bg-ink/90";
+  const text = bodyClasses(style, { color: variant === "solid" ? "cream" : "ink", size: "sm" });
   return (
-    <a href={href || "#"} className={`${base} ${styles}`}>
+    <a href={href || "#"} className={`${base} ${styles} ${text}`}>
       {label}
     </a>
   );
