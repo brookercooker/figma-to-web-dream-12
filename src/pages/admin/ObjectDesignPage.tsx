@@ -199,10 +199,12 @@ function EmphasisToggles({
   style, set, underlineDefault = false,
 }: { style: TextStyle; set: (changes: Partial<TextStyle>) => void; underlineDefault?: boolean }) {
   const underlined = style.underline ?? underlineDefault;
-  const items: { key: string; on: boolean; icon: LucideIcon; label: string; toggle: () => void }[] = [
-    { key: "b", on: !!style.bold, icon: Bold, label: "Bold", toggle: () => set({ bold: !style.bold || undefined }) },
-    { key: "i", on: !!style.italic, icon: Italic, label: "Italic", toggle: () => set({ italic: !style.italic || undefined }) },
-    { key: "u", on: underlined, icon: Underline, label: "Underline", toggle: () => set({ underline: !underlined }) },
+  const items: {
+    key: string; on: boolean; icon: LucideIcon; label: string; cmd: "bold" | "italic" | "underline"; toggle: () => void;
+  }[] = [
+    { key: "b", on: !!style.bold, icon: Bold, label: "Bold", cmd: "bold", toggle: () => set({ bold: !style.bold || undefined }) },
+    { key: "i", on: !!style.italic, icon: Italic, label: "Italic", cmd: "italic", toggle: () => set({ italic: !style.italic || undefined }) },
+    { key: "u", on: underlined, icon: Underline, label: "Underline", cmd: "underline", toggle: () => set({ underline: !underlined }) },
   ];
   return (
     <span className="inline-flex overflow-hidden rounded-md border">
@@ -213,7 +215,9 @@ function EmphasisToggles({
           title={it.label}
           aria-label={it.label}
           aria-pressed={it.on}
-          onClick={it.toggle}
+          // keep the text selection alive so the format can target just that part
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { if (!formatSelection(it.cmd)) it.toggle(); }}
           className={`px-2 py-1.5 transition-colors ${
             it.on ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
           }`}
