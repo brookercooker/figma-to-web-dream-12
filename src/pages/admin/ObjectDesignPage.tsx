@@ -353,9 +353,11 @@ export default function ObjectDesignPage() {
 
     // Text elements get a floating font / size / color toolbar.
     const field = STYLE_FIELD[part.startsWith("caption:") ? "caption" : part];
+    const r = el.getBoundingClientRect();
     if (field) {
-      const r = el.getBoundingClientRect();
       setToolbar({ sectionId, field, top: r.top, left: r.left, width: r.width });
+    } else if (part.startsWith("image:")) {
+      setToolbar({ sectionId, imageIndex: Number(part.split(":")[1]) || 0, top: r.top, left: r.left, width: r.width });
     } else {
       setToolbar(null);
     }
