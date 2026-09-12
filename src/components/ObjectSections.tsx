@@ -363,8 +363,8 @@ export interface FreeDivider {
   width?: "full" | "short";
   /** bar thickness in px */
   thickness?: number;
-  /** vertical nudge in px: negative moves the bar up, positive moves it down */
-  offset?: number;
+  /** which element this bar sits under: "start", a part key (eyebrow/heading/body/text:i), or "end" */
+  after?: string;
 }
 
 export interface FreeSection {
@@ -856,7 +856,7 @@ export function DividerBar({
   return (
     <div
       className={`${cls} ${divider.width === "short" ? `w-24 ${dividerSelf[align]}` : "w-full"} my-2 rounded-full`}
-      style={{ height: `${divider.thickness ?? 1}px`, position: "relative", top: `${divider.offset ?? 0}px` }}
+      style={{ height: `${divider.thickness ?? 1}px` }}
     />
   );
 }
@@ -902,11 +902,6 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
       {...richText(t.text)}
     />
   ) }));
-  (section.dividers ?? []).forEach((d, i) => items.push({ part: `divider:${i}`, node: (
-    <div data-part={`divider:${i}`} className="w-full flex flex-col">
-      <DividerBar divider={d} align={section.align} onDark={onDark} />
-    </div>
-  ) }));
   if (section.buttonLabel) items.push({ part: "button", node: (
     <div data-part="button" className="mt-2">
       <SectionButton
@@ -918,6 +913,26 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
       />
     </div>
   ) });
+
+  // Place each divider under the element it was anchored to.
+  (section.dividers ?? []).forEach((d, i) => {
+    const node = {
+      part: `divider:${i}`,
+      node: (
+        <div data-part={`divider:${i}`} className="w-full flex flex-col">
+          <DividerBar divider={d} align={section.align} onDark={onDark} />
+        </div>
+      ),
+    };
+    const anchor = d.after ?? "end";
+    if (anchor === "start") {
+      items.unshift(node);
+      return;
+    }
+    const at = items.findIndex((it) => it.part === anchor);
+    if (anchor === "end" || at === -1) items.push(node);
+    else items.splice(at + 1, 0, node);
+  });
 
   const groups = groupByFlow(items, (it) => flowOf(it.part));
 

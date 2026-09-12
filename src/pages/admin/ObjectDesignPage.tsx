@@ -1309,35 +1309,22 @@ export default function ObjectDesignPage() {
                     }
                   />
                 </Field>
-                <Field label="Vertical position (px)">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => patchDivider(section.id, i, { offset: Math.max(-200, (d.offset ?? 0) - 4) })}
-                    >
-                      <ArrowUp className="w-4 h-4" />
-                    </Button>
-                    <Input
-                      type="number"
-                      min={-200}
-                      max={200}
-                      className="w-24"
-                      value={d.offset ?? 0}
-                      onChange={(e) =>
-                        patchDivider(section.id, i, {
-                          offset: Math.min(200, Math.max(-200, Number(e.target.value) || 0)),
-                        })
-                      }
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => patchDivider(section.id, i, { offset: Math.min(200, (d.offset ?? 0) + 4) })}
-                    >
-                      <ArrowDown className="w-4 h-4" />
-                    </Button>
-                  </div>
+                <Field label="Position">
+                  <select
+                    className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    value={d.after ?? "end"}
+                    onChange={(e) => patchDivider(section.id, i, { after: e.target.value })}
+                  >
+                    <option value="start">Above everything</option>
+                    {section.eyebrow ? <option value="eyebrow">Below eyebrow</option> : null}
+                    {section.heading ? <option value="heading">Below title</option> : null}
+                    {section.body ? <option value="body">Below text</option> : null}
+                    {(section.extras ?? []).map((_, xi) => (
+                      <option key={xi} value={`text:${xi}`}>{`Below paragraph ${xi + 1}`}</option>
+                    ))}
+                    {section.buttonLabel ? <option value="button">Below button</option> : null}
+                    <option value="end">Below all text</option>
+                  </select>
                 </Field>
               </>
             ),
