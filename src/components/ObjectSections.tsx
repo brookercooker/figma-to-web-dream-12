@@ -228,6 +228,30 @@ export function videoEmbedUrl(url: string): string | null {
   return null;
 }
 
+/**
+ * How an item sits next to its neighbours.
+ * inline = shares a row with the inline items around it, each in its own column.
+ * separate = always takes a row of its own.
+ */
+export type SectionFlow = "inline" | "separate";
+
+export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
+  { value: "separate", label: "Separate" },
+  { value: "inline", label: "Inline" },
+];
+
+/** Group consecutive inline entries together; separate entries stand alone. */
+export function groupByFlow<T>(items: T[], flowOf: (item: T) => SectionFlow | undefined): T[][] {
+  const groups: T[][] = [];
+  for (const item of items) {
+    const inline = flowOf(item) === "inline";
+    const last = groups[groups.length - 1];
+    if (inline && last && last.length && flowOf(last[0]) === "inline") last.push(item);
+    else groups.push([item]);
+  }
+  return groups;
+}
+
 export interface CarouselSection {
   id: string;
   type: "carousel";
