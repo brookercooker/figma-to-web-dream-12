@@ -1371,7 +1371,7 @@ export default function ObjectDesignPage() {
           }),
         )}
 
-        {section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, children: (
+        {section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, onDelete: () => patch(section.id, { images: [] }), children: (
           <>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -1516,7 +1516,7 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {(section.videos ?? []).length > 0 && Block({ title: "Videos", icon: VideoIcon, children: (
+        {(section.videos ?? []).length > 0 && Block({ title: "Videos", icon: VideoIcon, onDelete: () => patch(section.id, { videos: [] }), children: (
           <>
             {(section.videos ?? []).map((v, i) => (
               <div key={v.id} className="rounded-md border p-3 space-y-3">
