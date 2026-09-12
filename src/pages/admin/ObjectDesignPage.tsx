@@ -174,7 +174,63 @@ export default function ObjectDesignPage() {
     return () => window.clearTimeout(t);
   }, [focusPart, activeId]);
 
+  // Double-clicking a text element in the preview turns it into an inline editor.
+  const editInline = (sectionId: string, e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
+    if (!el) return;
+    const part = el.getAttribute("data-part") ?? "";
+    const captionIdx = part.startsWith("caption:") ? Number(part.split(":")[1]) : -1;
+    const field =
+      part === "eyebrow" ? "eyebrow"
+      : part === "heading" ? "heading"
+      : part === "body" ? "body"
+      : part === "button" ? "buttonLabel"
+      : captionIdx >= 0 ? "caption"
+      : "";
+    if (!field) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const target = field === "buttonLabel"
+      ? ((el.querySelector("a, button") as HTMLElement | null) ?? el)
+      : el;
+    if (target.isContentEditable) return;
+
+    target.contentEditable = "true";
+    target.spellcheck = false;
+    target.style.outline = "2px solid hsl(var(--primary))";
+    target.style.outlineOffset = "2px";
+    target.focus();
+    const range = document.createRange();
+    range.selectNodeContents(target);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+
+    const stop = (ev: Event) => ev.stopPropagation();
+    const commit = () => {
+      const value = (target.innerText ?? "").replace(/\u00a0/g, " ").trim();
+      target.contentEditable = "false";
+      target.style.outline = "";
+      target.style.outlineOffset = "";
+      target.removeEventListener("blur", commit);
+      target.removeEventListener("keydown", onKey);
+      target.removeEventListener("click", stop);
+      if (captionIdx >= 0) patchImage(sectionId, captionIdx, { caption: value });
+      else patch(sectionId, { [field]: value });
+    };
+    const onKey = (ev: KeyboardEvent) => {
+      ev.stopPropagation();
+      if (ev.key === "Escape") { ev.preventDefault(); target.blur(); }
+      if (ev.key === "Enter" && field !== "body") { ev.preventDefault(); target.blur(); }
+    };
+    target.addEventListener("blur", commit);
+    target.addEventListener("keydown", onKey);
+    target.addEventListener("click", stop);
+  };
+
   const pickPart = (sectionId: string, e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).isContentEditable) return;
     const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
     if ((e.target as HTMLElement).closest?.("a")) e.preventDefault();
     setActiveId(sectionId);
@@ -1001,6 +1057,7 @@ export default function ObjectDesignPage() {
                     <div
                       className="px-4 cursor-pointer [&_[data-part]]:cursor-pointer [&_[data-part]]:rounded-sm [&_[data-part]]:transition-shadow [&_[data-part]:hover]:ring-2 [&_[data-part]:hover]:ring-primary/50 [&_[data-part]:hover]:ring-offset-2"
                       onClick={(e) => pickPart(s.id, e)}
+                      onDoubleClick={(e) => editInline(s.id, e)}
                     >
                       {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel ? (
                         <p className="py-12 text-center text-sm text-muted-foreground">
