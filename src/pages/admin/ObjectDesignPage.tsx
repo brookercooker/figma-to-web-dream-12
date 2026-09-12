@@ -888,7 +888,7 @@ export default function ObjectDesignPage() {
       )}
       {showCaption && (
         <Choice
-          value={image.captionAlign ?? section.captionAlign ?? "left"}
+          value={image.captionAlign ?? (section as any).captionAlign ?? "left"}
           options={[
             { value: "left" as const, label: "Left", icon: AlignLeft },
             { value: "center" as const, label: "Center", icon: AlignCenter },
