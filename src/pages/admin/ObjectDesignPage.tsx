@@ -1094,6 +1094,66 @@ export default function ObjectDesignPage() {
     const hasEyebrow = section.eyebrow !== undefined;
     const hasBody = section.body !== undefined;
     const hasButton = section.buttonLabel !== undefined;
+
+    const basePartsOf = (s: FreeSection) => {
+      const base: string[] = [];
+      if (s.eyebrow !== undefined) base.push("eyebrow");
+      if (s.heading !== undefined) base.push("heading");
+      if (s.body !== undefined) base.push("body");
+      (s.extras ?? []).forEach((_, i) => base.push(`text:${i}`));
+      if (s.buttonLabel !== undefined) base.push("button");
+      (s.dividers ?? []).forEach((_, i) => base.push(`divider:${i}`));
+      return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
+    };
+
+    const partLabel = (p: string) => {
+      if (p === "eyebrow") return "Eyebrow";
+      if (p === "heading") return "Title";
+      if (p === "body") return "Text";
+      if (p === "button") return "Button";
+      if (p.startsWith("text:")) return `Paragraph ${Number(p.slice(5)) + 1}`;
+      if (p.startsWith("divider:")) return `Divider ${Number(p.slice(8)) + 1}`;
+      return p;
+    };
+
+    const parts = basePartsOf(section);
+
+    const movePart = (from: string, to: string) => {
+      if (from === to) return;
+      const next = parts.filter((p) => p !== from);
+      const at = next.indexOf(to);
+      next.splice(at === -1 ? next.length : at, 0, from);
+      patch(section.id, { order: next });
+    };
+
+    const arrangeList = () => (
+      <ul className="space-y-1">
+        {parts.map((p) => (
+          <li
+            key={p}
+            draggable
+            onDragStart={() => setDragPart({ sectionId: section.id, part: p })}
+            onDragEnd={() => setDragPart(null)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (dragPart?.sectionId === section.id) movePart(dragPart.part, p);
+              setDragPart(null);
+            }}
+            onClick={() => setFocusPart(p)}
+            className={`flex cursor-grab items-center gap-2 rounded-md border px-3 py-2 text-sm ${
+              dragPart?.part === p && dragPart.sectionId === section.id
+                ? "border-primary bg-primary/5"
+                : "border-border bg-background"
+            }`}
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+            {partLabel(p)}
+          </li>
+        ))}
+      </ul>
+    );
+
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2">
