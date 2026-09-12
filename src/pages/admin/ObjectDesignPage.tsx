@@ -1880,7 +1880,7 @@ export default function ObjectDesignPage() {
               </div>
               <div className="p-4">
                 {sections.length ? (
-                  sections.map((s) => <SectionView key={s.id} section={s} />)
+                  <SectionFlowList sections={sections} />
                 ) : (
                   <p className="py-16 text-center text-sm text-muted-foreground">
                     Nothing here yet. Switch to Edit and add a section.
