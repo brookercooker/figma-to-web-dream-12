@@ -793,6 +793,78 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  /** Insert a copy of item at `index` right after it. */
+  const insertCopy = <T,>(list: T[], index: number, copy: T): T[] => {
+    const next = [...list];
+    next.splice(index + 1, 0, copy);
+    return next;
+  };
+
+  const duplicateImageSlot = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || !("images" in s)) return s;
+        const images = (s as any).images as SectionImage[];
+        const src = images[index];
+        if (!src) return s;
+        const copy: SectionImage = {
+          ...src,
+          texts: (src.texts ?? []).map((t) => ({ ...t, id: newSectionId(), style: { ...(t.style ?? {}) } })),
+        };
+        return { ...s, images: insertCopy(images, index, copy) } as Section;
+      }),
+    );
+    setDirty(true);
+    openBlock("Images");
+    setOpenSub({ [`img:${id}:${index + 1}`]: true });
+  };
+
+  const duplicateImageText = (sectionId: string, index: number, tIdx: number) => {
+    const texts = imageTextsOf(sectionId, index);
+    const src = texts[tIdx];
+    if (!src) return;
+    patchImage(sectionId, index, {
+      texts: insertCopy(texts, tIdx, { ...src, id: newSectionId(), style: { ...(src.style ?? {}) } }),
+    });
+    setOpenSub((s) => ({ ...s, [`txt:${sectionId}:${index}:${tIdx + 1}`]: true }));
+  };
+
+  const duplicateExtra = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const extras = s.extras ?? [];
+        const src = extras[index];
+        if (!src) return s;
+        return {
+          ...s,
+          extras: insertCopy(extras, index, { ...src, id: newSectionId(), style: { ...(src.style ?? {}) } }),
+        } as Section;
+      }),
+    );
+    setDirty(true);
+  };
+
+  const duplicateDivider = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const dividers = s.dividers ?? [];
+        const src = dividers[index];
+        if (!src) return s;
+        return { ...s, dividers: insertCopy(dividers, index, { ...src, id: newSectionId() }) } as Section;
+      }),
+    );
+    setDirty(true);
+  };
+
+  /** Copy a single text element into a new paragraph, keeping its styling. */
+  const duplicateTextInto = (section: FreeSection, text: string | undefined, style?: TextStyle) => {
+    patch(section.id, {
+      extras: [...(section.extras ?? []), { id: newSectionId(), text: text ?? "", style: { ...(style ?? {}) } }],
+    });
+  };
+
   const videosOf = (sectionId: string): SectionVideo[] => {
     const s = sections.find((x) => x.id === sectionId);
     return s && s.type === "free" ? (s.videos ?? []) : [];
