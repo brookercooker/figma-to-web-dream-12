@@ -611,9 +611,11 @@ export default function ObjectDesignPage() {
     title,
     icon: Icon,
     part,
+    key,
     children,
-  }: { title: string; icon: LucideIcon; part?: string; children: React.ReactNode }) => (
+  }: { title: string; icon: LucideIcon; part?: string; key?: string; children: React.ReactNode }) => (
     <div
+      key={key}
       data-inspector-part={part}
       className="scroll-mt-24 rounded-lg border bg-background shadow-sm"
     >
