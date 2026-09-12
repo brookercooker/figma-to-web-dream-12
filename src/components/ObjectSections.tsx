@@ -963,8 +963,26 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
             })}
           </div>
         ) : (
-          <div key={group[0].part} className="w-full">{group[0].node}</div>
+          (() => {
+            const it = group[0];
+            const w = section.flowWidths?.[it.part];
+            const a = section.flowAligns?.[it.part] ?? section.align;
+            return (
+              <div
+                key={it.part}
+                className={`flex w-full ${alignRow[a]}`}
+              >
+                <div
+                  className={`flex flex-col ${alignText[a]} ${w ? "" : "w-full"}`}
+                  style={flowWidthStyle(w)}
+                >
+                  {it.node}
+                </div>
+              </div>
+            );
+          })()
         )
+
       )}
     </div>
   );
