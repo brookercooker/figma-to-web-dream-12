@@ -1424,7 +1424,7 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, onDelete: () => patch(section.id, { heading: undefined }), children: (
+        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, onDelete: () => patch(section.id, { heading: undefined }), onDuplicate: () => duplicateTextInto(section, section.heading, section.textStyle), children: (
           <>
 
 
