@@ -349,9 +349,19 @@ export interface ButtonSection {
 }
 
 /** Freeform block: a blank space you add text and images to. */
+export type FreeTextKind = "eyebrow" | "title" | "text";
+
+export const FREE_TEXT_KINDS: { value: FreeTextKind; label: string }[] = [
+  { value: "eyebrow", label: "Eyebrow" },
+  { value: "title", label: "Title" },
+  { value: "text", label: "Text" },
+];
+
 export interface FreeParagraph {
   id: string;
   text: string;
+  /** what sort of text this is; defaults to a body paragraph */
+  kind?: FreeTextKind;
   style?: TextStyle;
 }
 
