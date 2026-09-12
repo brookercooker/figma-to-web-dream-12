@@ -856,7 +856,7 @@ export function DividerBar({
   return (
     <div
       className={`${cls} ${divider.width === "short" ? `w-24 ${dividerSelf[align]}` : "w-full"} my-2 rounded-full`}
-      style={{ height: `${divider.thickness ?? 1}px`, position: "relative", top: `${divider.offset ?? 0}px` }}
+      style={{ height: `${divider.thickness ?? 1}px` }}
     />
   );
 }
