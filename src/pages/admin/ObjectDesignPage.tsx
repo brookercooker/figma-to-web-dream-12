@@ -1496,6 +1496,7 @@ export default function ObjectDesignPage() {
             flowSection: section,
             key: d.id,
             onDelete: () => removeDivider(section.id, i),
+            onDuplicate: () => duplicateDivider(section.id, i),
             children: (
               <>
                 <div className="flex flex-wrap items-center gap-3">
