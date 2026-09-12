@@ -853,7 +853,7 @@ export default function ObjectDesignPage() {
             <div className="flex flex-wrap gap-4">
               <Field label="Images sit">
                 <div>
-                  <Choice
+                  <IconSelect
                     value={section.layout}
                     options={[
                       { value: "stacked" as const, label: "Below text", icon: Rows2 },
@@ -1468,7 +1468,7 @@ export default function ObjectDesignPage() {
                   onChange={(v) => patch(sec.id, { imageAlign: v })}
                 />
               )}
-              <Dropdown
+              <IconSelect
                 label="Sits"
                 value={sec.layout ?? "stacked"}
                 options={[
