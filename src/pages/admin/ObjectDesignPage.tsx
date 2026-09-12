@@ -1207,7 +1207,95 @@ export default function ObjectDesignPage() {
       {toolbar && (() => {
         const sec = sections.find((s) => s.id === toolbar.sectionId) as FreeSection | undefined;
         if (!sec) return null;
-        const style = ((sec as any)[toolbar.field] ?? {}) as TextStyle;
+        const pos = { top: Math.max(8, toolbar.top - 52), left: Math.max(8, toolbar.left) };
+
+        if (toolbar.imageIndex !== undefined) {
+          const idx = toolbar.imageIndex;
+          return (
+            <div
+              className="fixed z-50 flex items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
+              style={pos}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Image</span>
+              <Button variant="outline" size="sm" onClick={() => setPicker({ sectionId: sec.id, index: idx })}>
+                Replace
+              </Button>
+              {sec.layout !== "behind" && (
+                <Dropdown
+                  label="Height"
+                  value={sec.imageHeight ?? "auto"}
+                  options={IMAGE_HEIGHTS.map((h) => ({ value: h.value as string, label: h.label }))}
+                  onChange={(v) => patch(sec.id, { imageHeight: v })}
+                />
+              )}
+              {sec.layout !== "behind" && sec.gallery !== "carousel" && (
+                <Dropdown
+                  label="Position"
+                  value={sec.imageAlign ?? "left"}
+                  options={[
+                    { value: "left", label: "Left" },
+                    { value: "center", label: "Center" },
+                    { value: "right", label: "Right" },
+                  ]}
+                  onChange={(v) => patch(sec.id, { imageAlign: v })}
+                />
+              )}
+              <Dropdown
+                label="Sits"
+                value={sec.layout ?? "stacked"}
+                options={[
+                  { value: "stacked", label: "Below text" },
+                  { value: "beside", label: "Beside text" },
+                  { value: "behind", label: "Behind text" },
+                ]}
+                onChange={(v) => patch(sec.id, { layout: v })}
+              />
+              {sec.layout === "beside" && (
+                <Dropdown
+                  label="Side"
+                  value={sec.imageSide ?? "left"}
+                  options={[
+                    { value: "left", label: "Left" },
+                    { value: "right", label: "Right" },
+                  ]}
+                  onChange={(v) => patch(sec.id, { imageSide: v })}
+                />
+              )}
+              {sec.layout !== "behind" && (sec.images?.length ?? 0) > 1 && (
+                <Dropdown
+                  label="Show as"
+                  value={sec.gallery ?? "grid"}
+                  options={[
+                    { value: "grid", label: "Grid" },
+                    { value: "carousel", label: "Carousel" },
+                  ]}
+                  onChange={(v) => patch(sec.id, { gallery: v })}
+                />
+              )}
+              {sec.layout !== "behind" && sec.gallery === "carousel" && (sec.images?.length ?? 0) > 1 && (
+                <Dropdown
+                  label="Show at once"
+                  value={String(Math.min(sec.perView ?? 1, sec.images.length))}
+                  options={Array.from({ length: Math.min(sec.images.length, 6) }, (_, k) => ({
+                    value: String(k + 1), label: String(k + 1),
+                  }))}
+                  onChange={(v) => patch(sec.id, { perView: Number(v) })}
+                />
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { removeImageSlot(sec.id, idx); setToolbar(null); }}
+              >
+                Remove
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setToolbar(null)}>Done</Button>
+            </div>
+          );
+        }
+
+        const style = ((sec as any)[toolbar.field as string] ?? {}) as TextStyle;
         const solid = (sec.buttonVariant ?? "solid") === "solid";
         const defaultColor: Record<string, string> = {
           eyebrowStyle: "stone",
