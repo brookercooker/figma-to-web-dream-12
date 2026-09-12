@@ -482,6 +482,21 @@ export default function ObjectDesignPage() {
                   </div>
                 </Field>
               )}
+              {section.layout !== "behind" && section.images.length > 0 && section.gallery !== "carousel" && (
+                <Field label="Image position">
+                  <div>
+                    <Choice
+                      value={section.imageAlign ?? "left"}
+                      options={[
+                        { value: "left" as const, label: "Left" },
+                        { value: "center" as const, label: "Center" },
+                        { value: "right" as const, label: "Right" },
+                      ]}
+                      onChange={(v) => patch(section.id, { imageAlign: v })}
+                    />
+                  </div>
+                </Field>
+              )}
               {section.layout !== "behind" && section.images.length > 1 && (
                 <>
                   <Field label="Show as">
