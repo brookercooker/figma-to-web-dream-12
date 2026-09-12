@@ -174,6 +174,35 @@ const SIZE_WORD: Record<string, string> = {
   xl: "Extra Large",
 };
 
+function IconSelect<T extends string>({
+  label, value, options, onChange,
+}: { label?: string; value: T; options: { value: T; label: string; icon?: LucideIcon }[]; onChange: (v: T) => void }) {
+  const current = options.find((o) => o.value === value) ?? options[0];
+  const Current = current?.icon;
+  return (
+    <span className="flex items-center gap-1.5 text-xs">
+      {label ? <span className="text-muted-foreground">{label}</span> : null}
+      <DropdownMenu>
+        <DropdownMenuTrigger className="flex h-8 items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs hover:bg-muted">
+          {Current ? <Current className="h-3.5 w-3.5" /> : null}
+          {current?.label}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[10rem]">
+          {options.map((o) => {
+            const Icon = o.icon;
+            return (
+              <DropdownMenuItem key={o.value} onSelect={() => onChange(o.value)} className="gap-2 text-xs">
+                {Icon ? <Icon className="h-3.5 w-3.5" /> : null}
+                {o.label}
+              </DropdownMenuItem>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </span>
+  );
+}
+
 function Dropdown({
   label, value, options, onChange,
 }: { label: string; value: string; options: { value: string; label: string; icon?: LucideIcon }[]; onChange: (v: string) => void }) {
