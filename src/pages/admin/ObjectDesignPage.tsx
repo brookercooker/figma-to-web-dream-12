@@ -1022,6 +1022,16 @@ export default function ObjectDesignPage() {
           </span>
           <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${imgOpen ? "rotate-180" : ""}`} />
         </button>
+        {index >= 0 && "images" in section && (
+          <Button
+            variant="ghost"
+            size="sm"
+            title="Duplicate image and its text"
+            onClick={() => duplicateImageSlot(section.id, index)}
+          >
+            <Copy className="w-4 h-4" />
+          </Button>
+        )}
         {index >= 0 && "images" in section && (section as any).images.length > 1 && (
           <Button variant="ghost" size="sm" onClick={() => removeImageSlot(section.id, index)}>
             <Trash2 className="w-4 h-4" />
