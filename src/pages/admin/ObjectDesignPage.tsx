@@ -580,6 +580,25 @@ export default function ObjectDesignPage() {
     </Button>
   );
 
+  const Block = ({
+    title,
+    icon: Icon,
+    part,
+    children,
+  }: { title: string; icon: LucideIcon; part?: string; children: React.ReactNode }) => (
+    <div
+      data-inspector-part={part}
+      className="scroll-mt-24 rounded-lg border bg-background shadow-sm"
+    >
+      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-1.5">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">{title}</span>
+      </div>
+      <div className="space-y-3 p-3">{children}</div>
+    </div>
+  );
+
+
   const freeInspector = (section: FreeSection) => {
     const hasTitle = section.heading !== undefined;
     const hasEyebrow = section.eyebrow !== undefined;
