@@ -27,6 +27,27 @@ export function emphasisClasses(style: TextStyle | undefined) {
   ].filter(Boolean).join(" ");
 }
 
+/**
+ * Text fields may contain light inline markup (bold / italic / underline applied
+ * to a portion of the text). Everything else is escaped before rendering.
+ */
+const ALLOWED_INLINE = /^(b|strong|i|em|u|s|br)$/i;
+
+export function sanitizeInline(input: string): string {
+  const escaped = input
+    .replace(/&(?!(amp|lt|gt|nbsp|#\d+);)/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return escaped.replace(/&lt;(\/?)([a-zA-Z]+)\s*\/?&gt;/g, (m, slash: string, tag: string) =>
+    ALLOWED_INLINE.test(tag) ? `<${slash}${tag.toLowerCase()}>` : m,
+  );
+}
+
+/** Spread onto an element to render text with its inline formatting. */
+export function richText(text: string) {
+  return { dangerouslySetInnerHTML: { __html: sanitizeInline(text) } };
+}
+
 export const TEXT_FONTS: { value: TextFont; label: string }[] = [
   { value: "serif", label: "Serif" },
   { value: "sans", label: "Sans" },
@@ -393,9 +414,7 @@ function SectionButton({
         : `${bgClass[fill]} px-7 py-3`;
   const text = bodyClasses(style, { color: variant === "solid" ? bgTextColor[fill] : "ink", size: "sm" });
   return (
-    <a href={href || "#"} className={`${base} ${styles} ${text}`}>
-      {label}
-    </a>
+    <a href={href || "#"} className={`${base} ${styles} ${text}`} {...richText(label)} />
   );
 }
 
@@ -495,9 +514,8 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
                 <figcaption
                   data-part={`caption:${idx}`}
                   className={`mt-3 leading-relaxed ${alignTextOnly[section.captionAlign ?? "left"]} ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
-                >
-                  {img.caption}
-                </figcaption>
+                  {...richText(img.caption)}
+                />
               ) : null}
             </figure>
           ))}
@@ -553,9 +571,8 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
                 color: onDark ? "cream" : "stone",
                 size: "sm",
               })}`}
-            >
-              {img.caption}
-            </figcaption>
+              {...richText(img.caption)}
+            />
           ) : null}
         </figure>
       ))}
@@ -572,28 +589,33 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
   return (
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
       {section.eyebrow ? (
-        <p data-part="eyebrow" className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}>
-          {section.eyebrow}
-        </p>
+        <p
+          data-part="eyebrow"
+          className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+          {...richText(section.eyebrow)}
+        />
       ) : null}
       {section.heading ? (
-        <h2 data-part="heading" className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}>
-          {section.heading}
-        </h2>
+        <h2
+          data-part="heading"
+          className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}
+          {...richText(section.heading)}
+        />
       ) : null}
       {section.body ? (
-        <p data-part="body" className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}>
-          {section.body}
-        </p>
+        <p
+          data-part="body"
+          className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}
+          {...richText(section.body)}
+        />
       ) : null}
       {(section.extras ?? []).map((t, i) => (
         <p
           key={t.id}
           data-part={`text:${i}`}
           className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
-        >
-          {t.text}
-        </p>
+          {...richText(t.text)}
+        />
       ))}
       {section.buttonLabel ? (
         <div data-part="button" className="mt-2">
@@ -777,4 +799,28 @@ export default function ObjectSections({ sections }: { sections: Section[] }) {
       ))}
     </div>
   );
+}
+
+/** Normalise contentEditable HTML down to plain text + b/i/u/br markup. */
+export function cleanEditedHtml(html: string): string {
+  const root = document.createElement("div");
+  root.innerHTML = html;
+  const esc = (s: string) =>
+    s.replace(/\u00a0/g, " ").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const walk = (n: Node): string => {
+    if (n.nodeType === Node.TEXT_NODE) return esc(n.textContent ?? "");
+    if (n.nodeType !== Node.ELEMENT_NODE) return "";
+    const el = n as HTMLElement;
+    const tag = el.tagName.toLowerCase();
+    const inner = Array.from(el.childNodes).map(walk).join("");
+    if (tag === "br") return "<br>";
+    if (tag === "div" || tag === "p") return inner ? `${inner}<br>` : "";
+    const style = el.getAttribute("style") ?? "";
+    let out = inner;
+    if (tag === "u" || /underline/.test(style)) out = `<u>${out}</u>`;
+    if (tag === "i" || tag === "em" || /font-style:\s*italic/.test(style)) out = `<i>${out}</i>`;
+    if (tag === "b" || tag === "strong" || /font-weight:\s*(bold|[6-9]00)/.test(style)) out = `<b>${out}</b>`;
+    return out;
+  };
+  return Array.from(root.childNodes).map(walk).join("").replace(/(<br>)+$/, "").trim();
 }

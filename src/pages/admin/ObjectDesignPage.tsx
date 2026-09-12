@@ -18,10 +18,26 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  IMAGE_HEIGHTS, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, makeSection, newSectionId, parseSections,
+  IMAGE_HEIGHTS, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections,
   type FreeSection, type Section, type SectionAlign, type SectionImage, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
+
+/**
+ * When part of a text element is selected inside an inline editor, apply the
+ * format to just that selection instead of the whole element.
+ */
+function formatSelection(command: "bold" | "italic" | "underline") {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return false;
+  const node = sel.anchorNode;
+  const el = (node instanceof HTMLElement ? node : node?.parentElement) ?? null;
+  const host = el?.closest<HTMLElement>('[contenteditable="true"]');
+  if (!host) return false;
+  document.execCommand(command);
+  host.dispatchEvent(new Event("input", { bubbles: true }));
+  return true;
+}
 
 interface ObjectRow {
   id: string;
@@ -183,10 +199,12 @@ function EmphasisToggles({
   style, set, underlineDefault = false,
 }: { style: TextStyle; set: (changes: Partial<TextStyle>) => void; underlineDefault?: boolean }) {
   const underlined = style.underline ?? underlineDefault;
-  const items: { key: string; on: boolean; icon: LucideIcon; label: string; toggle: () => void }[] = [
-    { key: "b", on: !!style.bold, icon: Bold, label: "Bold", toggle: () => set({ bold: !style.bold || undefined }) },
-    { key: "i", on: !!style.italic, icon: Italic, label: "Italic", toggle: () => set({ italic: !style.italic || undefined }) },
-    { key: "u", on: underlined, icon: Underline, label: "Underline", toggle: () => set({ underline: !underlined }) },
+  const items: {
+    key: string; on: boolean; icon: LucideIcon; label: string; cmd: "bold" | "italic" | "underline"; toggle: () => void;
+  }[] = [
+    { key: "b", on: !!style.bold, icon: Bold, label: "Bold", cmd: "bold", toggle: () => set({ bold: !style.bold || undefined }) },
+    { key: "i", on: !!style.italic, icon: Italic, label: "Italic", cmd: "italic", toggle: () => set({ italic: !style.italic || undefined }) },
+    { key: "u", on: underlined, icon: Underline, label: "Underline", cmd: "underline", toggle: () => set({ underline: !underlined }) },
   ];
   return (
     <span className="inline-flex overflow-hidden rounded-md border">
@@ -197,7 +215,9 @@ function EmphasisToggles({
           title={it.label}
           aria-label={it.label}
           aria-pressed={it.on}
-          onClick={it.toggle}
+          // keep the text selection alive so the format can target just that part
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { if (!formatSelection(it.cmd)) it.toggle(); }}
           className={`px-2 py-1.5 transition-colors ${
             it.on ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
           }`}
@@ -455,7 +475,8 @@ export default function ObjectDesignPage() {
 
     const stop = (ev: Event) => ev.stopPropagation();
     const commit = () => {
-      const value = (target.innerText ?? "").replace(/\u00a0/g, " ").trim();
+      // keeps any bold / italic / underline applied to parts of the text
+      const value = cleanEditedHtml(target.innerHTML ?? "");
       target.contentEditable = "false";
       target.style.outline = "";
       target.style.outlineOffset = "";
@@ -468,6 +489,12 @@ export default function ObjectDesignPage() {
     };
     const onKey = (ev: KeyboardEvent) => {
       ev.stopPropagation();
+      const mod = ev.metaKey || ev.ctrlKey;
+      if (mod && ["b", "i", "u"].includes(ev.key.toLowerCase())) {
+        ev.preventDefault();
+        formatSelection(ev.key.toLowerCase() === "b" ? "bold" : ev.key.toLowerCase() === "i" ? "italic" : "underline");
+        return;
+      }
       if (ev.key === "Escape") { ev.preventDefault(); target.blur(); }
       if (ev.key === "Enter" && field !== "body" && field !== "extra") { ev.preventDefault(); target.blur(); }
     };
