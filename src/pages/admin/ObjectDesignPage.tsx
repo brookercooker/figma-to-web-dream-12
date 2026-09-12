@@ -2293,6 +2293,7 @@ export default function ObjectDesignPage() {
             {!filtered.length && <p className="p-3 text-sm text-muted-foreground">No objects found.</p>}
           </div>
         </aside>
+        )}
 
         <section className="min-w-0">
           {!object ? (
