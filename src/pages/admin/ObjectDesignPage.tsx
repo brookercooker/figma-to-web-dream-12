@@ -1443,7 +1443,7 @@ export default function ObjectDesignPage() {
 
 
 
-        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, onDelete: () => patch(section.id, { body: undefined }), children: (
+        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, onDelete: () => patch(section.id, { body: undefined }), onDuplicate: () => duplicateTextInto(section, section.body, section.bodyStyle), children: (
           <>
 
 
