@@ -916,27 +916,18 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
     </div>
   ) });
 
-  // Place each divider under the element it was anchored to.
-  (section.dividers ?? []).forEach((d, i) => {
-    const node = {
-      part: `divider:${i}`,
-      node: (
-        <div data-part={`divider:${i}`} className="w-full flex flex-col">
-          <DividerBar divider={d} align={section.align} onDark={onDark} />
-        </div>
-      ),
-    };
-    const anchor = d.after ?? "end";
-    if (anchor === "start") {
-      items.unshift(node);
-      return;
-    }
-    const at = items.findIndex((it) => it.part === anchor);
-    if (anchor === "end" || at === -1) items.push(node);
-    else items.splice(at + 1, 0, node);
-  });
+  (section.dividers ?? []).forEach((d, i) => items.push({
+    part: `divider:${i}`,
+    node: (
+      <div data-part={`divider:${i}`} className="w-full flex flex-col">
+        <DividerBar divider={d} align={section.align} onDark={onDark} />
+      </div>
+    ),
+  }));
 
-  const groups = groupByFlow(items, (it) => flowOf(it.part));
+  const ordered = orderParts(items, section.order);
+
+  const groups = groupByFlow(ordered, (it) => flowOf(it.part));
 
   return (
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
