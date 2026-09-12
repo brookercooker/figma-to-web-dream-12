@@ -3,16 +3,18 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import SimplePage from "./SimplePage";
 import NotFound from "./NotFound";
+import PageBlocks, { parseBlocks, type Block } from "@/components/PageBlocks";
 
 /**
  * Dynamic page renderer for any /:slug that isn't matched by a static route.
- * Looks up the pages table by `path = /:slug`, and renders SimplePage with the
- * page's name. Falls back to NotFound if no matching (non-archived) page exists.
+ * Looks up the pages table by `path = /:slug` and renders the blocks authored
+ * in the Design tab (falling back to a title-only page when there are none).
  */
 export default function DbPage() {
   const { slug } = useParams();
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState<string | null>(null);
+  const [blocks, setBlocks] = useState<Block[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -21,12 +23,13 @@ export default function DbPage() {
       const path = `/${slug ?? ""}`;
       const { data } = await (supabase as any)
         .from("pages")
-        .select("name")
+        .select("name,content")
         .eq("path", path)
         .is("archived_at", null)
         .maybeSingle();
       if (!mounted) return;
       setName(data?.name ?? null);
+      setBlocks(parseBlocks(data?.content));
       setLoading(false);
     })();
     return () => { mounted = false; };
@@ -34,5 +37,9 @@ export default function DbPage() {
 
   if (loading) return <div className="min-h-[60vh]" aria-hidden />;
   if (!name) return <NotFound />;
-  return <SimplePage title={name} />;
+  return (
+    <SimplePage title={name}>
+      {blocks.length ? <PageBlocks blocks={blocks} /> : undefined}
+    </SimplePage>
+  );
 }

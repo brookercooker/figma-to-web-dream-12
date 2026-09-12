@@ -96,6 +96,7 @@ const AppShell = () => {
             {/* Site Manager routes — each tab has its own URL. */}
             <Route path="/manage" element={<Navigate to="/manage/pages" replace />} />
             <Route path="/manage/pages" element={<AdminIndex />} />
+            <Route path="/manage/design" element={<AdminIndex />} />
             <Route path="/manage/objects" element={<AdminIndex />} />
             <Route path="/manage/objects/workspace/:slugId" element={<ObjectWorkspace />} />
             <Route path="/manage/images" element={<AdminIndex />} />
