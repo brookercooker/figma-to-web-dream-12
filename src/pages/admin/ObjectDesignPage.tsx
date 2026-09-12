@@ -1050,6 +1050,18 @@ export default function ObjectDesignPage() {
                 />
               </div>
             </Field>
+            <Field label="Border around image and text">
+              <div>
+                <Choice
+                  value={section.imageBorder ? "on" : "off"}
+                  options={[
+                    { value: "off" as const, label: "None" },
+                    { value: "on" as const, label: "Border" },
+                  ]}
+                  onChange={(v) => patch(section.id, { imageBorder: v === "on" || undefined })}
+                />
+              </div>
+            </Field>
             <div className="flex flex-wrap gap-4">
               <Field label="Images sit">
                 <div>
