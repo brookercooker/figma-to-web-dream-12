@@ -1467,6 +1467,7 @@ export default function ObjectDesignPage() {
             flowSection: section,
             key: t.id,
             onDelete: () => removeExtra(section.id, i),
+            onDuplicate: () => duplicateExtra(section.id, i),
             children: (
               <>
                 <Field label="Text">
