@@ -883,6 +883,10 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
     (section.extras ?? []).length || (section.dividers ?? []).length;
   if (!hasText) return null;
   const base: TextColor = onDark ? "cream" : "ink";
+  const boxSelf = (part: string) => {
+    const a = section.flowAligns?.[part] ?? section.align;
+    return a === "center" ? "mx-auto" : a === "right" ? "ml-auto" : "";
+  };
   const flowOf = (part: string) => section.flows?.[part];
   const items: { part: string; node: React.ReactNode }[] = [];
 
@@ -897,7 +901,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
   if (section.heading) items.push({ part: "heading", node: (
     <h2
       data-part="heading"
-      className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "xl" })}`}
+      className={`max-w-2xl ${boxSelf("heading")} ${headingClasses(section.textStyle, { color: base, size: "xl" })}`}
       style={textInlineStyle(section.textStyle)}
       {...richText(section.heading)}
     />
@@ -905,7 +909,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
   if (section.body) items.push({ part: "body", node: (
     <p
       data-part="body"
-      className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}
+      className={`max-w-xl ${boxSelf("body")} leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}
       style={textInlineStyle(section.bodyStyle)}
       {...richText(section.body)}
     />
@@ -913,7 +917,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
   (section.extras ?? []).forEach((t, i) => items.push({ part: `text:${i}`, node: (
     <p
       data-part={`text:${i}`}
-      className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
+      className={`max-w-xl ${boxSelf(`text:${i}`)} leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
       style={textInlineStyle(t.style)}
       {...richText(t.text)}
     />
