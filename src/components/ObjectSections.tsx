@@ -434,7 +434,7 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
         >
           {images.map((img, idx) => (
             <figure key={idx} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
-              <Pic image={img} className="w-full aspect-[4/3] rounded-lg" />
+              <Pic image={img} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
               {img.caption ? (
                 <figcaption
                   className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
