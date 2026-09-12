@@ -1225,6 +1225,8 @@ export default function ObjectDesignPage() {
     if (s.heading !== undefined) base.push("heading");
     if (s.body !== undefined) base.push("body");
     (s.extras ?? []).forEach((_, i) => base.push(`text:${i}`));
+    if (s.images.length) base.push("images");
+    if ((s.videos ?? []).length) base.push("videos");
     if (s.buttonLabel !== undefined) base.push("button");
     (s.dividers ?? []).forEach((_, i) => base.push(`divider:${i}`));
     return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
