@@ -149,17 +149,44 @@ export interface ButtonSection {
   labelStyle?: TextStyle;
 }
 
+/** Freeform block: a blank space you add text and images to. */
+export interface FreeSection {
+  id: string;
+  type: "free";
+  eyebrow?: string;
+  heading?: string;
+  body?: string;
+  eyebrowStyle?: TextStyle;
+  textStyle?: TextStyle;
+  bodyStyle?: TextStyle;
+  captionStyle?: TextStyle;
+  labelStyle?: TextStyle;
+  images: SectionImage[];
+  /** how images sit relative to the text */
+  layout: "stacked" | "beside" | "behind";
+  imageSide: "left" | "right";
+  gallery: "grid" | "carousel";
+  columns: 1 | 2 | 3 | 4;
+  align: SectionAlign;
+  height: "sm" | "md" | "lg";
+  buttonLabel?: string;
+  buttonHref?: string;
+  buttonVariant?: "solid" | "outline" | "link";
+}
+
 export type Section =
   | CarouselSection
   | ImageRowSection
   | CaptionedImagesSection
   | OverlaySection
   | SplitSection
-  | ButtonSection;
+  | ButtonSection
+  | FreeSection;
 
 export type SectionType = Section["type"];
 
 export const SECTION_LABEL: Record<SectionType, string> = {
+  free: "Block",
   carousel: "Carousel",
   imageRow: "Row of images",
   captionedImages: "Images with captions",
