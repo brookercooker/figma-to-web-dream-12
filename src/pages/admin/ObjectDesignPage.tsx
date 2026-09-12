@@ -369,7 +369,7 @@ function Dropdown({
 function ColorDot({ swatch }: { swatch?: string }) {
   return (
     <span
-      className="inline-block h-3 w-3 shrink-0 rounded-full border"
+      className="inline-block h-3 w-3 shrink-0 rounded-full border border-foreground/40 shadow-[inset_0_0_0_1px_hsl(var(--background))]"
       style={swatch ? { background: swatch } : { background: "transparent" }}
     />
   );
