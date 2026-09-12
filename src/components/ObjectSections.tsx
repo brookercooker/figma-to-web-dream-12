@@ -240,6 +240,13 @@ export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
   { value: "inline", label: "Inline" },
 ];
 
+/** Flex style for an inline item with an optional width percentage. */
+export function flowWidthStyle(width?: number): React.CSSProperties {
+  if (!width || width <= 0) return {};
+  const w = Math.min(100, Math.max(5, width));
+  return { flex: `0 0 ${w}%`, maxWidth: `${w}%` };
+}
+
 /** Group consecutive inline entries together; separate entries stand alone. */
 export function groupByFlow<T>(items: T[], flowOf: (item: T) => SectionFlow | undefined): T[][] {
   const groups: T[][] = [];
@@ -256,6 +263,8 @@ export interface CarouselSection {
   id: string;
   type: "carousel";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   heading?: string;
   textStyle?: TextStyle;
   captionStyle?: TextStyle;
@@ -266,6 +275,8 @@ export interface ImageRowSection {
   id: string;
   type: "imageRow";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   heading?: string;
   textStyle?: TextStyle;
   columns: 2 | 3 | 4;
@@ -276,6 +287,8 @@ export interface CaptionedImagesSection {
   id: string;
   type: "captionedImages";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   heading?: string;
   textStyle?: TextStyle;
   captionStyle?: TextStyle;
@@ -287,6 +300,8 @@ export interface OverlaySection {
   id: string;
   type: "overlay";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   image: SectionImage;
   eyebrow?: string;
   heading: string;
@@ -305,6 +320,8 @@ export interface SplitSection {
   id: string;
   type: "split";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   image: SectionImage;
   imageSide: "left" | "right";
   textStyle?: TextStyle;
@@ -322,6 +339,8 @@ export interface ButtonSection {
   id: string;
   type: "button";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   label: string;
   href: string;
   align: SectionAlign;
@@ -350,8 +369,12 @@ export interface FreeSection {
   id: string;
   type: "free";
   flow?: SectionFlow;
+  /** width percentage when inline (10-100) */
+  flowWidth?: number;
   /** per-element flow, keyed by part (eyebrow, heading, body, text:i, divider:i, button) */
   flows?: Record<string, SectionFlow>;
+  /** per-element inline width percentage, keyed by the same parts */
+  flowWidths?: Record<string, number>;
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
   eyebrow?: string;
@@ -900,7 +923,13 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
         group.length > 1 ? (
           <div key={group[0].part} className={`flex flex-wrap items-start gap-6 ${alignRow[section.align]}`}>
             {group.map((it) => (
-              <div key={it.part} className="min-w-[10rem] flex-1 basis-0">{it.node}</div>
+              <div
+                key={it.part}
+                className="min-w-[10rem] flex-1 basis-0"
+                style={flowWidthStyle(section.flowWidths?.[it.part])}
+              >
+                {it.node}
+              </div>
             ))}
           </div>
         ) : (
@@ -1079,7 +1108,7 @@ export function SectionFlowList({ sections }: { sections: Section[] }) {
         group.length > 1 ? (
           <div key={group[0].id} className="flex flex-wrap items-start gap-8">
             {group.map((s) => (
-              <div key={s.id} className="min-w-[16rem] flex-1 basis-0">
+              <div key={s.id} className="min-w-[16rem] flex-1 basis-0" style={flowWidthStyle(s.flowWidth)}>
                 <SectionView section={s} />
               </div>
             ))}
