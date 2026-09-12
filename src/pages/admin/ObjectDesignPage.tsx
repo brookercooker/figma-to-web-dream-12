@@ -1309,6 +1309,36 @@ export default function ObjectDesignPage() {
                     }
                   />
                 </Field>
+                <Field label="Vertical position (px)">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => patchDivider(section.id, i, { offset: Math.max(-200, (d.offset ?? 0) - 4) })}
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </Button>
+                    <Input
+                      type="number"
+                      min={-200}
+                      max={200}
+                      className="w-24"
+                      value={d.offset ?? 0}
+                      onChange={(e) =>
+                        patchDivider(section.id, i, {
+                          offset: Math.min(200, Math.max(-200, Number(e.target.value) || 0)),
+                        })
+                      }
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => patchDivider(section.id, i, { offset: Math.min(200, (d.offset ?? 0) + 4) })}
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </Field>
               </>
             ),
           }),
