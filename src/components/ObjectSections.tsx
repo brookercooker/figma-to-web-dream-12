@@ -519,22 +519,22 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
   return (
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
       {section.eyebrow ? (
-        <p className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}>
+        <p data-part="eyebrow" className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}>
           {section.eyebrow}
         </p>
       ) : null}
       {section.heading ? (
-        <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}>
+        <h2 data-part="heading" className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}>
           {section.heading}
         </h2>
       ) : null}
       {section.body ? (
-        <p className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}>
+        <p data-part="body" className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}>
           {section.body}
         </p>
       ) : null}
       {section.buttonLabel ? (
-        <div className="mt-2">
+        <div data-part="button" className="mt-2">
           <SectionButton
             label={section.buttonLabel}
             href={section.buttonHref || "#"}
@@ -544,6 +544,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
           />
         </div>
       ) : null}
+
     </div>
   );
 }
