@@ -1808,8 +1808,8 @@ export default function ObjectDesignPage() {
             />
             <SizeControl
               style={style}
-              defaultSize={fieldKey === "textStyle" ? "lg" : fieldKey === "bodyStyle" || extraIdx >= 0 ? "md" : "sm"}
-              heading={fieldKey === "textStyle"}
+              defaultSize={kindDefaults?.size ?? (fieldKey === "textStyle" ? "lg" : fieldKey === "bodyStyle" || extraIdx >= 0 ? "md" : "sm")}
+              heading={kindDefaults ? kindDefaults.heading : fieldKey === "textStyle"}
               set={set}
             />
             <ColorDropdown
