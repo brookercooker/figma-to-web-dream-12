@@ -16,7 +16,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  IMAGE_HEIGHTS, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, makeSection, parseSections,
+  IMAGE_HEIGHTS, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, makeSection, newSectionId, parseSections,
   type FreeSection, type Section, type SectionAlign, type SectionImage, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
@@ -330,12 +330,14 @@ export default function ObjectDesignPage() {
     if (!el) return;
     const part = el.getAttribute("data-part") ?? "";
     const captionIdx = part.startsWith("caption:") ? Number(part.split(":")[1]) : -1;
+    const extraIdx = part.startsWith("text:") ? Number(part.split(":")[1]) : -1;
     const field =
       part === "eyebrow" ? "eyebrow"
       : part === "heading" ? "heading"
       : part === "body" ? "body"
       : part === "button" ? "buttonLabel"
       : captionIdx >= 0 ? "caption"
+      : extraIdx >= 0 ? "extra"
       : "";
     if (!field) return;
     e.preventDefault();
@@ -367,12 +369,13 @@ export default function ObjectDesignPage() {
       target.removeEventListener("keydown", onKey);
       target.removeEventListener("click", stop);
       if (captionIdx >= 0) patchImage(sectionId, captionIdx, { caption: value });
+      else if (extraIdx >= 0) patchExtra(sectionId, extraIdx, { text: value });
       else patch(sectionId, { [field]: value });
     };
     const onKey = (ev: KeyboardEvent) => {
       ev.stopPropagation();
       if (ev.key === "Escape") { ev.preventDefault(); target.blur(); }
-      if (ev.key === "Enter" && field !== "body") { ev.preventDefault(); target.blur(); }
+      if (ev.key === "Enter" && field !== "body" && field !== "extra") { ev.preventDefault(); target.blur(); }
     };
     target.addEventListener("blur", commit);
     target.addEventListener("keydown", onKey);
@@ -390,7 +393,9 @@ export default function ObjectDesignPage() {
     setFocusPart(part.startsWith("caption:") ? part.replace("caption:", "image:") : part);
 
     // Text elements get a floating font / size / color toolbar.
-    const field = STYLE_FIELD[part.startsWith("caption:") ? "caption" : part];
+    const field = part.startsWith("text:")
+      ? (`extra:${Number(part.split(":")[1]) || 0}` as keyof FreeSection)
+      : STYLE_FIELD[part.startsWith("caption:") ? "caption" : part];
     const r = el.getBoundingClientRect();
     if (field) {
       setToolbar({ sectionId, field, top: r.top, left: r.left, width: r.width });
@@ -448,6 +453,28 @@ export default function ObjectDesignPage() {
 
   const patch = (id: string, changes: Record<string, unknown>) => {
     setSections((prev) => prev.map((s) => (s.id === id ? ({ ...s, ...changes } as Section) : s)));
+    setDirty(true);
+  };
+
+  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle }) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const extras = (s.extras ?? []).map((t, i) => (i === index ? { ...t, ...changes } : t));
+        return { ...s, extras } as Section;
+      }),
+    );
+    setDirty(true);
+  };
+
+  const removeExtra = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === id && s.type === "free"
+          ? ({ ...s, extras: (s.extras ?? []).filter((_, i) => i !== index) } as Section)
+          : s,
+      ),
+    );
     setDirty(true);
   };
 
