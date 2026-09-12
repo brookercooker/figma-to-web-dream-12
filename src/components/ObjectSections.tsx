@@ -892,10 +892,17 @@ export function DividerBar({
 }: { divider: FreeDivider; align: SectionAlign; onDark?: boolean }) {
   const color: TextColor = divider.color ?? (onDark ? "cream" : "stone");
   const cls = dividerBg[color];
+  const pct = divider.widthPct;
+  const sized = typeof pct === "number"
+    ? `${dividerSelf[align]}`
+    : divider.width === "short" ? `w-24 ${dividerSelf[align]}` : "w-full";
   return (
     <div
-      className={`${cls} ${divider.width === "short" ? `w-24 ${dividerSelf[align]}` : "w-full"} my-2 rounded-full`}
-      style={{ height: `${divider.thickness ?? 1}px` }}
+      className={`${cls} ${sized} my-2 rounded-full`}
+      style={{
+        height: `${divider.thickness ?? 1}px`,
+        ...(typeof pct === "number" ? { width: `${Math.min(100, Math.max(1, pct))}%` } : null),
+      }}
     />
   );
 }
