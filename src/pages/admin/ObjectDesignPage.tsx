@@ -609,7 +609,17 @@ export default function ObjectDesignPage() {
         <div className="flex flex-wrap gap-2">
           {!hasEyebrow && <Chip label="Eyebrow" icon={Tag} onClick={() => patch(section.id, { eyebrow: "Since 1951" })} />}
           {!hasTitle && <Chip label="Title" icon={Heading} onClick={() => patch(section.id, { heading: "A quiet statement" })} />}
-          {!hasBody && <Chip label="Text" icon={AlignLeft} onClick={() => patch(section.id, { body: "" })} />}
+          <Chip
+            label="Text"
+            icon={AlignLeft}
+            onClick={() =>
+              hasBody
+                ? patch(section.id, {
+                    extras: [...(section.extras ?? []), { id: newSectionId(), text: "" }],
+                  })
+                : patch(section.id, { body: "" })
+            }
+          />
           <Chip label="Image" icon={ImageIcon} onClick={() => addImageSlot(section.id)} />
           {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => patch(section.id, { buttonLabel: "Explore", buttonHref: "/" })} />}
         </div>
