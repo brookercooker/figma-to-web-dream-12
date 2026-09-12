@@ -781,8 +781,8 @@ const dividerSelf: Record<SectionAlign, string> = {
 export function DividerBar({
   divider, align, onDark,
 }: { divider: FreeDivider; align: SectionAlign; onDark?: boolean }) {
-  const color = divider.color ?? (onDark ? "cream" : "sand" as TextColor);
-  const cls = dividerBg[(color in dividerBg ? color : "stone") as TextColor];
+  const color: TextColor = divider.color ?? (onDark ? "cream" : "stone");
+  const cls = dividerBg[color];
   return (
     <div
       className={`${cls} ${divider.width === "short" ? `w-24 ${dividerSelf[align]}` : "w-full"} my-2 rounded-full`}
