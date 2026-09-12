@@ -10,7 +10,7 @@ import {
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
   LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
-  Video as VideoIcon, Minus,
+  Video as VideoIcon, Minus, Link as LinkIcon,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
@@ -467,6 +467,7 @@ export default function ObjectDesignPage() {
   const [q, setQ] = useState("");
   // { sectionId, index } — index -1 means the section's single image
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
+  const [linkOpen, setLinkOpen] = useState<Record<string, boolean>>({});
   // which video slot the video chooser is filling
   const [videoPicker, setVideoPicker] = useState<{ sectionId: string; index: number } | null>(null);
   // which element of the active section the user clicked on in the preview
@@ -891,6 +892,16 @@ export default function ObjectDesignPage() {
         >
           {image.url ? "Replace" : "Choose image"}
         </Button>
+        <Button
+          variant={image.href || linkOpen[`${section.id}:${index}`] ? "secondary" : "ghost"}
+          size="sm"
+          title={image.href ? "Edit link" : "Add link"}
+          onClick={() =>
+            setLinkOpen((s) => ({ ...s, [`${section.id}:${index}`]: !s[`${section.id}:${index}`] }))
+          }
+        >
+          <LinkIcon className="w-4 h-4" />
+        </Button>
         {index >= 0 && "images" in section && (section as any).images.length > 1 && (
           <Button variant="ghost" size="sm" onClick={() => removeImageSlot(section.id, index)}>
             <Trash2 className="w-4 h-4" />
@@ -902,11 +913,13 @@ export default function ObjectDesignPage() {
         placeholder="Describe the image"
         onChange={(e) => patchImage(section.id, index, { alt: e.target.value })}
       />
-      <Input
-        value={image.href ?? ""}
-        placeholder="Link (optional)"
-        onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
-      />
+      {(linkOpen[`${section.id}:${index}`] || image.href) && (
+        <Input
+          value={image.href ?? ""}
+          placeholder="Link (optional)"
+          onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
+        />
+      )}
       {showCaption && (
         <div className="space-y-2 rounded-md border border-dashed p-2">
           {(image.texts ?? []).map((t, ti) => (
