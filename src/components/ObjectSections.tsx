@@ -91,10 +91,10 @@ const colorClass: Record<TextColor, string> = {
   cream: "text-cream",
 };
 const headingSizeClass: Record<TextSize, string> = {
-  sm: "text-xl sm:text-2xl",
-  md: "text-2xl sm:text-3xl",
-  lg: "text-3xl sm:text-4xl",
-  xl: "text-4xl sm:text-5xl",
+  sm: "text-2xl",
+  md: "text-3xl",
+  lg: "text-4xl",
+  xl: "text-5xl",
 };
 const bodySizeClass: Record<TextSize, string> = {
   sm: "text-sm",
@@ -102,6 +102,15 @@ const bodySizeClass: Record<TextSize, string> = {
   lg: "text-lg",
   xl: "text-xl",
 };
+
+/** Eyebrows default to bold, 10px unless the user picks otherwise. */
+export function withEyebrowDefaults(style: TextStyle | undefined): TextStyle {
+  return {
+    ...style,
+    bold: style?.bold ?? true,
+    sizePx: style?.sizePx ?? (style?.size ? undefined : 10),
+  };
+}
 
 export function headingClasses(style: TextStyle | undefined, fallback: { color: TextColor; size: TextSize }) {
   return [
