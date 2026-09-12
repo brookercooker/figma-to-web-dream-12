@@ -143,6 +143,42 @@ function TextStyleFields({
   );
 }
 
+// Which style field on a section each clickable text part maps to.
+const STYLE_FIELD: Record<string, keyof FreeSection | undefined> = {
+  eyebrow: "eyebrowStyle",
+  heading: "textStyle",
+  body: "bodyStyle",
+  button: "labelStyle",
+  caption: "captionStyle",
+};
+
+const STYLE_FIELD_LABEL: Record<string, string> = {
+  eyebrowStyle: "Eyebrow",
+  textStyle: "Title",
+  bodyStyle: "Text",
+  labelStyle: "Button label",
+  captionStyle: "Caption",
+};
+
+function Dropdown({
+  label, value, options, onChange,
+}: { label: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) {
+  return (
+    <label className="flex items-center gap-1.5 text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-7 rounded-md border bg-background px-2 text-xs"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export default function ObjectDesignPage() {
   const [params, setParams] = useSearchParams();
   const selectedId = params.get("object") ?? "";
@@ -159,6 +195,25 @@ export default function ObjectDesignPage() {
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
   // which element of the active section the user clicked on in the preview
   const [focusPart, setFocusPart] = useState("");
+  // floating font / size / color toolbar for the clicked text element
+  const [toolbar, setToolbar] = useState<
+    { sectionId: string; field: keyof FreeSection; top: number; left: number; width: number } | null
+  >(null);
+
+  useEffect(() => {
+    if (!toolbar) return;
+    const close = () => setToolbar(null);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [toolbar]);
+
 
   // Clicking an element in the preview jumps to (and focuses) its controls.
   useEffect(() => {
@@ -238,6 +293,15 @@ export default function ObjectDesignPage() {
     const part = el.getAttribute("data-part") ?? "";
     // captions are edited alongside their image
     setFocusPart(part.startsWith("caption:") ? part.replace("caption:", "image:") : part);
+
+    // Text elements get a floating font / size / color toolbar.
+    const field = STYLE_FIELD[part.startsWith("caption:") ? "caption" : part];
+    if (field) {
+      const r = el.getBoundingClientRect();
+      setToolbar({ sectionId, field, top: r.top, left: r.left, width: r.width });
+    } else {
+      setToolbar(null);
+    }
   };
 
 
@@ -1081,6 +1145,44 @@ export default function ObjectDesignPage() {
           )}
         </section>
       </main>
+
+      {toolbar && (() => {
+        const sec = sections.find((s) => s.id === toolbar.sectionId) as FreeSection | undefined;
+        if (!sec) return null;
+        const style = ((sec as any)[toolbar.field] ?? {}) as TextStyle;
+        const set = (changes: Partial<TextStyle>) =>
+          patch(toolbar.sectionId, { [toolbar.field]: { ...style, ...changes } });
+        return (
+          <div
+            className="fixed z-50 flex items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
+            style={{ top: Math.max(8, toolbar.top - 52), left: Math.max(8, toolbar.left) }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+              {STYLE_FIELD_LABEL[String(toolbar.field)]}
+            </span>
+            <Dropdown
+              label="Font"
+              value={style.font ?? ""}
+              options={[{ value: "", label: "Default" }, ...TEXT_FONTS.map((f) => ({ value: f.value as string, label: f.label }))]}
+              onChange={(v) => set({ font: (v || undefined) as TextFont | undefined })}
+            />
+            <Dropdown
+              label="Size"
+              value={style.size ?? ""}
+              options={[{ value: "", label: "Default" }, ...TEXT_SIZES.map((s) => ({ value: s.value as string, label: s.label }))]}
+              onChange={(v) => set({ size: (v || undefined) as TextSize | undefined })}
+            />
+            <Dropdown
+              label="Color"
+              value={style.color ?? ""}
+              options={[{ value: "", label: "Default" }, ...TEXT_COLORS.map((c) => ({ value: c.value as string, label: c.label }))]}
+              onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
+            />
+            <Button variant="ghost" size="sm" onClick={() => setToolbar(null)}>Done</Button>
+          </div>
+        );
+      })()}
 
       <CreateObjectDialog
         open={createOpen}
