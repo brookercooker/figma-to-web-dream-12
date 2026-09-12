@@ -377,6 +377,15 @@ export interface FreeDivider {
   after?: string;
 }
 
+export type RowVAlign = "top" | "middle" | "bottom" | "baseline";
+
+export const ROW_VALIGN_CLASS: Record<RowVAlign, string> = {
+  top: "items-start",
+  middle: "items-center",
+  bottom: "items-end",
+  baseline: "items-baseline",
+};
+
 export interface FreeSection {
   id: string;
   type: "free";
@@ -389,6 +398,8 @@ export interface FreeSection {
   flowWidths?: Record<string, number>;
   /** per-element alignment within its inline column, keyed by the same parts */
   flowAligns?: Record<string, SectionAlign>;
+  /** vertical alignment of items sharing a row */
+  rowVAlign?: RowVAlign;
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
   /** explicit stacking order of text parts (eyebrow, heading, body, text:i, divider:i, button) */
@@ -994,7 +1005,7 @@ function FreeText({
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
       {groups.map((group) =>
         group.length > 1 ? (
-          <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap items-center ${alignRow[section.align]}`}>
+          <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap ${ROW_VALIGN_CLASS[section.rowVAlign ?? "middle"]} ${alignRow[section.align]}`}>
             {group.map((it) => {
               const w = section.flowWidths?.[it.part];
               const a = section.flowAligns?.[it.part] ?? section.align;

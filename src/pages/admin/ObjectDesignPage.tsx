@@ -11,6 +11,7 @@ import {
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
   LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
   Video as VideoIcon, Minus, Link as LinkIcon, Copy, PanelLeftClose, PanelLeftOpen,
+  AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, Baseline,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
@@ -22,6 +23,7 @@ import {
 import {
   BODY_PX, FREE_TEXT_KINDS, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
+  type RowVAlign,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
 
@@ -1882,6 +1884,22 @@ export default function ObjectDesignPage() {
                 />
               </div>
             </Field>
+            {parts.length > 1 && (
+              <Field label="Same row alignment">
+                <div>
+                  <Choice
+                    value={section.rowVAlign ?? "middle"}
+                    options={[
+                      { value: "top" as RowVAlign, label: "Top", icon: AlignVerticalJustifyStart },
+                      { value: "middle" as RowVAlign, label: "Middle", icon: AlignVerticalJustifyCenter },
+                      { value: "bottom" as RowVAlign, label: "Bottom", icon: AlignVerticalJustifyEnd },
+                      { value: "baseline" as RowVAlign, label: "Text line", icon: Baseline },
+                    ]}
+                    onChange={(v) => patch(section.id, { rowVAlign: v })}
+                  />
+                </div>
+              </Field>
+            )}
             {parts.length > 1 && (
               <p className="text-xs text-muted-foreground">
                 Drag an element's header below to move it up or down.
