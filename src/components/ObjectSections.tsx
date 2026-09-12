@@ -91,10 +91,10 @@ const colorClass: Record<TextColor, string> = {
   cream: "text-cream",
 };
 const headingSizeClass: Record<TextSize, string> = {
-  sm: "text-xl sm:text-2xl",
-  md: "text-2xl sm:text-3xl",
-  lg: "text-3xl sm:text-4xl",
-  xl: "text-4xl sm:text-5xl",
+  sm: "text-2xl",
+  md: "text-3xl",
+  lg: "text-4xl",
+  xl: "text-5xl",
 };
 const bodySizeClass: Record<TextSize, string> = {
   sm: "text-sm",
@@ -102,6 +102,15 @@ const bodySizeClass: Record<TextSize, string> = {
   lg: "text-lg",
   xl: "text-xl",
 };
+
+/** Eyebrows default to bold, 10px unless the user picks otherwise. */
+export function withEyebrowDefaults(style: TextStyle | undefined): TextStyle {
+  return {
+    ...style,
+    bold: style?.bold ?? true,
+    sizePx: style?.sizePx ?? (style?.size ? undefined : 10),
+  };
+}
 
 export function headingClasses(style: TextStyle | undefined, fallback: { color: TextColor; size: TextSize }) {
   return [
@@ -609,14 +618,15 @@ function FreeFigureBody({
       ) : null}
       {texts.map((t, ti) => {
         const d = IMAGE_TEXT_DEFAULTS[t.kind];
+        const ts = t.kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style;
         const fallback = { color: onDark ? ("cream" as TextColor) : d.color, size: d.size };
-        const cls = d.heading ? headingClasses(t.style, fallback) : bodyClasses(t.style, fallback);
+        const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
         return (
           <p
             key={t.id}
             data-part={`imagetext:${index}:${ti}`}
             className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
-            style={textInlineStyle(t.style)}
+            style={textInlineStyle(ts)}
             {...richText(t.text)}
           />
         );
@@ -802,15 +812,15 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
       {section.eyebrow ? (
         <p
           data-part="eyebrow"
-          className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
-          style={textInlineStyle(section.eyebrowStyle)}
+          className={`uppercase tracking-[0.24em] ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: onDark ? "cream" : "stone", size: "sm" })}`}
+          style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}
           {...richText(section.eyebrow)}
         />
       ) : null}
       {section.heading ? (
         <h2
           data-part="heading"
-          className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}
+          className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "xl" })}`}
           style={textInlineStyle(section.textStyle)}
           {...richText(section.heading)}
         />
@@ -955,9 +965,9 @@ export function SectionView({ section }: { section: Section }) {
               className={`relative flex h-full flex-col justify-center gap-4 px-8 sm:px-14 py-16 ${alignText[section.align]} ${overlayHeight[section.height]}`}
             >
               {section.eyebrow ? (
-                <p className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: "cream", size: "sm" })}`}>{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "cream", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}>{section.eyebrow}</p>
               ) : null}
-              <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "lg" })}`}>
+              <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "xl" })}`}>
                 {section.heading}
               </h2>
               {section.body ? (
@@ -985,9 +995,9 @@ export function SectionView({ section }: { section: Section }) {
             </div>
             <div className="max-w-xl">
               {section.eyebrow ? (
-                <p className={`uppercase tracking-[0.24em] mb-3 ${bodyClasses(section.eyebrowStyle, { color: "stone", size: "sm" })}`}>{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] mb-3 ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "stone", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}>{section.eyebrow}</p>
               ) : null}
-              <h2 className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "lg" })}`}>{section.heading}</h2>
+              <h2 className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "xl" })}`}>{section.heading}</h2>
               {section.body ? (
                 <p className={`leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "stone", size: "md" })}`}>{section.body}</p>
               ) : null}

@@ -20,7 +20,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections,
+  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
@@ -1118,7 +1118,7 @@ export default function ObjectDesignPage() {
             </div>
             <TextStyleFields
               label="Eyebrow style"
-              value={section.eyebrowStyle}
+              value={withEyebrowDefaults(section.eyebrowStyle)}
               defaults={{ font: "sans", color: "stone", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
             />
@@ -1142,7 +1142,7 @@ export default function ObjectDesignPage() {
             <TextStyleFields
               label="Title style"
               value={section.textStyle}
-              defaults={{ font: "serif", color: "ink", size: "lg" }}
+              defaults={{ font: "serif", color: "ink", size: "xl" }}
               onChange={(v) => patch(section.id, { textStyle: v })}
             />
           </>
@@ -1603,7 +1603,7 @@ export default function ObjectDesignPage() {
             <TextStyleFields
               label="Heading style"
               value={section.textStyle}
-              defaults={{ font: "serif", color: "cream", size: "lg" }}
+              defaults={{ font: "serif", color: "cream", size: "xl" }}
               onChange={(v) => patch(section.id, { textStyle: v })}
             />
             <TextStyleFields
@@ -1614,7 +1614,7 @@ export default function ObjectDesignPage() {
             />
             <TextStyleFields
               label="Eyebrow style"
-              value={section.eyebrowStyle}
+              value={withEyebrowDefaults(section.eyebrowStyle)}
               defaults={{ font: "sans", color: "cream", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
             />
@@ -1691,7 +1691,7 @@ export default function ObjectDesignPage() {
             <TextStyleFields
               label="Heading style"
               value={section.textStyle}
-              defaults={{ font: "serif", color: "ink", size: "lg" }}
+              defaults={{ font: "serif", color: "ink", size: "xl" }}
               onChange={(v) => patch(section.id, { textStyle: v })}
             />
             <TextStyleFields
@@ -1702,7 +1702,7 @@ export default function ObjectDesignPage() {
             />
             <TextStyleFields
               label="Eyebrow style"
-              value={section.eyebrowStyle}
+              value={withEyebrowDefaults(section.eyebrowStyle)}
               defaults={{ font: "sans", color: "stone", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
             />
@@ -2056,12 +2056,14 @@ export default function ObjectDesignPage() {
           labelStyle: "sans",
         };
         const kindDefaults = imgTextItem ? IMAGE_TEXT_DEFAULTS[imgTextItem.kind] : null;
+        const isEyebrow = imgTextItem ? imgTextItem.kind === "eyebrow" : fieldKey === "eyebrowStyle";
+        const es = isEyebrow ? withEyebrowDefaults(style) : style;
         const set = (changes: Partial<TextStyle>) =>
           imgText
-            ? patchImageText(toolbar.sectionId, imgText.img, imgText.t, { style: { ...style, ...changes } })
+            ? patchImageText(toolbar.sectionId, imgText.img, imgText.t, { style: { ...es, ...changes } })
             : extraIdx >= 0
-            ? patchExtra(toolbar.sectionId, extraIdx, { style: { ...style, ...changes } })
-            : patch(toolbar.sectionId, { [fieldKey]: { ...style, ...changes } });
+            ? patchExtra(toolbar.sectionId, extraIdx, { style: { ...es, ...changes } })
+            : patch(toolbar.sectionId, { [fieldKey]: { ...es, ...changes } });
         return (
           <FloatingToolbar top={anchorTop} left={toolbar.left}>
             <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -2079,31 +2081,31 @@ export default function ObjectDesignPage() {
             )}
             <Dropdown
               label="Font"
-              value={style.font ?? kindDefaults?.font ?? defaultFont[fieldKey] ?? "sans"}
+              value={es.font ?? kindDefaults?.font ?? defaultFont[fieldKey] ?? "sans"}
               options={TEXT_FONTS.map((f) => ({ value: f.value as string, label: f.label }))}
               onChange={(v) => set({ font: (v || undefined) as TextFont | undefined })}
             />
             <Dropdown
               label="Size"
-              value={style.sizePx ? "" : (style.size ?? "")}
+              value={es.sizePx ? "" : (es.size ?? "")}
               options={[{ value: "", label: "Default" }, ...TEXT_SIZES.map((s) => ({ value: s.value as string, label: SIZE_WORD[s.value] ?? s.label }))]}
               onChange={(v) => set({ size: (v || undefined) as TextSize | undefined, sizePx: undefined })}
             />
             <SizeControl
-              style={style}
-              defaultSize={kindDefaults?.size ?? (fieldKey === "textStyle" ? "lg" : fieldKey === "bodyStyle" || extraIdx >= 0 ? "md" : "sm")}
+              style={es}
+              defaultSize={kindDefaults?.size ?? (fieldKey === "textStyle" ? "xl" : fieldKey === "bodyStyle" || extraIdx >= 0 ? "md" : "sm")}
               heading={kindDefaults ? kindDefaults.heading : fieldKey === "textStyle"}
               set={set}
             />
             <ColorDropdown
               label="Color"
-              value={style.color ?? ""}
+              value={es.color ?? ""}
               fallback={(kindDefaults?.color ?? defaultColor[fieldKey] ?? (extraIdx >= 0 ? "stone" : "ink")) as TextColor}
               options={TEXT_COLORS}
               onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
             />
             <EmphasisToggles
-              style={style}
+              style={es}
               set={set}
               underlineDefault={fieldKey === "labelStyle" && (sec.buttonVariant ?? "solid") === "link"}
             />
