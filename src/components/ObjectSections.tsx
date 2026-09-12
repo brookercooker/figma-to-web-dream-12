@@ -155,6 +155,8 @@ export interface ImageText {
   kind: ImageTextKind;
   text: string;
   style?: TextStyle;
+  /** overrides the block-wide caption alignment for this text */
+  align?: SectionAlign;
 }
 
 export const IMAGE_TEXT_DEFAULTS: Record<
@@ -171,6 +173,8 @@ export interface SectionImage {
   url: string;
   alt: string;
   caption?: string;
+  /** overrides the block-wide caption alignment for this image's caption */
+  captionAlign?: SectionAlign;
   /** extra text boxes shown under the image */
   texts?: ImageText[];
   /** optional destination opened when the image is clicked */
@@ -572,7 +576,8 @@ function Carousel({ section }: { section: CarouselSection }) {
 function FreeFigureBody({
   section, image, index, onDark,
 }: { section: FreeSection; image: SectionImage; index: number; onDark?: boolean }) {
-  const align = alignTextOnly[section.captionAlign ?? "left"];
+  const blockAlign: SectionAlign = section.captionAlign ?? "left";
+  const align = alignTextOnly[image.captionAlign ?? blockAlign];
   const baseColor: TextColor = onDark ? "cream" : "stone";
   const texts = image.texts ?? [];
   const bordered = !!section.imageBorder;
@@ -598,7 +603,7 @@ function FreeFigureBody({
           <p
             key={t.id}
             data-part={`imagetext:${index}:${ti}`}
-            className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${align} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
+            className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
             style={textInlineStyle(t.style)}
             {...richText(t.text)}
           />

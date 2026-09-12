@@ -886,6 +886,17 @@ export default function ObjectDesignPage() {
           onChange={(e) => patchImage(section.id, index, { caption: e.target.value })}
         />
       )}
+      {showCaption && (
+        <Choice
+          value={image.captionAlign ?? (section as any).captionAlign ?? "left"}
+          options={[
+            { value: "left" as const, label: "Left", icon: AlignLeft },
+            { value: "center" as const, label: "Center", icon: AlignCenter },
+            { value: "right" as const, label: "Right", icon: AlignRight },
+          ]}
+          onChange={(v) => patchImage(section.id, index, { captionAlign: v })}
+        />
+      )}
       <Input
         value={image.href ?? ""}
         placeholder="Link (optional)"
@@ -915,6 +926,15 @@ export default function ObjectDesignPage() {
                 value={t.text}
                 placeholder={`${IMAGE_TEXT_KINDS.find((k) => k.value === t.kind)?.label ?? "Text"}…`}
                 onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
+              />
+              <Choice
+                value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
+                options={[
+                  { value: "left" as const, label: "Left", icon: AlignLeft },
+                  { value: "center" as const, label: "Center", icon: AlignCenter },
+                  { value: "right" as const, label: "Right", icon: AlignRight },
+                ]}
+                onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
               />
               <TextStyleFields
                 label="Style"
@@ -2006,6 +2026,20 @@ export default function ObjectDesignPage() {
               set={set}
               underlineDefault={fieldKey === "labelStyle" && (sec.buttonVariant ?? "solid") === "link"}
             />
+            {imgText && imgTextItem && (
+              <Dropdown
+                label="Align"
+                value={imgTextItem.align ?? sec.images?.[imgText.img]?.captionAlign ?? sec.captionAlign ?? "left"}
+                options={[
+                  { value: "left", label: "Left", icon: AlignLeft },
+                  { value: "center", label: "Center", icon: AlignCenter },
+                  { value: "right", label: "Right", icon: AlignRight },
+                ]}
+                onChange={(v) =>
+                  patchImageText(toolbar.sectionId, imgText.img, imgText.t, { align: v as FreeSection["captionAlign"] })
+                }
+              />
+            )}
             {toolbar.field === "captionStyle" && (
               <Dropdown
                 label="Align"
