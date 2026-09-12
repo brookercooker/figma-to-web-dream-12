@@ -140,10 +140,39 @@ export const imageHeightClass: Record<ImageHeight, string> = {
   xl: "h-96 sm:h-[32rem]",
 };
 
+/** Extra text boxes that sit under an image and scroll with it. */
+export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text";
+
+export const IMAGE_TEXT_KINDS: { value: ImageTextKind; label: string }[] = [
+  { value: "eyebrow", label: "Eyebrow" },
+  { value: "title", label: "Title" },
+  { value: "subheading", label: "Subheading" },
+  { value: "text", label: "Text" },
+];
+
+export interface ImageText {
+  id: string;
+  kind: ImageTextKind;
+  text: string;
+  style?: TextStyle;
+}
+
+export const IMAGE_TEXT_DEFAULTS: Record<
+  ImageTextKind,
+  { font: TextFont; color: TextColor; size: TextSize; heading: boolean }
+> = {
+  eyebrow: { font: "sans", color: "stone", size: "sm", heading: false },
+  title: { font: "serif", color: "ink", size: "md", heading: true },
+  subheading: { font: "serif", color: "ink", size: "sm", heading: true },
+  text: { font: "sans", color: "stone", size: "sm", heading: false },
+};
+
 export interface SectionImage {
   url: string;
   alt: string;
   caption?: string;
+  /** extra text boxes shown under the image */
+  texts?: ImageText[];
   /** optional destination opened when the image is clicked */
   href?: string;
 }
