@@ -743,7 +743,7 @@ export default function ObjectDesignPage() {
   const patchImage = (id: string, index: number, changes: Partial<SectionImage>) => {
     // keep this image's editor expanded while it is being edited
     setOpenSub((s) => (s[`img:${id}:${index}`] ? s : { ...s, [`img:${id}:${index}`]: true }));
-    setOpenBlocks((b) => (b.Images ? b : { ...b, Images: true }));
+    setOpenBlocks((b) => (b.images ? b : { ...b, images: true }));
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id) return s;
@@ -780,7 +780,7 @@ export default function ObjectDesignPage() {
     patchImage(sectionId, index, {
       texts: [...texts, { id: newSectionId(), kind, text: "" }],
     });
-    openBlock("Images");
+    openBlock("images");
     setOpenSub((s) => ({
       ...s,
       [`img:${sectionId}:${index}`]: true,
@@ -816,7 +816,7 @@ export default function ObjectDesignPage() {
       }),
     );
     setDirty(true);
-    openBlock("Images");
+    openBlock("images");
     setOpenSub((s) => ({ ...s, [`img:${id}:${newIndex}`]: true }));
     setPicker({ sectionId: id, index: newIndex });
   };
@@ -855,7 +855,7 @@ export default function ObjectDesignPage() {
       }),
     );
     setDirty(true);
-    openBlock("Images");
+    openBlock("images");
     setOpenSub((s) => ({ ...s, [`img:${id}:${index + 1}`]: true }));
   };
 
