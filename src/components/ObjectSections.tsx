@@ -1109,9 +1109,13 @@ export function SectionFlowList({ sections }: { sections: Section[] }) {
     <>
       {groupByFlow(sections, (s) => s.flow).map((group) =>
         group.length > 1 ? (
-          <div key={group[0].id} className="flex flex-wrap items-start gap-8">
+          <div key={group[0].id} className="-mx-4 flex flex-wrap items-start">
             {group.map((s) => (
-              <div key={s.id} className="min-w-[16rem] flex-1 basis-0" style={flowWidthStyle(s.flowWidth)}>
+              <div
+                key={s.id}
+                className={`px-4 ${s.flowWidth ? "" : "min-w-[16rem] flex-1 basis-0"}`}
+                style={flowWidthStyle(s.flowWidth)}
+              >
                 <SectionView section={s} />
               </div>
             ))}
