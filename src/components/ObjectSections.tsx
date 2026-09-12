@@ -240,6 +240,13 @@ export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
   { value: "inline", label: "Inline" },
 ];
 
+/** Flex style for an inline item with an optional width percentage. */
+export function flowWidthStyle(width?: number): React.CSSProperties {
+  if (!width || width <= 0) return {};
+  const w = Math.min(100, Math.max(5, width));
+  return { flex: `0 0 ${w}%`, maxWidth: `${w}%` };
+}
+
 /** Group consecutive inline entries together; separate entries stand alone. */
 export function groupByFlow<T>(items: T[], flowOf: (item: T) => SectionFlow | undefined): T[][] {
   const groups: T[][] = [];
