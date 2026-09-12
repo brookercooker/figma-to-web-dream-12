@@ -21,6 +21,7 @@ import {
   type ObjectRegistryRow,
 } from "./useObjectRegistry";
 import { CopyRefButton, buildObjectRef } from "./copyReference";
+import ObjectSections, { parseSections } from "@/components/ObjectSections";
 import { regenerateThumbnail } from "./useThumbnailCapture";
 
 /**
@@ -145,6 +146,9 @@ export default function ObjectWorkspace() {
           </Badge>
 
           <div className="ml-auto flex items-center gap-2">
+            <Button asChild variant="outline" size="sm" className="gap-1.5">
+              <Link to={`/manage/objects/design?object=${obj.id}`}>Design</Link>
+            </Button>
             <CopyRefButton reference={ref} label="Copy Reference" />
             <Button
               size="sm"
@@ -182,6 +186,8 @@ export default function ObjectWorkspace() {
               })()}
             </Suspense>
           </div>
+        ) : parseSections((obj as any).content).length ? (
+          <ObjectSections sections={parseSections((obj as any).content)} />
         ) : (
           <div className="max-w-3xl mx-auto px-6 py-16 space-y-6">
             <div className="rounded-lg border-2 border-dashed border-brass/40 bg-brass/5 p-10 text-center">

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
+import ObjectSections, { parseSections } from "@/components/ObjectSections";
 
 /**
  * /objects/:slug — renders a single object's real shared component in isolation.
@@ -80,6 +81,7 @@ export default function ObjectRoute() {
   }
 
   const entry = row.component_key ? objectRegistry[row.component_key] : undefined;
+  const designed = parseSections(row.content);
   const isReady = row.status === "Ready";
   const ref = buildObjectRef({
     id: row.slug_id, name: row.name, status: row.status, description: row.description,
@@ -180,6 +182,8 @@ export default function ObjectRoute() {
         <Suspense fallback={<div className="min-h-[400px] bg-muted animate-pulse" />}>
           {(() => { const C = entry.component as React.ComponentType; return <C />; })()}
         </Suspense>
+      ) : designed.length ? (
+        <ObjectSections sections={designed} />
       ) : (
         <div className="min-h-[60vh] bg-cream flex items-center justify-center p-8">
           <div className="max-w-md text-center border-2 border-dashed border-brass/40 bg-brass/5 rounded-md p-8">
