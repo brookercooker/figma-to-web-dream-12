@@ -282,6 +282,8 @@ export interface FreeSection {
   imageAlign?: SectionAlign;
   /** horizontal alignment of image captions */
   captionAlign?: SectionAlign;
+  /** draw a border around each image and its text */
+  imageBorder?: boolean;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
