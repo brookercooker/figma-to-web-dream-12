@@ -787,9 +787,9 @@ export default function ObjectDesignPage() {
                 <Choice
                   value={section.captionAlign ?? "left"}
                   options={[
-                    { value: "left" as const, label: "Left" },
-                    { value: "center" as const, label: "Center" },
-                    { value: "right" as const, label: "Right" },
+                    { value: "left" as const, label: "Left", icon: AlignLeft },
+                    { value: "center" as const, label: "Center", icon: AlignCenter },
+                    { value: "right" as const, label: "Right", icon: AlignRight },
                   ]}
                   onChange={(v) => patch(section.id, { captionAlign: v })}
                 />
@@ -801,9 +801,9 @@ export default function ObjectDesignPage() {
                   <Choice
                     value={section.layout}
                     options={[
-                      { value: "stacked" as const, label: "Below text" },
-                      { value: "beside" as const, label: "Beside text" },
-                      { value: "behind" as const, label: "Behind text" },
+                      { value: "stacked" as const, label: "Below text", icon: Rows2 },
+                      { value: "beside" as const, label: "Beside text", icon: Columns2 },
+                      { value: "behind" as const, label: "Behind text", icon: Layers },
                     ]}
                     onChange={(v) => patch(section.id, { layout: v })}
                   />
@@ -815,8 +815,8 @@ export default function ObjectDesignPage() {
                     <Choice
                       value={section.imageSide}
                       options={[
-                        { value: "left" as const, label: "Left" },
-                        { value: "right" as const, label: "Right" },
+                        { value: "left" as const, label: "Left", icon: PanelLeft },
+                        { value: "right" as const, label: "Right", icon: PanelRight },
                       ]}
                       onChange={(v) => patch(section.id, { imageSide: v })}
                     />
@@ -855,9 +855,9 @@ export default function ObjectDesignPage() {
                     <Choice
                       value={section.imageAlign ?? "left"}
                       options={[
-                        { value: "left" as const, label: "Left" },
-                        { value: "center" as const, label: "Center" },
-                        { value: "right" as const, label: "Right" },
+                        { value: "left" as const, label: "Left", icon: AlignLeft },
+                        { value: "center" as const, label: "Center", icon: AlignCenter },
+                        { value: "right" as const, label: "Right", icon: AlignRight },
                       ]}
                       onChange={(v) => patch(section.id, { imageAlign: v })}
                     />
@@ -871,8 +871,8 @@ export default function ObjectDesignPage() {
                       <Choice
                         value={section.gallery}
                         options={[
-                          { value: "grid" as const, label: "Grid" },
-                          { value: "carousel" as const, label: "Carousel" },
+                          { value: "grid" as const, label: "Grid", icon: LayoutGrid },
+                          { value: "carousel" as const, label: "Carousel", icon: GalleryHorizontal },
                         ]}
                         onChange={(v) => patch(section.id, { gallery: v })}
                       />
@@ -951,9 +951,9 @@ export default function ObjectDesignPage() {
               <Choice
                 value={section.align}
                 options={[
-                  { value: "left" as SectionAlign, label: "Left" },
-                  { value: "center" as SectionAlign, label: "Center" },
-                  { value: "right" as SectionAlign, label: "Right" },
+                  { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
+                  { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
+                  { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
                 ]}
                 onChange={(v) => patch(section.id, { align: v })}
               />
@@ -1069,9 +1069,9 @@ export default function ObjectDesignPage() {
                   <Choice
                     value={section.align}
                     options={[
-                      { value: "left" as SectionAlign, label: "Left" },
-                      { value: "center" as SectionAlign, label: "Center" },
-                      { value: "right" as SectionAlign, label: "Right" },
+                      { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
+                      { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
+                      { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
                     ]}
                     onChange={(v) => patch(section.id, { align: v })}
                   />
@@ -1111,8 +1111,8 @@ export default function ObjectDesignPage() {
                 <Choice
                   value={section.imageSide}
                   options={[
-                    { value: "left" as const, label: "Left" },
-                    { value: "right" as const, label: "Right" },
+                    { value: "left" as const, label: "Left", icon: PanelLeft },
+                    { value: "right" as const, label: "Right", icon: PanelRight },
                   ]}
                   onChange={(v) => patch(section.id, { imageSide: v })}
                 />
@@ -1193,9 +1193,9 @@ export default function ObjectDesignPage() {
                   <Choice
                     value={section.align}
                     options={[
-                      { value: "left" as SectionAlign, label: "Left" },
-                      { value: "center" as SectionAlign, label: "Center" },
-                      { value: "right" as SectionAlign, label: "Right" },
+                      { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
+                      { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
+                      { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
                     ]}
                     onChange={(v) => patch(section.id, { align: v })}
                   />
@@ -1406,9 +1406,9 @@ export default function ObjectDesignPage() {
                   label="Position"
                   value={sec.imageAlign ?? "left"}
                   options={[
-                    { value: "left", label: "Left" },
-                    { value: "center", label: "Center" },
-                    { value: "right", label: "Right" },
+                    { value: "left", label: "Left", icon: AlignLeft },
+                    { value: "center", label: "Center", icon: AlignCenter },
+                    { value: "right", label: "Right", icon: AlignRight },
                   ]}
                   onChange={(v) => patch(sec.id, { imageAlign: v })}
                 />
@@ -1417,9 +1417,9 @@ export default function ObjectDesignPage() {
                 label="Sits"
                 value={sec.layout ?? "stacked"}
                 options={[
-                  { value: "stacked", label: "Below text" },
-                  { value: "beside", label: "Beside text" },
-                  { value: "behind", label: "Behind text" },
+                  { value: "stacked", label: "Below text", icon: Rows2 },
+                  { value: "beside", label: "Beside text", icon: Columns2 },
+                  { value: "behind", label: "Behind text", icon: Layers },
                 ]}
                 onChange={(v) => patch(sec.id, { layout: v })}
               />
@@ -1428,8 +1428,8 @@ export default function ObjectDesignPage() {
                   label="Side"
                   value={sec.imageSide ?? "left"}
                   options={[
-                    { value: "left", label: "Left" },
-                    { value: "right", label: "Right" },
+                    { value: "left", label: "Left", icon: PanelLeft },
+                    { value: "right", label: "Right", icon: PanelRight },
                   ]}
                   onChange={(v) => patch(sec.id, { imageSide: v })}
                 />
@@ -1439,8 +1439,8 @@ export default function ObjectDesignPage() {
                   label="Show as"
                   value={sec.gallery ?? "grid"}
                   options={[
-                    { value: "grid", label: "Grid" },
-                    { value: "carousel", label: "Carousel" },
+                    { value: "grid", label: "Grid", icon: LayoutGrid },
+                    { value: "carousel", label: "Carousel", icon: GalleryHorizontal },
                   ]}
                   onChange={(v) => patch(sec.id, { gallery: v })}
                 />
@@ -1520,9 +1520,9 @@ export default function ObjectDesignPage() {
                 label="Align"
                 value={sec.captionAlign ?? "left"}
                 options={[
-                  { value: "left", label: "Left" },
-                  { value: "center", label: "Center" },
-                  { value: "right", label: "Right" },
+                  { value: "left", label: "Left", icon: AlignLeft },
+                  { value: "center", label: "Center", icon: AlignCenter },
+                  { value: "right", label: "Right", icon: AlignRight },
                 ]}
                 onChange={(v) => patch(toolbar.sectionId, { captionAlign: v as FreeSection["captionAlign"] })}
               />
