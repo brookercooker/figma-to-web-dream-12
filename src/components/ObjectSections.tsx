@@ -307,6 +307,8 @@ export interface FreeSection {
   captionStyle?: TextStyle;
   labelStyle?: TextStyle;
   images: SectionImage[];
+  /** videos placed under the text / images */
+  videos?: SectionVideo[];
   /** how images sit relative to the text */
   layout: "stacked" | "beside" | "behind";
   imageSide: "left" | "right";
