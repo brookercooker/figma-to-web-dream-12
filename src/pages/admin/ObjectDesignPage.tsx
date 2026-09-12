@@ -1423,25 +1423,6 @@ export default function ObjectDesignPage() {
               ))}
 
             </div>
-            <TextStyleFields
-              label="Caption style"
-              value={section.captionStyle}
-              defaults={{ font: "sans", color: "stone", size: "sm" }}
-              onChange={(v) => patch(section.id, { captionStyle: v })}
-            />
-            <Field label="Caption alignment">
-              <div>
-                <Choice
-                  value={section.captionAlign ?? "left"}
-                  options={[
-                    { value: "left" as const, label: "Left", icon: AlignLeft },
-                    { value: "center" as const, label: "Center", icon: AlignCenter },
-                    { value: "right" as const, label: "Right", icon: AlignRight },
-                  ]}
-                  onChange={(v) => patch(section.id, { captionAlign: v })}
-                />
-              </div>
-            </Field>
             <Field label="Border around image and text">
               <div>
                 <Choice
@@ -2301,18 +2282,6 @@ export default function ObjectDesignPage() {
                 onChange={(v) =>
                   patchImageText(toolbar.sectionId, imgText.img, imgText.t, { align: v as FreeSection["captionAlign"] })
                 }
-              />
-            )}
-            {toolbar.field === "captionStyle" && (
-              <Dropdown
-                label="Align"
-                value={sec.captionAlign ?? "left"}
-                options={[
-                  { value: "left", label: "Left", icon: AlignLeft },
-                  { value: "center", label: "Center", icon: AlignCenter },
-                  { value: "right", label: "Right", icon: AlignRight },
-                ]}
-                onChange={(v) => patch(toolbar.sectionId, { captionAlign: v as FreeSection["captionAlign"] })}
               />
             )}
             {toolbar.field === "labelStyle" && (
