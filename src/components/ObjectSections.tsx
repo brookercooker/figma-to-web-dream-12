@@ -363,7 +363,7 @@ export interface FreeDivider {
   width?: "full" | "short";
   /** bar thickness in px */
   thickness?: number;
-  /** which element this bar sits under: "start", a part key (eyebrow/heading/body/text:i), or "end" */
+  /** @deprecated placement is now controlled by FreeSection.order */
   after?: string;
 }
 
