@@ -870,17 +870,19 @@ export default function ObjectDesignPage() {
           ) : (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                {PALETTE.map(({ type, Icon }) => (
-                  <Button key={type} variant="outline" size="sm" className="gap-2" onClick={() => add(type)}>
-                    <Icon className="w-4 h-4" /> {SECTION_LABEL[type]}
-                  </Button>
-                ))}
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => add("free")}>
+                  <Plus className="w-4 h-4" /> Add a blank space
+                </Button>
               </div>
 
               {!sections.length && (
-                <div className="border rounded-lg p-12 text-center text-sm text-muted-foreground">
-                  Add a carousel, a row of images, an image with text, or a button to begin.
-                </div>
+                <button
+                  type="button"
+                  onClick={() => add("free")}
+                  className="w-full border border-dashed rounded-lg p-12 text-center text-sm text-muted-foreground hover:bg-muted/40 transition-colors"
+                >
+                  Start with a blank space, then add a title, an eyebrow, text, or images.
+                </button>
               )}
 
               {sections.map((s, i) => {
