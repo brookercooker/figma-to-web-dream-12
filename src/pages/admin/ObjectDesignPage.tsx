@@ -9,7 +9,7 @@ import {
   ArrowLeft, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
-  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown,
+  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
   Video as VideoIcon, Minus,
   type LucideIcon,
 } from "lucide-react";
@@ -20,7 +20,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections, withEyebrowDefaults,
+  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
