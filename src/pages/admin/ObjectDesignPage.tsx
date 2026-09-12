@@ -272,13 +272,14 @@ export default function ObjectDesignPage() {
             )}
             <div className="grid gap-3 sm:grid-cols-2">
               {section.images.map((img, i) => (
-                <ImageEditor
-                  key={i}
-                  section={section}
-                  index={i}
-                  image={img}
-                  showCaption={section.type !== "imageRow"}
-                />
+                <div key={i}>
+                  {ImageEditor({
+                    section,
+                    index: i,
+                    image: img,
+                    showCaption: section.type !== "imageRow",
+                  })}
+                </div>
               ))}
             </div>
             <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id)}>
