@@ -95,6 +95,8 @@ export interface SectionImage {
   url: string;
   alt: string;
   caption?: string;
+  /** optional destination opened when the image is clicked */
+  href?: string;
 }
 
 export interface CarouselSection {
