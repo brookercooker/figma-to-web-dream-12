@@ -568,7 +568,7 @@ function FreeText({
           {section.body}
         </p>
       ) : null}
-      {(section.extras ?? []).map((t, i) => (
+      {extras.map(({ t, i }) => (
         <p
           key={t.id}
           data-part={`text:${i}`}
