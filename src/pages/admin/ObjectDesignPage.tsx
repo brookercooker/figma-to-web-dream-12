@@ -20,8 +20,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
-  type FreeDivider, type FreeSection, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
+  BODY_PX, FREE_TEXT_KINDS, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
+  type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
 
@@ -664,7 +664,7 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
-  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle }) => {
+  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind }) => {
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id || s.type !== "free") return s;
@@ -1309,7 +1309,11 @@ export default function ObjectDesignPage() {
       if (p === "heading") return "Title";
       if (p === "body") return "Text";
       if (p === "button") return "Button";
-      if (p.startsWith("text:")) return `Paragraph ${Number(p.slice(5)) + 1}`;
+      if (p.startsWith("text:")) {
+        const k = (section.extras ?? [])[Number(p.slice(5))]?.kind ?? "text";
+        const l = FREE_TEXT_KINDS.find((x) => x.value === k)?.label ?? "Text";
+        return k === "text" ? `Paragraph ${Number(p.slice(5)) + 1}` : l;
+      }
       if (p.startsWith("divider:")) return `Divider ${Number(p.slice(8)) + 1}`;
       return p;
     };
@@ -1355,8 +1359,20 @@ export default function ObjectDesignPage() {
     return (
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2">
-          {!hasEyebrow && <Chip label="Eyebrow" icon={Tag} onClick={() => { patch(section.id, { eyebrow: "Since 1951" }); openBlock("eyebrow"); }} />}
-          {!hasTitle && <Chip label="Title" icon={Heading} onClick={() => { patch(section.id, { heading: "A quiet statement" }); openBlock("heading"); }} />}
+          <Chip label="Eyebrow" icon={Tag} onClick={() => {
+            if (hasEyebrow) {
+              const id = newSectionId();
+              patch(section.id, { extras: [...(section.extras ?? []), { id, text: "Since 1951", kind: "eyebrow" as const }] });
+              openBlock(id);
+            } else { patch(section.id, { eyebrow: "Since 1951" }); openBlock("eyebrow"); }
+          }} />
+          <Chip label="Title" icon={Heading} onClick={() => {
+            if (hasTitle) {
+              const id = newSectionId();
+              patch(section.id, { extras: [...(section.extras ?? []), { id, text: "A quiet statement", kind: "title" as const }] });
+              openBlock(id);
+            } else { patch(section.id, { heading: "A quiet statement" }); openBlock("heading"); }
+          }} />
           <Chip
             label="Text"
             icon={AlignLeft}
@@ -1477,10 +1493,19 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {(section.extras ?? []).map((t, i) =>
-          Block({
-            title: "Text",
-            icon: AlignLeft,
+        {(section.extras ?? []).map((t, i) => {
+          const kind = t.kind ?? "text";
+          const kindLabel = FREE_TEXT_KINDS.find((k) => k.value === kind)?.label ?? "Text";
+          const kindIcon = kind === "title" ? Heading : kind === "eyebrow" ? Tag : AlignLeft;
+          const kindDefaults =
+            kind === "title"
+              ? { font: "serif" as const, color: "ink" as const, size: "xl" as const }
+              : kind === "eyebrow"
+              ? { font: "sans" as const, color: "stone" as const, size: "sm" as const }
+              : { font: "sans" as const, color: "stone" as const, size: "md" as const };
+          return Block({
+            title: kindLabel,
+            icon: kindIcon,
             part: `text:${i}`,
             flowSection: section,
             key: t.id,
@@ -1488,23 +1513,34 @@ export default function ObjectDesignPage() {
             onDuplicate: () => duplicateExtra(section.id, i),
             children: (
               <>
-                <Field label="Text">
+                <Field label="Kind">
+                  <select
+                    className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    value={kind}
+                    onChange={(e) => patchExtra(section.id, i, { kind: e.target.value as FreeTextKind })}
+                  >
+                    {FREE_TEXT_KINDS.map((k) => (
+                      <option key={k.value} value={k.value}>{k.label}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label={kindLabel}>
                   <Textarea
-                    rows={4}
+                    rows={kind === "text" ? 4 : 2}
                     value={t.text}
                     onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
                   />
                 </Field>
                 <TextStyleFields
-                  label="Text style"
-                  value={t.style}
-                  defaults={{ font: "sans", color: "stone", size: "md" }}
+                  label={`${kindLabel} style`}
+                  value={kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style}
+                  defaults={kindDefaults}
                   onChange={(v) => patchExtra(section.id, i, { style: v })}
                 />
               </>
             ),
-          }),
-        )}
+          });
+        })}
 
         {(section.dividers ?? []).map((d, i) =>
           Block({
@@ -2373,7 +2409,13 @@ export default function ObjectDesignPage() {
           labelStyle: "sans",
         };
         const kindDefaults = imgTextItem ? IMAGE_TEXT_DEFAULTS[imgTextItem.kind] : null;
-        const isEyebrow = imgTextItem ? imgTextItem.kind === "eyebrow" : fieldKey === "eyebrowStyle";
+        const extraItem = extraIdx >= 0 ? (sec.extras ?? [])[extraIdx] : undefined;
+        const extraKind = extraItem?.kind ?? "text";
+        const isEyebrow = imgTextItem
+          ? imgTextItem.kind === "eyebrow"
+          : extraItem
+          ? extraKind === "eyebrow"
+          : fieldKey === "eyebrowStyle";
         const es = isEyebrow ? withEyebrowDefaults(style) : style;
         const set = (changes: Partial<TextStyle>) =>
           imgText
@@ -2386,7 +2428,9 @@ export default function ObjectDesignPage() {
             <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
               {imgTextItem
                 ? (IMAGE_TEXT_KINDS.find((k) => k.value === imgTextItem.kind)?.label ?? "Text")
-                : extraIdx >= 0 ? "Text" : STYLE_FIELD_LABEL[fieldKey]}
+                : extraItem
+                ? (FREE_TEXT_KINDS.find((k) => k.value === extraKind)?.label ?? "Text")
+                : STYLE_FIELD_LABEL[fieldKey]}
             </span>
             {imgText && imgTextItem && (
               <Dropdown
