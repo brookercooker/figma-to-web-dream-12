@@ -1052,8 +1052,9 @@ export default function ObjectDesignPage() {
     part,
     key,
     flowSection,
+    onDelete,
     children,
-  }: { title: string; icon: LucideIcon; part?: string; key?: string; flowSection?: FreeSection; children: React.ReactNode }) => {
+  }: { title: string; icon: LucideIcon; part?: string; key?: string; flowSection?: FreeSection; onDelete?: () => void; children: React.ReactNode }) => {
     const blockKey = key ?? part ?? title;
     const focused =
       !!focusPart &&
@@ -1067,17 +1068,30 @@ export default function ObjectDesignPage() {
         data-inspector-part={part}
         className="scroll-mt-24 rounded-lg border bg-background shadow-sm"
       >
-        <button
-          type="button"
-          onClick={() => setOpenBlocks((o) => ({ ...o, [blockKey]: !open }))}
-          className="flex w-full items-center gap-2 rounded-t-lg border-b-2 border-foreground/15 bg-muted px-3 py-2.5 text-left transition-colors hover:bg-muted/80"
-        >
-          <Icon className="h-4 w-4 text-foreground" />
-          <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">{title}</span>
-          <ChevronDown
-            className={`ml-auto h-4 w-4 text-foreground/70 transition-transform ${open ? "" : "-rotate-90"}`}
-          />
-        </button>
+        <div className="flex items-center gap-1 rounded-t-lg border-b-2 border-foreground/15 bg-muted pr-2 transition-colors hover:bg-muted/80">
+          <button
+            type="button"
+            onClick={() => setOpenBlocks((o) => ({ ...o, [blockKey]: !open }))}
+            className="flex flex-1 items-center gap-2 px-3 py-2.5 text-left"
+          >
+            <Icon className="h-4 w-4 text-foreground" />
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">{title}</span>
+            <ChevronDown
+              className={`ml-auto h-4 w-4 text-foreground/70 transition-transform ${open ? "" : "-rotate-90"}`}
+            />
+          </button>
+          {onDelete ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`Delete ${title}`}
+              className="h-7 w-7 p-0 text-foreground/60 hover:text-destructive"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          ) : null}
+        </div>
         {open ? (
           <div className="space-y-3 p-3">
             {children}
@@ -1228,20 +1242,13 @@ export default function ObjectDesignPage() {
 
 
 
-        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, children: (
+        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, onDelete: () => patch(section.id, { eyebrow: undefined }), children: (
           <>
 
 
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <Field label="Eyebrow">
-                  <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
-                </Field>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => patch(section.id, { eyebrow: undefined })}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
+            <Field label="Eyebrow">
+              <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
+            </Field>
             <TextStyleFields
               label="Eyebrow style"
               value={withEyebrowDefaults(section.eyebrowStyle)}
@@ -1251,20 +1258,13 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, children: (
+        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, onDelete: () => patch(section.id, { heading: undefined }), children: (
           <>
 
 
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <Field label="Title">
-                  <Input value={section.heading ?? ""} onChange={(e) => patch(section.id, { heading: e.target.value })} />
-                </Field>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => patch(section.id, { heading: undefined })}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
+            <Field label="Title">
+              <Input value={section.heading ?? ""} onChange={(e) => patch(section.id, { heading: e.target.value })} />
+            </Field>
             <TextStyleFields
               label="Title style"
               value={section.textStyle}
@@ -1277,20 +1277,13 @@ export default function ObjectDesignPage() {
 
 
 
-        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, children: (
+        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, onDelete: () => patch(section.id, { body: undefined }), children: (
           <>
 
 
-            <div className="flex items-end gap-2">
-              <div className="flex-1">
-                <Field label="Text">
-                  <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
-                </Field>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => patch(section.id, { body: undefined })}>
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
+            <Field label="Text">
+              <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
+            </Field>
             <TextStyleFields
               label="Text style"
               value={section.bodyStyle}
@@ -1307,22 +1300,16 @@ export default function ObjectDesignPage() {
             part: `text:${i}`,
             flowSection: section,
             key: t.id,
+            onDelete: () => removeExtra(section.id, i),
             children: (
               <>
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <Field label="Text">
-                      <Textarea
-                        rows={4}
-                        value={t.text}
-                        onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
-                      />
-                    </Field>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => removeExtra(section.id, i)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+                <Field label="Text">
+                  <Textarea
+                    rows={4}
+                    value={t.text}
+                    onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                  />
+                </Field>
                 <TextStyleFields
                   label="Text style"
                   value={t.style}
@@ -1341,6 +1328,7 @@ export default function ObjectDesignPage() {
             part: `divider:${i}`,
             flowSection: section,
             key: d.id,
+            onDelete: () => removeDivider(section.id, i),
             children: (
               <>
                 <div className="flex flex-wrap items-center gap-3">
@@ -1351,9 +1339,6 @@ export default function ObjectDesignPage() {
                     options={TEXT_COLORS}
                     onChange={(v) => patchDivider(section.id, i, { color: v as TextColor })}
                   />
-                  <Button variant="ghost" size="sm" className="ml-auto" onClick={() => removeDivider(section.id, i)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
                 <Field label="Width">
                   <div>
@@ -1605,7 +1590,7 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", flowSection: section, children: (
+        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", flowSection: section, onDelete: () => patch(section.id, { buttonLabel: undefined }), children: (
           <>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -1630,9 +1615,6 @@ export default function ObjectDesignPage() {
                   />
                 </div>
               </Field>
-              <Button variant="ghost" size="sm" onClick={() => patch(section.id, { buttonLabel: undefined })}>
-                <Trash2 className="w-4 h-4" /> Remove button
-              </Button>
             </div>
             <TextStyleFields
               label="Button label style"
