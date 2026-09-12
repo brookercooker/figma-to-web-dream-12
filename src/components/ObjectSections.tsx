@@ -169,6 +169,8 @@ export interface FreeSection {
   columns: 1 | 2 | 3 | 4;
   /** how many images show at once in carousel mode */
   perView?: number;
+  /** shared height for every image in the block */
+  imageHeight?: ImageHeight;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
