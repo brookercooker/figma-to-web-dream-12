@@ -683,6 +683,28 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  const patchDivider = (id: string, index: number, changes: Partial<FreeDivider>) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const dividers = (s.dividers ?? []).map((d, i) => (i === index ? { ...d, ...changes } : d));
+        return { ...s, dividers } as Section;
+      }),
+    );
+    setDirty(true);
+  };
+
+  const removeDivider = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === id && s.type === "free"
+          ? ({ ...s, dividers: (s.dividers ?? []).filter((_, i) => i !== index) } as Section)
+          : s,
+      ),
+    );
+    setDirty(true);
+  };
+
   const patchImage = (id: string, index: number, changes: Partial<SectionImage>) => {
     setSections((prev) =>
       prev.map((s) => {
