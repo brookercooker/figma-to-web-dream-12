@@ -963,7 +963,8 @@ export default function ObjectDesignPage() {
     const focused =
       !!focusPart &&
       (focusPart === part ||
-        (title === "Images" && (focusPart.startsWith("image:") || focusPart.startsWith("caption:") || focusPart.startsWith("imagetext:"))));
+        (title === "Images" && (focusPart.startsWith("image:") || focusPart.startsWith("caption:") || focusPart.startsWith("imagetext:"))) ||
+        (title === "Videos" && focusPart.startsWith("video:")));
     const open = openBlocks[blockKey] ?? (blocksExpanded || focused);
     return (
       <div
