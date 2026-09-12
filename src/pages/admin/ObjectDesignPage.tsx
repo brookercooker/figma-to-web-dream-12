@@ -902,7 +902,13 @@ export default function ObjectDesignPage() {
                       className="px-4 cursor-pointer"
                       onClick={() => { if (!active) setActiveId(s.id); }}
                     >
-                      <SectionView section={s} />
+                      {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel ? (
+                        <p className="py-12 text-center text-sm text-muted-foreground">
+                          Blank space — add a title, an eyebrow, text, an image, or a button below.
+                        </p>
+                      ) : (
+                        <SectionView section={s} />
+                      )}
                     </div>
 
                     {active && (
