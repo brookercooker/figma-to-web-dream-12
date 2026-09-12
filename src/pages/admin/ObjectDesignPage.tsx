@@ -715,6 +715,7 @@ export default function ObjectDesignPage() {
   const patchImage = (id: string, index: number, changes: Partial<SectionImage>) => {
     // keep this image's editor expanded while it is being edited
     setOpenSub((s) => (s[`img:${id}:${index}`] ? s : { ...s, [`img:${id}:${index}`]: true }));
+    setOpenBlocks((b) => (b.Images ? b : { ...b, Images: true }));
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id) return s;
