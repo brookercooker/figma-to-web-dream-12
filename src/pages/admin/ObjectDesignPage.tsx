@@ -1206,8 +1206,9 @@ export default function ObjectDesignPage() {
     key,
     flowSection,
     onDelete,
+    onDuplicate,
     children,
-  }: { title: string; icon: LucideIcon; part?: string; key?: string; flowSection?: FreeSection; onDelete?: () => void; children: React.ReactNode }) => {
+  }: { title: string; icon: LucideIcon; part?: string; key?: string; flowSection?: FreeSection; onDelete?: () => void; onDuplicate?: () => void; children: React.ReactNode }) => {
     const blockKey = key ?? part ?? title;
     const focused =
       !!focusPart &&
@@ -1233,6 +1234,18 @@ export default function ObjectDesignPage() {
               className={`ml-auto h-4 w-4 text-foreground/70 transition-transform ${open ? "" : "-rotate-90"}`}
             />
           </button>
+          {onDuplicate ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`Duplicate ${title}`}
+              title={`Duplicate ${title}`}
+              className="h-7 w-7 p-0 text-foreground/60 hover:text-foreground"
+              onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          ) : null}
           {onDelete ? (
             <Button
               variant="ghost"
