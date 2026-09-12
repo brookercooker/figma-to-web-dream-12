@@ -192,15 +192,16 @@ function ColorDot({ swatch }: { swatch?: string }) {
 }
 
 function ColorDropdown({
-  label, value, options, onChange, includeDefault = true,
+  label, value, fallback, options, onChange,
 }: {
   label: string;
   value: string;
+  fallback: string;
   options: { value: string; label: string; swatch: string }[];
   onChange: (v: string) => void;
-  includeDefault?: boolean;
 }) {
-  const current = options.find((o) => o.value === value);
+  const active = value || fallback;
+  const current = options.find((o) => o.value === active);
   return (
     <div className="flex items-center gap-1.5 text-xs">
       <span className="text-muted-foreground">{label}</span>
@@ -211,16 +212,11 @@ function ColorDropdown({
             className="flex h-7 items-center gap-1.5 rounded-md border bg-background px-2 text-xs"
           >
             <ColorDot swatch={current?.swatch} />
-            <span>{current?.label ?? "Default"}</span>
+            <span>{current?.label ?? ""}</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[9rem]">
-          {includeDefault && (
-            <DropdownMenuItem className="gap-2 text-xs" onSelect={() => onChange("")}>
-              <ColorDot />
-              Default
-            </DropdownMenuItem>
-          )}
+
           {options.map((o) => (
             <DropdownMenuItem key={o.value} className="gap-2 text-xs" onSelect={() => onChange(o.value)}>
               <ColorDot swatch={o.swatch} />
@@ -1203,6 +1199,14 @@ export default function ObjectDesignPage() {
         const sec = sections.find((s) => s.id === toolbar.sectionId) as FreeSection | undefined;
         if (!sec) return null;
         const style = ((sec as any)[toolbar.field] ?? {}) as TextStyle;
+        const solid = (sec.buttonVariant ?? "solid") === "solid";
+        const defaultColor: Record<string, string> = {
+          eyebrowStyle: "stone",
+          textStyle: "ink",
+          bodyStyle: "stone",
+          captionStyle: "stone",
+          labelStyle: solid ? "cream" : "ink",
+        };
         const set = (changes: Partial<TextStyle>) =>
           patch(toolbar.sectionId, { [toolbar.field]: { ...style, ...changes } });
         return (
@@ -1229,6 +1233,7 @@ export default function ObjectDesignPage() {
             <ColorDropdown
               label="Color"
               value={style.color ?? ""}
+              fallback={defaultColor[String(toolbar.field)] ?? "ink"}
               options={TEXT_COLORS}
               onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
             />
@@ -1248,6 +1253,7 @@ export default function ObjectDesignPage() {
               <ColorDropdown
                 label="Fill"
                 value={sec.buttonBg ?? ""}
+                fallback="ink"
                 options={TEXT_COLORS}
                 onChange={(v) => patch(toolbar.sectionId, { buttonBg: (v || undefined) as TextColor | undefined })}
               />
