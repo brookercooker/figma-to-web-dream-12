@@ -363,8 +363,8 @@ export interface FreeDivider {
   width?: "full" | "short";
   /** bar thickness in px */
   thickness?: number;
-  /** vertical nudge in px: negative moves the bar up, positive moves it down */
-  offset?: number;
+  /** which element this bar sits under: "start", a part key (eyebrow/heading/body/text:i), or "end" */
+  after?: string;
 }
 
 export interface FreeSection {
