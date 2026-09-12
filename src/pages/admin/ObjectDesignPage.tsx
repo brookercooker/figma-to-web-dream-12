@@ -2212,6 +2212,9 @@ export default function ObjectDesignPage() {
                         <Button variant="ghost" size="sm" disabled={i === sections.length - 1} onClick={() => move(s.id, 1)}>
                           <ArrowDown className="w-4 h-4" />
                         </Button>
+                        <Button variant="ghost" size="sm" title="Duplicate block" onClick={() => duplicateSection(s.id)}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => remove(s.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
