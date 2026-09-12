@@ -811,6 +811,58 @@ export default function ObjectDesignPage() {
         placeholder="Link (optional)"
         onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
       />
+      {showCaption && (
+        <div className="space-y-2 rounded-md border border-dashed p-2">
+          {(image.texts ?? []).map((t, ti) => (
+            <div key={t.id} className="space-y-2 rounded border bg-muted/30 p-2">
+              <div className="flex items-center gap-2">
+                <IconSelect
+                  value={t.kind}
+                  options={IMAGE_TEXT_KINDS.map((k) => ({ value: k.value, label: k.label }))}
+                  onChange={(v) => patchImageText(section.id, index, ti, { kind: v })}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto"
+                  onClick={() => removeImageText(section.id, index, ti)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+              <Textarea
+                rows={2}
+                value={t.text}
+                placeholder={`${IMAGE_TEXT_KINDS.find((k) => k.value === t.kind)?.label ?? "Text"}…`}
+                onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
+              />
+              <TextStyleFields
+                label="Style"
+                value={t.style}
+                defaults={{
+                  font: IMAGE_TEXT_DEFAULTS[t.kind].font,
+                  color: IMAGE_TEXT_DEFAULTS[t.kind].color,
+                  size: IMAGE_TEXT_DEFAULTS[t.kind].size,
+                }}
+                onChange={(v) => patchImageText(section.id, index, ti, { style: v })}
+              />
+            </div>
+          ))}
+          <div className="flex flex-wrap gap-1.5">
+            {IMAGE_TEXT_KINDS.map((k) => (
+              <Button
+                key={k.value}
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => addImageText(section.id, index, k.value)}
+              >
+                <Plus className="w-3 h-3" /> {k.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
