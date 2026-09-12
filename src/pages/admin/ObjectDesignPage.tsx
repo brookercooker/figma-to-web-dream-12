@@ -179,6 +179,57 @@ function Dropdown({
   );
 }
 
+function ColorDot({ swatch }: { swatch?: string }) {
+  return (
+    <span
+      className="inline-block h-3 w-3 shrink-0 rounded-full border"
+      style={swatch ? { background: swatch } : { background: "transparent" }}
+    />
+  );
+}
+
+function ColorDropdown({
+  label, value, options, onChange, includeDefault = true,
+}: {
+  label: string;
+  value: string;
+  options: { value: string; label: string; swatch: string }[];
+  onChange: (v: string) => void;
+  includeDefault?: boolean;
+}) {
+  const current = options.find((o) => o.value === value);
+  return (
+    <div className="flex items-center gap-1.5 text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className="flex h-7 items-center gap-1.5 rounded-md border bg-background px-2 text-xs"
+          >
+            <ColorDot swatch={current?.swatch} />
+            <span>{current?.label ?? "Default"}</span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[9rem]">
+          {includeDefault && (
+            <DropdownMenuItem className="gap-2 text-xs" onSelect={() => onChange("")}>
+              <ColorDot />
+              Default
+            </DropdownMenuItem>
+          )}
+          {options.map((o) => (
+            <DropdownMenuItem key={o.value} className="gap-2 text-xs" onSelect={() => onChange(o.value)}>
+              <ColorDot swatch={o.swatch} />
+              {o.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 export default function ObjectDesignPage() {
   const [params, setParams] = useSearchParams();
   const selectedId = params.get("object") ?? "";
