@@ -388,6 +388,18 @@ export default function ObjectDesignPage() {
               defaults={{ font: "sans", color: "cream", size: "md" }}
               onChange={(v) => patch(section.id, { bodyStyle: v })}
             />
+            <TextStyleFields
+              label="Eyebrow style"
+              value={section.eyebrowStyle}
+              defaults={{ font: "sans", color: "cream", size: "sm" }}
+              onChange={(v) => patch(section.id, { eyebrowStyle: v })}
+            />
+            <TextStyleFields
+              label="Button label style"
+              value={section.labelStyle}
+              defaults={{ font: "sans", color: "cream", size: "sm" }}
+              onChange={(v) => patch(section.id, { labelStyle: v })}
+            />
             <div className="flex flex-wrap gap-4">
               <Field label="Text position">
                 <div>
