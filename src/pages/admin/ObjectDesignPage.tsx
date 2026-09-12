@@ -13,7 +13,7 @@ import {
 import CreateObjectDialog from "./CreateObjectDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import {
-  SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, makeSection, parseSections,
+  IMAGE_HEIGHTS, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, makeSection, parseSections,
   type FreeSection, type Section, type SectionAlign, type SectionImage, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
@@ -467,6 +467,17 @@ export default function ObjectDesignPage() {
                         { value: "lg" as const, label: "Tall" },
                       ]}
                       onChange={(v) => patch(section.id, { height: v })}
+                    />
+                  </div>
+                </Field>
+              )}
+              {section.layout !== "behind" && section.images.length > 0 && (
+                <Field label="Image height">
+                  <div>
+                    <Choice
+                      value={section.imageHeight ?? "auto"}
+                      options={IMAGE_HEIGHTS.map((h) => ({ value: h.value, label: h.label }))}
+                      onChange={(v) => patch(section.id, { imageHeight: v })}
                     />
                   </div>
                 </Field>

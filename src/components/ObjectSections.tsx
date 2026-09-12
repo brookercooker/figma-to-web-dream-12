@@ -72,6 +72,25 @@ export function bodyClasses(style: TextStyle | undefined, fallback: { color: Tex
   ].join(" ");
 }
 
+export type ImageHeight = "auto" | "sm" | "md" | "lg" | "xl";
+
+export const IMAGE_HEIGHTS: { value: ImageHeight; label: string }[] = [
+  { value: "auto", label: "Auto" },
+  { value: "sm", label: "S" },
+  { value: "md", label: "M" },
+  { value: "lg", label: "L" },
+  { value: "xl", label: "XL" },
+];
+
+/** Fixed heights so every image in a row lines up. */
+export const imageHeightClass: Record<ImageHeight, string> = {
+  auto: "aspect-[4/3]",
+  sm: "h-40 sm:h-48",
+  md: "h-56 sm:h-64",
+  lg: "h-72 sm:h-96",
+  xl: "h-96 sm:h-[32rem]",
+};
+
 export interface SectionImage {
   url: string;
   alt: string;
@@ -169,6 +188,8 @@ export interface FreeSection {
   columns: 1 | 2 | 3 | 4;
   /** how many images show at once in carousel mode */
   perView?: number;
+  /** shared height for every image in the block */
+  imageHeight?: ImageHeight;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
@@ -413,7 +434,7 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
         >
           {images.map((img, idx) => (
             <figure key={idx} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
-              <Pic image={img} className="w-full aspect-[4/3] rounded-lg" />
+              <Pic image={img} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
               {img.caption ? (
                 <figcaption
                   className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
@@ -461,7 +482,7 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
     >
       {section.images.map((img, i) => (
         <figure key={i}>
-          <Pic image={img} className="w-full aspect-[4/3] rounded-lg" />
+          <Pic image={img} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
           {img.caption ? (
             <figcaption
               className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, {
