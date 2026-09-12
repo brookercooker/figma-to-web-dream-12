@@ -1005,7 +1005,7 @@ function FreeText({
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
       {groups.map((group) =>
         group.length > 1 ? (
-          <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap items-center ${alignRow[section.align]}`}>
+          <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap ${ROW_VALIGN_CLASS[section.rowVAlign ?? "middle"]} ${alignRow[section.align]}`}>
             {group.map((it) => {
               const w = section.flowWidths?.[it.part];
               const a = section.flowAligns?.[it.part] ?? section.align;
