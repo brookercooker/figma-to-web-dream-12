@@ -1513,7 +1513,7 @@ export default function ObjectDesignPage() {
             onDuplicate: () => duplicateExtra(section.id, i),
             children: (
               <>
-                <Field label="Kind">
+                <Field label="Type">
                   <select
                     className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
                     value={kind}
@@ -2434,7 +2434,7 @@ export default function ObjectDesignPage() {
             </span>
             {imgText && imgTextItem && (
               <Dropdown
-                label="Kind"
+                label="Type"
                 value={imgTextItem.kind}
                 options={IMAGE_TEXT_KINDS.map((k) => ({ value: k.value as string, label: k.label }))}
                 onChange={(v) => patchImageText(toolbar.sectionId, imgText.img, imgText.t, { kind: v as ImageTextKind })}
