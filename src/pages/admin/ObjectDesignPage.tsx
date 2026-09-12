@@ -167,7 +167,7 @@ const SIZE_WORD: Record<string, string> = {
   sm: "Small",
   md: "Medium",
   lg: "Large",
-  xl: "Extra large",
+  xl: "Extra Large",
 };
 
 function Dropdown({
@@ -1214,6 +1214,13 @@ export default function ObjectDesignPage() {
           captionStyle: "stone",
           labelStyle: solid ? "cream" : "ink",
         };
+        const defaultFont: Record<string, string> = {
+          eyebrowStyle: "sans",
+          textStyle: "serif",
+          bodyStyle: "sans",
+          captionStyle: "sans",
+          labelStyle: "sans",
+        };
         const set = (changes: Partial<TextStyle>) =>
           patch(toolbar.sectionId, { [toolbar.field]: { ...style, ...changes } });
         return (
@@ -1227,8 +1234,8 @@ export default function ObjectDesignPage() {
             </span>
             <Dropdown
               label="Font"
-              value={style.font ?? ""}
-              options={[{ value: "", label: "Default" }, ...TEXT_FONTS.map((f) => ({ value: f.value as string, label: f.label }))]}
+              value={style.font ?? defaultFont[String(toolbar.field)] ?? "sans"}
+              options={TEXT_FONTS.map((f) => ({ value: f.value as string, label: f.label }))}
               onChange={(v) => set({ font: (v || undefined) as TextFont | undefined })}
             />
             <Dropdown
