@@ -465,6 +465,7 @@ export default function ObjectDesignPage() {
   const [preview, setPreview] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [q, setQ] = useState("");
+  const [libraryOpen, setLibraryOpen] = useState(true);
   // { sectionId, index } — index -1 means the section's single image
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
   const [linkOpen, setLinkOpen] = useState<Record<string, boolean>>({});
