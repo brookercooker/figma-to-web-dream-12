@@ -1945,6 +1945,25 @@ export default function ObjectDesignPage() {
                           ]}
                           onChange={(v) => patch(s.id, { flow: v } as Partial<Section>)}
                         />
+                        {s.flow === "inline" && (
+                          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Input
+                              type="number"
+                              min={5}
+                              max={100}
+                              className="h-8 w-20"
+                              placeholder="Auto"
+                              value={s.flowWidth ?? ""}
+                              onChange={(e) => {
+                                const raw = e.target.value;
+                                patch(s.id, {
+                                  flowWidth: raw === "" ? undefined : Math.min(100, Math.max(5, Number(raw) || 0)),
+                                } as Partial<Section>);
+                              }}
+                            />
+                            %
+                          </label>
+                        )}
 
 
                         <Button variant="ghost" size="sm" onClick={() => setActiveId(active ? "" : s.id)}>
