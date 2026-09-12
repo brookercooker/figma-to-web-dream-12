@@ -173,6 +173,8 @@ export interface FreeParagraph {
   id: string;
   text: string;
   style?: TextStyle;
+  /** whether this paragraph sits above or below the images */
+  position?: "above" | "below";
 }
 
 export interface FreeSection {
@@ -202,6 +204,8 @@ export interface FreeSection {
   imageAlign?: SectionAlign;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
+  /** whether the main text sits above or below the images */
+  textPosition?: "above" | "below";
   buttonLabel?: string;
   buttonHref?: string;
   buttonVariant?: "solid" | "outline" | "link";
@@ -527,29 +531,44 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
 
 }
 
-function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
+function FreeText({
+  section,
+  onDark,
+  slot = "all",
+}: {
+  section: FreeSection;
+  onDark?: boolean;
+  /** which placement group to render: text above the images, below them, or everything */
+  slot?: "above" | "below" | "all";
+}) {
+  const mainPos = section.textPosition ?? "above";
+  const showMain = slot === "all" || slot === mainPos;
+  const extras = (section.extras ?? [])
+    .map((t, i) => ({ t, i }))
+    .filter(({ t }) => slot === "all" || (t.position ?? mainPos) === slot);
   const hasText =
-    section.eyebrow || section.heading || section.body || section.buttonLabel || (section.extras ?? []).length;
+    (showMain && (section.eyebrow || section.heading || section.body || section.buttonLabel)) ||
+    extras.length;
   if (!hasText) return null;
   const base: TextColor = onDark ? "cream" : "ink";
   return (
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
-      {section.eyebrow ? (
+      {showMain && section.eyebrow ? (
         <p data-part="eyebrow" className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}>
           {section.eyebrow}
         </p>
       ) : null}
-      {section.heading ? (
+      {showMain && section.heading ? (
         <h2 data-part="heading" className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}>
           {section.heading}
         </h2>
       ) : null}
-      {section.body ? (
+      {showMain && section.body ? (
         <p data-part="body" className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}>
           {section.body}
         </p>
       ) : null}
-      {(section.extras ?? []).map((t, i) => (
+      {extras.map(({ t, i }) => (
         <p
           key={t.id}
           data-part={`text:${i}`}
@@ -558,7 +577,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
           {t.text}
         </p>
       ))}
-      {section.buttonLabel ? (
+      {showMain && section.buttonLabel ? (
         <div data-part="button" className="mt-2">
           <SectionButton
             label={section.buttonLabel}
@@ -610,8 +629,9 @@ function FreeView({ section }: { section: FreeSection }) {
 
   return (
     <section className="py-12 space-y-8">
-      <FreeText section={section} />
+      <FreeText section={section} slot={hasImages ? "above" : "all"} />
       <FreeGallery section={section} />
+      {hasImages ? <FreeText section={section} slot="below" /> : null}
     </section>
   );
 }
