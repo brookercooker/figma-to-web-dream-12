@@ -149,10 +149,18 @@ export default function ObjectDesignPage() {
 
   useEffect(() => {
     const parsed = parseSections(object?.content);
-    setSections(parsed);
-    setActiveId("");
+    if (parsed.length) {
+      setSections(parsed);
+      setActiveId("");
+      setPreview(true);
+    } else {
+      // Nothing designed yet: open straight into an editable block.
+      const s = makeSection("free");
+      setSections([s]);
+      setActiveId(s.id);
+      setPreview(false);
+    }
     setDirty(false);
-    setPreview(parsed.length > 0);
   }, [object?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(() => {
