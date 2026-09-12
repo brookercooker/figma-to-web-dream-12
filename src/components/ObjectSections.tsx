@@ -563,7 +563,7 @@ function FreeText({
           {section.heading}
         </h2>
       ) : null}
-      {section.body ? (
+      {showMain && section.body ? (
         <p data-part="body" className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}>
           {section.body}
         </p>
