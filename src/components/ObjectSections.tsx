@@ -175,6 +175,8 @@ export interface FreeSection {
   eyebrow?: string;
   heading?: string;
   body?: string;
+  /** additional paragraphs, each with its own styling */
+  extras?: FreeText[];
   eyebrowStyle?: TextStyle;
   textStyle?: TextStyle;
   bodyStyle?: TextStyle;
