@@ -2244,11 +2244,32 @@ export default function ObjectDesignPage() {
         </div>
       </header>
 
-      <main className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 px-4 py-6">
+      <main
+        className={`grid grid-cols-1 gap-6 px-4 py-6 ${
+          libraryOpen ? "lg:grid-cols-[260px_1fr_auto]" : "lg:grid-cols-[44px_1fr_auto]"
+        }`}
+      >
+        {!libraryOpen ? (
+          <aside className="lg:sticky lg:top-4 lg:self-start">
+            <Button
+              variant="outline"
+              size="icon"
+              title="Show objects"
+              onClick={() => setLibraryOpen(true)}
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </Button>
+          </aside>
+        ) : (
         <aside className="space-y-3">
-          <Button className="w-full gap-2" onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4" /> New object
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button className="flex-1 gap-2" onClick={() => setCreateOpen(true)}>
+              <Plus className="w-4 h-4" /> New object
+            </Button>
+            <Button variant="outline" size="icon" title="Hide objects" onClick={() => setLibraryOpen(false)}>
+              <PanelLeftClose className="w-4 h-4" />
+            </Button>
+          </div>
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search objects" />
           <div className="border rounded-lg divide-y max-h-[70vh] overflow-y-auto">
             {filtered.map((o) => (
