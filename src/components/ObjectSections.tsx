@@ -375,6 +375,8 @@ export interface FreeSection {
   flows?: Record<string, SectionFlow>;
   /** per-element inline width percentage, keyed by the same parts */
   flowWidths?: Record<string, number>;
+  /** per-element alignment within its inline column, keyed by the same parts */
+  flowAligns?: Record<string, SectionAlign>;
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
   eyebrow?: string;
