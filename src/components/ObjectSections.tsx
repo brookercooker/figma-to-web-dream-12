@@ -436,9 +436,12 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
         >
           {images.map((img, idx) => (
             <figure key={idx} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
-              <Pic image={img} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
+              <div data-part={`image:${idx}`}>
+                <Pic image={img} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
+              </div>
               {img.caption ? (
                 <figcaption
+                  data-part={`caption:${idx}`}
                   className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
                 >
                   {img.caption}
@@ -446,6 +449,7 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
               ) : null}
             </figure>
           ))}
+
         </div>
       </div>
       {pages > 1 && (
