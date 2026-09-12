@@ -349,6 +349,14 @@ export default function ObjectDesignPage() {
                 </div>
               ))}
             </div>
+            {section.type !== "imageRow" && (
+              <TextStyleFields
+                label="Caption style"
+                value={section.captionStyle}
+                defaults={{ font: "sans", color: section.type === "carousel" ? "cream" : "stone", size: "sm" }}
+                onChange={(v) => patch(section.id, { captionStyle: v })}
+              />
+            )}
             <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id)}>
               <Plus className="w-4 h-4" /> Add image
             </Button>
