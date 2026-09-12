@@ -1310,23 +1310,9 @@ export default function ObjectDesignPage() {
                     }
                   />
                 </Field>
-                <Field label="Position">
-                  <select
-                    className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
-                    value={d.after ?? "end"}
-                    onChange={(e) => patchDivider(section.id, i, { after: e.target.value })}
-                  >
-                    <option value="start">Above everything</option>
-                    {section.eyebrow ? <option value="eyebrow">Below eyebrow</option> : null}
-                    {section.heading ? <option value="heading">Below title</option> : null}
-                    {section.body ? <option value="body">Below text</option> : null}
-                    {(section.extras ?? []).map((_, xi) => (
-                      <option key={xi} value={`text:${xi}`}>{`Below paragraph ${xi + 1}`}</option>
-                    ))}
-                    {section.buttonLabel ? <option value="button">Below button</option> : null}
-                    <option value="end">Below all text</option>
-                  </select>
-                </Field>
+                <p className="text-xs text-muted-foreground">
+                  Drag this bar in the Arrangement list to move it between items.
+                </p>
               </>
             ),
           }),
