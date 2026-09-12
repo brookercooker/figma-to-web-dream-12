@@ -93,6 +93,9 @@ export default function CreateObjectDialog({
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Object name</label>
             <Input value={name} onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); if (valid && !saving) submit(); }
+              }}
               placeholder="e.g. Hot Deal Product"
               className={nameError || dupeName ? "border-destructive" : ""} autoFocus />
             {nameError && <p className="text-xs text-destructive mt-1">{nameError}</p>}
