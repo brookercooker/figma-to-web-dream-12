@@ -103,31 +103,55 @@ function ColorSwatches({ value, onChange }: { value: TextColor; onChange: (v: Te
   );
 }
 
-/** Exact font size in px, alongside the S / M / L / XL presets. */
+/** Common sizes offered in a dropdown, with a free-typed px value allowed. */
+const COMMON_TEXT_PX = [12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 64, 80];
+
 function SizeControl({
   style, defaultSize, heading, set,
 }: { style: TextStyle; defaultSize: TextSize; heading?: boolean; set: (changes: Partial<TextStyle>) => void }) {
   const preset = (heading ? HEADING_PX : BODY_PX)[style.size ?? defaultSize];
   const px = style.sizePx ?? preset;
+  const [draft, setDraft] = useState(String(px));
+  useEffect(() => { setDraft(String(px)); }, [px]);
+
+  const commit = (raw: string) => {
+    const v = Number(raw);
+    if (!v || Number.isNaN(v)) { setDraft(String(px)); return; }
+    set({ sizePx: Math.min(MAX_TEXT_PX, Math.max(MIN_TEXT_PX, Math.round(v))) });
+  };
+
   return (
-    <span className="inline-flex items-center gap-1.5">
+    <span className="inline-flex items-center rounded-md border bg-background">
       <input
         type="number"
         min={MIN_TEXT_PX}
         max={MAX_TEXT_PX}
-        value={px}
-        onChange={(e) => {
-          const v = Number(e.target.value);
-          if (!v) return;
-          set({ sizePx: Math.min(MAX_TEXT_PX, Math.max(MIN_TEXT_PX, Math.round(v))) });
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={(e) => commit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { e.preventDefault(); commit((e.target as HTMLInputElement).value); }
         }}
-        className="w-16 rounded-md border bg-background px-2 py-1 text-xs"
+        className="w-14 bg-transparent px-2 py-1 text-xs outline-none"
         aria-label="Text size in pixels"
       />
-      <span className="text-[11px] text-muted-foreground">px</span>
+      <span className="pr-1 text-[11px] text-muted-foreground">px</span>
+      <DropdownMenu>
+        <DropdownMenuTrigger className="border-l px-1.5 py-1 text-[11px] text-muted-foreground hover:text-foreground" aria-label="Common text sizes">
+          ▾
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="max-h-64 min-w-[5rem] overflow-auto">
+          {COMMON_TEXT_PX.map((v) => (
+            <DropdownMenuItem key={v} onSelect={() => set({ sizePx: v })}>
+              {v} px
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </span>
   );
 }
+
 
 function TextStyleFields({
   label, value, defaults, onChange, colorOnly,
