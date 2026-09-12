@@ -322,16 +322,29 @@ function Placeholder({ className = "" }: { className?: string }) {
 
 function Pic({ image, className }: { image: SectionImage; className: string }) {
   if (!image?.url) return <Placeholder className={className} />;
-  return (
-    <div className={`${className} group/pic overflow-hidden`}>
-      <img
-        src={image.url}
-        alt={image.alt || ""}
-        loading="lazy"
-        className="block h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]"
-      />
-    </div>
+  const href = image.href?.trim();
+  const inner = (
+    <img
+      src={image.url}
+      alt={image.alt || ""}
+      loading="lazy"
+      className="block h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]"
+    />
   );
+  const box = `${className} group/pic overflow-hidden`;
+  if (href) {
+    const external = /^(https?:)?\/\//i.test(href);
+    return (
+      <a
+        href={href}
+        className={`block ${box}`}
+        {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return <div className={box}>{inner}</div>;
 }
 
 const bgClass: Record<TextColor, string> = {
