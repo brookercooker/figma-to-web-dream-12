@@ -10,16 +10,18 @@ import {
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
   LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown,
+  Video as VideoIcon,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
+import VideoPickerDialog from "./VideoPickerDialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
   BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections,
-  type FreeSection, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionType,
+  type FreeSection, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
 
@@ -465,6 +467,8 @@ export default function ObjectDesignPage() {
   const [q, setQ] = useState("");
   // { sectionId, index } — index -1 means the section's single image
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
+  // which video slot the video chooser is filling
+  const [videoPicker, setVideoPicker] = useState<{ sectionId: string; index: number } | null>(null);
   // which element of the active section the user clicked on in the preview
   const [focusPart, setFocusPart] = useState("");
   // collapsible editing blocks: explicit overrides plus an expand/collapse-all default
@@ -759,6 +763,50 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  const videosOf = (sectionId: string): SectionVideo[] => {
+    const s = sections.find((x) => x.id === sectionId);
+    return s && s.type === "free" ? (s.videos ?? []) : [];
+  };
+
+  const addVideoSlot = (id: string) => {
+    let newIndex = 0;
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id === id && s.type === "free") {
+          const videos = [...(s.videos ?? []), { id: newSectionId(), url: "" } as SectionVideo];
+          newIndex = videos.length - 1;
+          return { ...s, videos } as Section;
+        }
+        return s;
+      }),
+    );
+    setDirty(true);
+    openBlock("Videos");
+    setVideoPicker({ sectionId: id, index: newIndex });
+  };
+
+  const patchVideo = (id: string, index: number, changes: Partial<SectionVideo>) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === id && s.type === "free"
+          ? ({ ...s, videos: (s.videos ?? []).map((v, i) => (i === index ? { ...v, ...changes } : v)) } as Section)
+          : s,
+      ),
+    );
+    setDirty(true);
+  };
+
+  const removeVideo = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) =>
+        s.id === id && s.type === "free"
+          ? ({ ...s, videos: (s.videos ?? []).filter((_, i) => i !== index) } as Section)
+          : s,
+      ),
+    );
+    setDirty(true);
+  };
+
   const add = (type: SectionType) => {
     const s = makeSection(type);
     setSections((prev) => [...prev, s]);
@@ -915,7 +963,8 @@ export default function ObjectDesignPage() {
     const focused =
       !!focusPart &&
       (focusPart === part ||
-        (title === "Images" && (focusPart.startsWith("image:") || focusPart.startsWith("caption:") || focusPart.startsWith("imagetext:"))));
+        (title === "Images" && (focusPart.startsWith("image:") || focusPart.startsWith("caption:") || focusPart.startsWith("imagetext:"))) ||
+        (title === "Videos" && focusPart.startsWith("video:")));
     const open = openBlocks[blockKey] ?? (blocksExpanded || focused);
     return (
       <div
@@ -967,6 +1016,7 @@ export default function ObjectDesignPage() {
             }}
           />
           <Chip label="Image" icon={ImageIcon} onClick={() => addImageSlot(section.id)} />
+          <Chip label="Video" icon={VideoIcon} onClick={() => addVideoSlot(section.id)} />
           {!hasButton && <Chip label="Button" icon={MousePointerClick} onClick={() => { patch(section.id, { buttonLabel: "Explore", buttonHref: "/" }); openBlock("button"); }} />}
           <div className="ml-auto flex gap-2">
             <Chip
@@ -1246,6 +1296,80 @@ export default function ObjectDesignPage() {
                 </>
               )}
             </div>
+          </>
+        ) })}
+
+        {(section.videos ?? []).length > 0 && Block({ title: "Videos", icon: VideoIcon, children: (
+          <>
+            {(section.videos ?? []).map((v, i) => (
+              <div key={v.id} className="rounded-md border p-3 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Video {i + 1}</span>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVideoPicker({ sectionId: section.id, index: i })}
+                    >
+                      Replace
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => removeVideo(section.id, i)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                <Field label="Video link">
+                  <Input
+                    value={v.url}
+                    placeholder="YouTube, Vimeo, or video file link"
+                    onChange={(e) => patchVideo(section.id, i, { url: e.target.value })}
+                  />
+                </Field>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Field label="Caption (optional)">
+                    <Input
+                      value={v.caption ?? ""}
+                      onChange={(e) => patchVideo(section.id, i, { caption: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Cover image link (optional)">
+                    <Input
+                      value={v.poster ?? ""}
+                      onChange={(e) => patchVideo(section.id, i, { poster: e.target.value })}
+                    />
+                  </Field>
+                </div>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={!!v.autoplay}
+                      onChange={(e) => patchVideo(section.id, i, { autoplay: e.target.checked })}
+                    />
+                    Autoplay (muted)
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={!!v.loop}
+                      onChange={(e) => patchVideo(section.id, i, { loop: e.target.checked })}
+                    />
+                    Loop
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={v.controls !== false}
+                      onChange={(e) => patchVideo(section.id, i, { controls: e.target.checked })}
+                    />
+                    Show controls
+                  </label>
+                </div>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => addVideoSlot(section.id)}>
+              <Plus className="w-4 h-4" /> Add video
+            </Button>
           </>
         ) })}
 
@@ -1934,6 +2058,21 @@ export default function ObjectDesignPage() {
         onPick={({ url, alt }) => {
           if (picker) patchImage(picker.sectionId, picker.index, { url, alt: alt || "" });
           setPicker(null);
+        }}
+      />
+      <VideoPickerDialog
+        open={!!videoPicker}
+        onOpenChange={(v) => { if (!v) setVideoPicker(null); }}
+        onPick={({ url, poster, name }) => {
+          if (videoPicker) {
+            patchVideo(videoPicker.sectionId, videoPicker.index, {
+              url,
+              poster,
+              caption: videosOf(videoPicker.sectionId)[videoPicker.index]?.caption ?? "",
+              ...(name ? {} : {}),
+            });
+          }
+          setVideoPicker(null);
         }}
       />
     </div>

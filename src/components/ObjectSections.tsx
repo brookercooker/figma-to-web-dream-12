@@ -177,6 +177,44 @@ export interface SectionImage {
   href?: string;
 }
 
+/** A video placed in a block: an uploaded file or a YouTube / Vimeo link. */
+export interface SectionVideo {
+  id: string;
+  url: string;
+  poster?: string;
+  caption?: string;
+  autoplay?: boolean;
+  loop?: boolean;
+  muted?: boolean;
+  controls?: boolean;
+}
+
+/** Turn a YouTube / Vimeo link into an embed URL. Returns null for plain files. */
+export function videoEmbedUrl(url: string): string | null {
+  const raw = (url ?? "").trim();
+  if (!raw) return null;
+  let u: URL;
+  try { u = new URL(raw); } catch { return null; }
+  const host = u.hostname.replace(/^www\./, "").toLowerCase();
+  if (host === "youtu.be") {
+    const id = u.pathname.replace(/^\//, "").split("/")[0];
+    return id ? `https://www.youtube.com/embed/${id}` : null;
+  }
+  if (host.endsWith("youtube.com") || host === "youtube-nocookie.com") {
+    const v = u.searchParams.get("v");
+    if (v) return `https://www.youtube.com/embed/${v}`;
+    const parts = u.pathname.split("/").filter(Boolean);
+    if (parts.length >= 2 && ["shorts", "embed", "live"].includes(parts[0])) {
+      return `https://www.youtube.com/embed/${parts[1]}`;
+    }
+  }
+  if (host === "vimeo.com" || host === "player.vimeo.com") {
+    const id = u.pathname.split("/").filter(Boolean).find((p) => /^\d+$/.test(p));
+    if (id) return `https://player.vimeo.com/video/${id}`;
+  }
+  return null;
+}
+
 export interface CarouselSection {
   id: string;
   type: "carousel";
@@ -269,6 +307,8 @@ export interface FreeSection {
   captionStyle?: TextStyle;
   labelStyle?: TextStyle;
   images: SectionImage[];
+  /** videos placed under the text / images */
+  videos?: SectionVideo[];
   /** how images sit relative to the text */
   layout: "stacked" | "beside" | "behind";
   imageSide: "left" | "right";
@@ -642,6 +682,71 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
 
 }
 
+export function VideoPlayer({ video, className = "" }: { video: SectionVideo; className?: string }) {
+  const embed = videoEmbedUrl(video.url);
+  const box = `w-full overflow-hidden rounded-lg bg-muted aspect-video ${className}`;
+  if (!video.url?.trim()) {
+    return (
+      <div className={`${box} flex items-center justify-center text-xs text-muted-foreground`}>Video</div>
+    );
+  }
+  if (embed) {
+    const params = new URLSearchParams();
+    if (video.autoplay) { params.set("autoplay", "1"); params.set("muted", "1"); params.set("mute", "1"); }
+    if (video.loop) params.set("loop", "1");
+    const q = params.toString();
+    return (
+      <div className={box}>
+        <iframe
+          src={q ? `${embed}?${q}` : embed}
+          title={video.caption || "Video"}
+          className="h-full w-full"
+          loading="lazy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+    );
+  }
+  return (
+    <div className={box}>
+      <video
+        src={video.url}
+        poster={video.poster || undefined}
+        className="h-full w-full object-cover"
+        controls={video.controls !== false}
+        autoPlay={!!video.autoplay}
+        loop={!!video.loop}
+        muted={video.muted ?? !!video.autoplay}
+        playsInline
+        preload="metadata"
+      />
+    </div>
+  );
+}
+
+function FreeVideos({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
+  const videos = section.videos ?? [];
+  if (!videos.length) return null;
+  const align = alignTextOnly[section.captionAlign ?? "left"];
+  return (
+    <div className="space-y-8">
+      {videos.map((v, i) => (
+        <figure key={v.id} data-part={`video:${i}`}>
+          <VideoPlayer video={v} />
+          {v.caption ? (
+            <figcaption
+              className={`mt-3 leading-relaxed ${align} ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+              style={textInlineStyle(section.captionStyle)}
+              {...richText(v.caption)}
+            />
+          ) : null}
+        </figure>
+      ))}
+    </div>
+  );
+}
+
 function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
   const hasText =
     section.eyebrow || section.heading || section.body || section.buttonLabel || (section.extras ?? []).length;
@@ -713,13 +818,14 @@ function FreeView({ section }: { section: FreeSection }) {
             <FreeText section={section} onDark />
           </div>
         </div>
+        <div className="mt-8"><FreeVideos section={section} /></div>
       </section>
     );
   }
 
   if (section.layout === "beside" && hasImages) {
     return (
-      <section className="py-12">
+      <section className="py-12 space-y-8">
         <div className="grid gap-8 sm:gap-12 md:grid-cols-2 items-center">
           <div className={section.imageSide === "right" ? "md:order-2" : ""}>
             <FreeGallery section={{ ...section, columns: section.images.length > 1 ? 2 : 1 }} />
@@ -728,6 +834,7 @@ function FreeView({ section }: { section: FreeSection }) {
             <FreeText section={section} />
           </div>
         </div>
+        <FreeVideos section={section} />
       </section>
     );
   }
@@ -736,6 +843,7 @@ function FreeView({ section }: { section: FreeSection }) {
     <section className="py-12 space-y-8">
       <FreeText section={section} />
       <FreeGallery section={section} />
+      <FreeVideos section={section} />
     </section>
   );
 }
