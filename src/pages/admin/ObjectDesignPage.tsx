@@ -1348,11 +1348,7 @@ export default function ObjectDesignPage() {
         const set = (changes: Partial<TextStyle>) =>
           patch(toolbar.sectionId, { [String(toolbar.field)]: { ...style, ...changes } });
         return (
-          <div
-            className="fixed z-50 flex items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
-            style={{ top: Math.max(8, toolbar.top - 52), left: Math.max(8, toolbar.left) }}
-            onClick={(e) => e.stopPropagation()}
-          >
+          <FloatingToolbar top={anchorTop} left={toolbar.left}>
             <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
               {STYLE_FIELD_LABEL[String(toolbar.field)]}
             </span>
