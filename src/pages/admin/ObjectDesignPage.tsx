@@ -2413,6 +2413,30 @@ export default function ObjectDesignPage() {
             </div>
           )}
         </section>
+
+        {object && !preview && (
+          <aside className="hidden lg:block lg:sticky lg:top-4 lg:self-start">
+            <div className="w-[84px] rounded-lg border bg-background p-2 shadow-sm">
+              <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Add
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {ADD_ITEMS.map((item) => (
+                  <button
+                    key={item.kind}
+                    type="button"
+                    title={`Add ${item.label.toLowerCase()}`}
+                    onClick={() => addElement(item.kind)}
+                    className="flex flex-col items-center gap-1 rounded-md border border-transparent px-1 py-2 text-[10px] text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground"
+                  >
+                    <item.icon className="h-4 w-4" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
+        )}
       </main>
 
       {toolbar && (() => {
