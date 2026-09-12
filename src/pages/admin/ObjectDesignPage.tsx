@@ -456,7 +456,11 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
-  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle }) => {
+  const patchExtra = (
+    id: string,
+    index: number,
+    changes: { text?: string; style?: TextStyle; position?: "above" | "below" },
+  ) => {
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id || s.type !== "free") return s;
