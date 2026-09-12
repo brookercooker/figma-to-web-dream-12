@@ -921,16 +921,19 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
       {groups.map((group) =>
         group.length > 1 ? (
-          <div key={group[0].part} className={`flex flex-wrap items-start gap-6 ${alignRow[section.align]}`}>
-            {group.map((it) => (
-              <div
-                key={it.part}
-                className="min-w-[10rem] flex-1 basis-0"
-                style={flowWidthStyle(section.flowWidths?.[it.part])}
-              >
-                {it.node}
-              </div>
-            ))}
+          <div key={group[0].part} className={`-mx-3 flex flex-wrap items-start ${alignRow[section.align]}`}>
+            {group.map((it) => {
+              const w = section.flowWidths?.[it.part];
+              return (
+                <div
+                  key={it.part}
+                  className={`px-3 ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
+                  style={flowWidthStyle(w)}
+                >
+                  {it.node}
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div key={group[0].part} className="w-full">{group[0].node}</div>
@@ -1106,9 +1109,13 @@ export function SectionFlowList({ sections }: { sections: Section[] }) {
     <>
       {groupByFlow(sections, (s) => s.flow).map((group) =>
         group.length > 1 ? (
-          <div key={group[0].id} className="flex flex-wrap items-start gap-8">
+          <div key={group[0].id} className="-mx-4 flex flex-wrap items-start">
             {group.map((s) => (
-              <div key={s.id} className="min-w-[16rem] flex-1 basis-0" style={flowWidthStyle(s.flowWidth)}>
+              <div
+                key={s.id}
+                className={`px-4 ${s.flowWidth ? "" : "min-w-[16rem] flex-1 basis-0"}`}
+                style={flowWidthStyle(s.flowWidth)}
+              >
                 <SectionView section={s} />
               </div>
             ))}
