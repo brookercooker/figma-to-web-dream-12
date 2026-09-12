@@ -168,7 +168,7 @@ function Dropdown({
       <span className="text-muted-foreground">{label}</span>
       <select
         value={value}
-        onChange={(e) => onChange(e.target.value as T)}
+        onChange={(e) => onChange(e.target.value)}
         className="h-7 rounded-md border bg-background px-2 text-xs"
       >
         {options.map((o) => (
