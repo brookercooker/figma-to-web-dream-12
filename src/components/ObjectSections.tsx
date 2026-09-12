@@ -629,8 +629,9 @@ function FreeView({ section }: { section: FreeSection }) {
 
   return (
     <section className="py-12 space-y-8">
-      <FreeText section={section} />
+      <FreeText section={section} slot={hasImages ? "above" : "all"} />
       <FreeGallery section={section} />
+      {hasImages ? <FreeText section={section} slot="below" /> : null}
     </section>
   );
 }
