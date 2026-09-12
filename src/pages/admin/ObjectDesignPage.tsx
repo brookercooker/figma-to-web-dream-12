@@ -1815,7 +1815,7 @@ export default function ObjectDesignPage() {
             <ColorDropdown
               label="Color"
               value={style.color ?? ""}
-              fallback={(defaultColor[fieldKey] ?? (extraIdx >= 0 ? "stone" : "ink")) as TextColor}
+              fallback={(kindDefaults?.color ?? defaultColor[fieldKey] ?? (extraIdx >= 0 ? "stone" : "ink")) as TextColor}
               options={TEXT_COLORS}
               onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
             />
