@@ -861,7 +861,6 @@ export default function ObjectDesignPage() {
               value={section.eyebrowStyle}
               defaults={{ font: "sans", color: "stone", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
-              colorOnly
             />
           </>
         ) })}
