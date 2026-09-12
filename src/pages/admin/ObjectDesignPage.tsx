@@ -879,9 +879,6 @@ export default function ObjectDesignPage() {
     section, index, image, showCaption,
   }: { section: Section; index: number; image: SectionImage; showCaption?: boolean }) => (
     <div className="rounded-md border p-3 space-y-2 bg-background">
-      <p className="text-xs text-muted-foreground truncate">
-        {image.alt?.trim() || (image.url ? image.url.split("/").pop() : "No image selected")}
-      </p>
       <div className="flex items-center gap-2">
         <div className="h-12 w-16 shrink-0 overflow-hidden rounded bg-muted">
           {image.url ? (
