@@ -482,7 +482,7 @@ function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boole
     >
       {section.images.map((img, i) => (
         <figure key={i}>
-          <Pic image={img} className="w-full aspect-[4/3] rounded-lg" />
+          <Pic image={img} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
           {img.caption ? (
             <figcaption
               className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, {
