@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -1632,7 +1632,7 @@ export default function ObjectDesignPage() {
 
 
 
-        {parts.map((p) => <React.Fragment key={p}>{renderPart(p)}</React.Fragment>)}
+        {parts.map((p) => <Fragment key={p}>{renderPart(p)}</Fragment>)}
 
         {section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, onDelete: () => patch(section.id, { images: [] }), children: (
           <>
