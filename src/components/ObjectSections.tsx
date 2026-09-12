@@ -811,15 +811,15 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
       {section.eyebrow ? (
         <p
           data-part="eyebrow"
-          className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
-          style={textInlineStyle(section.eyebrowStyle)}
+          className={`uppercase tracking-[0.24em] ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: onDark ? "cream" : "stone", size: "sm" })}`}
+          style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}
           {...richText(section.eyebrow)}
         />
       ) : null}
       {section.heading ? (
         <h2
           data-part="heading"
-          className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "lg" })}`}
+          className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "xl" })}`}
           style={textInlineStyle(section.textStyle)}
           {...richText(section.heading)}
         />
