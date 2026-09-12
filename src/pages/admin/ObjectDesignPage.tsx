@@ -1325,7 +1325,7 @@ export default function ObjectDesignPage() {
                 Remove
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setToolbar(null)}>Done</Button>
-            </div>
+            </FloatingToolbar>
           );
         }
 
