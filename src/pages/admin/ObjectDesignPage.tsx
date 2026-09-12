@@ -1227,7 +1227,7 @@ export default function ObjectDesignPage() {
             <Dropdown
               label="Size"
               value={style.size ?? ""}
-              options={[{ value: "", label: "Default" }, ...TEXT_SIZES.map((s) => ({ value: s.value as string, label: s.label }))]}
+              options={[{ value: "", label: "Default" }, ...TEXT_SIZES.map((s) => ({ value: s.value as string, label: SIZE_WORD[s.value] ?? s.label }))]}
               onChange={(v) => set({ size: (v || undefined) as TextSize | undefined })}
             />
             <ColorDropdown
