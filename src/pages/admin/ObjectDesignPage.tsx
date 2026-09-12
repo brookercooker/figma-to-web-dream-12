@@ -195,6 +195,25 @@ export default function ObjectDesignPage() {
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
   // which element of the active section the user clicked on in the preview
   const [focusPart, setFocusPart] = useState("");
+  // floating font / size / color toolbar for the clicked text element
+  const [toolbar, setToolbar] = useState<
+    { sectionId: string; field: keyof FreeSection; top: number; left: number; width: number } | null
+  >(null);
+
+  useEffect(() => {
+    if (!toolbar) return;
+    const close = () => setToolbar(null);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [toolbar]);
+
 
   // Clicking an element in the preview jumps to (and focuses) its controls.
   useEffect(() => {
