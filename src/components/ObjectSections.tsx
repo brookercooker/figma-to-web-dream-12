@@ -228,9 +228,34 @@ export function videoEmbedUrl(url: string): string | null {
   return null;
 }
 
+/**
+ * How an item sits next to its neighbours.
+ * inline = shares a row with the inline items around it, each in its own column.
+ * separate = always takes a row of its own.
+ */
+export type SectionFlow = "inline" | "separate";
+
+export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
+  { value: "separate", label: "Separate" },
+  { value: "inline", label: "Inline" },
+];
+
+/** Group consecutive inline entries together; separate entries stand alone. */
+export function groupByFlow<T>(items: T[], flowOf: (item: T) => SectionFlow | undefined): T[][] {
+  const groups: T[][] = [];
+  for (const item of items) {
+    const inline = flowOf(item) === "inline";
+    const last = groups[groups.length - 1];
+    if (inline && last && last.length && flowOf(last[0]) === "inline") last.push(item);
+    else groups.push([item]);
+  }
+  return groups;
+}
+
 export interface CarouselSection {
   id: string;
   type: "carousel";
+  flow?: SectionFlow;
   heading?: string;
   textStyle?: TextStyle;
   captionStyle?: TextStyle;
@@ -240,6 +265,7 @@ export interface CarouselSection {
 export interface ImageRowSection {
   id: string;
   type: "imageRow";
+  flow?: SectionFlow;
   heading?: string;
   textStyle?: TextStyle;
   columns: 2 | 3 | 4;
@@ -249,6 +275,7 @@ export interface ImageRowSection {
 export interface CaptionedImagesSection {
   id: string;
   type: "captionedImages";
+  flow?: SectionFlow;
   heading?: string;
   textStyle?: TextStyle;
   captionStyle?: TextStyle;
@@ -259,6 +286,7 @@ export interface CaptionedImagesSection {
 export interface OverlaySection {
   id: string;
   type: "overlay";
+  flow?: SectionFlow;
   image: SectionImage;
   eyebrow?: string;
   heading: string;
@@ -276,6 +304,7 @@ export interface OverlaySection {
 export interface SplitSection {
   id: string;
   type: "split";
+  flow?: SectionFlow;
   image: SectionImage;
   imageSide: "left" | "right";
   textStyle?: TextStyle;
@@ -292,6 +321,7 @@ export interface SplitSection {
 export interface ButtonSection {
   id: string;
   type: "button";
+  flow?: SectionFlow;
   label: string;
   href: string;
   align: SectionAlign;
@@ -319,6 +349,9 @@ export interface FreeDivider {
 export interface FreeSection {
   id: string;
   type: "free";
+  flow?: SectionFlow;
+  /** per-element flow, keyed by part (eyebrow, heading, body, text:i, divider:i, button) */
+  flows?: Record<string, SectionFlow>;
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
   eyebrow?: string;
@@ -807,58 +840,73 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
     (section.extras ?? []).length || (section.dividers ?? []).length;
   if (!hasText) return null;
   const base: TextColor = onDark ? "cream" : "ink";
+  const flowOf = (part: string) => section.flows?.[part];
+  const items: { part: string; node: React.ReactNode }[] = [];
+
+  if (section.eyebrow) items.push({ part: "eyebrow", node: (
+    <p
+      data-part="eyebrow"
+      className={`uppercase tracking-[0.24em] ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: onDark ? "cream" : "stone", size: "sm" })}`}
+      style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}
+      {...richText(section.eyebrow)}
+    />
+  ) });
+  if (section.heading) items.push({ part: "heading", node: (
+    <h2
+      data-part="heading"
+      className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "xl" })}`}
+      style={textInlineStyle(section.textStyle)}
+      {...richText(section.heading)}
+    />
+  ) });
+  if (section.body) items.push({ part: "body", node: (
+    <p
+      data-part="body"
+      className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}
+      style={textInlineStyle(section.bodyStyle)}
+      {...richText(section.body)}
+    />
+  ) });
+  (section.extras ?? []).forEach((t, i) => items.push({ part: `text:${i}`, node: (
+    <p
+      data-part={`text:${i}`}
+      className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
+      style={textInlineStyle(t.style)}
+      {...richText(t.text)}
+    />
+  ) }));
+  (section.dividers ?? []).forEach((d, i) => items.push({ part: `divider:${i}`, node: (
+    <div data-part={`divider:${i}`} className="w-full flex flex-col">
+      <DividerBar divider={d} align={section.align} onDark={onDark} />
+    </div>
+  ) }));
+  if (section.buttonLabel) items.push({ part: "button", node: (
+    <div data-part="button" className="mt-2">
+      <SectionButton
+        label={section.buttonLabel}
+        href={section.buttonHref || "#"}
+        variant={section.buttonVariant ?? (onDark ? "outline" : "solid")}
+        style={section.labelStyle}
+        bg={section.buttonBg}
+      />
+    </div>
+  ) });
+
+  const groups = groupByFlow(items, (it) => flowOf(it.part));
+
   return (
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
-      {section.eyebrow ? (
-        <p
-          data-part="eyebrow"
-          className={`uppercase tracking-[0.24em] ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: onDark ? "cream" : "stone", size: "sm" })}`}
-          style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}
-          {...richText(section.eyebrow)}
-        />
-      ) : null}
-      {section.heading ? (
-        <h2
-          data-part="heading"
-          className={`max-w-2xl ${headingClasses(section.textStyle, { color: base, size: "xl" })}`}
-          style={textInlineStyle(section.textStyle)}
-          {...richText(section.heading)}
-        />
-      ) : null}
-      {section.body ? (
-        <p
-          data-part="body"
-          className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: onDark ? "cream" : "stone", size: "md" })}`}
-          style={textInlineStyle(section.bodyStyle)}
-          {...richText(section.body)}
-        />
-      ) : null}
-      {(section.extras ?? []).map((t, i) => (
-        <p
-          key={t.id}
-          data-part={`text:${i}`}
-          className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
-          style={textInlineStyle(t.style)}
-          {...richText(t.text)}
-        />
-      ))}
-      {(section.dividers ?? []).map((d, i) => (
-        <div key={d.id} data-part={`divider:${i}`} className="w-full flex flex-col">
-          <DividerBar divider={d} align={section.align} onDark={onDark} />
-        </div>
-      ))}
-      {section.buttonLabel ? (
-        <div data-part="button" className="mt-2">
-          <SectionButton
-            label={section.buttonLabel}
-            href={section.buttonHref || "#"}
-            variant={section.buttonVariant ?? (onDark ? "outline" : "solid")}
-            style={section.labelStyle}
-            bg={section.buttonBg}
-          />
-        </div>
-      ) : null}
-
+      {groups.map((group) =>
+        group.length > 1 ? (
+          <div key={group[0].part} className={`flex flex-wrap items-start gap-6 ${alignRow[section.align]}`}>
+            {group.map((it) => (
+              <div key={it.part} className="min-w-[10rem] flex-1 basis-0">{it.node}</div>
+            ))}
+          </div>
+        ) : (
+          <div key={group[0].part} className="w-full">{group[0].node}</div>
+        )
+      )}
     </div>
   );
 }
@@ -1023,13 +1071,32 @@ export function SectionView({ section }: { section: Section }) {
   }
 }
 
+/** Lays sections out in rows: inline neighbours share a row, separate ones stand alone. */
+export function SectionFlowList({ sections }: { sections: Section[] }) {
+  return (
+    <>
+      {groupByFlow(sections, (s) => s.flow).map((group) =>
+        group.length > 1 ? (
+          <div key={group[0].id} className="flex flex-wrap items-start gap-8">
+            {group.map((s) => (
+              <div key={s.id} className="min-w-[16rem] flex-1 basis-0">
+                <SectionView section={s} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <SectionView key={group[0].id} section={group[0]} />
+        )
+      )}
+    </>
+  );
+}
+
 export default function ObjectSections({ sections }: { sections: Section[] }) {
   if (!sections.length) return null;
   return (
     <div className="mx-auto max-w-[1400px] px-4 sm:px-8">
-      {sections.map((s) => (
-        <SectionView key={s.id} section={s} />
-      ))}
+      <SectionFlowList sections={sections} />
     </div>
   );
 }

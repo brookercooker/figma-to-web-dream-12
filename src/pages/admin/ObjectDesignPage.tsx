@@ -20,8 +20,8 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections, withEyebrowDefaults,
-  type FreeDivider, type FreeSection, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
+  BODY_PX, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, newSectionId, parseSections, withEyebrowDefaults,
+  type FreeDivider, type FreeSection, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
 
@@ -994,13 +994,30 @@ export default function ObjectDesignPage() {
     </Button>
   );
 
+  /** Inline / separate control for one element inside a block. */
+  const flowField = (section: FreeSection, part: string) => (
+    <Field label="Placement">
+      <div>
+        <Choice
+          value={(section.flows?.[part] ?? "separate") as SectionFlow}
+          options={[
+            { value: "separate" as SectionFlow, label: "Separate", icon: Rows2 },
+            { value: "inline" as SectionFlow, label: "Inline", icon: Columns2 },
+          ]}
+          onChange={(v) => patch(section.id, { flows: { ...(section.flows ?? {}), [part]: v } })}
+        />
+      </div>
+    </Field>
+  );
+
   const Block = ({
     title,
     icon: Icon,
     part,
     key,
+    flowSection,
     children,
-  }: { title: string; icon: LucideIcon; part?: string; key?: string; children: React.ReactNode }) => {
+  }: { title: string; icon: LucideIcon; part?: string; key?: string; flowSection?: FreeSection; children: React.ReactNode }) => {
     const blockKey = key ?? part ?? title;
     const focused =
       !!focusPart &&
@@ -1025,7 +1042,12 @@ export default function ObjectDesignPage() {
             className={`ml-auto h-4 w-4 text-foreground/70 transition-transform ${open ? "" : "-rotate-90"}`}
           />
         </button>
-        {open ? <div className="space-y-3 p-3">{children}</div> : null}
+        {open ? (
+          <div className="space-y-3 p-3">
+            {children}
+            {flowSection && part ? flowField(flowSection, part) : null}
+          </div>
+        ) : null}
       </div>
     );
   };
@@ -1102,7 +1124,7 @@ export default function ObjectDesignPage() {
         ) })}
 
 
-        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", children: (
+        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, children: (
           <>
 
 
@@ -1125,7 +1147,7 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", children: (
+        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, children: (
           <>
 
 
@@ -1151,7 +1173,7 @@ export default function ObjectDesignPage() {
 
 
 
-        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", children: (
+        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, children: (
           <>
 
 
@@ -1179,6 +1201,7 @@ export default function ObjectDesignPage() {
             title: "Text",
             icon: AlignLeft,
             part: `text:${i}`,
+            flowSection: section,
             key: t.id,
             children: (
               <>
@@ -1212,6 +1235,7 @@ export default function ObjectDesignPage() {
             title: "Divider",
             icon: Minus,
             part: `divider:${i}`,
+            flowSection: section,
             key: d.id,
             children: (
               <>
@@ -1474,7 +1498,7 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", children: (
+        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", flowSection: section, children: (
           <>
 
             <div className="grid gap-3 sm:grid-cols-2">
@@ -1856,7 +1880,7 @@ export default function ObjectDesignPage() {
               </div>
               <div className="p-4">
                 {sections.length ? (
-                  sections.map((s) => <SectionView key={s.id} section={s} />)
+                  <SectionFlowList sections={sections} />
                 ) : (
                   <p className="py-16 text-center text-sm text-muted-foreground">
                     Nothing here yet. Switch to Edit and add a section.
@@ -1887,7 +1911,17 @@ export default function ObjectDesignPage() {
                         {i + 1}
                       </span>
                       <span className="text-sm font-bold uppercase tracking-[0.14em] text-foreground">{SECTION_LABEL[s.type]}</span>
-                      <div className="ml-auto flex items-center gap-1">
+                      <div className="ml-auto flex items-center gap-2">
+                        <IconSelect
+                          label="Placement"
+                          value={(s.flow ?? "separate") as SectionFlow}
+                          options={[
+                            { value: "separate" as SectionFlow, label: "Separate", icon: Rows2 },
+                            { value: "inline" as SectionFlow, label: "Inline", icon: Columns2 },
+                          ]}
+                          onChange={(v) => patch(s.id, { flow: v } as Partial<Section>)}
+                        />
+
 
                         <Button variant="ghost" size="sm" onClick={() => setActiveId(active ? "" : s.id)}>
                           {active ? "Done" : "Edit"}
