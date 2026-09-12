@@ -850,6 +850,20 @@ const dividerSelf: Record<SectionAlign, string> = {
   right: "self-end",
 };
 
+/** Sort rendered parts by an explicit order list; unlisted parts keep their default spot. */
+export function orderParts<T extends { part: string }>(items: T[], order?: string[]): T[] {
+  if (!order?.length) return items;
+  const rank = new Map(order.map((p, i) => [p, i]));
+  return items
+    .map((it, i) => ({ it, i }))
+    .sort((a, b) => {
+      const ra = rank.has(a.it.part) ? (rank.get(a.it.part) as number) : order.length + a.i;
+      const rb = rank.has(b.it.part) ? (rank.get(b.it.part) as number) : order.length + b.i;
+      return ra - rb || a.i - b.i;
+    })
+    .map((x) => x.it);
+}
+
 export function DividerBar({
   divider, align, onDark,
 }: { divider: FreeDivider; align: SectionAlign; onDark?: boolean }) {
