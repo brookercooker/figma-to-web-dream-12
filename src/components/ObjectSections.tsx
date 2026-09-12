@@ -202,6 +202,8 @@ export interface FreeSection {
   imageHeight?: ImageHeight;
   /** horizontal position of images when they don't fill the width */
   imageAlign?: SectionAlign;
+  /** horizontal alignment of image captions */
+  captionAlign?: SectionAlign;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
