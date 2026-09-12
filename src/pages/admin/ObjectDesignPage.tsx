@@ -291,7 +291,7 @@ export default function ObjectDesignPage() {
       case "overlay":
         return (
           <div className="space-y-3">
-            <ImageEditor section={section} index={-1} image={section.image} />
+            {ImageEditor({ section, index: -1, image: section.image })}
             <Field label="Eyebrow (optional)">
               <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
             </Field>
