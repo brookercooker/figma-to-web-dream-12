@@ -343,7 +343,7 @@ export default function ObjectDesignPage() {
       case "split":
         return (
           <div className="space-y-3">
-            <ImageEditor section={section} index={-1} image={section.image} />
+            {ImageEditor({ section, index: -1, image: section.image })}
             <Field label="Image side">
               <div>
                 <Choice
