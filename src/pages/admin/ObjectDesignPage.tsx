@@ -1091,6 +1091,14 @@ export default function ObjectDesignPage() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  title="Duplicate text"
+                  onClick={() => duplicateImageText(section.id, index, ti)}
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => removeImageText(section.id, index, ti)}
                 >
                   <Trash2 className="w-4 h-4" />
