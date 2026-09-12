@@ -618,14 +618,15 @@ function FreeFigureBody({
       ) : null}
       {texts.map((t, ti) => {
         const d = IMAGE_TEXT_DEFAULTS[t.kind];
+        const ts = t.kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style;
         const fallback = { color: onDark ? ("cream" as TextColor) : d.color, size: d.size };
-        const cls = d.heading ? headingClasses(t.style, fallback) : bodyClasses(t.style, fallback);
+        const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
         return (
           <p
             key={t.id}
             data-part={`imagetext:${index}:${ti}`}
             className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
-            style={textInlineStyle(t.style)}
+            style={textInlineStyle(ts)}
             {...richText(t.text)}
           />
         );
