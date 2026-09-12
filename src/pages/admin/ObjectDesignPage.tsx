@@ -1308,7 +1308,7 @@ export default function ObjectDesignPage() {
         <div
           draggable={canDrag}
           onDragStart={canDrag ? () => setDragPart({ sectionId: flowSection!.id, part: part! }) : undefined}
-          onDragEnd={canDrag ? () => setDragPart(null) : undefined}
+          onDragEnd={canDrag ? () => { setDragPart(null); setDropAt(null); } : undefined}
           className="flex items-center gap-1 rounded-t-lg border-b-2 border-foreground/15 bg-muted pr-2 transition-colors hover:bg-muted/80"
         >
           {canDrag ? (
