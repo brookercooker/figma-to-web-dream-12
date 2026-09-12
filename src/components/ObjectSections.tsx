@@ -1071,11 +1071,13 @@ function FreeView({ section }: { section: FreeSection }) {
     );
   }
 
+  const media: { part: string; node: React.ReactNode }[] = [];
+  if (hasImages) media.push({ part: "images", node: <div data-part="images" className="w-full"><FreeGallery section={section} /></div> });
+  if ((section.videos ?? []).length) media.push({ part: "videos", node: <div data-part="videos" className="w-full"><FreeVideos section={section} /></div> });
+
   return (
     <section className="py-12 space-y-8">
-      <FreeText section={section} />
-      <FreeGallery section={section} />
-      <FreeVideos section={section} />
+      <FreeText section={section} media={media} />
     </section>
   );
 }
