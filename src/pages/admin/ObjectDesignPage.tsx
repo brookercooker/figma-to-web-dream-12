@@ -1245,16 +1245,12 @@ export default function ObjectDesignPage() {
       {toolbar && (() => {
         const sec = sections.find((s) => s.id === toolbar.sectionId) as FreeSection | undefined;
         if (!sec) return null;
-        const pos = { top: Math.max(8, toolbar.top - 52), left: Math.max(8, toolbar.left) };
+        const anchorTop = toolbar.top - 52;
 
         if (toolbar.imageIndex !== undefined) {
           const idx = toolbar.imageIndex;
           return (
-            <div
-              className="fixed z-50 flex items-center gap-3 rounded-lg border bg-background px-3 py-2 shadow-lg"
-              style={pos}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <FloatingToolbar top={anchorTop} left={toolbar.left}>
               <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Image</span>
               <Button variant="outline" size="sm" onClick={() => setPicker({ sectionId: sec.id, index: idx })}>
                 Replace
