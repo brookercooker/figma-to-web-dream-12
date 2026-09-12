@@ -2405,7 +2405,13 @@ export default function ObjectDesignPage() {
           labelStyle: "sans",
         };
         const kindDefaults = imgTextItem ? IMAGE_TEXT_DEFAULTS[imgTextItem.kind] : null;
-        const isEyebrow = imgTextItem ? imgTextItem.kind === "eyebrow" : fieldKey === "eyebrowStyle";
+        const extraItem = extraIdx >= 0 ? (sec.extras ?? [])[extraIdx] : undefined;
+        const extraKind = extraItem?.kind ?? "text";
+        const isEyebrow = imgTextItem
+          ? imgTextItem.kind === "eyebrow"
+          : extraItem
+          ? extraKind === "eyebrow"
+          : fieldKey === "eyebrowStyle";
         const es = isEyebrow ? withEyebrowDefaults(style) : style;
         const set = (changes: Partial<TextStyle>) =>
           imgText
@@ -2418,7 +2424,9 @@ export default function ObjectDesignPage() {
             <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
               {imgTextItem
                 ? (IMAGE_TEXT_KINDS.find((k) => k.value === imgTextItem.kind)?.label ?? "Text")
-                : extraIdx >= 0 ? "Text" : STYLE_FIELD_LABEL[fieldKey]}
+                : extraItem
+                ? (FREE_TEXT_KINDS.find((k) => k.value === extraKind)?.label ?? "Text")
+                : STYLE_FIELD_LABEL[fieldKey]}
             </span>
             {imgText && imgTextItem && (
               <Dropdown
