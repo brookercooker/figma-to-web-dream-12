@@ -1530,9 +1530,6 @@ export default function ObjectDesignPage() {
                     >
                       Replace
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => removeVideo(section.id, i)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
                 <Field label="Video link">
