@@ -539,6 +539,12 @@ export default function ObjectDesignPage() {
                 </div>
               </Field>
             </div>
+            <TextStyleFields
+              label="Label style"
+              value={section.labelStyle}
+              defaults={{ font: "sans", color: section.variant === "solid" ? "cream" : "ink", size: "sm" }}
+              onChange={(v) => patch(section.id, { labelStyle: v })}
+            />
           </div>
         );
     }
