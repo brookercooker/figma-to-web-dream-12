@@ -389,6 +389,8 @@ export interface FreeSection {
   flowWidths?: Record<string, number>;
   /** per-element alignment within its inline column, keyed by the same parts */
   flowAligns?: Record<string, SectionAlign>;
+  /** vertical alignment of items sharing a row */
+  rowVAlign?: RowVAlign;
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
   /** explicit stacking order of text parts (eyebrow, heading, body, text:i, divider:i, button) */
