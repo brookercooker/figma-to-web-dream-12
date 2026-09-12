@@ -934,6 +934,46 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  const duplicateVideo = (id: string, index: number) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const videos = s.videos ?? [];
+        const src = videos[index];
+        if (!src) return s;
+        return { ...s, videos: insertCopy(videos, index, { ...src, id: newSectionId() }) } as Section;
+      }),
+    );
+    setDirty(true);
+  };
+
+  /** Deep copy a whole block, giving every nested item a fresh id. */
+  const duplicateSection = (id: string) => {
+    let copyId = "";
+    setSections((prev) => {
+      const i = prev.findIndex((s) => s.id === id);
+      if (i < 0) return prev;
+      const src = prev[i];
+      const clone = JSON.parse(JSON.stringify(src)) as Section;
+      clone.id = newSectionId();
+      copyId = clone.id;
+      if ("images" in clone && Array.isArray((clone as any).images)) {
+        (clone as any).images = ((clone as any).images as SectionImage[]).map((img) => ({
+          ...img,
+          texts: (img.texts ?? []).map((t) => ({ ...t, id: newSectionId() })),
+        }));
+      }
+      if (clone.type === "free") {
+        clone.extras = (clone.extras ?? []).map((t) => ({ ...t, id: newSectionId() }));
+        clone.dividers = (clone.dividers ?? []).map((d) => ({ ...d, id: newSectionId() }));
+        clone.videos = (clone.videos ?? []).map((v) => ({ ...v, id: newSectionId() }));
+      }
+      return insertCopy(prev, i, clone);
+    });
+    setDirty(true);
+    if (copyId) setActiveId(copyId);
+  };
+
   const save = async () => {
     if (!object) return;
     setSaving(true);
