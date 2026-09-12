@@ -558,7 +558,7 @@ export default function ObjectDesignPage() {
 
                     {active && (
                       <div className="border-t bg-muted/20 p-4">
-                        <Inspector section={s} />
+                        {Inspector({ section: s })}
                       </div>
                     )}
                   </div>
