@@ -2026,6 +2026,20 @@ export default function ObjectDesignPage() {
               set={set}
               underlineDefault={fieldKey === "labelStyle" && (sec.buttonVariant ?? "solid") === "link"}
             />
+            {imgText && imgTextItem && (
+              <Dropdown
+                label="Align"
+                value={imgTextItem.align ?? sec.images?.[imgText.img]?.captionAlign ?? sec.captionAlign ?? "left"}
+                options={[
+                  { value: "left", label: "Left", icon: AlignLeft },
+                  { value: "center", label: "Center", icon: AlignCenter },
+                  { value: "right", label: "Right", icon: AlignRight },
+                ]}
+                onChange={(v) =>
+                  patchImageText(toolbar.sectionId, imgText.img, imgText.t, { align: v as FreeSection["captionAlign"] })
+                }
+              />
+            )}
             {toolbar.field === "captionStyle" && (
               <Dropdown
                 label="Align"
