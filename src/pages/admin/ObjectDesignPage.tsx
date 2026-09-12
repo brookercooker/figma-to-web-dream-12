@@ -1653,9 +1653,15 @@ export default function ObjectDesignPage() {
             />
             <Dropdown
               label="Size"
-              value={style.size ?? ""}
+              value={style.sizePx ? "" : (style.size ?? "")}
               options={[{ value: "", label: "Default" }, ...TEXT_SIZES.map((s) => ({ value: s.value as string, label: SIZE_WORD[s.value] ?? s.label }))]}
-              onChange={(v) => set({ size: (v || undefined) as TextSize | undefined })}
+              onChange={(v) => set({ size: (v || undefined) as TextSize | undefined, sizePx: undefined })}
+            />
+            <SizeControl
+              style={style}
+              defaultSize={fieldKey === "textStyle" ? "lg" : fieldKey === "bodyStyle" || extraIdx >= 0 ? "md" : "sm"}
+              heading={fieldKey === "textStyle"}
+              set={set}
             />
             <ColorDropdown
               label="Color"
