@@ -424,7 +424,8 @@ export default function ObjectDesignPage() {
         )}
 
         {hasBody && (
-          <div className="space-y-2">
+          <div data-inspector-part="body" className="space-y-2 scroll-mt-24">
+
             <div className="flex items-end gap-2">
               <div className="flex-1">
                 <Field label="Text">
