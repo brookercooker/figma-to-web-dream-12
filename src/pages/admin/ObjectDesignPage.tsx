@@ -1516,8 +1516,7 @@ export default function ObjectDesignPage() {
         const i = Number(p.slice(8));
         const d = (section.dividers ?? [])[i];
         if (!d) return null;
-        return 
-          Block({
+        return Block({
             title: "Divider",
             icon: Minus,
             part: `divider:${i}`,
