@@ -13,6 +13,18 @@ export interface TextStyle {
   font?: TextFont;
   color?: TextColor;
   size?: TextSize;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+}
+
+/** Bold / italic / underline classes shared by every text element. */
+export function emphasisClasses(style: TextStyle | undefined) {
+  return [
+    style?.bold ? "font-semibold" : "",
+    style?.italic ? "italic" : "",
+    style?.underline ? "underline underline-offset-4" : "",
+  ].filter(Boolean).join(" ");
 }
 
 export const TEXT_FONTS: { value: TextFont; label: string }[] = [
@@ -61,6 +73,7 @@ export function headingClasses(style: TextStyle | undefined, fallback: { color: 
     fontClass[style?.font ?? "serif"],
     colorClass[style?.color ?? fallback.color],
     headingSizeClass[style?.size ?? fallback.size],
+    emphasisClasses(style),
   ].join(" ");
 }
 
@@ -69,6 +82,7 @@ export function bodyClasses(style: TextStyle | undefined, fallback: { color: Tex
     fontClass[style?.font ?? "sans"],
     colorClass[style?.color ?? fallback.color],
     bodySizeClass[style?.size ?? fallback.size],
+    emphasisClasses(style),
   ].join(" ");
 }
 
@@ -375,7 +389,7 @@ function SectionButton({
     variant === "outline"
       ? "border border-ink px-7 py-3 hover:bg-ink hover:text-cream"
       : variant === "link"
-        ? "underline underline-offset-4 hover:text-brass"
+        ? `${style?.underline === false ? "" : "underline underline-offset-4"} hover:text-brass`
         : `${bgClass[fill]} px-7 py-3`;
   const text = bodyClasses(style, { color: variant === "solid" ? bgTextColor[fill] : "ink", size: "sm" });
   return (
