@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -1217,6 +1217,27 @@ export default function ObjectDesignPage() {
     );
   };
 
+  /** Parts of a free section that can be reordered, in their current order. */
+  const orderablePartsOf = (s: FreeSection) => {
+    const base: string[] = [];
+    if (s.eyebrow !== undefined) base.push("eyebrow");
+    if (s.heading !== undefined) base.push("heading");
+    if (s.body !== undefined) base.push("body");
+    (s.extras ?? []).forEach((_, i) => base.push(`text:${i}`));
+    if (s.buttonLabel !== undefined) base.push("button");
+    (s.dividers ?? []).forEach((_, i) => base.push(`divider:${i}`));
+    return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
+  };
+
+  const movePartIn = (s: FreeSection, from: string, to: string) => {
+    if (from === to) return;
+    const parts = orderablePartsOf(s);
+    const next = parts.filter((p) => p !== from);
+    const at = next.indexOf(to);
+    next.splice(at === -1 ? next.length : at, 0, from);
+    patch(s.id, { order: next });
+  };
+
   const Block = ({
     title,
     icon: Icon,
@@ -1234,17 +1255,33 @@ export default function ObjectDesignPage() {
         (title === "Images" && (focusPart.startsWith("image:") || focusPart.startsWith("caption:") || focusPart.startsWith("imagetext:"))) ||
         (title === "Videos" && focusPart.startsWith("video:")));
     const open = openBlocks[blockKey] ?? (blocksExpanded || focused);
+    const canDrag = !!(flowSection && part && orderablePartsOf(flowSection).includes(part));
+    const dragging = canDrag && dragPart?.sectionId === flowSection!.id && dragPart.part === part;
     return (
       <div
         key={key}
         data-inspector-part={part}
-        className="scroll-mt-24 rounded-lg border bg-background shadow-sm"
+        onDragOver={canDrag ? (e) => { if (dragPart?.sectionId === flowSection!.id) e.preventDefault(); } : undefined}
+        onDrop={canDrag ? (e) => {
+          e.preventDefault();
+          if (dragPart?.sectionId === flowSection!.id) movePartIn(flowSection!, dragPart.part, part!);
+          setDragPart(null);
+        } : undefined}
+        className={`scroll-mt-24 rounded-lg border bg-background shadow-sm ${dragging ? "border-primary opacity-70" : ""}`}
       >
-        <div className="flex items-center gap-1 rounded-t-lg border-b-2 border-foreground/15 bg-muted pr-2 transition-colors hover:bg-muted/80">
+        <div
+          draggable={canDrag}
+          onDragStart={canDrag ? () => setDragPart({ sectionId: flowSection!.id, part: part! }) : undefined}
+          onDragEnd={canDrag ? () => setDragPart(null) : undefined}
+          className="flex items-center gap-1 rounded-t-lg border-b-2 border-foreground/15 bg-muted pr-2 transition-colors hover:bg-muted/80"
+        >
+          {canDrag ? (
+            <GripVertical className="ml-2 h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />
+          ) : null}
           <button
             type="button"
             onClick={() => setOpenBlocks((o) => ({ ...o, [blockKey]: !open }))}
-            className="flex flex-1 items-center gap-2 px-3 py-2.5 text-left"
+            className={`flex flex-1 items-center gap-2 py-2.5 pr-3 text-left ${canDrag ? "pl-1" : "pl-3"}`}
           >
             <Icon className="h-4 w-4 text-foreground" />
             <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">{title}</span>
@@ -1293,68 +1330,208 @@ export default function ObjectDesignPage() {
     const hasBody = section.body !== undefined;
     const hasButton = section.buttonLabel !== undefined;
 
-    const basePartsOf = (s: FreeSection) => {
-      const base: string[] = [];
-      if (s.eyebrow !== undefined) base.push("eyebrow");
-      if (s.heading !== undefined) base.push("heading");
-      if (s.body !== undefined) base.push("body");
-      (s.extras ?? []).forEach((_, i) => base.push(`text:${i}`));
-      if (s.buttonLabel !== undefined) base.push("button");
-      (s.dividers ?? []).forEach((_, i) => base.push(`divider:${i}`));
-      return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
-    };
+    const parts = orderablePartsOf(section);
 
-    const partLabel = (p: string) => {
-      if (p === "eyebrow") return "Eyebrow";
-      if (p === "heading") return "Title";
-      if (p === "body") return "Text";
-      if (p === "button") return "Button";
+    const renderPart = (p: string): React.ReactNode => {
+      if (p === "eyebrow") return hasEyebrow ? Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, onDelete: () => patch(section.id, { eyebrow: undefined }), onDuplicate: () => duplicateTextInto(section, section.eyebrow, withEyebrowDefaults(section.eyebrowStyle)), children: (
+          <>
+
+
+            <Field label="Eyebrow">
+              <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
+            </Field>
+            <TextStyleFields
+              label="Eyebrow style"
+              value={withEyebrowDefaults(section.eyebrowStyle)}
+              defaults={{ font: "sans", color: "stone", size: "sm" }}
+              onChange={(v) => patch(section.id, { eyebrowStyle: v })}
+            />
+          </>
+        ) }) : null;
+      if (p === "heading") return hasTitle ? Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, onDelete: () => patch(section.id, { heading: undefined }), onDuplicate: () => duplicateTextInto(section, section.heading, section.textStyle), children: (
+          <>
+
+
+            <Field label="Title">
+              <Input value={section.heading ?? ""} onChange={(e) => patch(section.id, { heading: e.target.value })} />
+            </Field>
+            <TextStyleFields
+              label="Title style"
+              value={section.textStyle}
+              defaults={{ font: "serif", color: "ink", size: "xl" }}
+              onChange={(v) => patch(section.id, { textStyle: v })}
+            />
+          </>
+        ) }) : null;
+      if (p === "body") return hasBody ? Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, onDelete: () => patch(section.id, { body: undefined }), onDuplicate: () => duplicateTextInto(section, section.body, section.bodyStyle), children: (
+          <>
+
+
+            <Field label="Text">
+              <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
+            </Field>
+            <TextStyleFields
+              label="Text style"
+              value={section.bodyStyle}
+              defaults={{ font: "sans", color: "stone", size: "md" }}
+              onChange={(v) => patch(section.id, { bodyStyle: v })}
+            />
+          </>
+        ) }) : null;
+      if (p === "button") return hasButton ? Block({ title: "Button", icon: MousePointerClick, part: "button", flowSection: section, onDelete: () => patch(section.id, { buttonLabel: undefined }), children: (
+          <>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Button label">
+                <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
+              </Field>
+              <Field label="Button link">
+                <Input value={section.buttonHref ?? ""} placeholder="/collections" onChange={(e) => patch(section.id, { buttonHref: e.target.value })} />
+              </Field>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <Field label="Button style">
+                <div>
+                  <Choice
+                    value={section.buttonVariant ?? "solid"}
+                    options={[
+                      { value: "solid" as const, label: "Solid" },
+                      { value: "outline" as const, label: "Outline" },
+                      { value: "link" as const, label: "Text link" },
+                    ]}
+                    onChange={(v) => patch(section.id, { buttonVariant: v })}
+                  />
+                </div>
+              </Field>
+            </div>
+            <TextStyleFields
+              label="Button label style"
+              value={section.labelStyle}
+              defaults={{ font: "sans", color: (section.buttonVariant ?? "solid") === "solid" ? "cream" : "ink", size: "sm" }}
+              onChange={(v) => patch(section.id, { labelStyle: v })}
+            />
+            {(section.buttonVariant ?? "solid") === "solid" && (
+              <div className="rounded-md border p-3 space-y-2">
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Button background</p>
+                <ColorSwatches
+                  value={section.buttonBg ?? "ink"}
+                  onChange={(v) => patch(section.id, { buttonBg: v })}
+                />
+              </div>
+            )}
+          </>
+        ) }) : null;
       if (p.startsWith("text:")) {
-        const k = (section.extras ?? [])[Number(p.slice(5))]?.kind ?? "text";
-        const l = FREE_TEXT_KINDS.find((x) => x.value === k)?.label ?? "Text";
-        return k === "text" ? `Paragraph ${Number(p.slice(5)) + 1}` : l;
+        const i = Number(p.slice(5));
+        const t = (section.extras ?? [])[i];
+        if (!t) return null;
+        
+          const kind = t.kind ?? "text";
+          const kindLabel = FREE_TEXT_KINDS.find((k) => k.value === kind)?.label ?? "Text";
+          const kindIcon = kind === "title" ? Heading : kind === "eyebrow" ? Tag : AlignLeft;
+          const kindDefaults =
+            kind === "title"
+              ? { font: "serif" as const, color: "ink" as const, size: "xl" as const }
+              : kind === "eyebrow"
+              ? { font: "sans" as const, color: "stone" as const, size: "sm" as const }
+              : { font: "sans" as const, color: "stone" as const, size: "md" as const };
+          return Block({
+            title: kindLabel,
+            icon: kindIcon,
+            part: `text:${i}`,
+            flowSection: section,
+            key: t.id,
+            onDelete: () => removeExtra(section.id, i),
+            onDuplicate: () => duplicateExtra(section.id, i),
+            children: (
+              <>
+                <Field label="Type">
+                  <select
+                    className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    value={kind}
+                    onChange={(e) => patchExtra(section.id, i, { kind: e.target.value as FreeTextKind })}
+                  >
+                    {FREE_TEXT_KINDS.map((k) => (
+                      <option key={k.value} value={k.value}>{k.label}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label={kindLabel}>
+                  <Textarea
+                    rows={kind === "text" ? 4 : 2}
+                    value={t.text}
+                    onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                  />
+                </Field>
+                <TextStyleFields
+                  label={`${kindLabel} style`}
+                  value={kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style}
+                  defaults={kindDefaults}
+                  onChange={(v) => patchExtra(section.id, i, { style: v })}
+                />
+              </>
+            ),
+          });
+        
       }
-      if (p.startsWith("divider:")) return `Divider ${Number(p.slice(8)) + 1}`;
-      return p;
+      if (p.startsWith("divider:")) {
+        const i = Number(p.slice(8));
+        const d = (section.dividers ?? [])[i];
+        if (!d) return null;
+        return 
+          Block({
+            title: "Divider",
+            icon: Minus,
+            part: `divider:${i}`,
+            flowSection: section,
+            key: d.id,
+            onDelete: () => removeDivider(section.id, i),
+            onDuplicate: () => duplicateDivider(section.id, i),
+            children: (
+              <>
+                <div className="flex flex-wrap items-center gap-3">
+                  <ColorDropdown
+                    label="Color"
+                    value={d.color ?? ""}
+                    fallback="stone"
+                    options={TEXT_COLORS}
+                    onChange={(v) => patchDivider(section.id, i, { color: v as TextColor })}
+                  />
+                </div>
+                <Field label="Width">
+                  <div>
+                    <Choice
+                      value={d.width ?? "full"}
+                      options={[
+                        { value: "full" as const, label: "Full width", icon: Minus },
+                        { value: "short" as const, label: "Short", icon: Minus },
+                      ]}
+                      onChange={(v) => patchDivider(section.id, i, { width: v })}
+                    />
+                  </div>
+                </Field>
+                <Field label="Thickness (px)">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={d.thickness ?? 1}
+                    onChange={(e) =>
+                      patchDivider(section.id, i, { thickness: Math.min(12, Math.max(1, Number(e.target.value) || 1)) })
+                    }
+                  />
+                </Field>
+                <p className="text-xs text-muted-foreground">
+                  Drag this block's header to move the bar between items.
+                </p>
+              </>
+            ),
+          });
+      }
+      return null;
     };
 
-    const parts = basePartsOf(section);
 
-    const movePart = (from: string, to: string) => {
-      if (from === to) return;
-      const next = parts.filter((p) => p !== from);
-      const at = next.indexOf(to);
-      next.splice(at === -1 ? next.length : at, 0, from);
-      patch(section.id, { order: next });
-    };
-
-    const arrangeList = () => (
-      <ul className="space-y-1">
-        {parts.map((p) => (
-          <li
-            key={p}
-            draggable
-            onDragStart={() => setDragPart({ sectionId: section.id, part: p })}
-            onDragEnd={() => setDragPart(null)}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              if (dragPart?.sectionId === section.id) movePart(dragPart.part, p);
-              setDragPart(null);
-            }}
-            onClick={() => setFocusPart(p)}
-            className={`flex cursor-grab items-center gap-2 rounded-md border px-3 py-2 text-sm ${
-              dragPart?.part === p && dragPart.sectionId === section.id
-                ? "border-primary bg-primary/5"
-                : "border-border bg-background"
-            }`}
-          >
-            <GripVertical className="h-4 w-4 text-muted-foreground" />
-            {partLabel(p)}
-          </li>
-        ))}
-      </ul>
-    );
 
     return (
       <div className="space-y-4">
@@ -1433,165 +1610,29 @@ export default function ObjectDesignPage() {
               </div>
             </Field>
             {parts.length > 1 && (
-              <Field label="Drag to reorder">
-                {arrangeList()}
-              </Field>
+              <p className="text-xs text-muted-foreground">
+                Drag an element's header below to move it up or down.
+              </p>
             )}
           </>
         ) })}
 
 
 
-        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, onDelete: () => patch(section.id, { eyebrow: undefined }), onDuplicate: () => duplicateTextInto(section, section.eyebrow, withEyebrowDefaults(section.eyebrowStyle)), children: (
-          <>
-
-
-            <Field label="Eyebrow">
-              <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
-            </Field>
-            <TextStyleFields
-              label="Eyebrow style"
-              value={withEyebrowDefaults(section.eyebrowStyle)}
-              defaults={{ font: "sans", color: "stone", size: "sm" }}
-              onChange={(v) => patch(section.id, { eyebrowStyle: v })}
-            />
-          </>
-        ) })}
-
-        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, onDelete: () => patch(section.id, { heading: undefined }), onDuplicate: () => duplicateTextInto(section, section.heading, section.textStyle), children: (
-          <>
-
-
-            <Field label="Title">
-              <Input value={section.heading ?? ""} onChange={(e) => patch(section.id, { heading: e.target.value })} />
-            </Field>
-            <TextStyleFields
-              label="Title style"
-              value={section.textStyle}
-              defaults={{ font: "serif", color: "ink", size: "xl" }}
-              onChange={(v) => patch(section.id, { textStyle: v })}
-            />
-          </>
-        ) })}
 
 
 
 
-        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, onDelete: () => patch(section.id, { body: undefined }), onDuplicate: () => duplicateTextInto(section, section.body, section.bodyStyle), children: (
-          <>
 
 
-            <Field label="Text">
-              <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
-            </Field>
-            <TextStyleFields
-              label="Text style"
-              value={section.bodyStyle}
-              defaults={{ font: "sans", color: "stone", size: "md" }}
-              onChange={(v) => patch(section.id, { bodyStyle: v })}
-            />
-          </>
-        ) })}
 
-        {(section.extras ?? []).map((t, i) => {
-          const kind = t.kind ?? "text";
-          const kindLabel = FREE_TEXT_KINDS.find((k) => k.value === kind)?.label ?? "Text";
-          const kindIcon = kind === "title" ? Heading : kind === "eyebrow" ? Tag : AlignLeft;
-          const kindDefaults =
-            kind === "title"
-              ? { font: "serif" as const, color: "ink" as const, size: "xl" as const }
-              : kind === "eyebrow"
-              ? { font: "sans" as const, color: "stone" as const, size: "sm" as const }
-              : { font: "sans" as const, color: "stone" as const, size: "md" as const };
-          return Block({
-            title: kindLabel,
-            icon: kindIcon,
-            part: `text:${i}`,
-            flowSection: section,
-            key: t.id,
-            onDelete: () => removeExtra(section.id, i),
-            onDuplicate: () => duplicateExtra(section.id, i),
-            children: (
-              <>
-                <Field label="Type">
-                  <select
-                    className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
-                    value={kind}
-                    onChange={(e) => patchExtra(section.id, i, { kind: e.target.value as FreeTextKind })}
-                  >
-                    {FREE_TEXT_KINDS.map((k) => (
-                      <option key={k.value} value={k.value}>{k.label}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label={kindLabel}>
-                  <Textarea
-                    rows={kind === "text" ? 4 : 2}
-                    value={t.text}
-                    onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
-                  />
-                </Field>
-                <TextStyleFields
-                  label={`${kindLabel} style`}
-                  value={kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style}
-                  defaults={kindDefaults}
-                  onChange={(v) => patchExtra(section.id, i, { style: v })}
-                />
-              </>
-            ),
-          });
-        })}
 
-        {(section.dividers ?? []).map((d, i) =>
-          Block({
-            title: "Divider",
-            icon: Minus,
-            part: `divider:${i}`,
-            flowSection: section,
-            key: d.id,
-            onDelete: () => removeDivider(section.id, i),
-            onDuplicate: () => duplicateDivider(section.id, i),
-            children: (
-              <>
-                <div className="flex flex-wrap items-center gap-3">
-                  <ColorDropdown
-                    label="Color"
-                    value={d.color ?? ""}
-                    fallback="stone"
-                    options={TEXT_COLORS}
-                    onChange={(v) => patchDivider(section.id, i, { color: v as TextColor })}
-                  />
-                </div>
-                <Field label="Width">
-                  <div>
-                    <Choice
-                      value={d.width ?? "full"}
-                      options={[
-                        { value: "full" as const, label: "Full width", icon: Minus },
-                        { value: "short" as const, label: "Short", icon: Minus },
-                      ]}
-                      onChange={(v) => patchDivider(section.id, i, { width: v })}
-                    />
-                  </div>
-                </Field>
-                <Field label="Thickness (px)">
-                  <Input
-                    type="number"
-                    min={1}
-                    max={12}
-                    value={d.thickness ?? 1}
-                    onChange={(e) =>
-                      patchDivider(section.id, i, { thickness: Math.min(12, Math.max(1, Number(e.target.value) || 1)) })
-                    }
-                  />
-                </Field>
-                <p className="text-xs text-muted-foreground">
-                  Drag this bar in the Arrangement list to move it between items.
-                </p>
-              </>
-            ),
-          }),
-        )}
+
+
+
+
+
+        {parts.map((p) => <Fragment key={p}>{renderPart(p)}</Fragment>)}
 
         {section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, onDelete: () => patch(section.id, { images: [] }), children: (
           <>
@@ -1798,49 +1839,7 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", flowSection: section, onDelete: () => patch(section.id, { buttonLabel: undefined }), children: (
-          <>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Button label">
-                <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
-              </Field>
-              <Field label="Button link">
-                <Input value={section.buttonHref ?? ""} placeholder="/collections" onChange={(e) => patch(section.id, { buttonHref: e.target.value })} />
-              </Field>
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <Field label="Button style">
-                <div>
-                  <Choice
-                    value={section.buttonVariant ?? "solid"}
-                    options={[
-                      { value: "solid" as const, label: "Solid" },
-                      { value: "outline" as const, label: "Outline" },
-                      { value: "link" as const, label: "Text link" },
-                    ]}
-                    onChange={(v) => patch(section.id, { buttonVariant: v })}
-                  />
-                </div>
-              </Field>
-            </div>
-            <TextStyleFields
-              label="Button label style"
-              value={section.labelStyle}
-              defaults={{ font: "sans", color: (section.buttonVariant ?? "solid") === "solid" ? "cream" : "ink", size: "sm" }}
-              onChange={(v) => patch(section.id, { labelStyle: v })}
-            />
-            {(section.buttonVariant ?? "solid") === "solid" && (
-              <div className="rounded-md border p-3 space-y-2">
-                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Button background</p>
-                <ColorSwatches
-                  value={section.buttonBg ?? "ink"}
-                  onChange={(v) => patch(section.id, { buttonBg: v })}
-                />
-              </div>
-            )}
-          </>
-        ) })}
 
       </div>
     );
