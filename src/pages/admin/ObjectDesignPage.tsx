@@ -2060,6 +2060,21 @@ export default function ObjectDesignPage() {
           setPicker(null);
         }}
       />
+      <VideoPickerDialog
+        open={!!videoPicker}
+        onOpenChange={(v) => { if (!v) setVideoPicker(null); }}
+        onPick={({ url, poster, name }) => {
+          if (videoPicker) {
+            patchVideo(videoPicker.sectionId, videoPicker.index, {
+              url,
+              poster,
+              caption: videosOf(videoPicker.sectionId)[videoPicker.index]?.caption ?? "",
+              ...(name ? {} : {}),
+            });
+          }
+          setVideoPicker(null);
+        }}
+      />
     </div>
   );
 }
