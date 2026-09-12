@@ -1230,12 +1230,13 @@ export default function ObjectDesignPage() {
     return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
   };
 
-  const movePartIn = (s: FreeSection, from: string, to: string) => {
+  const movePartIn = (s: FreeSection, from: string, to: string, before = true) => {
     if (from === to) return;
     const parts = orderablePartsOf(s);
     const next = parts.filter((p) => p !== from);
     const at = next.indexOf(to);
-    next.splice(at === -1 ? next.length : at, 0, from);
+    if (at === -1) next.push(from);
+    else next.splice(before ? at : at + 1, 0, from);
     patch(s.id, { order: next });
   };
 
