@@ -15,8 +15,6 @@ export interface TextStyle {
   size?: TextSize;
   /** exact size in px — overrides the preset size when set */
   sizePx?: number;
-  /** display text in all caps (eyebrows default to true) */
-  caps?: boolean;
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
@@ -609,7 +607,7 @@ function FreeText({ section, onDark }: { section: FreeSection; onDark?: boolean 
       {section.eyebrow ? (
         <p
           data-part="eyebrow"
-          className={`${section.eyebrowStyle?.caps === false ? "" : "uppercase"} tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+          className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
           style={textInlineStyle(section.eyebrowStyle)}
           {...richText(section.eyebrow)}
         />
@@ -754,7 +752,7 @@ export function SectionView({ section }: { section: Section }) {
               className={`relative flex h-full flex-col justify-center gap-4 px-8 sm:px-14 py-16 ${alignText[section.align]} ${overlayHeight[section.height]}`}
             >
               {section.eyebrow ? (
-                <p className={`${section.eyebrowStyle?.caps === false ? "" : "uppercase"} tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: "cream", size: "sm" })}`}>{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] ${bodyClasses(section.eyebrowStyle, { color: "cream", size: "sm" })}`}>{section.eyebrow}</p>
               ) : null}
               <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "lg" })}`}>
                 {section.heading}
@@ -784,7 +782,7 @@ export function SectionView({ section }: { section: Section }) {
             </div>
             <div className="max-w-xl">
               {section.eyebrow ? (
-                <p className={`${section.eyebrowStyle?.caps === false ? "" : "uppercase"} tracking-[0.24em] mb-3 ${bodyClasses(section.eyebrowStyle, { color: "stone", size: "sm" })}`}>{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] mb-3 ${bodyClasses(section.eyebrowStyle, { color: "stone", size: "sm" })}`}>{section.eyebrow}</p>
               ) : null}
               <h2 className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "lg" })}`}>{section.heading}</h2>
               {section.body ? (
