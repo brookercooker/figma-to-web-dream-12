@@ -414,9 +414,7 @@ function SectionButton({
         : `${bgClass[fill]} px-7 py-3`;
   const text = bodyClasses(style, { color: variant === "solid" ? bgTextColor[fill] : "ink", size: "sm" });
   return (
-    <a href={href || "#"} className={`${base} ${styles} ${text}`}>
-      {label}
-    </a>
+    <a href={href || "#"} className={`${base} ${styles} ${text}`} {...richText(label)} />
   );
 }
 
@@ -516,9 +514,8 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
                 <figcaption
                   data-part={`caption:${idx}`}
                   className={`mt-3 leading-relaxed ${alignTextOnly[section.captionAlign ?? "left"]} ${bodyClasses(section.captionStyle, { color: onDark ? "cream" : "stone", size: "sm" })}`}
-                >
-                  {img.caption}
-                </figcaption>
+                  {...richText(img.caption)}
+                />
               ) : null}
             </figure>
           ))}
