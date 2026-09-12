@@ -713,6 +713,9 @@ export default function ObjectDesignPage() {
   };
 
   const patchImage = (id: string, index: number, changes: Partial<SectionImage>) => {
+    // keep this image's editor expanded while it is being edited
+    setOpenSub((s) => (s[`img:${id}:${index}`] ? s : { ...s, [`img:${id}:${index}`]: true }));
+    setOpenBlocks((b) => (b.Images ? b : { ...b, Images: true }));
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id) return s;
@@ -750,16 +753,21 @@ export default function ObjectDesignPage() {
       texts: [...texts, { id: newSectionId(), kind, text: "" }],
     });
     openBlock("Images");
-    setOpenSub({
+    setOpenSub((s) => ({
+      ...s,
       [`img:${sectionId}:${index}`]: true,
       [`txt:${sectionId}:${index}:${texts.length}`]: true,
-    });
+    }));
   };
 
   const patchImageText = (
     sectionId: string, index: number, tIdx: number, changes: Partial<ImageText>,
   ) => {
     const texts = imageTextsOf(sectionId, index).map((t, i) => (i === tIdx ? { ...t, ...changes } : t));
+    // keep this text box expanded while it is being edited
+    setOpenSub((s) =>
+      s[`txt:${sectionId}:${index}:${tIdx}`] ? s : { ...s, [`txt:${sectionId}:${index}:${tIdx}`]: true },
+    );
     patchImage(sectionId, index, { texts });
   };
 
@@ -781,7 +789,7 @@ export default function ObjectDesignPage() {
     );
     setDirty(true);
     openBlock("Images");
-    setOpenSub({ [`img:${id}:${newIndex}`]: true });
+    setOpenSub((s) => ({ ...s, [`img:${id}:${newIndex}`]: true }));
     setPicker({ sectionId: id, index: newIndex });
   };
 
@@ -820,7 +828,7 @@ export default function ObjectDesignPage() {
     );
     setDirty(true);
     openBlock("Images");
-    setOpenSub({ [`img:${id}:${index + 1}`]: true });
+    setOpenSub((s) => ({ ...s, [`img:${id}:${index + 1}`]: true }));
   };
 
   const duplicateImageText = (sectionId: string, index: number, tIdx: number) => {
