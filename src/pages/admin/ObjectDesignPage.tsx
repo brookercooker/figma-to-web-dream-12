@@ -163,6 +163,13 @@ const STYLE_FIELD_LABEL: Record<string, string> = {
   captionStyle: "Caption",
 };
 
+const SIZE_WORD: Record<string, string> = {
+  sm: "Small",
+  md: "Medium",
+  lg: "Large",
+  xl: "Extra large",
+};
+
 function Dropdown({
   label, value, options, onChange,
 }: { label: string; value: string; options: { value: string; label: string }[]; onChange: (v: string) => void }) {
@@ -1227,7 +1234,7 @@ export default function ObjectDesignPage() {
             <Dropdown
               label="Size"
               value={style.size ?? ""}
-              options={[{ value: "", label: "Default" }, ...TEXT_SIZES.map((s) => ({ value: s.value as string, label: s.label }))]}
+              options={[{ value: "", label: "Default" }, ...TEXT_SIZES.map((s) => ({ value: s.value as string, label: SIZE_WORD[s.value] ?? s.label }))]}
               onChange={(v) => set({ size: (v || undefined) as TextSize | undefined })}
             />
             <ColorDropdown
