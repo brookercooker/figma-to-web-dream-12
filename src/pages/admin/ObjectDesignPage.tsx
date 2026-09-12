@@ -1332,6 +1332,206 @@ export default function ObjectDesignPage() {
 
     const parts = orderablePartsOf(section);
 
+    const renderPart = (p: string): React.ReactNode => {
+      if (p === "eyebrow") return hasEyebrow ? Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, onDelete: () => patch(section.id, { eyebrow: undefined }), onDuplicate: () => duplicateTextInto(section, section.eyebrow, withEyebrowDefaults(section.eyebrowStyle)), children: (
+          <>
+
+
+            <Field label="Eyebrow">
+              <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
+            </Field>
+            <TextStyleFields
+              label="Eyebrow style"
+              value={withEyebrowDefaults(section.eyebrowStyle)}
+              defaults={{ font: "sans", color: "stone", size: "sm" }}
+              onChange={(v) => patch(section.id, { eyebrowStyle: v })}
+            />
+          </>
+        ) }) : null;
+      if (p === "heading") return hasTitle ? Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, onDelete: () => patch(section.id, { heading: undefined }), onDuplicate: () => duplicateTextInto(section, section.heading, section.textStyle), children: (
+          <>
+
+
+            <Field label="Title">
+              <Input value={section.heading ?? ""} onChange={(e) => patch(section.id, { heading: e.target.value })} />
+            </Field>
+            <TextStyleFields
+              label="Title style"
+              value={section.textStyle}
+              defaults={{ font: "serif", color: "ink", size: "xl" }}
+              onChange={(v) => patch(section.id, { textStyle: v })}
+            />
+          </>
+        ) }) : null;
+      if (p === "body") return hasBody ? Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, onDelete: () => patch(section.id, { body: undefined }), onDuplicate: () => duplicateTextInto(section, section.body, section.bodyStyle), children: (
+          <>
+
+
+            <Field label="Text">
+              <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
+            </Field>
+            <TextStyleFields
+              label="Text style"
+              value={section.bodyStyle}
+              defaults={{ font: "sans", color: "stone", size: "md" }}
+              onChange={(v) => patch(section.id, { bodyStyle: v })}
+            />
+          </>
+        ) }) : null;
+      if (p === "button") return hasButton ? Block({ title: "Button", icon: MousePointerClick, part: "button", flowSection: section, onDelete: () => patch(section.id, { buttonLabel: undefined }), children: (
+          <>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Button label">
+                <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
+              </Field>
+              <Field label="Button link">
+                <Input value={section.buttonHref ?? ""} placeholder="/collections" onChange={(e) => patch(section.id, { buttonHref: e.target.value })} />
+              </Field>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <Field label="Button style">
+                <div>
+                  <Choice
+                    value={section.buttonVariant ?? "solid"}
+                    options={[
+                      { value: "solid" as const, label: "Solid" },
+                      { value: "outline" as const, label: "Outline" },
+                      { value: "link" as const, label: "Text link" },
+                    ]}
+                    onChange={(v) => patch(section.id, { buttonVariant: v })}
+                  />
+                </div>
+              </Field>
+            </div>
+            <TextStyleFields
+              label="Button label style"
+              value={section.labelStyle}
+              defaults={{ font: "sans", color: (section.buttonVariant ?? "solid") === "solid" ? "cream" : "ink", size: "sm" }}
+              onChange={(v) => patch(section.id, { labelStyle: v })}
+            />
+            {(section.buttonVariant ?? "solid") === "solid" && (
+              <div className="rounded-md border p-3 space-y-2">
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Button background</p>
+                <ColorSwatches
+                  value={section.buttonBg ?? "ink"}
+                  onChange={(v) => patch(section.id, { buttonBg: v })}
+                />
+              </div>
+            )}
+          </>
+        ) }) : null;
+      if (p.startsWith("text:")) {
+        const i = Number(p.slice(5));
+        const t = (section.extras ?? [])[i];
+        if (!t) return null;
+        
+          const kind = t.kind ?? "text";
+          const kindLabel = FREE_TEXT_KINDS.find((k) => k.value === kind)?.label ?? "Text";
+          const kindIcon = kind === "title" ? Heading : kind === "eyebrow" ? Tag : AlignLeft;
+          const kindDefaults =
+            kind === "title"
+              ? { font: "serif" as const, color: "ink" as const, size: "xl" as const }
+              : kind === "eyebrow"
+              ? { font: "sans" as const, color: "stone" as const, size: "sm" as const }
+              : { font: "sans" as const, color: "stone" as const, size: "md" as const };
+          return Block({
+            title: kindLabel,
+            icon: kindIcon,
+            part: `text:${i}`,
+            flowSection: section,
+            key: t.id,
+            onDelete: () => removeExtra(section.id, i),
+            onDuplicate: () => duplicateExtra(section.id, i),
+            children: (
+              <>
+                <Field label="Type">
+                  <select
+                    className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    value={kind}
+                    onChange={(e) => patchExtra(section.id, i, { kind: e.target.value as FreeTextKind })}
+                  >
+                    {FREE_TEXT_KINDS.map((k) => (
+                      <option key={k.value} value={k.value}>{k.label}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label={kindLabel}>
+                  <Textarea
+                    rows={kind === "text" ? 4 : 2}
+                    value={t.text}
+                    onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                  />
+                </Field>
+                <TextStyleFields
+                  label={`${kindLabel} style`}
+                  value={kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style}
+                  defaults={kindDefaults}
+                  onChange={(v) => patchExtra(section.id, i, { style: v })}
+                />
+              </>
+            ),
+          });
+        
+      }
+      if (p.startsWith("divider:")) {
+        const i = Number(p.slice(8));
+        const d = (section.dividers ?? [])[i];
+        if (!d) return null;
+        return 
+          Block({
+            title: "Divider",
+            icon: Minus,
+            part: `divider:${i}`,
+            flowSection: section,
+            key: d.id,
+            onDelete: () => removeDivider(section.id, i),
+            onDuplicate: () => duplicateDivider(section.id, i),
+            children: (
+              <>
+                <div className="flex flex-wrap items-center gap-3">
+                  <ColorDropdown
+                    label="Color"
+                    value={d.color ?? ""}
+                    fallback="stone"
+                    options={TEXT_COLORS}
+                    onChange={(v) => patchDivider(section.id, i, { color: v as TextColor })}
+                  />
+                </div>
+                <Field label="Width">
+                  <div>
+                    <Choice
+                      value={d.width ?? "full"}
+                      options={[
+                        { value: "full" as const, label: "Full width", icon: Minus },
+                        { value: "short" as const, label: "Short", icon: Minus },
+                      ]}
+                      onChange={(v) => patchDivider(section.id, i, { width: v })}
+                    />
+                  </div>
+                </Field>
+                <Field label="Thickness (px)">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={d.thickness ?? 1}
+                    onChange={(e) =>
+                      patchDivider(section.id, i, { thickness: Math.min(12, Math.max(1, Number(e.target.value) || 1)) })
+                    }
+                  />
+                </Field>
+                <p className="text-xs text-muted-foreground">
+                  Drag this bar in the Arrangement list to move it between items.
+                </p>
+              </>
+            ),
+          });
+      }
+      return null;
+    };
+
+
 
     return (
       <div className="space-y-4">
@@ -1419,156 +1619,20 @@ export default function ObjectDesignPage() {
 
 
 
-        {hasEyebrow && Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, onDelete: () => patch(section.id, { eyebrow: undefined }), onDuplicate: () => duplicateTextInto(section, section.eyebrow, withEyebrowDefaults(section.eyebrowStyle)), children: (
-          <>
-
-
-            <Field label="Eyebrow">
-              <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
-            </Field>
-            <TextStyleFields
-              label="Eyebrow style"
-              value={withEyebrowDefaults(section.eyebrowStyle)}
-              defaults={{ font: "sans", color: "stone", size: "sm" }}
-              onChange={(v) => patch(section.id, { eyebrowStyle: v })}
-            />
-          </>
-        ) })}
-
-        {hasTitle && Block({ title: "Title", icon: Heading, part: "heading", flowSection: section, onDelete: () => patch(section.id, { heading: undefined }), onDuplicate: () => duplicateTextInto(section, section.heading, section.textStyle), children: (
-          <>
-
-
-            <Field label="Title">
-              <Input value={section.heading ?? ""} onChange={(e) => patch(section.id, { heading: e.target.value })} />
-            </Field>
-            <TextStyleFields
-              label="Title style"
-              value={section.textStyle}
-              defaults={{ font: "serif", color: "ink", size: "xl" }}
-              onChange={(v) => patch(section.id, { textStyle: v })}
-            />
-          </>
-        ) })}
 
 
 
 
-        {hasBody && Block({ title: "Text", icon: AlignLeft, part: "body", flowSection: section, onDelete: () => patch(section.id, { body: undefined }), onDuplicate: () => duplicateTextInto(section, section.body, section.bodyStyle), children: (
-          <>
 
 
-            <Field label="Text">
-              <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
-            </Field>
-            <TextStyleFields
-              label="Text style"
-              value={section.bodyStyle}
-              defaults={{ font: "sans", color: "stone", size: "md" }}
-              onChange={(v) => patch(section.id, { bodyStyle: v })}
-            />
-          </>
-        ) })}
 
-        {(section.extras ?? []).map((t, i) => {
-          const kind = t.kind ?? "text";
-          const kindLabel = FREE_TEXT_KINDS.find((k) => k.value === kind)?.label ?? "Text";
-          const kindIcon = kind === "title" ? Heading : kind === "eyebrow" ? Tag : AlignLeft;
-          const kindDefaults =
-            kind === "title"
-              ? { font: "serif" as const, color: "ink" as const, size: "xl" as const }
-              : kind === "eyebrow"
-              ? { font: "sans" as const, color: "stone" as const, size: "sm" as const }
-              : { font: "sans" as const, color: "stone" as const, size: "md" as const };
-          return Block({
-            title: kindLabel,
-            icon: kindIcon,
-            part: `text:${i}`,
-            flowSection: section,
-            key: t.id,
-            onDelete: () => removeExtra(section.id, i),
-            onDuplicate: () => duplicateExtra(section.id, i),
-            children: (
-              <>
-                <Field label="Type">
-                  <select
-                    className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
-                    value={kind}
-                    onChange={(e) => patchExtra(section.id, i, { kind: e.target.value as FreeTextKind })}
-                  >
-                    {FREE_TEXT_KINDS.map((k) => (
-                      <option key={k.value} value={k.value}>{k.label}</option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label={kindLabel}>
-                  <Textarea
-                    rows={kind === "text" ? 4 : 2}
-                    value={t.text}
-                    onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
-                  />
-                </Field>
-                <TextStyleFields
-                  label={`${kindLabel} style`}
-                  value={kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style}
-                  defaults={kindDefaults}
-                  onChange={(v) => patchExtra(section.id, i, { style: v })}
-                />
-              </>
-            ),
-          });
-        })}
 
-        {(section.dividers ?? []).map((d, i) =>
-          Block({
-            title: "Divider",
-            icon: Minus,
-            part: `divider:${i}`,
-            flowSection: section,
-            key: d.id,
-            onDelete: () => removeDivider(section.id, i),
-            onDuplicate: () => duplicateDivider(section.id, i),
-            children: (
-              <>
-                <div className="flex flex-wrap items-center gap-3">
-                  <ColorDropdown
-                    label="Color"
-                    value={d.color ?? ""}
-                    fallback="stone"
-                    options={TEXT_COLORS}
-                    onChange={(v) => patchDivider(section.id, i, { color: v as TextColor })}
-                  />
-                </div>
-                <Field label="Width">
-                  <div>
-                    <Choice
-                      value={d.width ?? "full"}
-                      options={[
-                        { value: "full" as const, label: "Full width", icon: Minus },
-                        { value: "short" as const, label: "Short", icon: Minus },
-                      ]}
-                      onChange={(v) => patchDivider(section.id, i, { width: v })}
-                    />
-                  </div>
-                </Field>
-                <Field label="Thickness (px)">
-                  <Input
-                    type="number"
-                    min={1}
-                    max={12}
-                    value={d.thickness ?? 1}
-                    onChange={(e) =>
-                      patchDivider(section.id, i, { thickness: Math.min(12, Math.max(1, Number(e.target.value) || 1)) })
-                    }
-                  />
-                </Field>
-                <p className="text-xs text-muted-foreground">
-                  Drag this bar in the Arrangement list to move it between items.
-                </p>
-              </>
-            ),
-          }),
-        )}
+
+
+
+
+
+        {parts.map((p) => <React.Fragment key={p}>{renderPart(p)}</React.Fragment>)}
 
         {section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, onDelete: () => patch(section.id, { images: [] }), children: (
           <>
@@ -1775,49 +1839,7 @@ export default function ObjectDesignPage() {
           </>
         ) })}
 
-        {hasButton && Block({ title: "Button", icon: MousePointerClick, part: "button", flowSection: section, onDelete: () => patch(section.id, { buttonLabel: undefined }), children: (
-          <>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Button label">
-                <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
-              </Field>
-              <Field label="Button link">
-                <Input value={section.buttonHref ?? ""} placeholder="/collections" onChange={(e) => patch(section.id, { buttonHref: e.target.value })} />
-              </Field>
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <Field label="Button style">
-                <div>
-                  <Choice
-                    value={section.buttonVariant ?? "solid"}
-                    options={[
-                      { value: "solid" as const, label: "Solid" },
-                      { value: "outline" as const, label: "Outline" },
-                      { value: "link" as const, label: "Text link" },
-                    ]}
-                    onChange={(v) => patch(section.id, { buttonVariant: v })}
-                  />
-                </div>
-              </Field>
-            </div>
-            <TextStyleFields
-              label="Button label style"
-              value={section.labelStyle}
-              defaults={{ font: "sans", color: (section.buttonVariant ?? "solid") === "solid" ? "cream" : "ink", size: "sm" }}
-              onChange={(v) => patch(section.id, { labelStyle: v })}
-            />
-            {(section.buttonVariant ?? "solid") === "solid" && (
-              <div className="rounded-md border p-3 space-y-2">
-                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Button background</p>
-                <ColorSwatches
-                  value={section.buttonBg ?? "ink"}
-                  onChange={(v) => patch(section.id, { buttonBg: v })}
-                />
-              </div>
-            )}
-          </>
-        ) })}
 
       </div>
     );
