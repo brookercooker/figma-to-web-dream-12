@@ -203,6 +203,11 @@ const emptyImage = (): SectionImage => ({ url: "", alt: "" });
 export function makeSection(type: SectionType): Section {
   const id = newSectionId();
   switch (type) {
+    case "free":
+      return {
+        id, type: "free", images: [], layout: "stacked", imageSide: "left",
+        gallery: "grid", columns: 2, align: "left", height: "md",
+      };
     case "carousel":
       return { id, type, heading: "", images: [emptyImage(), emptyImage()] };
     case "imageRow":
