@@ -272,13 +272,14 @@ export default function ObjectDesignPage() {
             )}
             <div className="grid gap-3 sm:grid-cols-2">
               {section.images.map((img, i) => (
-                <ImageEditor
-                  key={i}
-                  section={section}
-                  index={i}
-                  image={img}
-                  showCaption={section.type !== "imageRow"}
-                />
+                <div key={i}>
+                  {ImageEditor({
+                    section,
+                    index: i,
+                    image: img,
+                    showCaption: section.type !== "imageRow",
+                  })}
+                </div>
               ))}
             </div>
             <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id)}>
@@ -290,7 +291,7 @@ export default function ObjectDesignPage() {
       case "overlay":
         return (
           <div className="space-y-3">
-            <ImageEditor section={section} index={-1} image={section.image} />
+            {ImageEditor({ section, index: -1, image: section.image })}
             <Field label="Eyebrow (optional)">
               <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
             </Field>
@@ -342,7 +343,7 @@ export default function ObjectDesignPage() {
       case "split":
         return (
           <div className="space-y-3">
-            <ImageEditor section={section} index={-1} image={section.image} />
+            {ImageEditor({ section, index: -1, image: section.image })}
             <Field label="Image side">
               <div>
                 <Choice
@@ -557,7 +558,7 @@ export default function ObjectDesignPage() {
 
                     {active && (
                       <div className="border-t bg-muted/20 p-4">
-                        <Inspector section={s} />
+                        {Inspector({ section: s })}
                       </div>
                     )}
                   </div>
