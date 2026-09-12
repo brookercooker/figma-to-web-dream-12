@@ -994,13 +994,30 @@ export default function ObjectDesignPage() {
     </Button>
   );
 
+  /** Inline / separate control for one element inside a block. */
+  const flowField = (section: FreeSection, part: string) => (
+    <Field label="Placement">
+      <div>
+        <Choice
+          value={(section.flows?.[part] ?? "separate") as SectionFlow}
+          options={[
+            { value: "separate" as SectionFlow, label: "Separate", icon: Rows3 },
+            { value: "inline" as SectionFlow, label: "Inline", icon: Columns3 },
+          ]}
+          onChange={(v) => patch(section.id, { flows: { ...(section.flows ?? {}), [part]: v } })}
+        />
+      </div>
+    </Field>
+  );
+
   const Block = ({
     title,
     icon: Icon,
     part,
     key,
+    flowSection,
     children,
-  }: { title: string; icon: LucideIcon; part?: string; key?: string; children: React.ReactNode }) => {
+  }: { title: string; icon: LucideIcon; part?: string; key?: string; flowSection?: FreeSection; children: React.ReactNode }) => {
     const blockKey = key ?? part ?? title;
     const focused =
       !!focusPart &&
@@ -1025,7 +1042,12 @@ export default function ObjectDesignPage() {
             className={`ml-auto h-4 w-4 text-foreground/70 transition-transform ${open ? "" : "-rotate-90"}`}
           />
         </button>
-        {open ? <div className="space-y-3 p-3">{children}</div> : null}
+        {open ? (
+          <div className="space-y-3 p-3">
+            {children}
+            {flowSection && part ? flowField(flowSection, part) : null}
+          </div>
+        ) : null}
       </div>
     );
   };
