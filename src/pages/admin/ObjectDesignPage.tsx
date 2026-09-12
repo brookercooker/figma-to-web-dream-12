@@ -1233,6 +1233,7 @@ export default function ObjectDesignPage() {
             <ColorDropdown
               label="Color"
               value={style.color ?? ""}
+              fallback={defaultColor[String(toolbar.field)] ?? "ink"}
               options={TEXT_COLORS}
               onChange={(v) => set({ color: (v || undefined) as TextColor | undefined })}
             />
