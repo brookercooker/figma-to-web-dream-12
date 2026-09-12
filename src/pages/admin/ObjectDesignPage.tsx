@@ -1203,7 +1203,7 @@ export default function ObjectDesignPage() {
           </div>
         </div>
 
-        {Block({ title: "Block alignment & arrangement", icon: AlignLeft, children: (
+        {Block({ title: "Edit Block", icon: AlignLeft, children: (
           <>
             <Field label="Alignment">
               <div>
