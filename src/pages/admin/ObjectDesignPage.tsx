@@ -475,7 +475,8 @@ export default function ObjectDesignPage() {
 
     const stop = (ev: Event) => ev.stopPropagation();
     const commit = () => {
-      const value = (target.innerText ?? "").replace(/\u00a0/g, " ").trim();
+      // keeps any bold / italic / underline applied to parts of the text
+      const value = cleanEditedHtml(target.innerHTML ?? "");
       target.contentEditable = "false";
       target.style.outline = "";
       target.style.outlineOffset = "";
@@ -488,6 +489,12 @@ export default function ObjectDesignPage() {
     };
     const onKey = (ev: KeyboardEvent) => {
       ev.stopPropagation();
+      const mod = ev.metaKey || ev.ctrlKey;
+      if (mod && ["b", "i", "u"].includes(ev.key.toLowerCase())) {
+        ev.preventDefault();
+        formatSelection(ev.key.toLowerCase() === "b" ? "bold" : ev.key.toLowerCase() === "i" ? "italic" : "underline");
+        return;
+      }
       if (ev.key === "Escape") { ev.preventDefault(); target.blur(); }
       if (ev.key === "Enter" && field !== "body" && field !== "extra") { ev.preventDefault(); target.blur(); }
     };
