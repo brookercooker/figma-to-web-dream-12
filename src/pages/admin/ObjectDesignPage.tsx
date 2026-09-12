@@ -994,6 +994,10 @@ export default function ObjectDesignPage() {
       <CreateObjectDialog
         open={createOpen}
         onOpenChange={(v) => { setCreateOpen(v); if (!v) load(); }}
+        onCreated={async (row) => {
+          await load();
+          setParams({ object: row.id });
+        }}
       />
       <ImagePickerDialog
         open={!!picker}
