@@ -738,9 +738,9 @@ function FreeFigureBody({
   );
 }
 
-function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
-  const images = section.images;
-  const n = images.length;
+function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark?: boolean; items?: { image: SectionImage; index: number }[] }) {
+  const entries = items ?? section.images.map((image, index) => ({ image, index }));
+  const n = entries.length;
   const perView = Math.min(Math.max(section.perView ?? 1, 1), Math.max(n, 1));
   const pages = Math.max(n - perView + 1, 1);
   const [i, setI] = useState(0);
