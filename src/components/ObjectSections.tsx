@@ -1138,7 +1138,7 @@ function FreeView({ section }: { section: FreeSection }) {
       const part = imageGroupPart(g.key);
       media.push({
         part,
-        node: <div data-part={part} className="w-full"><FreeGallery section={section} items={g.items} /></div>,
+        node: <div data-part={part} className="w-full"><FreeGallery section={groupSection(section, g.key)} items={g.items} /></div>,
       });
     }
   }
