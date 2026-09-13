@@ -1359,7 +1359,7 @@ function FreeView({ section }: { section: FreeSection }) {
 export function SectionView({ section }: { section: Section }) {
   const heading = (text?: string, style?: TextStyle) =>
     text ? (
-      <h2 className={`mb-8 ${headingClasses(style, { color: "ink", size: "md" })}`}>{text}</h2>
+      <h2 style={textInlineStyle(style)} className={`mb-8 ${headingClasses(style, { color: "ink", size: "md" })}`}>{text}</h2>
     ) : null;
 
   switch (section.type) {
