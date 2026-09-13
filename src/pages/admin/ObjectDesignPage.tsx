@@ -1731,8 +1731,7 @@ export default function ObjectDesignPage() {
               </Button>
             </div>
             {isFirst && (
-              <></>
-            )}
+              <>
             <Field label="Border around image and text">
               <div>
                 <Choice
