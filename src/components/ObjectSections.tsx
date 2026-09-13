@@ -688,7 +688,7 @@ function Carousel({ section }: { section: CarouselSection }) {
           <button
             type="button"
             aria-label="Previous slide"
-            onClick={() => setI((v) => (v - 1 + n) % n)}
+            onClick={(e) => { e.stopPropagation(); setI((v) => (v - 1 + n) % n); }}
             className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-cream/85 hover:bg-cream p-2 shadow"
           >
             <ChevronLeft className="h-5 w-5 text-ink" />
@@ -696,7 +696,7 @@ function Carousel({ section }: { section: CarouselSection }) {
           <button
             type="button"
             aria-label="Next slide"
-            onClick={() => setI((v) => (v + 1) % n)}
+            onClick={(e) => { e.stopPropagation(); setI((v) => (v + 1) % n); }}
             className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-cream/85 hover:bg-cream p-2 shadow"
           >
             <ChevronRight className="h-5 w-5 text-ink" />
@@ -707,7 +707,7 @@ function Carousel({ section }: { section: CarouselSection }) {
                 key={idx}
                 type="button"
                 aria-label={`Go to slide ${idx + 1}`}
-                onClick={() => setI(idx)}
+                onClick={(e) => { e.stopPropagation(); setI(idx); }}
                 className={`h-2 w-2 rounded-full transition ${idx === i ? "bg-cream" : "bg-cream/50 hover:bg-cream/80"}`}
               />
             ))}
@@ -795,7 +795,7 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
           <button
             type="button"
             aria-label="Previous"
-            onClick={() => setI((v) => (v - 1 + pages) % pages)}
+            onClick={(e) => { e.stopPropagation(); setI((v) => (v - 1 + pages) % pages); }}
             className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-cream/85 hover:bg-cream p-2 shadow"
           >
             <ChevronLeft className="h-5 w-5 text-ink" />
@@ -803,7 +803,7 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
           <button
             type="button"
             aria-label="Next"
-            onClick={() => setI((v) => (v + 1) % pages)}
+            onClick={(e) => { e.stopPropagation(); setI((v) => (v + 1) % pages); }}
             className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-cream/85 hover:bg-cream p-2 shadow"
           >
             <ChevronRight className="h-5 w-5 text-ink" />
