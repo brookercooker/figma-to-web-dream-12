@@ -1711,6 +1711,11 @@ export default function ObjectDesignPage() {
               ))}
 
             </div>
+            <div>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id)}>
+                <Plus className="w-4 h-4" /> Add image
+              </Button>
+            </div>
             <Field label="Border around image and text">
               <div>
                 <Choice
