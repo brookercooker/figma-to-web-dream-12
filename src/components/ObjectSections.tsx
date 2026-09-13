@@ -434,6 +434,14 @@ export const ROW_VALIGN_CLASS: Record<RowVAlign, string> = {
   baseline: "items-baseline",
 };
 
+export type OverlayVAlign = "top" | "middle" | "bottom";
+
+export const OVERLAY_VALIGN_CLASS: Record<OverlayVAlign, string> = {
+  top: "justify-start",
+  middle: "justify-center",
+  bottom: "justify-end",
+};
+
 export interface FreeSection {
   id: string;
   type: "free";
