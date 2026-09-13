@@ -1137,19 +1137,28 @@ function FreeView({ section }: { section: FreeSection }) {
   if (section.layout === "behind" && hasImages) {
     return (
       <section className="py-12">
-        <div className={`relative overflow-hidden rounded-lg ${overlayHeight[section.height]}`}>
-          <div data-part="image:0" className="absolute inset-0">
-            <Pic image={section.images[0]} className="absolute inset-0 h-full w-full" />
-          </div>
-          <div className="absolute inset-0 bg-ink/35" />
-          <div className={`relative flex h-full flex-col justify-center px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
-            <FreeText section={section} onDark />
-          </div>
+        <div className={`flex flex-nowrap gap-6 ${alignRow[section.imageAlign ?? "left"]}`}>
+          {section.images.map((img, i) => (
+            <div
+              key={i}
+              className={`relative basis-0 grow min-w-0 overflow-hidden rounded-lg ${overlayHeight[section.height]}`}
+            >
+              <div data-part={`image:${i}`} className="absolute inset-0">
+                <Pic image={img} className="absolute inset-0 h-full w-full" />
+              </div>
+              <div className="absolute inset-0 bg-ink/35" />
+              <div className={`relative flex h-full flex-col justify-center px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
+                {i === 0 ? <FreeText section={section} onDark /> : null}
+                <OverlayImageTexts section={section} image={img} index={i} />
+              </div>
+            </div>
+          ))}
         </div>
         <div className="mt-8"><FreeVideos section={section} /></div>
       </section>
     );
   }
+
 
   if (section.layout === "beside" && hasImages) {
     return (
