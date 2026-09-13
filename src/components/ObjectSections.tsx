@@ -452,6 +452,8 @@ export interface FreeSection {
   captionAlign?: SectionAlign;
   /** draw a border around each image and its text */
   imageBorder?: boolean;
+  /** per image-grid overrides, keyed by grid number */
+  groupSettings?: Record<string, FreeImageGroupSettings>;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
