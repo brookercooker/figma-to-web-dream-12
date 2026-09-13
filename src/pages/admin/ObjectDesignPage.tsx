@@ -1173,11 +1173,8 @@ export default function ObjectDesignPage() {
           <Button
             variant="ghost"
             size="sm"
-            title={
-              (section as any).images.length > 1
-                ? "Delete image"
-                : "Delete image (removes this section)"
-            }
+            title="Delete image"
+
             onClick={() => removeImageSlot(section.id, index)}
           >
             <Trash2 className="w-4 h-4" />
