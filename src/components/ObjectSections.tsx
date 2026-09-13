@@ -697,14 +697,14 @@ function Pic({ image, className }: { image: SectionImage; className: string }) {
   return <div className={box}>{inner}</div>;
 }
 
-const bgClass: Record<TextColor, string> = {
+const bgClass: Record<TextColorToken, string> = {
   ink: "bg-ink hover:bg-ink/90",
   stone: "bg-stone hover:bg-stone/90",
   brass: "bg-brass hover:bg-brass/90",
   garnet: "bg-garnet hover:bg-garnet/90",
   cream: "bg-cream hover:bg-cream/90",
 };
-const bgTextColor: Record<TextColor, TextColor> = {
+const bgTextColor: Record<TextColorToken, TextColor> = {
   ink: "cream", stone: "cream", brass: "ink", garnet: "cream", cream: "ink",
 };
 
@@ -713,15 +713,22 @@ function SectionButton({
 }: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle; bg?: TextColor }) {
   const base = "inline-flex items-center justify-center uppercase tracking-[0.18em] transition-colors";
   const fill = bg ?? "ink";
+  const custom = isCustomColor(fill);
   const styles =
     variant === "outline"
       ? "border border-ink px-7 py-3 hover:bg-ink hover:text-cream"
       : variant === "link"
         ? `${style?.underline === false ? "" : "underline underline-offset-4"} hover:text-brass`
-        : `${bgClass[fill]} px-7 py-3`;
-  const text = bodyClasses(style, { color: variant === "solid" ? bgTextColor[fill] : "ink", size: "sm" });
+        : `${custom ? "" : bgClass[fill as TextColorToken]} px-7 py-3`;
+  const fallbackText: TextColor = variant === "solid" && !custom ? bgTextColor[fill as TextColorToken] : "ink";
+  const text = bodyClasses(style, { color: fallbackText, size: "sm" });
+  const inline: React.CSSProperties = { ...textInlineStyle(style) };
+  if (variant === "solid" && custom) {
+    inline.backgroundColor = fill as string;
+    if (!style?.color) inline.color = contrastOn(fill as string);
+  }
   return (
-    <a href={href || "#"} className={`${base} ${styles} ${text}`} style={textInlineStyle(style)} {...richText(label)} />
+    <a href={href || "#"} className={`${base} ${styles} ${text}`} style={inline} {...richText(label)} />
   );
 }
 
