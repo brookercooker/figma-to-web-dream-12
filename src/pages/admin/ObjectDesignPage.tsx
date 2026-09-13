@@ -847,11 +847,13 @@ export default function ObjectDesignPage() {
 
   const removeImageSlot = (id: string, index: number) => {
     setSections((prev) =>
-      prev.map((s) =>
-        s.id === id && "images" in s
-          ? ({ ...s, images: (s as any).images.filter((_: unknown, i: number) => i !== index) } as Section)
-          : s,
-      ),
+      prev.flatMap((s) => {
+        if (s.id !== id || !("images" in s)) return [s];
+        const images = ((s as any).images ?? []) as SectionImage[];
+        // Deleting the only image removes the whole section.
+        if (images.length <= 1) return [];
+        return [{ ...s, images: images.filter((_, i) => i !== index) } as Section];
+      }),
     );
     setDirty(true);
   };
