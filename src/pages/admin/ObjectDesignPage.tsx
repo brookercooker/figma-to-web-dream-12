@@ -2786,38 +2786,6 @@ export default function ObjectDesignPage() {
                       </span>
                       <span className="text-sm font-bold uppercase tracking-[0.14em] text-foreground">{SECTION_LABEL[s.type]}</span>
                       <div className="ml-auto flex items-center gap-2">
-                        <IconSelect
-                          label="Placement"
-                          value={(s.flow ?? "separate") as SectionFlow}
-                          options={[
-                            { value: "separate" as SectionFlow, label: "Separate", icon: Rows2 },
-                            { value: "inline" as SectionFlow, label: "Inline", icon: Columns2 },
-                          ]}
-                          onChange={(v) => patch(s.id, { flow: v } as Partial<Section>)}
-                        />
-                        {s.flow === "inline" && (
-                          <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Input
-                              type="number"
-                              min={1}
-                              max={100}
-                              className="h-8 w-20"
-                              placeholder="Auto"
-                              value={s.flowWidth ?? ""}
-                              onChange={(e) => {
-                                const raw = e.target.value;
-                                if (raw === "") {
-                                  patch(s.id, { flowWidth: undefined } as Partial<Section>);
-                                  return;
-                                }
-                                const n = Number(raw);
-                                if (Number.isNaN(n)) return;
-                                patch(s.id, { flowWidth: Math.min(100, Math.max(0, n)) } as Partial<Section>);
-                              }}
-                            />
-                            %
-                          </label>
-                        )}
 
 
                         <Button variant="ghost" size="sm" onClick={() => setActiveId(active ? "" : s.id)}>
