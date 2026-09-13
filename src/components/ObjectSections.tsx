@@ -6,7 +6,15 @@
 export type SectionAlign = "left" | "center" | "right";
 
 export type TextFont = "serif" | "sans";
-export type TextColor = "ink" | "stone" | "brass" | "garnet" | "cream";
+/** The Nova brand palette tokens. */
+export type TextColorToken = "ink" | "stone" | "brass" | "garnet" | "cream";
+/** A brand token, or any custom CSS color the user picks (e.g. "#3366ff"). */
+export type TextColor = TextColorToken | (string & {});
+
+/** True when the value is a custom color rather than a brand token. */
+export function isCustomColor(c: TextColor | undefined): c is string {
+  return !!c && !["ink", "stone", "brass", "garnet", "cream"].includes(c);
+}
 export type TextSize = "sm" | "md" | "lg" | "xl";
 
 export interface TextStyle {
