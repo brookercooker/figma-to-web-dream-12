@@ -223,6 +223,27 @@ export interface FreeImageGroupSettings {
   imageHeight?: ImageHeight;
   imageAlign?: SectionAlign;
   imageBorder?: boolean;
+  imageBorderColor?: TextColor;
+  imageBorderWidth?: number;
+  imageBorderRadius?: number;
+  imageBorderPad?: number;
+  imageBorderStyle?: "solid" | "dashed" | "dotted";
+}
+
+/** CSS color value for a semantic text color token. */
+export function textColorCss(c: TextColor): string {
+  return TEXT_COLORS.find((t) => t.value === c)?.swatch ?? "hsl(var(--nova-sand))";
+}
+
+/** Inline style for the box drawn around an image and its text. */
+export function imageBorderStyleOf(section: FreeSection): React.CSSProperties {
+  return {
+    borderWidth: `${section.imageBorderWidth ?? 1}px`,
+    borderStyle: section.imageBorderStyle ?? "solid",
+    borderColor: section.imageBorderColor ? textColorCss(section.imageBorderColor) : "hsl(var(--nova-sand))",
+    borderRadius: `${section.imageBorderRadius ?? 8}px`,
+    padding: `${section.imageBorderPad ?? 12}px`,
+  };
 }
 
 /** Merge a grid's own settings over the block defaults. */
