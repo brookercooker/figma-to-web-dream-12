@@ -1111,7 +1111,15 @@ function FreeView({ section }: { section: FreeSection }) {
   }
 
   const media: { part: string; node: React.ReactNode }[] = [];
-  if (hasImages) media.push({ part: "images", node: <div data-part="images" className="w-full"><FreeGallery section={section} /></div> });
+  if (hasImages) {
+    for (const g of imageGroups(section.images)) {
+      const part = imageGroupPart(g.key);
+      media.push({
+        part,
+        node: <div data-part={part} className="w-full"><FreeGallery section={section} items={g.items} /></div>,
+      });
+    }
+  }
   if ((section.videos ?? []).length) media.push({ part: "videos", node: <div data-part="videos" className="w-full"><FreeVideos section={section} /></div> });
 
   return (
