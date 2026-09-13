@@ -1073,7 +1073,8 @@ export function DividerBar({
   divider, align, onDark,
 }: { divider: FreeDivider; align: SectionAlign; onDark?: boolean }) {
   const color: TextColor = divider.color ?? (onDark ? "cream" : "stone");
-  const cls = dividerBg[color];
+  const custom = isCustomColor(color);
+  const cls = custom ? "" : dividerBg[color as TextColorToken];
   const pct = divider.widthPct;
   const sized = typeof pct === "number"
     ? `${dividerSelf[align]}`
@@ -1083,6 +1084,7 @@ export function DividerBar({
       className={`${cls} ${sized} my-2 rounded-full`}
       style={{
         height: `${divider.thickness ?? 1}px`,
+        ...(custom ? { backgroundColor: color as string } : null),
         ...(typeof pct === "number" ? { width: `${Math.min(100, Math.max(1, pct))}%` } : null),
       }}
     />
