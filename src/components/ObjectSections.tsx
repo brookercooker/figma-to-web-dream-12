@@ -1415,15 +1415,16 @@ export function SectionView({ section }: { section: Section }) {
               {section.eyebrow ? (
                 <p className={`uppercase tracking-[0.24em] ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "cream", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}>{section.eyebrow}</p>
               ) : null}
-              <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "xl" })}`}>
+              <h2 style={textInlineStyle(section.textStyle)} className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "xl" })}`}>
                 {section.heading}
               </h2>
               {section.body ? (
-                <p className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "cream", size: "md" })}`}>{section.body}</p>
+                <p style={textInlineStyle(section.bodyStyle)} className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "cream", size: "md" })}`}>{section.body}</p>
               ) : null}
               {section.buttonLabel ? (
                 <a
                   href={section.buttonHref || "#"}
+                  style={textInlineStyle(section.labelStyle)}
                   className={`mt-2 inline-flex items-center border border-cream px-7 py-3 uppercase tracking-[0.18em] transition-colors hover:bg-cream hover:text-ink ${bodyClasses(section.labelStyle, { color: "cream", size: "sm" })}`}
                 >
                   {section.buttonLabel}
