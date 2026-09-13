@@ -2275,7 +2275,51 @@ export default function ObjectDesignPage() {
 
     return (
       <div className="space-y-4">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1 rounded-lg border bg-background p-1.5 shadow-sm">
+            {([
+              { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
+              { value: "center" as SectionAlign, label: "Align center", icon: AlignCenter },
+              { value: "right" as SectionAlign, label: "Align right", icon: AlignRight },
+            ]).map((o) => (
+              <Button
+                key={o.value}
+                type="button"
+                size="sm"
+                variant={section.align === o.value ? "default" : "ghost"}
+                aria-label={o.label}
+                title={o.label}
+                className="h-8 w-8 p-0"
+                onClick={() => patch(section.id, { align: o.value })}
+              >
+                <o.icon className="h-4 w-4" />
+              </Button>
+            ))}
+            {parts.length > 1 && (
+              <>
+                <span className="mx-1 h-5 w-px bg-border" />
+                {([
+                  { value: "top" as RowVAlign, label: "Same row: top", icon: AlignVerticalJustifyStart },
+                  { value: "middle" as RowVAlign, label: "Same row: middle", icon: AlignVerticalJustifyCenter },
+                  { value: "bottom" as RowVAlign, label: "Same row: bottom", icon: AlignVerticalJustifyEnd },
+                  { value: "baseline" as RowVAlign, label: "Same row: text line", icon: Baseline },
+                ]).map((o) => (
+                  <Button
+                    key={o.value}
+                    type="button"
+                    size="sm"
+                    variant={(section.rowVAlign ?? "middle") === o.value ? "default" : "ghost"}
+                    aria-label={o.label}
+                    title={o.label}
+                    className="h-8 w-8 p-0"
+                    onClick={() => patch(section.id, { rowVAlign: o.value })}
+                  >
+                    <o.icon className="h-4 w-4" />
+                  </Button>
+                ))}
+              </>
+            )}
+          </div>
           <div className="ml-auto flex gap-2">
             <Chip
               label="Expand all"
@@ -2290,50 +2334,6 @@ export default function ObjectDesignPage() {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1 rounded-lg border bg-background p-1.5 shadow-sm">
-          {([
-            { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
-            { value: "center" as SectionAlign, label: "Align center", icon: AlignCenter },
-            { value: "right" as SectionAlign, label: "Align right", icon: AlignRight },
-          ]).map((o) => (
-            <Button
-              key={o.value}
-              type="button"
-              size="sm"
-              variant={section.align === o.value ? "default" : "ghost"}
-              aria-label={o.label}
-              title={o.label}
-              className="h-8 w-8 p-0"
-              onClick={() => patch(section.id, { align: o.value })}
-            >
-              <o.icon className="h-4 w-4" />
-            </Button>
-          ))}
-          {parts.length > 1 && (
-            <>
-              <span className="mx-1 h-5 w-px bg-border" />
-              {([
-                { value: "top" as RowVAlign, label: "Same row: top", icon: AlignVerticalJustifyStart },
-                { value: "middle" as RowVAlign, label: "Same row: middle", icon: AlignVerticalJustifyCenter },
-                { value: "bottom" as RowVAlign, label: "Same row: bottom", icon: AlignVerticalJustifyEnd },
-                { value: "baseline" as RowVAlign, label: "Same row: text line", icon: Baseline },
-              ]).map((o) => (
-                <Button
-                  key={o.value}
-                  type="button"
-                  size="sm"
-                  variant={(section.rowVAlign ?? "middle") === o.value ? "default" : "ghost"}
-                  aria-label={o.label}
-                  title={o.label}
-                  className="h-8 w-8 p-0"
-                  onClick={() => patch(section.id, { rowVAlign: o.value })}
-                >
-                  <o.icon className="h-4 w-4" />
-                </Button>
-              ))}
-            </>
-          )}
-        </div>
 
 
 
