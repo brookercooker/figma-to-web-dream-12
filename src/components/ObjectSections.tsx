@@ -764,38 +764,63 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
   const entries = items ?? section.images.map((image, index) => ({ image, index }));
   const n = entries.length;
   const perView = Math.min(Math.max(section.perView ?? 1, 1), Math.max(n, 1));
-  const pages = Math.max(n - perView + 1, 1);
+  const loop = n > perView;
+  const steps = loop ? n : Math.max(n - perView + 1, 1);
+  const display = loop ? [...entries, ...entries.slice(0, perView)] : entries;
   const [i, setI] = useState(0);
+  const [anim, setAnim] = useState(true);
 
-  useEffect(() => { setI((v) => (v < pages ? v : 0)); }, [pages]);
+  useEffect(() => { setI((v) => (v < steps ? v : 0)); }, [steps]);
+
+  const next = () => setI((v) => (loop ? v + 1 : (v + 1) % steps));
+  const prev = () => {
+    if (loop && i === 0) {
+      setAnim(false);
+      setI(n);
+      requestAnimationFrame(() => requestAnimationFrame(() => { setAnim(true); setI(n - 1); }));
+      return;
+    }
+    setI((v) => (v - 1 + steps) % steps);
+  };
+
+  // after sliding onto the cloned first slide, snap silently back to the real one
+  useEffect(() => {
+    if (!loop || i !== n) return;
+    const t = setTimeout(() => {
+      setAnim(false);
+      setI(0);
+      requestAnimationFrame(() => requestAnimationFrame(() => setAnim(true)));
+    }, 700);
+    return () => clearTimeout(t);
+  }, [i, n, loop]);
 
   useEffect(() => {
-    if (pages < 2) return;
-    const t = setInterval(() => setI((v) => (v + 1) % pages), 5000);
+    if (steps < 2) return;
+    const t = setInterval(() => setI((v) => (loop ? v + 1 : (v + 1) % steps)), 5000);
     return () => clearInterval(t);
-  }, [pages]);
+  }, [steps, loop]);
 
   return (
     <div className="relative">
       <div className="overflow-hidden rounded-lg">
         <div
-          className="flex transition-transform duration-700 ease-out"
+          className={`flex ${anim ? "transition-transform duration-700 ease-out" : ""}`}
           style={{ transform: `translateX(-${(i * 100) / perView}%)` }}
         >
-          {entries.map((e) => (
-            <figure key={e.index} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
+          {display.map((e, di) => (
+            <figure key={`${e.index}-${di}`} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
               <FreeFigureBody section={section} image={e.image} index={e.index} onDark={onDark} />
             </figure>
           ))}
 
         </div>
       </div>
-      {pages > 1 && (
+      {steps > 1 && (
         <>
           <button
             type="button"
             aria-label="Previous"
-            onClick={(e) => { e.stopPropagation(); setI((v) => (v - 1 + pages) % pages); }}
+            onClick={(e) => { e.stopPropagation(); prev(); }}
             className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-cream/85 hover:bg-cream p-2 shadow"
           >
             <ChevronLeft className="h-5 w-5 text-ink" />
@@ -803,7 +828,7 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
           <button
             type="button"
             aria-label="Next"
-            onClick={(e) => { e.stopPropagation(); setI((v) => (v + 1) % pages); }}
+            onClick={(e) => { e.stopPropagation(); next(); }}
             className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-cream/85 hover:bg-cream p-2 shadow"
           >
             <ChevronRight className="h-5 w-5 text-ink" />
