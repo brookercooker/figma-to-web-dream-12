@@ -6,7 +6,15 @@
 export type SectionAlign = "left" | "center" | "right";
 
 export type TextFont = "serif" | "sans";
-export type TextColor = "ink" | "stone" | "brass" | "garnet" | "cream";
+/** The Nova brand palette tokens. */
+export type TextColorToken = "ink" | "stone" | "brass" | "garnet" | "cream";
+/** A brand token, or any custom CSS color the user picks (e.g. "#3366ff"). */
+export type TextColor = TextColorToken | (string & {});
+
+/** True when the value is a custom color rather than a brand token. */
+export function isCustomColor(c: TextColor | undefined): c is string {
+  return !!c && !["ink", "stone", "brass", "garnet", "cream"].includes(c);
+}
 export type TextSize = "sm" | "md" | "lg" | "xl";
 
 export interface TextStyle {
@@ -27,9 +35,12 @@ export const MAX_TEXT_PX = 96;
 export const HEADING_PX: Record<TextSize, number> = { sm: 24, md: 30, lg: 36, xl: 48 };
 export const BODY_PX: Record<TextSize, number> = { sm: 14, md: 16, lg: 18, xl: 20 };
 
-/** Inline font-size for text that uses an exact px value. */
-export function textInlineStyle(style: TextStyle | undefined) {
-  return style?.sizePx ? { fontSize: `${style.sizePx}px` } : undefined;
+/** Inline font-size / custom color for text that overrides the presets. */
+export function textInlineStyle(style: TextStyle | undefined): React.CSSProperties | undefined {
+  const css: React.CSSProperties = {};
+  if (style?.sizePx) css.fontSize = `${style.sizePx}px`;
+  if (isCustomColor(style?.color)) css.color = style?.color as string;
+  return Object.keys(css).length ? css : undefined;
 }
 
 /** Bold / italic / underline classes shared by every text element. */
@@ -83,13 +94,17 @@ export const TEXT_SIZES: { value: TextSize; label: string }[] = [
 ];
 
 const fontClass: Record<TextFont, string> = { serif: "font-serif font-light", sans: "font-sans" };
-const colorClass: Record<TextColor, string> = {
+const colorClass: Record<TextColorToken, string> = {
   ink: "text-ink",
   stone: "text-stone",
   brass: "text-brass",
   garnet: "text-garnet",
   cream: "text-cream",
 };
+/** Class for a brand token; custom colors are applied inline instead. */
+function colorClassOf(c: TextColor): string {
+  return isCustomColor(c) ? "" : colorClass[c as TextColorToken];
+}
 const headingSizeClass: Record<TextSize, string> = {
   sm: "text-2xl",
   md: "text-3xl",
@@ -115,7 +130,7 @@ export function withEyebrowDefaults(style: TextStyle | undefined): TextStyle {
 export function headingClasses(style: TextStyle | undefined, fallback: { color: TextColor; size: TextSize }) {
   return [
     fontClass[style?.font ?? "serif"],
-    colorClass[style?.color ?? fallback.color],
+    colorClassOf(style?.color ?? fallback.color),
     style?.sizePx ? "" : headingSizeClass[style?.size ?? fallback.size],
     emphasisClasses(style),
   ].join(" ");
@@ -124,7 +139,7 @@ export function headingClasses(style: TextStyle | undefined, fallback: { color: 
 export function bodyClasses(style: TextStyle | undefined, fallback: { color: TextColor; size: TextSize }) {
   return [
     fontClass[style?.font ?? "sans"],
-    colorClass[style?.color ?? fallback.color],
+    colorClassOf(style?.color ?? fallback.color),
     style?.sizePx ? "" : bodySizeClass[style?.size ?? fallback.size],
     emphasisClasses(style),
   ].join(" ");
@@ -230,9 +245,21 @@ export interface FreeImageGroupSettings {
   imageBorderStyle?: "solid" | "dashed" | "dotted";
 }
 
-/** CSS color value for a semantic text color token. */
+/** CSS color value for a brand token or a custom color. */
 export function textColorCss(c: TextColor): string {
-  return TEXT_COLORS.find((t) => t.value === c)?.swatch ?? "hsl(var(--nova-sand))";
+  const token = TEXT_COLORS.find((t) => t.value === c);
+  if (token) return token.swatch;
+  return isCustomColor(c) ? (c as string) : "hsl(var(--nova-sand))";
+}
+
+/** Readable text color to sit on top of a custom fill. */
+export function contrastOn(color: string): string {
+  const hex = color.trim().replace("#", "");
+  const full = hex.length === 3 ? hex.split("").map((h) => h + h).join("") : hex;
+  if (!/^[0-9a-f]{6}$/i.test(full)) return "hsl(var(--nova-cream))";
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return lum > 0.6 ? "hsl(var(--nova-ink))" : "hsl(var(--nova-cream))";
 }
 
 /** Inline style for the box drawn around an image and its text. */
@@ -670,14 +697,14 @@ function Pic({ image, className }: { image: SectionImage; className: string }) {
   return <div className={box}>{inner}</div>;
 }
 
-const bgClass: Record<TextColor, string> = {
+const bgClass: Record<TextColorToken, string> = {
   ink: "bg-ink hover:bg-ink/90",
   stone: "bg-stone hover:bg-stone/90",
   brass: "bg-brass hover:bg-brass/90",
   garnet: "bg-garnet hover:bg-garnet/90",
   cream: "bg-cream hover:bg-cream/90",
 };
-const bgTextColor: Record<TextColor, TextColor> = {
+const bgTextColor: Record<TextColorToken, TextColor> = {
   ink: "cream", stone: "cream", brass: "ink", garnet: "cream", cream: "ink",
 };
 
@@ -686,15 +713,22 @@ function SectionButton({
 }: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle; bg?: TextColor }) {
   const base = "inline-flex items-center justify-center uppercase tracking-[0.18em] transition-colors";
   const fill = bg ?? "ink";
+  const custom = isCustomColor(fill);
   const styles =
     variant === "outline"
       ? "border border-ink px-7 py-3 hover:bg-ink hover:text-cream"
       : variant === "link"
         ? `${style?.underline === false ? "" : "underline underline-offset-4"} hover:text-brass`
-        : `${bgClass[fill]} px-7 py-3`;
-  const text = bodyClasses(style, { color: variant === "solid" ? bgTextColor[fill] : "ink", size: "sm" });
+        : `${custom ? "" : bgClass[fill as TextColorToken]} px-7 py-3`;
+  const fallbackText: TextColor = variant === "solid" && !custom ? bgTextColor[fill as TextColorToken] : "ink";
+  const text = bodyClasses(style, { color: fallbackText, size: "sm" });
+  const inline: React.CSSProperties = { ...textInlineStyle(style) };
+  if (variant === "solid" && custom) {
+    inline.backgroundColor = fill as string;
+    if (!style?.color) inline.color = contrastOn(fill as string);
+  }
   return (
-    <a href={href || "#"} className={`${base} ${styles} ${text}`} style={textInlineStyle(style)} {...richText(label)} />
+    <a href={href || "#"} className={`${base} ${styles} ${text}`} style={inline} {...richText(label)} />
   );
 }
 
@@ -721,6 +755,7 @@ function Carousel({ section }: { section: CarouselSection }) {
           <Pic image={img} className="h-full w-full" />
           {img.caption ? (
             <div
+              style={textInlineStyle(section.captionStyle)}
               className={`absolute bottom-0 inset-x-0 bg-ink/50 px-6 py-3 ${bodyClasses(section.captionStyle, { color: "cream", size: "sm" })}`}
             >
               {img.caption}
@@ -1007,7 +1042,7 @@ function FreeVideos({ section, onDark }: { section: FreeSection; onDark?: boolea
   );
 }
 
-const dividerBg: Record<TextColor, string> = {
+const dividerBg: Record<TextColorToken, string> = {
   ink: "bg-ink",
   stone: "bg-stone",
   brass: "bg-brass",
@@ -1039,7 +1074,8 @@ export function DividerBar({
   divider, align, onDark,
 }: { divider: FreeDivider; align: SectionAlign; onDark?: boolean }) {
   const color: TextColor = divider.color ?? (onDark ? "cream" : "stone");
-  const cls = dividerBg[color];
+  const custom = isCustomColor(color);
+  const cls = custom ? "" : dividerBg[color as TextColorToken];
   const pct = divider.widthPct;
   const sized = typeof pct === "number"
     ? `${dividerSelf[align]}`
@@ -1049,6 +1085,7 @@ export function DividerBar({
       className={`${cls} ${sized} my-2 rounded-full`}
       style={{
         height: `${divider.thickness ?? 1}px`,
+        ...(custom ? { backgroundColor: color as string } : null),
         ...(typeof pct === "number" ? { width: `${Math.min(100, Math.max(1, pct))}%` } : null),
       }}
     />
@@ -1322,7 +1359,7 @@ function FreeView({ section }: { section: FreeSection }) {
 export function SectionView({ section }: { section: Section }) {
   const heading = (text?: string, style?: TextStyle) =>
     text ? (
-      <h2 className={`mb-8 ${headingClasses(style, { color: "ink", size: "md" })}`}>{text}</h2>
+      <h2 style={textInlineStyle(style)} className={`mb-8 ${headingClasses(style, { color: "ink", size: "md" })}`}>{text}</h2>
     ) : null;
 
   switch (section.type) {
@@ -1358,7 +1395,7 @@ export function SectionView({ section }: { section: Section }) {
               <figure key={i}>
                 <Pic image={img} className="w-full aspect-[4/3] rounded-lg" />
                 {img.caption ? (
-                  <figcaption className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: "stone", size: "sm" })}`}>{img.caption}</figcaption>
+                  <figcaption style={textInlineStyle(section.captionStyle)} className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: "stone", size: "sm" })}`}>{img.caption}</figcaption>
                 ) : null}
               </figure>
             ))}
@@ -1378,15 +1415,16 @@ export function SectionView({ section }: { section: Section }) {
               {section.eyebrow ? (
                 <p className={`uppercase tracking-[0.24em] ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "cream", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}>{section.eyebrow}</p>
               ) : null}
-              <h2 className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "xl" })}`}>
+              <h2 style={textInlineStyle(section.textStyle)} className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "xl" })}`}>
                 {section.heading}
               </h2>
               {section.body ? (
-                <p className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "cream", size: "md" })}`}>{section.body}</p>
+                <p style={textInlineStyle(section.bodyStyle)} className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "cream", size: "md" })}`}>{section.body}</p>
               ) : null}
               {section.buttonLabel ? (
                 <a
                   href={section.buttonHref || "#"}
+                  style={textInlineStyle(section.labelStyle)}
                   className={`mt-2 inline-flex items-center border border-cream px-7 py-3 uppercase tracking-[0.18em] transition-colors hover:bg-cream hover:text-ink ${bodyClasses(section.labelStyle, { color: "cream", size: "sm" })}`}
                 >
                   {section.buttonLabel}
@@ -1408,9 +1446,9 @@ export function SectionView({ section }: { section: Section }) {
               {section.eyebrow ? (
                 <p className={`uppercase tracking-[0.24em] mb-3 ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "stone", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}>{section.eyebrow}</p>
               ) : null}
-              <h2 className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "xl" })}`}>{section.heading}</h2>
+              <h2 style={textInlineStyle(section.textStyle)} className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "xl" })}`}>{section.heading}</h2>
               {section.body ? (
-                <p className={`leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "stone", size: "md" })}`}>{section.body}</p>
+                <p style={textInlineStyle(section.bodyStyle)} className={`leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "stone", size: "md" })}`}>{section.body}</p>
               ) : null}
               {section.buttonLabel ? (
                 <div className="mt-6">

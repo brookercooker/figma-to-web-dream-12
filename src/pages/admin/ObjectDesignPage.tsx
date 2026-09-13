@@ -21,7 +21,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BODY_PX, FREE_TEXT_KINDS, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
+  BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type RowVAlign, type ImageHeight,
   type TextColor, type TextFont, type TextSize, type TextStyle,
@@ -96,6 +96,38 @@ function Choice<T extends string | number>({
   );
 }
 
+/**
+ * Any color is allowed. The brand palette sits first, with a custom picker
+ * after it so bespoke colors stay a deliberate second step.
+ */
+function CustomColorSwatch({
+  value, onChange, size = "h-5 w-5",
+}: { value: TextColor | undefined; onChange: (v: TextColor) => void; size?: string }) {
+  const custom = isCustomColor(value);
+  const current = custom ? (value as string) : "#212121";
+  return (
+    <label
+      title="Custom color"
+      className={`relative inline-flex cursor-pointer items-center justify-center rounded-full border border-border transition-transform hover:scale-110 ${size} ${
+        custom ? "ring-2 ring-offset-1 ring-foreground/60" : ""
+      }`}
+      style={{
+        background: custom
+          ? current
+          : "conic-gradient(#e8453c,#f9bc15,#3bb143,#25b2e8,#6a45c4,#e8453c)",
+      }}
+    >
+      <input
+        type="color"
+        aria-label="Custom color"
+        value={current}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      />
+    </label>
+  );
+}
+
 function ColorSwatches({ value, onChange }: { value: TextColor; onChange: (v: TextColor) => void }) {
   return (
     <div className="flex items-center gap-2 pt-1">
@@ -113,6 +145,8 @@ function ColorSwatches({ value, onChange }: { value: TextColor; onChange: (v: Te
           style={{ background: c.swatch }}
         />
       ))}
+      <span className="mx-0.5 h-4 w-px bg-border" aria-hidden />
+      <CustomColorSwatch value={value} onChange={onChange} />
     </div>
   );
 }
@@ -223,25 +257,10 @@ function TextStyleFields({
           </div>
         </Field>
         <Field label="Color">
-          <div className="flex items-center gap-2 pt-1">
-            {TEXT_COLORS.map((c) => {
-              const selected = (style.color ?? defaults.color) === c.value;
-              return (
-                <button
-                  key={c.value}
-                  type="button"
-                  title={c.label}
-                  aria-label={`${c.label} text`}
-                  aria-pressed={selected}
-                  onClick={() => set({ color: c.value })}
-                  className={`h-5 w-5 rounded-full border border-border transition-transform hover:scale-110 ${
-                    selected ? "ring-2 ring-offset-1 ring-foreground/60" : ""
-                  }`}
-                  style={{ background: c.swatch }}
-                />
-              );
-            })}
-          </div>
+          <ColorSwatches
+            value={style.color ?? defaults.color}
+            onChange={(v) => set({ color: v })}
+          />
         </Field>
       </div>
     </div>
@@ -400,6 +419,7 @@ function ColorDropdown({
 }) {
   const active = value || fallback;
   const current = options.find((o) => o.value === active);
+  const custom = !current && isCustomColor(active);
   return (
     <div className="flex items-center gap-1.5 text-xs">
       <span className="text-muted-foreground">{label}</span>
@@ -409,18 +429,28 @@ function ColorDropdown({
             type="button"
             className="flex h-7 items-center gap-1.5 rounded-md border bg-background px-2 text-xs"
           >
-            <ColorDot swatch={current?.swatch} />
-            <span>{current?.label ?? ""}</span>
+            <ColorDot swatch={current?.swatch ?? (custom ? active : undefined)} />
+            <span>{current?.label ?? (custom ? "Custom" : "")}</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[9rem]">
-
+          <div className="px-2 pb-1 pt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+            Brand palette
+          </div>
           {options.map((o) => (
             <DropdownMenuItem key={o.value} className="gap-2 text-xs" onSelect={() => onChange(o.value)}>
               <ColorDot swatch={o.swatch} />
               {o.label}
             </DropdownMenuItem>
           ))}
+          <div className="mt-1 flex items-center gap-2 border-t px-2 py-2">
+            <CustomColorSwatch
+              value={custom ? active : undefined}
+              onChange={(v) => onChange(v as string)}
+              size="h-4 w-4"
+            />
+            <span className="text-xs">Custom color</span>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
