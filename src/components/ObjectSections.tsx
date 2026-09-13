@@ -509,6 +509,12 @@ export interface FreeSection {
   captionAlign?: SectionAlign;
   /** draw a border around each image and its text */
   imageBorder?: boolean;
+  /** border customization */
+  imageBorderColor?: TextColor;
+  imageBorderWidth?: number;
+  imageBorderRadius?: number;
+  imageBorderPad?: number;
+  imageBorderStyle?: "solid" | "dashed" | "dotted";
   /** per image-grid overrides, keyed by grid number */
   groupSettings?: Record<string, FreeImageGroupSettings>;
   align: SectionAlign;
