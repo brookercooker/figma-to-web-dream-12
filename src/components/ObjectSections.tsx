@@ -1235,7 +1235,7 @@ function FreeView({ section }: { section: FreeSection }) {
           {section.images.map((img, i) => (
             <div
               key={i}
-              className={`relative basis-0 grow min-w-0 overflow-hidden rounded-lg ${overlayHeight[section.height]}`}
+              className={`group/pic relative basis-0 grow min-w-0 overflow-hidden rounded-lg ${overlayHeight[section.height]}`}
             >
               <div data-part={`image:${i}`} className="absolute inset-0">
                 <Pic image={img} className="absolute inset-0 h-full w-full" />
