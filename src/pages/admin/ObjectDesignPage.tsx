@@ -481,6 +481,9 @@ export default function ObjectDesignPage() {
   const [blocksExpanded, setBlocksExpanded] = useState(false);
   const [dragPart, setDragPart] = useState<{ sectionId: string; part: string } | null>(null);
   const [dropAt, setDropAt] = useState<{ sectionId: string; part: string; before: boolean } | null>(null);
+  // drag and drop for the text boxes attached to an image
+  const [dragText, setDragText] = useState<{ sectionId: string; index: number; ti: number } | null>(null);
+  const [dropText, setDropText] = useState<{ sectionId: string; index: number; ti: number; before: boolean } | null>(null);
   // floating font / size / color toolbar for the clicked text element
   const [toolbar, setToolbar] = useState<
     { sectionId: string; field?: keyof FreeSection; imageIndex?: number; top: number; left: number; width: number } | null
@@ -796,6 +799,16 @@ export default function ObjectDesignPage() {
     setOpenSub((s) =>
       s[`txt:${sectionId}:${index}:${tIdx}`] ? s : { ...s, [`txt:${sectionId}:${index}:${tIdx}`]: true },
     );
+    patchImage(sectionId, index, { texts });
+  };
+
+  /** Move an image's text box to a new spot in the list. */
+  const moveImageText = (sectionId: string, index: number, from: number, to: number) => {
+    const texts = [...imageTextsOf(sectionId, index)];
+    if (from === to || from < 0 || from >= texts.length) return;
+    const [moved] = texts.splice(from, 1);
+    const dest = Math.max(0, Math.min(texts.length, from < to ? to - 1 : to));
+    texts.splice(dest, 0, moved);
     patchImage(sectionId, index, { texts });
   };
 
@@ -1186,9 +1199,46 @@ export default function ObjectDesignPage() {
             const tKey = `txt:${section.id}:${index}:${ti}`;
             const tOpen = openSub[tKey] ?? focusPart === `imagetext:${index}:${ti}`;
             const kindLabel = IMAGE_TEXT_KINDS.find((k) => k.value === t.kind)?.label ?? "Text";
+            const isDragging = dragText?.sectionId === section.id && dragText.index === index && dragText.ti === ti;
+            const dropHere =
+              !isDragging && dropText?.sectionId === section.id && dropText.index === index && dropText.ti === ti
+                ? dropText.before ? "before" : "after"
+                : null;
+            const bar = <div className="h-0.5 rounded-full bg-primary" />;
             return (
-            <div key={t.id} className="space-y-2 rounded border bg-muted/30 p-2">
+            <div key={t.id} className="space-y-1">
+            {dropHere === "before" && bar}
+            <div
+              onDragOver={(e) => {
+                if (!dragText || dragText.sectionId !== section.id || dragText.index !== index) return;
+                e.preventDefault();
+                const r = e.currentTarget.getBoundingClientRect();
+                const before = e.clientY < r.top + r.height / 2;
+                setDropText({ sectionId: section.id, index, ti, before });
+              }}
+              onDrop={(e) => {
+                if (!dragText || dragText.sectionId !== section.id || dragText.index !== index) return;
+                e.preventDefault();
+                const target = dropText?.before ? ti : ti + 1;
+                moveImageText(section.id, index, dragText.ti, target);
+                setDragText(null);
+                setDropText(null);
+              }}
+              className={`space-y-2 rounded border bg-muted/30 p-2 ${isDragging ? "opacity-40" : ""}`}
+            >
               <div className="flex items-center gap-2">
+                <span
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = "move";
+                    setDragText({ sectionId: section.id, index, ti });
+                  }}
+                  onDragEnd={() => { setDragText(null); setDropText(null); }}
+                  title="Drag to reorder"
+                  className="cursor-grab text-muted-foreground active:cursor-grabbing"
+                >
+                  <GripVertical className="w-4 h-4" />
+                </span>
                 <button
                   type="button"
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
@@ -1397,6 +1447,8 @@ export default function ObjectDesignPage() {
                   )}
                 </>
               )}
+            </div>
+            {dropHere === "after" && bar}
             </div>
             );
           })}
