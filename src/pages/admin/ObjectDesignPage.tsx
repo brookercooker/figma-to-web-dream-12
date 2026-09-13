@@ -1831,9 +1831,9 @@ export default function ObjectDesignPage() {
                     <Field label="Show at once">
                       <div>
                         <Choice
-                          value={Math.min(section.perView ?? 1, section.images.length)}
+                          value={Math.min(section.perView ?? 1, group.items.length)}
                           options={Array.from(
-                            { length: Math.min(section.images.length, 6) },
+                            { length: Math.min(group.items.length, 6) },
                             (_, k) => ({ value: k + 1, label: String(k + 1) }),
                           )}
                           onChange={(v) => patch(section.id, { perView: v })}
