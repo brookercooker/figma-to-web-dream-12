@@ -96,6 +96,38 @@ function Choice<T extends string | number>({
   );
 }
 
+/**
+ * Any color is allowed. The brand palette sits first, with a custom picker
+ * after it so bespoke colors stay a deliberate second step.
+ */
+function CustomColorSwatch({
+  value, onChange, size = "h-5 w-5",
+}: { value: TextColor | undefined; onChange: (v: TextColor) => void; size?: string }) {
+  const custom = isCustomColor(value);
+  const current = custom ? (value as string) : "#212121";
+  return (
+    <label
+      title="Custom color"
+      className={`relative inline-flex cursor-pointer items-center justify-center rounded-full border border-border transition-transform hover:scale-110 ${size} ${
+        custom ? "ring-2 ring-offset-1 ring-foreground/60" : ""
+      }`}
+      style={{
+        background: custom
+          ? current
+          : "conic-gradient(#e8453c,#f9bc15,#3bb143,#25b2e8,#6a45c4,#e8453c)",
+      }}
+    >
+      <input
+        type="color"
+        aria-label="Custom color"
+        value={current}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+      />
+    </label>
+  );
+}
+
 function ColorSwatches({ value, onChange }: { value: TextColor; onChange: (v: TextColor) => void }) {
   return (
     <div className="flex items-center gap-2 pt-1">
@@ -113,6 +145,8 @@ function ColorSwatches({ value, onChange }: { value: TextColor; onChange: (v: Te
           style={{ background: c.swatch }}
         />
       ))}
+      <span className="mx-0.5 h-4 w-px bg-border" aria-hidden />
+      <CustomColorSwatch value={value} onChange={onChange} />
     </div>
   );
 }
