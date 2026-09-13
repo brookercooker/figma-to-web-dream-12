@@ -223,7 +223,7 @@ export function groupSection(section: FreeSection, key: number): FreeSection {
   if (!s) return section;
   const merged: FreeSection = { ...section };
   for (const [k, v] of Object.entries(s)) {
-    if (v !== undefined) (merged as Record<string, unknown>)[k] = v;
+    if (v !== undefined) (merged as unknown as Record<string, unknown>)[k] = v;
   }
   return merged;
 }
