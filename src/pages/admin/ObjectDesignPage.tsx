@@ -803,12 +803,12 @@ export default function ObjectDesignPage() {
     patchImage(sectionId, index, { texts: imageTextsOf(sectionId, index).filter((_, i) => i !== tIdx) });
   };
 
-  const addImageSlot = (id: string) => {
+  const addImageSlot = (id: string, group?: number) => {
     let newIndex = 0;
     setSections((prev) =>
       prev.map((s) => {
         if (s.id === id && "images" in s) {
-          const images = [...(s as any).images, { url: "", alt: "" }];
+          const images = [...(s as any).images, { url: "", alt: "", group }];
           newIndex = images.length - 1;
           return { ...s, images } as Section;
         }
