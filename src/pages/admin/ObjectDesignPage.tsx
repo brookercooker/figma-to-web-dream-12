@@ -938,7 +938,13 @@ export default function ObjectDesignPage() {
     if (!target || target.type !== "free") return;
     const s = target as FreeSection;
     if (s.id !== activeId) setActiveId(s.id);
-    if (kind === "image") return addImageSlot(s.id);
+    if (kind === "image") {
+      // Each press of the rail's Image button starts a new grid in this block.
+      const next = s.images.length
+        ? Math.max(...s.images.map((img) => img.group ?? 0)) + 1
+        : 0;
+      return addImageSlot(s.id, next);
+    }
     if (kind === "video") return addVideoSlot(s.id);
     if (kind === "divider") {
       const id = newSectionId();
