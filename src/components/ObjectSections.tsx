@@ -150,7 +150,7 @@ export const imageHeightClass: Record<ImageHeight, string> = {
 };
 
 /** Extra text boxes (and rules) that sit under an image and scroll with it. */
-export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text" | "divider";
+export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text" | "divider" | "button";
 
 export const IMAGE_TEXT_KINDS: { value: ImageTextKind; label: string }[] = [
   { value: "eyebrow", label: "Eyebrow" },
@@ -158,6 +158,7 @@ export const IMAGE_TEXT_KINDS: { value: ImageTextKind; label: string }[] = [
   { value: "subheading", label: "Subheading" },
   { value: "text", label: "Text" },
   { value: "divider", label: "Divider" },
+  { value: "button", label: "Button" },
 ];
 
 export interface ImageText {
@@ -169,6 +170,8 @@ export interface ImageText {
   align?: SectionAlign;
   /** bar settings when kind is "divider" */
   divider?: { color?: TextColor; width?: "full" | "short"; widthPct?: number; thickness?: number };
+  /** link settings when kind is "button" */
+  button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor };
 }
 
 export const IMAGE_TEXT_DEFAULTS: Record<
@@ -180,6 +183,7 @@ export const IMAGE_TEXT_DEFAULTS: Record<
   subheading: { font: "serif", color: "ink", size: "sm", heading: true },
   text: { font: "sans", color: "stone", size: "sm", heading: false },
   divider: { font: "sans", color: "stone", size: "sm", heading: false },
+  button: { font: "sans", color: "ink", size: "sm", heading: false },
 };
 
 export interface SectionImage {
@@ -761,6 +765,19 @@ function FreeFigureBody({
             </div>
           );
         }
+        if (t.kind === "button") {
+          return (
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`}>
+              <SectionButton
+                label={t.text || "Button"}
+                href={t.button?.href || "#"}
+                variant={t.button?.variant ?? (onDark ? "outline" : "solid")}
+                style={t.style}
+                bg={t.button?.bg}
+              />
+            </div>
+          );
+        }
         return (
           <p
             key={t.id}
@@ -1167,6 +1184,19 @@ function OverlayImageTexts({
                 divider={{ id: t.id, ...(t.divider ?? {}) }}
                 align={t.align ?? image.captionAlign ?? blockAlign}
                 onDark
+              />
+            </div>
+          );
+        }
+        if (t.kind === "button") {
+          return (
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`}>
+              <SectionButton
+                label={t.text || "Button"}
+                href={t.button?.href || "#"}
+                variant={t.button?.variant ?? "outline"}
+                style={t.style}
+                bg={t.button?.bg}
               />
             </div>
           );

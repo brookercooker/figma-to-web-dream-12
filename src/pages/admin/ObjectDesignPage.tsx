@@ -1298,6 +1298,74 @@ export default function ObjectDesignPage() {
                         onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
                       />
                     </>
+                  ) : t.kind === "button" ? (
+                    <>
+                      <Field label="Label">
+                        <Input
+                          value={t.text}
+                          placeholder="Button label"
+                          onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
+                        />
+                      </Field>
+                      <Field label="Link (optional)">
+                        <Input
+                          value={t.button?.href ?? ""}
+                          placeholder="Link (optional)"
+                          onChange={(e) =>
+                            patchImageText(section.id, index, ti, {
+                              button: { ...(t.button ?? {}), href: e.target.value },
+                            })
+                          }
+                        />
+                      </Field>
+                      <Field label="Style">
+                        <IconSelect
+                          value={t.button?.variant ?? "solid"}
+                          options={[
+                            { value: "solid" as const, label: "Solid" },
+                            { value: "outline" as const, label: "Outline" },
+                            { value: "link" as const, label: "Text link" },
+                          ]}
+                          onChange={(v) =>
+                            patchImageText(section.id, index, ti, {
+                              button: { ...(t.button ?? {}), variant: v as "solid" | "outline" | "link" },
+                            })
+                          }
+                        />
+                      </Field>
+                      {(t.button?.variant ?? "solid") === "solid" && (
+                        <ColorDropdown
+                          label="Fill"
+                          value={t.button?.bg ?? ""}
+                          fallback="ink"
+                          options={TEXT_COLORS}
+                          onChange={(v) =>
+                            patchImageText(section.id, index, ti, {
+                              button: { ...(t.button ?? {}), bg: v as TextColor },
+                            })
+                          }
+                        />
+                      )}
+                      <Choice
+                        value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
+                        options={[
+                          { value: "left" as const, label: "Left", icon: AlignLeft },
+                          { value: "center" as const, label: "Center", icon: AlignCenter },
+                          { value: "right" as const, label: "Right", icon: AlignRight },
+                        ]}
+                        onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
+                      />
+                      <TextStyleFields
+                        label="Label style"
+                        value={t.style}
+                        defaults={{
+                          font: IMAGE_TEXT_DEFAULTS.button.font,
+                          color: (t.button?.variant ?? "solid") === "solid" ? "cream" : "ink",
+                          size: IMAGE_TEXT_DEFAULTS.button.size,
+                        }}
+                        onChange={(v) => patchImageText(section.id, index, ti, { style: v })}
+                      />
+                    </>
                   ) : (
                     <>
                       <Textarea
