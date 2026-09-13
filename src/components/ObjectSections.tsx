@@ -554,7 +554,7 @@ export function parseSections(value: unknown): Section[] {
 
 /* ------------------------------- rendering ------------------------------- */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const alignText: Record<SectionAlign, string> = {
