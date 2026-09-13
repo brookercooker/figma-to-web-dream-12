@@ -1743,21 +1743,21 @@ export default function ObjectDesignPage() {
                 <Plus className="w-4 h-4" /> Add image
               </Button>
             </div>
-            {isFirst && (
-              <>
             <Field label="Border around image and text">
               <div>
                 <Choice
-                  value={section.imageBorder ? "on" : "off"}
+                  value={eff.imageBorder ? "on" : "off"}
                   options={[
                     { value: "off" as const, label: "None" },
                     { value: "on" as const, label: "Border" },
                   ]}
-                  onChange={(v) => patch(section.id, { imageBorder: v === "on" || undefined })}
+                  onChange={(v) => patchGroup({ imageBorder: v === "on" })}
                 />
               </div>
             </Field>
             <div className="flex flex-wrap gap-4">
+              {isFirst && (
+                <>
               <Field label="Images sit">
                 <div>
                   <IconSelect
@@ -1800,56 +1800,58 @@ export default function ObjectDesignPage() {
                   </div>
                 </Field>
               )}
-              {section.layout !== "behind" && section.images.length > 0 && (
+                </>
+              )}
+              {section.layout !== "behind" && count > 0 && (
                 <Field label="Image height">
                   <div>
                     <Choice
-                      value={section.imageHeight ?? "auto"}
+                      value={eff.imageHeight ?? "auto"}
                       options={IMAGE_HEIGHTS.map((h) => ({ value: h.value, label: h.label }))}
-                      onChange={(v) => patch(section.id, { imageHeight: v })}
+                      onChange={(v) => patchGroup({ imageHeight: v })}
                     />
                   </div>
                 </Field>
               )}
-              {section.layout !== "behind" && section.images.length > 0 && section.gallery !== "carousel" && (
+              {section.layout !== "behind" && count > 0 && eff.gallery !== "carousel" && (
                 <Field label="Image position">
                   <div>
                     <Choice
-                      value={section.imageAlign ?? "left"}
+                      value={eff.imageAlign ?? "left"}
                       options={[
                         { value: "left" as const, label: "Left", icon: AlignLeft },
                         { value: "center" as const, label: "Center", icon: AlignCenter },
                         { value: "right" as const, label: "Right", icon: AlignRight },
                       ]}
-                      onChange={(v) => patch(section.id, { imageAlign: v })}
+                      onChange={(v) => patchGroup({ imageAlign: v })}
                     />
                   </div>
                 </Field>
               )}
-              {section.layout !== "behind" && section.images.length > 1 && (
+              {section.layout !== "behind" && count > 1 && (
                 <>
                   <Field label="Show as">
                     <div>
                       <Choice
-                        value={section.gallery}
+                        value={eff.gallery}
                         options={[
                           { value: "grid" as const, label: "Grid", icon: LayoutGrid },
                           { value: "carousel" as const, label: "Carousel", icon: GalleryHorizontal },
                         ]}
-                        onChange={(v) => patch(section.id, { gallery: v })}
+                        onChange={(v) => patchGroup({ gallery: v })}
                       />
                     </div>
                   </Field>
-                  {section.gallery === "carousel" && (
+                  {eff.gallery === "carousel" && (
                     <Field label="Show at once">
                       <div>
                         <Choice
-                          value={Math.min(section.perView ?? 1, group.items.length)}
+                          value={Math.min(eff.perView ?? 1, count)}
                           options={Array.from(
-                            { length: Math.min(group.items.length, 6) },
+                            { length: Math.min(count, 6) },
                             (_, k) => ({ value: k + 1, label: String(k + 1) }),
                           )}
-                          onChange={(v) => patch(section.id, { perView: v })}
+                          onChange={(v) => patchGroup({ perView: v })}
                         />
                       </div>
                     </Field>
@@ -1857,8 +1859,7 @@ export default function ObjectDesignPage() {
                 </>
               )}
             </div>
-              </>
-            )}
+
           </>
         ) })
       );
