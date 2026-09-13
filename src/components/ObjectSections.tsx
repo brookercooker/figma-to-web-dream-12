@@ -188,6 +188,24 @@ export interface SectionImage {
   texts?: ImageText[];
   /** optional destination opened when the image is clicked */
   href?: string;
+  /** which image grid inside the block this image belongs to (default 0) */
+  group?: number;
+}
+
+/** Images of a free block split into their grids, keeping original indexes. */
+export function imageGroups(images: SectionImage[]): { key: number; items: { image: SectionImage; index: number }[] }[] {
+  const map = new Map<number, { image: SectionImage; index: number }[]>();
+  images.forEach((image, index) => {
+    const key = image.group ?? 0;
+    if (!map.has(key)) map.set(key, []);
+    (map.get(key) as { image: SectionImage; index: number }[]).push({ image, index });
+  });
+  return [...map.entries()].sort((a, b) => a[0] - b[0]).map(([key, items]) => ({ key, items }));
+}
+
+/** Part name used for an image grid inside a block. */
+export function imageGroupPart(key: number): string {
+  return key === 0 ? "images" : `images:${key}`;
 }
 
 /** A video placed in a block: an uploaded file or a YouTube / Vimeo link. */
