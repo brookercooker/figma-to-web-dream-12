@@ -483,6 +483,8 @@ export interface FreeSection {
   /** per image-grid overrides, keyed by grid number */
   groupSettings?: Record<string, FreeImageGroupSettings>;
   align: SectionAlign;
+  /** vertical position of text sitting over an image ("behind" layout) */
+  overlayVAlign?: "top" | "middle" | "bottom";
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
   buttonHref?: string;
