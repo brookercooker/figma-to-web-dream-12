@@ -755,6 +755,7 @@ function Carousel({ section }: { section: CarouselSection }) {
           <Pic image={img} className="h-full w-full" />
           {img.caption ? (
             <div
+              style={textInlineStyle(section.captionStyle)}
               className={`absolute bottom-0 inset-x-0 bg-ink/50 px-6 py-3 ${bodyClasses(section.captionStyle, { color: "cream", size: "sm" })}`}
             >
               {img.caption}
