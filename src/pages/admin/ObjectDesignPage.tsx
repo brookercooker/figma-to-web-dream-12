@@ -2589,32 +2589,27 @@ export default function ObjectDesignPage() {
                   onChange={(v) => patch(sec.id, { imageSide: v })}
                 />
               )}
-              {sec.layout !== "behind" && (sec.images?.length ?? 0) > 1 && (
+              {sec.layout !== "behind" && gCount > 1 && (
                 <Dropdown
                   label="Show as"
-                  value={sec.gallery ?? "grid"}
+                  value={gEff.gallery ?? "grid"}
                   options={[
                     { value: "grid", label: "Grid", icon: LayoutGrid },
                     { value: "carousel", label: "Carousel", icon: GalleryHorizontal },
                   ]}
-                  onChange={(v) => patch(sec.id, { gallery: v })}
+                  onChange={(v) => patchG({ gallery: v as "grid" | "carousel" })}
                 />
               )}
-              {(() => {
-                const groupKey = sec.images?.[idx]?.group ?? 0;
-                const groupCount = (sec.images ?? []).filter((im) => (im.group ?? 0) === groupKey).length;
-                if (sec.layout === "behind" || sec.gallery !== "carousel" || groupCount <= 1) return null;
-                return (
-                  <Dropdown
-                    label="Show at once"
-                    value={String(Math.min(sec.perView ?? 1, groupCount))}
-                    options={Array.from({ length: Math.min(groupCount, 6) }, (_, k) => ({
-                      value: String(k + 1), label: String(k + 1),
-                    }))}
-                    onChange={(v) => patch(sec.id, { perView: Number(v) })}
-                  />
-                );
-              })()}
+              {sec.layout !== "behind" && gEff.gallery === "carousel" && gCount > 1 && (
+                <Dropdown
+                  label="Show at once"
+                  value={String(Math.min(gEff.perView ?? 1, gCount))}
+                  options={Array.from({ length: Math.min(gCount, 6) }, (_, k) => ({
+                    value: String(k + 1), label: String(k + 1),
+                  }))}
+                  onChange={(v) => patchG({ perView: Number(v) })}
+                />
+              )}
               <Button
                 variant="ghost"
                 size="sm"
