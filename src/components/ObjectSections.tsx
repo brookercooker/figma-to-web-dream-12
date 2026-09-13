@@ -208,6 +208,26 @@ export function imageGroupPart(key: number): string {
   return key === 0 ? "images" : `images:${key}`;
 }
 
+/** Display settings that each image grid inside a block can set on its own. */
+export interface FreeImageGroupSettings {
+  gallery?: "grid" | "carousel";
+  perView?: number;
+  imageHeight?: ImageHeight;
+  imageAlign?: SectionAlign;
+  imageBorder?: boolean;
+}
+
+/** Merge a grid's own settings over the block defaults. */
+export function groupSection(section: FreeSection, key: number): FreeSection {
+  const s = section.groupSettings?.[String(key)];
+  if (!s) return section;
+  const merged: FreeSection = { ...section };
+  for (const [k, v] of Object.entries(s)) {
+    if (v !== undefined) (merged as Record<string, unknown>)[k] = v;
+  }
+  return merged;
+}
+
 /** A video placed in a block: an uploaded file or a YouTube / Vimeo link. */
 export interface SectionVideo {
   id: string;
