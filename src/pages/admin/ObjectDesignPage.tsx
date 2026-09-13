@@ -2591,7 +2591,7 @@ export default function ObjectDesignPage() {
 
       <main
         className={`grid grid-cols-1 gap-6 px-4 py-6 ${
-          libraryOpen ? "lg:grid-cols-[260px_1fr_auto]" : "lg:grid-cols-[44px_1fr_auto]"
+          libraryOpen ? "lg:grid-cols-[260px_1fr]" : "lg:grid-cols-[44px_1fr]"
         }`}
       >
         {!libraryOpen ? (
@@ -2662,11 +2662,31 @@ export default function ObjectDesignPage() {
             </div>
           ) : (
             <div className="space-y-8">
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => add("free")}>
-                  <Plus className="w-4 h-4" /> Add another section
-                </Button>
+              <div className="sticky top-[60px] z-20 flex flex-wrap items-center gap-1.5 rounded-lg border bg-background/95 p-2 shadow-sm backdrop-blur">
+                {ADD_ITEMS.map((item) => (
+                  <button
+                    key={item.kind}
+                    type="button"
+                    title={`Add ${item.label.toLowerCase()}`}
+                    aria-label={`Add ${item.label.toLowerCase()}`}
+                    onClick={() => addElement(item.kind)}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground"
+                  >
+                    <item.icon className="h-4 w-4" />
+                  </button>
+                ))}
+                <span className="mx-1 h-6 w-px bg-border" />
+                <button
+                  type="button"
+                  title="Add another section"
+                  aria-label="Add another section"
+                  onClick={() => add("free")}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-transparent text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
               </div>
+
 
 
               {sections.map((s, i) => {
@@ -2763,29 +2783,6 @@ export default function ObjectDesignPage() {
           )}
         </section>
 
-        {object && !preview && (
-          <aside className="hidden lg:block lg:sticky lg:top-4 lg:self-start">
-            <div className="w-[84px] rounded-lg border bg-background p-2 shadow-sm">
-              <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Add
-              </p>
-              <div className="flex flex-col gap-1.5">
-                {ADD_ITEMS.map((item) => (
-                  <button
-                    key={item.kind}
-                    type="button"
-                    title={`Add ${item.label.toLowerCase()}`}
-                    onClick={() => addElement(item.kind)}
-                    className="flex flex-col items-center gap-1 rounded-md border border-transparent px-1 py-2 text-[10px] text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </aside>
-        )}
       </main>
 
       {toolbar && (() => {
