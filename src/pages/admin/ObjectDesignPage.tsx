@@ -1947,6 +1947,21 @@ export default function ObjectDesignPage() {
                   </div>
                 </Field>
               )}
+              {section.layout === "behind" && (
+                <Field label="Text position">
+                  <div>
+                    <Choice
+                      value={section.overlayVAlign ?? "middle"}
+                      options={[
+                        { value: "top" as const, label: "Top", icon: AlignVerticalJustifyStart },
+                        { value: "middle" as const, label: "Middle", icon: AlignVerticalJustifyCenter },
+                        { value: "bottom" as const, label: "Bottom", icon: AlignVerticalJustifyEnd },
+                      ]}
+                      onChange={(v) => patch(section.id, { overlayVAlign: v })}
+                    />
+                  </div>
+                </Field>
+              )}
                 </>
               )}
               {section.layout !== "behind" && count > 0 && (
