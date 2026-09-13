@@ -2553,7 +2553,7 @@ export default function ObjectDesignPage() {
                   label="Height"
                   value={gEff.imageHeight ?? "auto"}
                   options={IMAGE_HEIGHTS.map((h) => ({ value: h.value as string, label: h.label }))}
-                  onChange={(v) => patchG({ imageHeight: v })}
+                  onChange={(v) => patchG({ imageHeight: v as ImageHeight })}
                 />
               )}
               {sec.layout !== "behind" && gEff.gallery !== "carousel" && (
@@ -2565,7 +2565,7 @@ export default function ObjectDesignPage() {
                     { value: "center", label: "Center", icon: AlignCenter },
                     { value: "right", label: "Right", icon: AlignRight },
                   ]}
-                  onChange={(v) => patchG({ imageAlign: v })}
+                  onChange={(v) => patchG({ imageAlign: v as SectionAlign })}
                 />
               )}
               <IconSelect
