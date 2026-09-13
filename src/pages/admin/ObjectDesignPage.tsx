@@ -1831,9 +1831,9 @@ export default function ObjectDesignPage() {
                     <Field label="Show at once">
                       <div>
                         <Choice
-                          value={Math.min(section.perView ?? 1, section.images.length)}
+                          value={Math.min(section.perView ?? 1, group.items.length)}
                           options={Array.from(
-                            { length: Math.min(section.images.length, 6) },
+                            { length: Math.min(group.items.length, 6) },
                             (_, k) => ({ value: k + 1, label: String(k + 1) }),
                           )}
                           onChange={(v) => patch(section.id, { perView: v })}
@@ -2575,16 +2575,21 @@ export default function ObjectDesignPage() {
                   onChange={(v) => patch(sec.id, { gallery: v })}
                 />
               )}
-              {sec.layout !== "behind" && sec.gallery === "carousel" && (sec.images?.length ?? 0) > 1 && (
-                <Dropdown
-                  label="Show at once"
-                  value={String(Math.min(sec.perView ?? 1, sec.images.length))}
-                  options={Array.from({ length: Math.min(sec.images.length, 6) }, (_, k) => ({
-                    value: String(k + 1), label: String(k + 1),
-                  }))}
-                  onChange={(v) => patch(sec.id, { perView: Number(v) })}
-                />
-              )}
+              {(() => {
+                const groupKey = sec.images?.[idx]?.group ?? 0;
+                const groupCount = (sec.images ?? []).filter((im) => (im.group ?? 0) === groupKey).length;
+                if (sec.layout === "behind" || sec.gallery !== "carousel" || groupCount <= 1) return null;
+                return (
+                  <Dropdown
+                    label="Show at once"
+                    value={String(Math.min(sec.perView ?? 1, groupCount))}
+                    options={Array.from({ length: Math.min(groupCount, 6) }, (_, k) => ({
+                      value: String(k + 1), label: String(k + 1),
+                    }))}
+                    onChange={(v) => patch(sec.id, { perView: Number(v) })}
+                  />
+                );
+              })()}
               <Button
                 variant="ghost"
                 size="sm"
