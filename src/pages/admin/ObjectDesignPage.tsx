@@ -1713,6 +1713,19 @@ export default function ObjectDesignPage() {
       const group = groups.find((g) => g.key === groupKey);
       const isFirst = groups[0]?.key === groupKey;
       const part = imageGroupPart(groupKey);
+      const own = section.groupSettings?.[String(groupKey)] ?? {};
+      const eff = {
+        gallery: own.gallery ?? section.gallery,
+        perView: own.perView ?? section.perView,
+        imageHeight: own.imageHeight ?? section.imageHeight,
+        imageAlign: own.imageAlign ?? section.imageAlign,
+        imageBorder: own.imageBorder ?? section.imageBorder,
+      };
+      const patchGroup = (v: Partial<typeof eff>) =>
+        patch(section.id, {
+          groupSettings: { ...(section.groupSettings ?? {}), [String(groupKey)]: { ...own, ...v } },
+        });
+      const count = group?.items.length ?? 0;
       return (
         !!group && Block({ title: groups.length > 1 ? `Images ${groups.findIndex((g) => g.key === groupKey) + 1}` : "Images", icon: ImageIcon, part, key: part, flowSection: section, onDelete: () => patch(section.id, { images: section.images.filter((img) => (img.group ?? 0) !== groupKey) }), children: (
           <>
