@@ -1188,6 +1188,19 @@ function OverlayImageTexts({
             </div>
           );
         }
+        if (t.kind === "button") {
+          return (
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`}>
+              <SectionButton
+                label={t.text || "Button"}
+                href={t.button?.href || "#"}
+                variant={t.button?.variant ?? "outline"}
+                style={t.style}
+                bg={t.button?.bg}
+              />
+            </div>
+          );
+        }
         return (
           <p
             key={t.id}
