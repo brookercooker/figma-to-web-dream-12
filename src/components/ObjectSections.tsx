@@ -130,7 +130,7 @@ export function withEyebrowDefaults(style: TextStyle | undefined): TextStyle {
 export function headingClasses(style: TextStyle | undefined, fallback: { color: TextColor; size: TextSize }) {
   return [
     fontClass[style?.font ?? "serif"],
-    colorClass[style?.color ?? fallback.color],
+    colorClassOf(style?.color ?? fallback.color),
     style?.sizePx ? "" : headingSizeClass[style?.size ?? fallback.size],
     emphasisClasses(style),
   ].join(" ");
