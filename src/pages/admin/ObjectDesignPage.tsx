@@ -419,6 +419,7 @@ function ColorDropdown({
 }) {
   const active = value || fallback;
   const current = options.find((o) => o.value === active);
+  const custom = !current && isCustomColor(active);
   return (
     <div className="flex items-center gap-1.5 text-xs">
       <span className="text-muted-foreground">{label}</span>
@@ -428,18 +429,28 @@ function ColorDropdown({
             type="button"
             className="flex h-7 items-center gap-1.5 rounded-md border bg-background px-2 text-xs"
           >
-            <ColorDot swatch={current?.swatch} />
-            <span>{current?.label ?? ""}</span>
+            <ColorDot swatch={current?.swatch ?? (custom ? active : undefined)} />
+            <span>{current?.label ?? (custom ? "Custom" : "")}</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[9rem]">
-
+          <div className="px-2 pb-1 pt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+            Brand palette
+          </div>
           {options.map((o) => (
             <DropdownMenuItem key={o.value} className="gap-2 text-xs" onSelect={() => onChange(o.value)}>
               <ColorDot swatch={o.swatch} />
               {o.label}
             </DropdownMenuItem>
           ))}
+          <div className="mt-1 flex items-center gap-2 border-t px-2 py-2">
+            <CustomColorSwatch
+              value={custom ? active : undefined}
+              onChange={(v) => onChange(v as string)}
+              size="h-4 w-4"
+            />
+            <span className="text-xs">Custom color</span>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
