@@ -481,6 +481,9 @@ export default function ObjectDesignPage() {
   const [blocksExpanded, setBlocksExpanded] = useState(false);
   const [dragPart, setDragPart] = useState<{ sectionId: string; part: string } | null>(null);
   const [dropAt, setDropAt] = useState<{ sectionId: string; part: string; before: boolean } | null>(null);
+  // drag and drop for the text boxes attached to an image
+  const [dragText, setDragText] = useState<{ sectionId: string; index: number; ti: number } | null>(null);
+  const [dropText, setDropText] = useState<{ sectionId: string; index: number; ti: number; before: boolean } | null>(null);
   // floating font / size / color toolbar for the clicked text element
   const [toolbar, setToolbar] = useState<
     { sectionId: string; field?: keyof FreeSection; imageIndex?: number; top: number; left: number; width: number } | null
