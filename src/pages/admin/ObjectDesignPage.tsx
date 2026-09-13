@@ -1867,6 +1867,11 @@ export default function ObjectDesignPage() {
         imageHeight: own.imageHeight ?? section.imageHeight,
         imageAlign: own.imageAlign ?? section.imageAlign,
         imageBorder: own.imageBorder ?? section.imageBorder,
+        imageBorderColor: own.imageBorderColor ?? section.imageBorderColor,
+        imageBorderWidth: own.imageBorderWidth ?? section.imageBorderWidth,
+        imageBorderStyle: own.imageBorderStyle ?? section.imageBorderStyle,
+        imageBorderRadius: own.imageBorderRadius ?? section.imageBorderRadius,
+        imageBorderPad: own.imageBorderPad ?? section.imageBorderPad,
       };
       const patchGroup = (v: Partial<typeof eff>) =>
         patch(section.id, {
