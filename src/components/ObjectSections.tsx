@@ -245,9 +245,21 @@ export interface FreeImageGroupSettings {
   imageBorderStyle?: "solid" | "dashed" | "dotted";
 }
 
-/** CSS color value for a semantic text color token. */
+/** CSS color value for a brand token or a custom color. */
 export function textColorCss(c: TextColor): string {
-  return TEXT_COLORS.find((t) => t.value === c)?.swatch ?? "hsl(var(--nova-sand))";
+  const token = TEXT_COLORS.find((t) => t.value === c);
+  if (token) return token.swatch;
+  return isCustomColor(c) ? (c as string) : "hsl(var(--nova-sand))";
+}
+
+/** Readable text color to sit on top of a custom fill. */
+export function contrastOn(color: string): string {
+  const hex = color.trim().replace("#", "");
+  const full = hex.length === 3 ? hex.split("").map((h) => h + h).join("") : hex;
+  if (!/^[0-9a-f]{6}$/i.test(full)) return "hsl(var(--nova-cream))";
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255);
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return lum > 0.6 ? "hsl(var(--nova-ink))" : "hsl(var(--nova-cream))";
 }
 
 /** Inline style for the box drawn around an image and its text. */
