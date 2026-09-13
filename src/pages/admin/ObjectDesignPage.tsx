@@ -21,7 +21,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BODY_PX, FREE_TEXT_KINDS, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
+  BODY_PX, FREE_TEXT_KINDS, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type RowVAlign,
   type TextColor, type TextFont, type TextSize, type TextStyle,
@@ -803,12 +803,12 @@ export default function ObjectDesignPage() {
     patchImage(sectionId, index, { texts: imageTextsOf(sectionId, index).filter((_, i) => i !== tIdx) });
   };
 
-  const addImageSlot = (id: string) => {
+  const addImageSlot = (id: string, group?: number) => {
     let newIndex = 0;
     setSections((prev) =>
       prev.map((s) => {
         if (s.id === id && "images" in s) {
-          const images = [...(s as any).images, { url: "", alt: "" }];
+          const images = [...(s as any).images, { url: "", alt: "", group }];
           newIndex = images.length - 1;
           return { ...s, images } as Section;
         }
@@ -938,7 +938,13 @@ export default function ObjectDesignPage() {
     if (!target || target.type !== "free") return;
     const s = target as FreeSection;
     if (s.id !== activeId) setActiveId(s.id);
-    if (kind === "image") return addImageSlot(s.id);
+    if (kind === "image") {
+      // Each press of the rail's Image button starts a new grid in this block.
+      const next = s.images.length
+        ? Math.max(...s.images.map((img) => img.group ?? 0)) + 1
+        : 0;
+      return addImageSlot(s.id, next);
+    }
     if (kind === "video") return addVideoSlot(s.id);
     if (kind === "divider") {
       const id = newSectionId();
@@ -1334,7 +1340,7 @@ export default function ObjectDesignPage() {
     if (s.heading !== undefined) base.push("heading");
     if (s.body !== undefined) base.push("body");
     (s.extras ?? []).forEach((_, i) => base.push(`text:${i}`));
-    if (s.images.length) base.push("images");
+    for (const g of imageGroups(s.images)) base.push(imageGroupPart(g.key));
     if ((s.videos ?? []).length) base.push("videos");
     if (s.buttonLabel !== undefined) base.push("button");
     (s.dividers ?? []).forEach((_, i) => base.push(`divider:${i}`));
@@ -1694,17 +1700,25 @@ export default function ObjectDesignPage() {
             ),
           });
       }
-      if (p === "images") return imagesBlock();
+      if (p === "images" || p.startsWith("images:")) {
+        const key = p === "images" ? 0 : Number(p.slice("images:".length));
+        return imagesBlock(key);
+      }
       if (p === "videos") return videosBlock();
       return null;
     };
 
-    const imagesBlock = () => (
-        section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, part: "images", flowSection: section, onDelete: () => patch(section.id, { images: [] }), children: (
+    const imagesBlock = (groupKey = 0) => {
+      const groups = imageGroups(section.images);
+      const group = groups.find((g) => g.key === groupKey);
+      const isFirst = groups[0]?.key === groupKey;
+      const part = imageGroupPart(groupKey);
+      return (
+        !!group && Block({ title: groups.length > 1 ? `Images ${groups.findIndex((g) => g.key === groupKey) + 1}` : "Images", icon: ImageIcon, part, key: part, flowSection: section, onDelete: () => patch(section.id, { images: section.images.filter((img) => (img.group ?? 0) !== groupKey) }), children: (
           <>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {section.images.map((img, i) => (
+              {group.items.map(({ image: img, index: i }) => (
                 <div key={i} data-inspector-part={`image:${i}`} className="scroll-mt-24">
                   {ImageEditor({ section, index: i, image: img, showCaption: true })}
                 </div>
@@ -1712,10 +1726,12 @@ export default function ObjectDesignPage() {
 
             </div>
             <div>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id)}>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id, groupKey)}>
                 <Plus className="w-4 h-4" /> Add image
               </Button>
             </div>
+            {isFirst && (
+              <>
             <Field label="Border around image and text">
               <div>
                 <Choice
@@ -1828,9 +1844,12 @@ export default function ObjectDesignPage() {
                 </>
               )}
             </div>
+              </>
+            )}
           </>
         ) })
-    );
+      );
+    };
 
     const videosBlock = () => (
         (section.videos ?? []).length > 0 && Block({ title: "Videos", icon: VideoIcon, part: "videos", flowSection: section, onDelete: () => patch(section.id, { videos: [] }), children: (

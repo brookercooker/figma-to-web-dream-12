@@ -188,6 +188,24 @@ export interface SectionImage {
   texts?: ImageText[];
   /** optional destination opened when the image is clicked */
   href?: string;
+  /** which image grid inside the block this image belongs to (default 0) */
+  group?: number;
+}
+
+/** Images of a free block split into their grids, keeping original indexes. */
+export function imageGroups(images: SectionImage[]): { key: number; items: { image: SectionImage; index: number }[] }[] {
+  const map = new Map<number, { image: SectionImage; index: number }[]>();
+  images.forEach((image, index) => {
+    const key = image.group ?? 0;
+    if (!map.has(key)) map.set(key, []);
+    (map.get(key) as { image: SectionImage; index: number }[]).push({ image, index });
+  });
+  return [...map.entries()].sort((a, b) => a[0] - b[0]).map(([key, items]) => ({ key, items }));
+}
+
+/** Part name used for an image grid inside a block. */
+export function imageGroupPart(key: number): string {
+  return key === 0 ? "images" : `images:${key}`;
 }
 
 /** A video placed in a block: an uploaded file or a YouTube / Vimeo link. */
@@ -720,9 +738,9 @@ function FreeFigureBody({
   );
 }
 
-function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
-  const images = section.images;
-  const n = images.length;
+function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark?: boolean; items?: { image: SectionImage; index: number }[] }) {
+  const entries = items ?? section.images.map((image, index) => ({ image, index }));
+  const n = entries.length;
   const perView = Math.min(Math.max(section.perView ?? 1, 1), Math.max(n, 1));
   const pages = Math.max(n - perView + 1, 1);
   const [i, setI] = useState(0);
@@ -742,9 +760,9 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
           className="flex transition-transform duration-700 ease-out"
           style={{ transform: `translateX(-${(i * 100) / perView}%)` }}
         >
-          {images.map((img, idx) => (
-            <figure key={idx} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
-              <FreeFigureBody section={section} image={img} index={idx} onDark={onDark} />
+          {entries.map((e) => (
+            <figure key={e.index} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
+              <FreeFigureBody section={section} image={e.image} index={e.index} onDark={onDark} />
             </figure>
           ))}
 
@@ -774,19 +792,20 @@ function FreeCarousel({ section, onDark }: { section: FreeSection; onDark?: bool
   );
 }
 
-function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
-  if (!section.images.length) return null;
+function FreeGallery({ section, onDark, items }: { section: FreeSection; onDark?: boolean; items?: { image: SectionImage; index: number }[] }) {
+  const entries = items ?? section.images.map((image, index) => ({ image, index }));
+  if (!entries.length) return null;
   if (section.gallery === "carousel") {
-    return <FreeCarousel section={section} onDark={onDark} />;
+    return <FreeCarousel section={section} onDark={onDark} items={entries} />;
   }
-  
+
   return (
     <div
       className={`flex flex-nowrap items-start gap-6 ${alignRow[section.imageAlign ?? "left"]}`}
     >
-      {section.images.map((img, i) => (
-        <figure key={i} className="basis-0 grow min-w-0">
-          <FreeFigureBody section={section} image={img} index={i} onDark={onDark} />
+      {entries.map((e) => (
+        <figure key={e.index} className="basis-0 grow min-w-0">
+          <FreeFigureBody section={section} image={e.image} index={e.index} onDark={onDark} />
         </figure>
       ))}
     </div>
@@ -1092,7 +1111,15 @@ function FreeView({ section }: { section: FreeSection }) {
   }
 
   const media: { part: string; node: React.ReactNode }[] = [];
-  if (hasImages) media.push({ part: "images", node: <div data-part="images" className="w-full"><FreeGallery section={section} /></div> });
+  if (hasImages) {
+    for (const g of imageGroups(section.images)) {
+      const part = imageGroupPart(g.key);
+      media.push({
+        part,
+        node: <div data-part={part} className="w-full"><FreeGallery section={section} items={g.items} /></div>,
+      });
+    }
+  }
   if ((section.videos ?? []).length) media.push({ part: "videos", node: <div data-part="videos" className="w-full"><FreeVideos section={section} /></div> });
 
   return (
