@@ -2522,6 +2522,17 @@ export default function ObjectDesignPage() {
 
         if (toolbar.imageIndex !== undefined) {
           const idx = toolbar.imageIndex;
+          const gKey = String(sec.images?.[idx]?.group ?? 0);
+          const gOwn = sec.groupSettings?.[gKey] ?? {};
+          const gCount = (sec.images ?? []).filter((im) => String(im.group ?? 0) === gKey).length;
+          const gEff = {
+            gallery: gOwn.gallery ?? sec.gallery,
+            perView: gOwn.perView ?? sec.perView,
+            imageHeight: gOwn.imageHeight ?? sec.imageHeight,
+            imageAlign: gOwn.imageAlign ?? sec.imageAlign,
+          };
+          const patchG = (v: Partial<typeof gEff>) =>
+            patch(sec.id, { groupSettings: { ...(sec.groupSettings ?? {}), [gKey]: { ...gOwn, ...v } } });
           return (
             <FloatingToolbar top={anchorTop} left={toolbar.left}>
               <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Image</span>
