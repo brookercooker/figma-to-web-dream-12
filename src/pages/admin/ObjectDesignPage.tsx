@@ -938,7 +938,18 @@ export default function ObjectDesignPage() {
     if (!target || target.type !== "free") return;
     const s = target as FreeSection;
     if (s.id !== activeId) setActiveId(s.id);
-    if (kind === "image") return addImageSlot(s.id);
+    if (kind === "image") {
+      // Adding from the rail starts a fresh images group when this one is used.
+      if (s.images.length > 0) {
+        const fresh = makeSection("free");
+        setSections((prev) => [...prev, fresh]);
+        setActiveId(fresh.id);
+        setPreview(false);
+        setDirty(true);
+        return addImageSlot(fresh.id);
+      }
+      return addImageSlot(s.id);
+    }
     if (kind === "video") return addVideoSlot(s.id);
     if (kind === "divider") {
       const id = newSectionId();
@@ -1710,6 +1721,11 @@ export default function ObjectDesignPage() {
                 </div>
               ))}
 
+            </div>
+            <div>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id)}>
+                <Plus className="w-4 h-4" /> Add image
+              </Button>
             </div>
             <Field label="Border around image and text">
               <div>
