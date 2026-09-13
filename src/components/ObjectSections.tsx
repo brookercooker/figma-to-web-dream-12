@@ -139,7 +139,7 @@ export function headingClasses(style: TextStyle | undefined, fallback: { color: 
 export function bodyClasses(style: TextStyle | undefined, fallback: { color: TextColor; size: TextSize }) {
   return [
     fontClass[style?.font ?? "sans"],
-    colorClass[style?.color ?? fallback.color],
+    colorClassOf(style?.color ?? fallback.color),
     style?.sizePx ? "" : bodySizeClass[style?.size ?? fallback.size],
     emphasisClasses(style),
   ].join(" ");
