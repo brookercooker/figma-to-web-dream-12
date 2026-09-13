@@ -1470,19 +1470,6 @@ export default function ObjectDesignPage() {
             </div>
             );
           })}
-          <div className="flex flex-wrap gap-1.5">
-            {IMAGE_TEXT_KINDS.map((k) => (
-              <Button
-                key={k.value}
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                onClick={() => addImageText(section.id, index, k.value)}
-              >
-                <Plus className="w-3 h-3" /> {k.label}
-              </Button>
-            ))}
-          </div>
         </div>
       )}
     </div>
