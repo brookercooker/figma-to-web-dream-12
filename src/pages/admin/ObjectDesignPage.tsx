@@ -27,6 +27,16 @@ import {
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
 
+/** Icon shown on the icon-only "add item" row inside an image editor. */
+const IMAGE_TEXT_ICONS: Record<ImageTextKind, LucideIcon> = {
+  eyebrow: Tag,
+  title: Heading,
+  subheading: Baseline,
+  text: AlignLeft,
+  divider: Minus,
+  button: MousePointerClick,
+};
+
 /**
  * When part of a text element is selected inside an inline editor, apply the
  * format to just that selection instead of the whole element.
@@ -1195,6 +1205,24 @@ export default function ObjectDesignPage() {
       )}
       {showCaption && imgOpen && (
         <div className="space-y-2 rounded-md border border-dashed p-2">
+          <div className="flex flex-wrap items-center gap-1">
+            {IMAGE_TEXT_KINDS.map((k) => {
+              const Icon = IMAGE_TEXT_ICONS[k.value];
+              return (
+                <Button
+                  key={k.value}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  title={`Add ${k.label}`}
+                  aria-label={`Add ${k.label}`}
+                  onClick={() => addImageText(section.id, index, k.value)}
+                >
+                  <Icon className="w-4 h-4" />
+                </Button>
+              );
+            })}
+          </div>
           {(image.texts ?? []).map((t, ti) => {
             const tKey = `txt:${section.id}:${index}:${ti}`;
             const tOpen = openSub[tKey] ?? focusPart === `imagetext:${index}:${ti}`;
@@ -1452,19 +1480,6 @@ export default function ObjectDesignPage() {
             </div>
             );
           })}
-          <div className="flex flex-wrap gap-1.5">
-            {IMAGE_TEXT_KINDS.map((k) => (
-              <Button
-                key={k.value}
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                onClick={() => addImageText(section.id, index, k.value)}
-              >
-                <Plus className="w-3 h-3" /> {k.label}
-              </Button>
-            ))}
-          </div>
         </div>
       )}
     </div>
