@@ -774,7 +774,10 @@ function FreeFigureBody({
   const bordered = !!section.imageBorder;
 
   return (
-    <div className={bordered ? "overflow-hidden rounded-lg border border-sand p-3" : ""}>
+    <div
+      className={bordered ? "overflow-hidden" : ""}
+      style={bordered ? imageBorderStyleOf(section) : undefined}
+    >
       <div data-part={`image:${index}`}>
         <Pic image={image} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
       </div>
