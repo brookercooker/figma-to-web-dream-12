@@ -1131,25 +1131,62 @@ function FreeText({
   );
 }
 
+/** Text boxes attached to an image, rendered in front of it for the "behind" layout. */
+function OverlayImageTexts({
+  section, image, index,
+}: { section: FreeSection; image: SectionImage; index: number }) {
+  const texts = image.texts ?? [];
+  if (!texts.length) return null;
+  const blockAlign: SectionAlign = section.align ?? "left";
+  return (
+    <>
+      {texts.map((t, ti) => {
+        const d = IMAGE_TEXT_DEFAULTS[t.kind];
+        const ts = t.kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style;
+        const fallback = { color: "cream" as TextColor, size: d.size };
+        const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
+        return (
+          <p
+            key={t.id}
+            data-part={`imagetext:${index}:${ti}`}
+            className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
+            style={textInlineStyle(ts)}
+            {...richText(t.text)}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 function FreeView({ section }: { section: FreeSection }) {
   const hasImages = section.images.length > 0;
 
   if (section.layout === "behind" && hasImages) {
     return (
       <section className="py-12">
-        <div className={`relative overflow-hidden rounded-lg ${overlayHeight[section.height]}`}>
-          <div data-part="image:0" className="absolute inset-0">
-            <Pic image={section.images[0]} className="absolute inset-0 h-full w-full" />
-          </div>
-          <div className="absolute inset-0 bg-ink/35" />
-          <div className={`relative flex h-full flex-col justify-center px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
-            <FreeText section={section} onDark />
-          </div>
+        <div className={`flex flex-nowrap gap-6 ${alignRow[section.imageAlign ?? "left"]}`}>
+          {section.images.map((img, i) => (
+            <div
+              key={i}
+              className={`relative basis-0 grow min-w-0 overflow-hidden rounded-lg ${overlayHeight[section.height]}`}
+            >
+              <div data-part={`image:${i}`} className="absolute inset-0">
+                <Pic image={img} className="absolute inset-0 h-full w-full" />
+              </div>
+              <div className="absolute inset-0 bg-ink/35" />
+              <div className={`relative flex h-full flex-col justify-center px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
+                {i === 0 ? <FreeText section={section} onDark /> : null}
+                <OverlayImageTexts section={section} image={img} index={i} />
+              </div>
+            </div>
+          ))}
         </div>
         <div className="mt-8"><FreeVideos section={section} /></div>
       </section>
     );
   }
+
 
   if (section.layout === "beside" && hasImages) {
     return (
