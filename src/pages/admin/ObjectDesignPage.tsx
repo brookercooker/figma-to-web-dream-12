@@ -27,6 +27,16 @@ import {
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
 
+/** Icon shown on the icon-only "add item" row inside an image editor. */
+const IMAGE_TEXT_ICONS: Record<ImageTextKind, LucideIcon> = {
+  eyebrow: Tag,
+  title: Heading,
+  subheading: Baseline,
+  text: AlignLeft,
+  divider: Minus,
+  button: MousePointerClick,
+};
+
 /**
  * When part of a text element is selected inside an inline editor, apply the
  * format to just that selection instead of the whole element.
