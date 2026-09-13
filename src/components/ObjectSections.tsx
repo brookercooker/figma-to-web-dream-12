@@ -1446,9 +1446,9 @@ export function SectionView({ section }: { section: Section }) {
               {section.eyebrow ? (
                 <p className={`uppercase tracking-[0.24em] mb-3 ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "stone", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}>{section.eyebrow}</p>
               ) : null}
-              <h2 className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "xl" })}`}>{section.heading}</h2>
+              <h2 style={textInlineStyle(section.textStyle)} className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "xl" })}`}>{section.heading}</h2>
               {section.body ? (
-                <p className={`leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "stone", size: "md" })}`}>{section.body}</p>
+                <p style={textInlineStyle(section.bodyStyle)} className={`leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "stone", size: "md" })}`}>{section.body}</p>
               ) : null}
               {section.buttonLabel ? (
                 <div className="mt-6">
