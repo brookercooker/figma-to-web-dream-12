@@ -2290,44 +2290,51 @@ export default function ObjectDesignPage() {
           </div>
         </div>
 
-        {Block({ title: "Edit Block", icon: AlignLeft, children: (
-          <>
-            <Field label="Alignment">
-              <div>
-                <Choice
-                  value={section.align}
-                  options={[
-                    { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
-                    { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
-                    { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
-                  ]}
-                  onChange={(v) => patch(section.id, { align: v })}
-                />
-              </div>
-            </Field>
-            {parts.length > 1 && (
-              <Field label="Same row alignment">
-                <div>
-                  <Choice
-                    value={section.rowVAlign ?? "middle"}
-                    options={[
-                      { value: "top" as RowVAlign, label: "Top", icon: AlignVerticalJustifyStart },
-                      { value: "middle" as RowVAlign, label: "Middle", icon: AlignVerticalJustifyCenter },
-                      { value: "bottom" as RowVAlign, label: "Bottom", icon: AlignVerticalJustifyEnd },
-                      { value: "baseline" as RowVAlign, label: "Text line", icon: Baseline },
-                    ]}
-                    onChange={(v) => patch(section.id, { rowVAlign: v })}
-                  />
-                </div>
-              </Field>
-            )}
-            {parts.length > 1 && (
-              <p className="text-xs text-muted-foreground">
-                Drag an element's header below to move it up or down.
-              </p>
-            )}
-          </>
-        ) })}
+        <div className="flex flex-wrap items-center gap-1 rounded-lg border bg-background p-1.5 shadow-sm">
+          {([
+            { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
+            { value: "center" as SectionAlign, label: "Align center", icon: AlignCenter },
+            { value: "right" as SectionAlign, label: "Align right", icon: AlignRight },
+          ]).map((o) => (
+            <Button
+              key={o.value}
+              type="button"
+              size="sm"
+              variant={section.align === o.value ? "default" : "ghost"}
+              aria-label={o.label}
+              title={o.label}
+              className="h-8 w-8 p-0"
+              onClick={() => patch(section.id, { align: o.value })}
+            >
+              <o.icon className="h-4 w-4" />
+            </Button>
+          ))}
+          {parts.length > 1 && (
+            <>
+              <span className="mx-1 h-5 w-px bg-border" />
+              {([
+                { value: "top" as RowVAlign, label: "Same row: top", icon: AlignVerticalJustifyStart },
+                { value: "middle" as RowVAlign, label: "Same row: middle", icon: AlignVerticalJustifyCenter },
+                { value: "bottom" as RowVAlign, label: "Same row: bottom", icon: AlignVerticalJustifyEnd },
+                { value: "baseline" as RowVAlign, label: "Same row: text line", icon: Baseline },
+              ]).map((o) => (
+                <Button
+                  key={o.value}
+                  type="button"
+                  size="sm"
+                  variant={(section.rowVAlign ?? "middle") === o.value ? "default" : "ghost"}
+                  aria-label={o.label}
+                  title={o.label}
+                  className="h-8 w-8 p-0"
+                  onClick={() => patch(section.id, { rowVAlign: o.value })}
+                >
+                  <o.icon className="h-4 w-4" />
+                </Button>
+              ))}
+            </>
+          )}
+        </div>
+
 
 
 
