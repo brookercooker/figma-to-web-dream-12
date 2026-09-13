@@ -1160,6 +1160,17 @@ function OverlayImageTexts({
         const ts = t.kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style;
         const fallback = { color: "cream" as TextColor, size: d.size };
         const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
+        if (t.kind === "divider") {
+          return (
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-3 flex w-full flex-col">
+              <DividerBar
+                divider={{ id: t.id, ...(t.divider ?? {}) }}
+                align={t.align ?? image.captionAlign ?? blockAlign}
+                onDark
+              />
+            </div>
+          );
+        }
         return (
           <p
             key={t.id}
