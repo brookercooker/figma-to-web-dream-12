@@ -1448,6 +1448,8 @@ export default function ObjectDesignPage() {
                 </>
               )}
             </div>
+            {dropHere === "after" && bar}
+            </div>
             );
           })}
           <div className="flex flex-wrap gap-1.5">
