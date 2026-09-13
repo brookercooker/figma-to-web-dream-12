@@ -1334,7 +1334,7 @@ export default function ObjectDesignPage() {
     if (s.heading !== undefined) base.push("heading");
     if (s.body !== undefined) base.push("body");
     (s.extras ?? []).forEach((_, i) => base.push(`text:${i}`));
-    if (s.images.length) base.push("images");
+    for (const g of imageGroups(s.images)) base.push(imageGroupPart(g.key));
     if ((s.videos ?? []).length) base.push("videos");
     if (s.buttonLabel !== undefined) base.push("button");
     (s.dividers ?? []).forEach((_, i) => base.push(`divider:${i}`));
