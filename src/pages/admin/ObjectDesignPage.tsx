@@ -2551,21 +2551,21 @@ export default function ObjectDesignPage() {
               {sec.layout !== "behind" && (
                 <Dropdown
                   label="Height"
-                  value={sec.imageHeight ?? "auto"}
+                  value={gEff.imageHeight ?? "auto"}
                   options={IMAGE_HEIGHTS.map((h) => ({ value: h.value as string, label: h.label }))}
-                  onChange={(v) => patch(sec.id, { imageHeight: v })}
+                  onChange={(v) => patchG({ imageHeight: v })}
                 />
               )}
-              {sec.layout !== "behind" && sec.gallery !== "carousel" && (
+              {sec.layout !== "behind" && gEff.gallery !== "carousel" && (
                 <Dropdown
                   label="Position"
-                  value={sec.imageAlign ?? "left"}
+                  value={gEff.imageAlign ?? "left"}
                   options={[
                     { value: "left", label: "Left", icon: AlignLeft },
                     { value: "center", label: "Center", icon: AlignCenter },
                     { value: "right", label: "Right", icon: AlignRight },
                   ]}
-                  onChange={(v) => patch(sec.id, { imageAlign: v })}
+                  onChange={(v) => patchG({ imageAlign: v })}
                 />
               )}
               <IconSelect
