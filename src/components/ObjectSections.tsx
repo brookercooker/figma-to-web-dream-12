@@ -554,7 +554,7 @@ export function parseSections(value: unknown): Section[] {
 
 /* ------------------------------- rendering ------------------------------- */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const alignText: Record<SectionAlign, string> = {
@@ -770,35 +770,45 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
   const [i, setI] = useState(0);
   const [anim, setAnim] = useState(true);
 
-  useEffect(() => { setI((v) => (v < steps ? v : 0)); }, [steps]);
+  useEffect(() => { setI((v) => (v < steps ? v : 0)); setAnim(true); }, [steps]);
 
-  const next = () => setI((v) => (loop ? v + 1 : (v + 1) % steps));
+  // jump without animation, then continue to `then` on the next frame
+  const snapTo = (pos: number, then?: number) => {
+    setAnim(false);
+    setI(pos);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      setAnim(true);
+      if (then !== undefined) setI(then);
+    }));
+  };
+
+  const next = () => {
+    if (!loop) { setI((v) => (v + 1) % steps); return; }
+    if (i >= n) { snapTo(0, 1); return; }
+    setI(i + 1);
+  };
   const prev = () => {
-    if (loop && i === 0) {
-      setAnim(false);
-      setI(n);
-      requestAnimationFrame(() => requestAnimationFrame(() => { setAnim(true); setI(n - 1); }));
-      return;
-    }
-    setI((v) => (v - 1 + steps) % steps);
+    if (!loop) { setI((v) => (v - 1 + steps) % steps); return; }
+    if (i <= 0) { snapTo(n, n - 1); return; }
+    setI(i - 1);
   };
 
   // after sliding onto the cloned first slide, snap silently back to the real one
   useEffect(() => {
     if (!loop || i !== n) return;
-    const t = setTimeout(() => {
-      setAnim(false);
-      setI(0);
-      requestAnimationFrame(() => requestAnimationFrame(() => setAnim(true)));
-    }, 700);
+    const t = setTimeout(() => snapTo(0), 700);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, n, loop]);
 
   useEffect(() => {
     if (steps < 2) return;
-    const t = setInterval(() => setI((v) => (loop ? v + 1 : (v + 1) % steps)), 5000);
+    const t = setInterval(() => { nextRef.current(); }, 5000);
     return () => clearInterval(t);
-  }, [steps, loop]);
+  }, [steps]);
+
+  const nextRef = useRef(next);
+  nextRef.current = next;
 
   return (
     <div className="relative">
