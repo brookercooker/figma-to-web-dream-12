@@ -1700,17 +1700,25 @@ export default function ObjectDesignPage() {
             ),
           });
       }
-      if (p === "images") return imagesBlock();
+      if (p === "images" || p.startsWith("images:")) {
+        const key = p === "images" ? 0 : Number(p.slice("images:".length));
+        return imagesBlock(key);
+      }
       if (p === "videos") return videosBlock();
       return null;
     };
 
-    const imagesBlock = () => (
-        section.images.length > 0 && Block({ title: "Images", icon: ImageIcon, part: "images", flowSection: section, onDelete: () => patch(section.id, { images: [] }), children: (
+    const imagesBlock = (groupKey = 0) => {
+      const groups = imageGroups(section.images);
+      const group = groups.find((g) => g.key === groupKey);
+      const isFirst = groups[0]?.key === groupKey;
+      const part = imageGroupPart(groupKey);
+      return (
+        !!group && Block({ title: groups.length > 1 ? `Images ${groups.findIndex((g) => g.key === groupKey) + 1}` : "Images", icon: ImageIcon, part, key: part, flowSection: section, onDelete: () => patch(section.id, { images: section.images.filter((img) => (img.group ?? 0) !== groupKey) }), children: (
           <>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {section.images.map((img, i) => (
+              {group.items.map(({ image: img, index: i }) => (
                 <div key={i} data-inspector-part={`image:${i}`} className="scroll-mt-24">
                   {ImageEditor({ section, index: i, image: img, showCaption: true })}
                 </div>
@@ -1718,10 +1726,13 @@ export default function ObjectDesignPage() {
 
             </div>
             <div>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id)}>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id, groupKey)}>
                 <Plus className="w-4 h-4" /> Add image
               </Button>
             </div>
+            {isFirst && (
+              <></>
+            )}
             <Field label="Border around image and text">
               <div>
                 <Choice
