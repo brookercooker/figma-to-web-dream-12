@@ -1169,8 +1169,17 @@ export default function ObjectDesignPage() {
             <Copy className="w-4 h-4" />
           </Button>
         )}
-        {index >= 0 && "images" in section && (section as any).images.length > 1 && (
-          <Button variant="ghost" size="sm" onClick={() => removeImageSlot(section.id, index)}>
+        {index >= 0 && "images" in section && (
+          <Button
+            variant="ghost"
+            size="sm"
+            title={
+              (section as any).images.length > 1
+                ? "Delete image"
+                : "Delete image (removes this section)"
+            }
+            onClick={() => removeImageSlot(section.id, index)}
+          >
             <Trash2 className="w-4 h-4" />
           </Button>
         )}
