@@ -1041,7 +1041,7 @@ function FreeVideos({ section, onDark }: { section: FreeSection; onDark?: boolea
   );
 }
 
-const dividerBg: Record<TextColor, string> = {
+const dividerBg: Record<TextColorToken, string> = {
   ink: "bg-ink",
   stone: "bg-stone",
   brass: "bg-brass",
