@@ -257,25 +257,10 @@ function TextStyleFields({
           </div>
         </Field>
         <Field label="Color">
-          <div className="flex items-center gap-2 pt-1">
-            {TEXT_COLORS.map((c) => {
-              const selected = (style.color ?? defaults.color) === c.value;
-              return (
-                <button
-                  key={c.value}
-                  type="button"
-                  title={c.label}
-                  aria-label={`${c.label} text`}
-                  aria-pressed={selected}
-                  onClick={() => set({ color: c.value })}
-                  className={`h-5 w-5 rounded-full border border-border transition-transform hover:scale-110 ${
-                    selected ? "ring-2 ring-offset-1 ring-foreground/60" : ""
-                  }`}
-                  style={{ background: c.swatch }}
-                />
-              );
-            })}
-          </div>
+          <ColorSwatches
+            value={style.color ?? defaults.color}
+            onChange={(v) => set({ color: v })}
+          />
         </Field>
       </div>
     </div>
