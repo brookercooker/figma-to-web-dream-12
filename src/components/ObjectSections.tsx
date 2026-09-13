@@ -792,19 +792,20 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
   );
 }
 
-function FreeGallery({ section, onDark }: { section: FreeSection; onDark?: boolean }) {
-  if (!section.images.length) return null;
+function FreeGallery({ section, onDark, items }: { section: FreeSection; onDark?: boolean; items?: { image: SectionImage; index: number }[] }) {
+  const entries = items ?? section.images.map((image, index) => ({ image, index }));
+  if (!entries.length) return null;
   if (section.gallery === "carousel") {
-    return <FreeCarousel section={section} onDark={onDark} />;
+    return <FreeCarousel section={section} onDark={onDark} items={entries} />;
   }
-  
+
   return (
     <div
       className={`flex flex-nowrap items-start gap-6 ${alignRow[section.imageAlign ?? "left"]}`}
     >
-      {section.images.map((img, i) => (
-        <figure key={i} className="basis-0 grow min-w-0">
-          <FreeFigureBody section={section} image={img} index={i} onDark={onDark} />
+      {entries.map((e) => (
+        <figure key={e.index} className="basis-0 grow min-w-0">
+          <FreeFigureBody section={section} image={e.image} index={e.index} onDark={onDark} />
         </figure>
       ))}
     </div>
