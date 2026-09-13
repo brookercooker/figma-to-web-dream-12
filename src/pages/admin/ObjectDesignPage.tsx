@@ -1678,20 +1678,20 @@ export default function ObjectDesignPage() {
           draggable={canDrag}
           onDragStart={canDrag ? () => setDragPart({ sectionId: flowSection!.id, part: part! }) : undefined}
           onDragEnd={canDrag ? () => { setDragPart(null); setDropAt(null); } : undefined}
-          className="flex items-center gap-1 rounded-t-lg border-b-2 border-foreground/15 bg-muted pr-2 transition-colors hover:bg-muted/80"
+          className="flex items-center gap-1 rounded-t-lg border-b-2 border-foreground/20 bg-foreground pr-2 transition-colors hover:bg-foreground/90"
         >
           {canDrag ? (
-            <GripVertical className="ml-2 h-4 w-4 shrink-0 cursor-grab text-muted-foreground" />
+            <GripVertical className="ml-2 h-4 w-4 shrink-0 cursor-grab text-background/70" />
           ) : null}
           <button
             type="button"
             onClick={() => setOpenBlocks((o) => ({ ...o, [blockKey]: !open }))}
             className={`flex flex-1 items-center gap-2 py-2.5 pr-3 text-left ${canDrag ? "pl-1" : "pl-3"}`}
           >
-            <Icon className="h-4 w-4 text-foreground" />
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-foreground">{title}</span>
+            <Icon className="h-4 w-4 text-background" />
+            <span className="text-xs font-bold uppercase tracking-[0.18em] text-background">{title}</span>
             <ChevronDown
-              className={`ml-auto h-4 w-4 text-foreground/70 transition-transform ${open ? "" : "-rotate-90"}`}
+              className={`ml-auto h-4 w-4 text-background/70 transition-transform ${open ? "" : "-rotate-90"}`}
             />
           </button>
           {onDuplicate ? (
@@ -1700,7 +1700,7 @@ export default function ObjectDesignPage() {
               size="sm"
               aria-label={`Duplicate ${title}`}
               title={`Duplicate ${title}`}
-              className="h-7 w-7 p-0 text-foreground/60 hover:text-foreground"
+              className="h-7 w-7 p-0 text-background/70 hover:bg-background/10 hover:text-background"
               onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
             >
               <Copy className="h-4 w-4" />
@@ -1711,12 +1711,13 @@ export default function ObjectDesignPage() {
               variant="ghost"
               size="sm"
               aria-label={`Delete ${title}`}
-              className="h-7 w-7 p-0 text-foreground/60 hover:text-destructive"
+              className="h-7 w-7 p-0 text-background/70 hover:bg-background/10 hover:text-destructive"
               onClick={(e) => { e.stopPropagation(); onDelete(); }}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           ) : null}
+
         </div>
         {open ? (
           <div className="space-y-3 p-3">
