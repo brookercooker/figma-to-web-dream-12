@@ -434,6 +434,14 @@ export const ROW_VALIGN_CLASS: Record<RowVAlign, string> = {
   baseline: "items-baseline",
 };
 
+export type OverlayVAlign = "top" | "middle" | "bottom";
+
+export const OVERLAY_VALIGN_CLASS: Record<OverlayVAlign, string> = {
+  top: "justify-start",
+  middle: "justify-center",
+  bottom: "justify-end",
+};
+
 export interface FreeSection {
   id: string;
   type: "free";
@@ -483,6 +491,8 @@ export interface FreeSection {
   /** per image-grid overrides, keyed by grid number */
   groupSettings?: Record<string, FreeImageGroupSettings>;
   align: SectionAlign;
+  /** vertical position of text sitting over an image ("behind" layout) */
+  overlayVAlign?: "top" | "middle" | "bottom";
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
   buttonHref?: string;
@@ -1231,7 +1241,7 @@ function FreeView({ section }: { section: FreeSection }) {
                 <Pic image={img} className="absolute inset-0 h-full w-full" />
               </div>
               <div className="absolute inset-0 bg-ink/35" />
-              <div className={`relative flex h-full flex-col justify-center px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
+              <div className={`relative flex h-full flex-col ${OVERLAY_VALIGN_CLASS[section.overlayVAlign ?? "middle"]} px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
                 {i === 0 ? <FreeText section={section} onDark /> : null}
                 <OverlayImageTexts section={section} image={img} index={i} />
               </div>
