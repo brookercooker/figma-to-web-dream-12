@@ -1844,6 +1844,8 @@ export default function ObjectDesignPage() {
                 </>
               )}
             </div>
+              </>
+            )}
           </>
         ) })
       );
