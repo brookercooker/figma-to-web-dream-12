@@ -2591,7 +2591,7 @@ export default function ObjectDesignPage() {
 
       <main
         className={`grid grid-cols-1 gap-6 px-4 py-6 ${
-          libraryOpen ? "lg:grid-cols-[260px_1fr_auto]" : "lg:grid-cols-[44px_1fr_auto]"
+          libraryOpen ? "lg:grid-cols-[260px_1fr]" : "lg:grid-cols-[44px_1fr]"
         }`}
       >
         {!libraryOpen ? (
