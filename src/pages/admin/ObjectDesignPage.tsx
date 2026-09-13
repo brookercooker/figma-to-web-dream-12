@@ -1199,9 +1199,46 @@ export default function ObjectDesignPage() {
             const tKey = `txt:${section.id}:${index}:${ti}`;
             const tOpen = openSub[tKey] ?? focusPart === `imagetext:${index}:${ti}`;
             const kindLabel = IMAGE_TEXT_KINDS.find((k) => k.value === t.kind)?.label ?? "Text";
+            const isDragging = dragText?.sectionId === section.id && dragText.index === index && dragText.ti === ti;
+            const dropHere =
+              !isDragging && dropText?.sectionId === section.id && dropText.index === index && dropText.ti === ti
+                ? dropText.before ? "before" : "after"
+                : null;
+            const bar = <div className="h-0.5 rounded-full bg-primary" />;
             return (
-            <div key={t.id} className="space-y-2 rounded border bg-muted/30 p-2">
+            <div key={t.id} className="space-y-1">
+            {dropHere === "before" && bar}
+            <div
+              onDragOver={(e) => {
+                if (!dragText || dragText.sectionId !== section.id || dragText.index !== index) return;
+                e.preventDefault();
+                const r = e.currentTarget.getBoundingClientRect();
+                const before = e.clientY < r.top + r.height / 2;
+                setDropText({ sectionId: section.id, index, ti, before });
+              }}
+              onDrop={(e) => {
+                if (!dragText || dragText.sectionId !== section.id || dragText.index !== index) return;
+                e.preventDefault();
+                const target = dropText?.before ? ti : ti + 1;
+                moveImageText(section.id, index, dragText.ti, target);
+                setDragText(null);
+                setDropText(null);
+              }}
+              className={`space-y-2 rounded border bg-muted/30 p-2 ${isDragging ? "opacity-40" : ""}`}
+            >
               <div className="flex items-center gap-2">
+                <span
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.effectAllowed = "move";
+                    setDragText({ sectionId: section.id, index, ti });
+                  }}
+                  onDragEnd={() => { setDragText(null); setDropText(null); }}
+                  title="Drag to reorder"
+                  className="cursor-grab text-muted-foreground active:cursor-grabbing"
+                >
+                  <GripVertical className="w-4 h-4" />
+                </span>
                 <button
                   type="button"
                   className="flex min-w-0 flex-1 items-center gap-2 text-left"
