@@ -149,14 +149,15 @@ export const imageHeightClass: Record<ImageHeight, string> = {
   xl: "h-96 sm:h-[32rem]",
 };
 
-/** Extra text boxes that sit under an image and scroll with it. */
-export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text";
+/** Extra text boxes (and rules) that sit under an image and scroll with it. */
+export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text" | "divider";
 
 export const IMAGE_TEXT_KINDS: { value: ImageTextKind; label: string }[] = [
   { value: "eyebrow", label: "Eyebrow" },
   { value: "title", label: "Title" },
   { value: "subheading", label: "Subheading" },
   { value: "text", label: "Text" },
+  { value: "divider", label: "Divider" },
 ];
 
 export interface ImageText {
@@ -166,6 +167,8 @@ export interface ImageText {
   style?: TextStyle;
   /** overrides the block-wide caption alignment for this text */
   align?: SectionAlign;
+  /** bar settings when kind is "divider" */
+  divider?: { color?: TextColor; width?: "full" | "short"; widthPct?: number; thickness?: number };
 }
 
 export const IMAGE_TEXT_DEFAULTS: Record<
@@ -176,6 +179,7 @@ export const IMAGE_TEXT_DEFAULTS: Record<
   title: { font: "serif", color: "ink", size: "md", heading: true },
   subheading: { font: "serif", color: "ink", size: "sm", heading: true },
   text: { font: "sans", color: "stone", size: "sm", heading: false },
+  divider: { font: "sans", color: "stone", size: "sm", heading: false },
 };
 
 export interface SectionImage {
@@ -746,6 +750,17 @@ function FreeFigureBody({
         const ts = t.kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style;
         const fallback = { color: onDark ? ("cream" as TextColor) : d.color, size: d.size };
         const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
+        if (t.kind === "divider") {
+          return (
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-3 flex w-full flex-col">
+              <DividerBar
+                divider={{ id: t.id, ...(t.divider ?? {}) }}
+                align={t.align ?? image.captionAlign ?? blockAlign}
+                onDark={onDark}
+              />
+            </div>
+          );
+        }
         return (
           <p
             key={t.id}
@@ -1145,6 +1160,17 @@ function OverlayImageTexts({
         const ts = t.kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style;
         const fallback = { color: "cream" as TextColor, size: d.size };
         const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
+        if (t.kind === "divider") {
+          return (
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-3 flex w-full flex-col">
+              <DividerBar
+                divider={{ id: t.id, ...(t.divider ?? {}) }}
+                align={t.align ?? image.captionAlign ?? blockAlign}
+                onDark
+              />
+            </div>
+          );
+        }
         return (
           <p
             key={t.id}

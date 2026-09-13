@@ -1223,31 +1223,110 @@ export default function ObjectDesignPage() {
                     options={IMAGE_TEXT_KINDS.map((k) => ({ value: k.value, label: k.label }))}
                     onChange={(v) => patchImageText(section.id, index, ti, { kind: v })}
                   />
-                  <Textarea
-                    rows={2}
-                    value={t.text}
-                    placeholder={`${kindLabel}…`}
-                    onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
-                  />
-                  <Choice
-                    value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
-                    options={[
-                      { value: "left" as const, label: "Left", icon: AlignLeft },
-                      { value: "center" as const, label: "Center", icon: AlignCenter },
-                      { value: "right" as const, label: "Right", icon: AlignRight },
-                    ]}
-                    onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
-                  />
-                  <TextStyleFields
-                    label="Style"
-                    value={t.style}
-                    defaults={{
-                      font: IMAGE_TEXT_DEFAULTS[t.kind].font,
-                      color: IMAGE_TEXT_DEFAULTS[t.kind].color,
-                      size: IMAGE_TEXT_DEFAULTS[t.kind].size,
-                    }}
-                    onChange={(v) => patchImageText(section.id, index, ti, { style: v })}
-                  />
+                  {t.kind === "divider" ? (
+                    <>
+                      <ColorDropdown
+                        label="Color"
+                        value={t.divider?.color ?? ""}
+                        fallback="stone"
+                        options={TEXT_COLORS}
+                        onChange={(v) =>
+                          patchImageText(section.id, index, ti, {
+                            divider: { ...(t.divider ?? {}), color: v as TextColor },
+                          })
+                        }
+                      />
+                      <Field label="Width">
+                        <div>
+                          <Choice
+                            value={typeof t.divider?.widthPct === "number" ? "percent" : (t.divider?.width ?? "full")}
+                            options={[
+                              { value: "full" as const, label: "Full width", icon: Minus },
+                              { value: "short" as const, label: "Short", icon: Minus },
+                              { value: "percent" as const, label: "Percent", icon: Minus },
+                            ]}
+                            onChange={(v) =>
+                              patchImageText(section.id, index, ti, {
+                                divider: v === "percent"
+                                  ? { ...(t.divider ?? {}), widthPct: t.divider?.widthPct ?? 50 }
+                                  : { ...(t.divider ?? {}), width: v as "full" | "short", widthPct: undefined },
+                              })
+                            }
+                          />
+                        </div>
+                      </Field>
+                      {typeof t.divider?.widthPct === "number" && (
+                        <Field label="Width (% of full width)">
+                          <Input
+                            type="number"
+                            min={1}
+                            max={100}
+                            value={t.divider.widthPct}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              const pct = raw === "" ? 1 : Math.min(100, Math.max(1, Number(raw) || 1));
+                              patchImageText(section.id, index, ti, {
+                                divider: { ...(t.divider ?? {}), widthPct: pct },
+                              });
+                            }}
+                          />
+                        </Field>
+                      )}
+                      <Field label="Thickness (px)">
+                        <Input
+                          type="number"
+                          min={1}
+                          max={12}
+                          value={t.divider?.thickness ?? 1}
+                          onChange={(e) =>
+                            patchImageText(section.id, index, ti, {
+                              divider: {
+                                ...(t.divider ?? {}),
+                                thickness: Math.min(12, Math.max(1, Number(e.target.value) || 1)),
+                              },
+                            })
+                          }
+                        />
+                      </Field>
+                      <Choice
+                        value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
+                        options={[
+                          { value: "left" as const, label: "Left", icon: AlignLeft },
+                          { value: "center" as const, label: "Center", icon: AlignCenter },
+                          { value: "right" as const, label: "Right", icon: AlignRight },
+                        ]}
+                        onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <Textarea
+                        rows={2}
+                        value={t.text}
+                        placeholder={`${kindLabel}…`}
+                        onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
+                      />
+                      <Choice
+                        value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
+                        options={[
+                          { value: "left" as const, label: "Left", icon: AlignLeft },
+                          { value: "center" as const, label: "Center", icon: AlignCenter },
+                          { value: "right" as const, label: "Right", icon: AlignRight },
+                        ]}
+                        onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
+                      />
+                      <TextStyleFields
+                        label="Style"
+                        value={t.style}
+                        defaults={{
+                          font: IMAGE_TEXT_DEFAULTS[t.kind].font,
+                          color: IMAGE_TEXT_DEFAULTS[t.kind].color,
+                          size: IMAGE_TEXT_DEFAULTS[t.kind].size,
+                        }}
+                        onChange={(v) => patchImageText(section.id, index, ti, { style: v })}
+                      />
+                    </>
+                  )}
                 </>
               )}
             </div>
