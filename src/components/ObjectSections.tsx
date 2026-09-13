@@ -35,9 +35,12 @@ export const MAX_TEXT_PX = 96;
 export const HEADING_PX: Record<TextSize, number> = { sm: 24, md: 30, lg: 36, xl: 48 };
 export const BODY_PX: Record<TextSize, number> = { sm: 14, md: 16, lg: 18, xl: 20 };
 
-/** Inline font-size for text that uses an exact px value. */
-export function textInlineStyle(style: TextStyle | undefined) {
-  return style?.sizePx ? { fontSize: `${style.sizePx}px` } : undefined;
+/** Inline font-size / custom color for text that overrides the presets. */
+export function textInlineStyle(style: TextStyle | undefined): React.CSSProperties | undefined {
+  const css: React.CSSProperties = {};
+  if (style?.sizePx) css.fontSize = `${style.sizePx}px`;
+  if (isCustomColor(style?.color)) css.color = style?.color as string;
+  return Object.keys(css).length ? css : undefined;
 }
 
 /** Bold / italic / underline classes shared by every text element. */
