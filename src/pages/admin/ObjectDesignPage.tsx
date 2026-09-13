@@ -1867,6 +1867,11 @@ export default function ObjectDesignPage() {
         imageHeight: own.imageHeight ?? section.imageHeight,
         imageAlign: own.imageAlign ?? section.imageAlign,
         imageBorder: own.imageBorder ?? section.imageBorder,
+        imageBorderColor: own.imageBorderColor ?? section.imageBorderColor,
+        imageBorderWidth: own.imageBorderWidth ?? section.imageBorderWidth,
+        imageBorderStyle: own.imageBorderStyle ?? section.imageBorderStyle,
+        imageBorderRadius: own.imageBorderRadius ?? section.imageBorderRadius,
+        imageBorderPad: own.imageBorderPad ?? section.imageBorderPad,
       };
       const patchGroup = (v: Partial<typeof eff>) =>
         patch(section.id, {
@@ -1902,6 +1907,60 @@ export default function ObjectDesignPage() {
                 />
               </div>
             </Field>
+            {eff.imageBorder && (
+              <div className="flex flex-wrap items-center gap-4">
+                <ColorDropdown
+                  label="Border color"
+                  value={eff.imageBorderColor ?? ""}
+                  fallback="stone"
+                  options={TEXT_COLORS}
+                  onChange={(v) => patchGroup({ imageBorderColor: v as TextColor })}
+                />
+                <Field label="Line">
+                  <div>
+                    <Choice
+                      value={eff.imageBorderStyle ?? "solid"}
+                      options={[
+                        { value: "solid" as const, label: "Solid" },
+                        { value: "dashed" as const, label: "Dashed" },
+                        { value: "dotted" as const, label: "Dotted" },
+                      ]}
+                      onChange={(v) => patchGroup({ imageBorderStyle: v })}
+                    />
+                  </div>
+                </Field>
+                <Field label="Thickness (px)">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={12}
+                    value={eff.imageBorderWidth ?? 1}
+                    onChange={(e) => patchGroup({ imageBorderWidth: Math.min(12, Math.max(1, Number(e.target.value) || 1)) })}
+                    className="h-8 w-20"
+                  />
+                </Field>
+                <Field label="Corner radius (px)">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={48}
+                    value={eff.imageBorderRadius ?? 8}
+                    onChange={(e) => patchGroup({ imageBorderRadius: Math.min(48, Math.max(0, Number(e.target.value) || 0)) })}
+                    className="h-8 w-20"
+                  />
+                </Field>
+                <Field label="Inner spacing (px)">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={64}
+                    value={eff.imageBorderPad ?? 12}
+                    onChange={(e) => patchGroup({ imageBorderPad: Math.min(64, Math.max(0, Number(e.target.value) || 0)) })}
+                    className="h-8 w-20"
+                  />
+                </Field>
+              </div>
+            )}
             <div className="flex flex-wrap gap-4">
               {isFirst && (
                 <>
