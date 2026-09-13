@@ -1131,6 +1131,34 @@ function FreeText({
   );
 }
 
+/** Text boxes attached to an image, rendered in front of it for the "behind" layout. */
+function OverlayImageTexts({
+  section, image, index,
+}: { section: FreeSection; image: SectionImage; index: number }) {
+  const texts = image.texts ?? [];
+  if (!texts.length) return null;
+  const blockAlign: SectionAlign = section.align ?? "left";
+  return (
+    <>
+      {texts.map((t, ti) => {
+        const d = IMAGE_TEXT_DEFAULTS[t.kind];
+        const ts = t.kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style;
+        const fallback = { color: "cream" as TextColor, size: d.size };
+        const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
+        return (
+          <p
+            key={t.id}
+            data-part={`imagetext:${index}:${ti}`}
+            className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
+            style={textInlineStyle(ts)}
+            {...richText(t.text)}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 function FreeView({ section }: { section: FreeSection }) {
   const hasImages = section.images.length > 0;
 
