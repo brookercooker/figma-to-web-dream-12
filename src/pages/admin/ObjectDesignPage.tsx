@@ -802,6 +802,16 @@ export default function ObjectDesignPage() {
     patchImage(sectionId, index, { texts });
   };
 
+  /** Move an image's text box to a new spot in the list. */
+  const moveImageText = (sectionId: string, index: number, from: number, to: number) => {
+    const texts = [...imageTextsOf(sectionId, index)];
+    if (from === to || from < 0 || from >= texts.length) return;
+    const [moved] = texts.splice(from, 1);
+    const dest = Math.max(0, Math.min(texts.length, from < to ? to - 1 : to));
+    texts.splice(dest, 0, moved);
+    patchImage(sectionId, index, { texts });
+  };
+
   const removeImageText = (sectionId: string, index: number, tIdx: number) => {
     patchImage(sectionId, index, { texts: imageTextsOf(sectionId, index).filter((_, i) => i !== tIdx) });
   };
