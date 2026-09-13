@@ -760,9 +760,9 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
           className="flex transition-transform duration-700 ease-out"
           style={{ transform: `translateX(-${(i * 100) / perView}%)` }}
         >
-          {images.map((img, idx) => (
-            <figure key={idx} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
-              <FreeFigureBody section={section} image={img} index={idx} onDark={onDark} />
+          {entries.map((e) => (
+            <figure key={e.index} className="shrink-0 px-2 first:pl-0 last:pr-0" style={{ width: `${100 / perView}%` }}>
+              <FreeFigureBody section={section} image={e.image} index={e.index} onDark={onDark} />
             </figure>
           ))}
 
