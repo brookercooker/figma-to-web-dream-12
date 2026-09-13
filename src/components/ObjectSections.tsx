@@ -94,13 +94,17 @@ export const TEXT_SIZES: { value: TextSize; label: string }[] = [
 ];
 
 const fontClass: Record<TextFont, string> = { serif: "font-serif font-light", sans: "font-sans" };
-const colorClass: Record<TextColor, string> = {
+const colorClass: Record<TextColorToken, string> = {
   ink: "text-ink",
   stone: "text-stone",
   brass: "text-brass",
   garnet: "text-garnet",
   cream: "text-cream",
 };
+/** Class for a brand token; custom colors are applied inline instead. */
+function colorClassOf(c: TextColor): string {
+  return isCustomColor(c) ? "" : colorClass[c as TextColorToken];
+}
 const headingSizeClass: Record<TextSize, string> = {
   sm: "text-2xl",
   md: "text-3xl",
