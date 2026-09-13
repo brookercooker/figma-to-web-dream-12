@@ -2319,6 +2319,47 @@ export default function ObjectDesignPage() {
                 ))}
               </>
             )}
+            <span className="mx-1 h-5 w-px bg-border" />
+            {([
+              { value: "separate" as SectionFlow, label: "Separate block", icon: Rows2 },
+              { value: "inline" as SectionFlow, label: "Inline block", icon: Columns2 },
+            ]).map((o) => (
+              <Button
+                key={o.value}
+                type="button"
+                size="sm"
+                variant={(section.flow ?? "separate") === o.value ? "default" : "ghost"}
+                aria-label={o.label}
+                title={o.label}
+                className="h-8 w-8 p-0"
+                onClick={() => patch(section.id, { flow: o.value } as Partial<Section>)}
+              >
+                <o.icon className="h-4 w-4" />
+              </Button>
+            ))}
+            {section.flow === "inline" && (
+              <label className="ml-1 flex items-center gap-1 text-xs text-muted-foreground">
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  className="h-8 w-20"
+                  placeholder="Auto"
+                  value={section.flowWidth ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      patch(section.id, { flowWidth: undefined } as Partial<Section>);
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (Number.isNaN(n)) return;
+                    patch(section.id, { flowWidth: Math.min(100, Math.max(0, n)) } as Partial<Section>);
+                  }}
+                />
+                %
+              </label>
+            )}
           </div>
           <div className="ml-auto flex gap-2">
             <Chip
