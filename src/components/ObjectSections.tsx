@@ -208,6 +208,26 @@ export function imageGroupPart(key: number): string {
   return key === 0 ? "images" : `images:${key}`;
 }
 
+/** Display settings that each image grid inside a block can set on its own. */
+export interface FreeImageGroupSettings {
+  gallery?: "grid" | "carousel";
+  perView?: number;
+  imageHeight?: ImageHeight;
+  imageAlign?: SectionAlign;
+  imageBorder?: boolean;
+}
+
+/** Merge a grid's own settings over the block defaults. */
+export function groupSection(section: FreeSection, key: number): FreeSection {
+  const s = section.groupSettings?.[String(key)];
+  if (!s) return section;
+  const merged: FreeSection = { ...section };
+  for (const [k, v] of Object.entries(s)) {
+    if (v !== undefined) (merged as unknown as Record<string, unknown>)[k] = v;
+  }
+  return merged;
+}
+
 /** A video placed in a block: an uploaded file or a YouTube / Vimeo link. */
 export interface SectionVideo {
   id: string;
@@ -452,6 +472,8 @@ export interface FreeSection {
   captionAlign?: SectionAlign;
   /** draw a border around each image and its text */
   imageBorder?: boolean;
+  /** per image-grid overrides, keyed by grid number */
+  groupSettings?: Record<string, FreeImageGroupSettings>;
   align: SectionAlign;
   height: "sm" | "md" | "lg";
   buttonLabel?: string;
@@ -1116,7 +1138,7 @@ function FreeView({ section }: { section: FreeSection }) {
       const part = imageGroupPart(g.key);
       media.push({
         part,
-        node: <div data-part={part} className="w-full"><FreeGallery section={section} items={g.items} /></div>,
+        node: <div data-part={part} className="w-full"><FreeGallery section={groupSection(section, g.key)} items={g.items} /></div>,
       });
     }
   }

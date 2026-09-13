@@ -23,7 +23,7 @@ import {
 import {
   BODY_PX, FREE_TEXT_KINDS, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
-  type RowVAlign,
+  type RowVAlign, type ImageHeight,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
 
@@ -1713,6 +1713,19 @@ export default function ObjectDesignPage() {
       const group = groups.find((g) => g.key === groupKey);
       const isFirst = groups[0]?.key === groupKey;
       const part = imageGroupPart(groupKey);
+      const own = section.groupSettings?.[String(groupKey)] ?? {};
+      const eff = {
+        gallery: own.gallery ?? section.gallery,
+        perView: own.perView ?? section.perView,
+        imageHeight: own.imageHeight ?? section.imageHeight,
+        imageAlign: own.imageAlign ?? section.imageAlign,
+        imageBorder: own.imageBorder ?? section.imageBorder,
+      };
+      const patchGroup = (v: Partial<typeof eff>) =>
+        patch(section.id, {
+          groupSettings: { ...(section.groupSettings ?? {}), [String(groupKey)]: { ...own, ...v } },
+        });
+      const count = group?.items.length ?? 0;
       return (
         !!group && Block({ title: groups.length > 1 ? `Images ${groups.findIndex((g) => g.key === groupKey) + 1}` : "Images", icon: ImageIcon, part, key: part, flowSection: section, onDelete: () => patch(section.id, { images: section.images.filter((img) => (img.group ?? 0) !== groupKey) }), children: (
           <>
@@ -1730,21 +1743,21 @@ export default function ObjectDesignPage() {
                 <Plus className="w-4 h-4" /> Add image
               </Button>
             </div>
-            {isFirst && (
-              <>
             <Field label="Border around image and text">
               <div>
                 <Choice
-                  value={section.imageBorder ? "on" : "off"}
+                  value={eff.imageBorder ? "on" : "off"}
                   options={[
                     { value: "off" as const, label: "None" },
                     { value: "on" as const, label: "Border" },
                   ]}
-                  onChange={(v) => patch(section.id, { imageBorder: v === "on" || undefined })}
+                  onChange={(v) => patchGroup({ imageBorder: v === "on" })}
                 />
               </div>
             </Field>
             <div className="flex flex-wrap gap-4">
+              {isFirst && (
+                <>
               <Field label="Images sit">
                 <div>
                   <IconSelect
@@ -1787,56 +1800,58 @@ export default function ObjectDesignPage() {
                   </div>
                 </Field>
               )}
-              {section.layout !== "behind" && section.images.length > 0 && (
+                </>
+              )}
+              {section.layout !== "behind" && count > 0 && (
                 <Field label="Image height">
                   <div>
                     <Choice
-                      value={section.imageHeight ?? "auto"}
+                      value={eff.imageHeight ?? "auto"}
                       options={IMAGE_HEIGHTS.map((h) => ({ value: h.value, label: h.label }))}
-                      onChange={(v) => patch(section.id, { imageHeight: v })}
+                      onChange={(v) => patchGroup({ imageHeight: v })}
                     />
                   </div>
                 </Field>
               )}
-              {section.layout !== "behind" && section.images.length > 0 && section.gallery !== "carousel" && (
+              {section.layout !== "behind" && count > 0 && eff.gallery !== "carousel" && (
                 <Field label="Image position">
                   <div>
                     <Choice
-                      value={section.imageAlign ?? "left"}
+                      value={eff.imageAlign ?? "left"}
                       options={[
                         { value: "left" as const, label: "Left", icon: AlignLeft },
                         { value: "center" as const, label: "Center", icon: AlignCenter },
                         { value: "right" as const, label: "Right", icon: AlignRight },
                       ]}
-                      onChange={(v) => patch(section.id, { imageAlign: v })}
+                      onChange={(v) => patchGroup({ imageAlign: v })}
                     />
                   </div>
                 </Field>
               )}
-              {section.layout !== "behind" && section.images.length > 1 && (
+              {section.layout !== "behind" && count > 1 && (
                 <>
                   <Field label="Show as">
                     <div>
                       <Choice
-                        value={section.gallery}
+                        value={eff.gallery}
                         options={[
                           { value: "grid" as const, label: "Grid", icon: LayoutGrid },
                           { value: "carousel" as const, label: "Carousel", icon: GalleryHorizontal },
                         ]}
-                        onChange={(v) => patch(section.id, { gallery: v })}
+                        onChange={(v) => patchGroup({ gallery: v })}
                       />
                     </div>
                   </Field>
-                  {section.gallery === "carousel" && (
+                  {eff.gallery === "carousel" && (
                     <Field label="Show at once">
                       <div>
                         <Choice
-                          value={Math.min(section.perView ?? 1, group.items.length)}
+                          value={Math.min(eff.perView ?? 1, count)}
                           options={Array.from(
-                            { length: Math.min(group.items.length, 6) },
+                            { length: Math.min(count, 6) },
                             (_, k) => ({ value: k + 1, label: String(k + 1) }),
                           )}
-                          onChange={(v) => patch(section.id, { perView: v })}
+                          onChange={(v) => patchGroup({ perView: v })}
                         />
                       </div>
                     </Field>
@@ -1844,8 +1859,7 @@ export default function ObjectDesignPage() {
                 </>
               )}
             </div>
-              </>
-            )}
+
           </>
         ) })
       );
@@ -2508,6 +2522,17 @@ export default function ObjectDesignPage() {
 
         if (toolbar.imageIndex !== undefined) {
           const idx = toolbar.imageIndex;
+          const gKey = String(sec.images?.[idx]?.group ?? 0);
+          const gOwn = sec.groupSettings?.[gKey] ?? {};
+          const gCount = (sec.images ?? []).filter((im) => String(im.group ?? 0) === gKey).length;
+          const gEff = {
+            gallery: gOwn.gallery ?? sec.gallery,
+            perView: gOwn.perView ?? sec.perView,
+            imageHeight: gOwn.imageHeight ?? sec.imageHeight,
+            imageAlign: gOwn.imageAlign ?? sec.imageAlign,
+          };
+          const patchG = (v: Partial<typeof gEff>) =>
+            patch(sec.id, { groupSettings: { ...(sec.groupSettings ?? {}), [gKey]: { ...gOwn, ...v } } });
           return (
             <FloatingToolbar top={anchorTop} left={toolbar.left}>
               <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Image</span>
@@ -2526,21 +2551,21 @@ export default function ObjectDesignPage() {
               {sec.layout !== "behind" && (
                 <Dropdown
                   label="Height"
-                  value={sec.imageHeight ?? "auto"}
+                  value={gEff.imageHeight ?? "auto"}
                   options={IMAGE_HEIGHTS.map((h) => ({ value: h.value as string, label: h.label }))}
-                  onChange={(v) => patch(sec.id, { imageHeight: v })}
+                  onChange={(v) => patchG({ imageHeight: v as ImageHeight })}
                 />
               )}
-              {sec.layout !== "behind" && sec.gallery !== "carousel" && (
+              {sec.layout !== "behind" && gEff.gallery !== "carousel" && (
                 <Dropdown
                   label="Position"
-                  value={sec.imageAlign ?? "left"}
+                  value={gEff.imageAlign ?? "left"}
                   options={[
                     { value: "left", label: "Left", icon: AlignLeft },
                     { value: "center", label: "Center", icon: AlignCenter },
                     { value: "right", label: "Right", icon: AlignRight },
                   ]}
-                  onChange={(v) => patch(sec.id, { imageAlign: v })}
+                  onChange={(v) => patchG({ imageAlign: v as SectionAlign })}
                 />
               )}
               <IconSelect
@@ -2564,32 +2589,27 @@ export default function ObjectDesignPage() {
                   onChange={(v) => patch(sec.id, { imageSide: v })}
                 />
               )}
-              {sec.layout !== "behind" && (sec.images?.length ?? 0) > 1 && (
+              {sec.layout !== "behind" && gCount > 1 && (
                 <Dropdown
                   label="Show as"
-                  value={sec.gallery ?? "grid"}
+                  value={gEff.gallery ?? "grid"}
                   options={[
                     { value: "grid", label: "Grid", icon: LayoutGrid },
                     { value: "carousel", label: "Carousel", icon: GalleryHorizontal },
                   ]}
-                  onChange={(v) => patch(sec.id, { gallery: v })}
+                  onChange={(v) => patchG({ gallery: v as "grid" | "carousel" })}
                 />
               )}
-              {(() => {
-                const groupKey = sec.images?.[idx]?.group ?? 0;
-                const groupCount = (sec.images ?? []).filter((im) => (im.group ?? 0) === groupKey).length;
-                if (sec.layout === "behind" || sec.gallery !== "carousel" || groupCount <= 1) return null;
-                return (
-                  <Dropdown
-                    label="Show at once"
-                    value={String(Math.min(sec.perView ?? 1, groupCount))}
-                    options={Array.from({ length: Math.min(groupCount, 6) }, (_, k) => ({
-                      value: String(k + 1), label: String(k + 1),
-                    }))}
-                    onChange={(v) => patch(sec.id, { perView: Number(v) })}
-                  />
-                );
-              })()}
+              {sec.layout !== "behind" && gEff.gallery === "carousel" && gCount > 1 && (
+                <Dropdown
+                  label="Show at once"
+                  value={String(Math.min(gEff.perView ?? 1, gCount))}
+                  options={Array.from({ length: Math.min(gCount, 6) }, (_, k) => ({
+                    value: String(k + 1), label: String(k + 1),
+                  }))}
+                  onChange={(v) => patchG({ perView: Number(v) })}
+                />
+              )}
               <Button
                 variant="ghost"
                 size="sm"
