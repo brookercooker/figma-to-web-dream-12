@@ -1195,6 +1195,24 @@ export default function ObjectDesignPage() {
       )}
       {showCaption && imgOpen && (
         <div className="space-y-2 rounded-md border border-dashed p-2">
+          <div className="flex flex-wrap items-center gap-1">
+            {IMAGE_TEXT_KINDS.map((k) => {
+              const Icon = IMAGE_TEXT_ICONS[k.value];
+              return (
+                <Button
+                  key={k.value}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  title={`Add ${k.label}`}
+                  aria-label={`Add ${k.label}`}
+                  onClick={() => addImageText(section.id, index, k.value)}
+                >
+                  <Icon className="w-4 h-4" />
+                </Button>
+              );
+            })}
+          </div>
           {(image.texts ?? []).map((t, ti) => {
             const tKey = `txt:${section.id}:${index}:${ti}`;
             const tOpen = openSub[tKey] ?? focusPart === `imagetext:${index}:${ti}`;
