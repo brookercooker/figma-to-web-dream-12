@@ -1847,7 +1847,8 @@ export default function ObjectDesignPage() {
             </div>
           </>
         ) })
-    );
+      );
+    };
 
     const videosBlock = () => (
         (section.videos ?? []).length > 0 && Block({ title: "Videos", icon: VideoIcon, part: "videos", flowSection: section, onDelete: () => patch(section.id, { videos: [] }), children: (
