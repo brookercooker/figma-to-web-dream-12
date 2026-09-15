@@ -2476,6 +2476,14 @@ export default function ObjectDesignPage() {
                 />
               </label>
             ))}
+            <span className="mx-1 h-5 w-px bg-border" />
+            <ColorDropdown
+              label="Background"
+              value={(section as FreeSection).bg ?? ""}
+              fallback=""
+              options={BG_COLORS as { value: string; label: string; swatch: string }[]}
+              onChange={(v) => patch(section.id, { bg: v || undefined } as Partial<Section>)}
+            />
           </div>
           <div className="ml-auto flex gap-2">
             <Chip
