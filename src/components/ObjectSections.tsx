@@ -337,12 +337,21 @@ export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
 /** Flex style for an inline item with an optional width percentage. */
 /** Inline padding for a block; falls back to the default 48px vertical rhythm. */
 export function sectionPadStyle(section: { padY?: number; padX?: number }): React.CSSProperties {
+  const y = section.padY ?? 48;
+  const x = section.padX ?? 0;
   return {
-    paddingTop: `${section.padY ?? 48}px`,
-    paddingBottom: `${section.padY ?? 48}px`,
-    paddingLeft: `${section.padX ?? 0}px`,
-    paddingRight: `${section.padX ?? 0}px`,
+    ...spaceStyle(y, "Top"),
+    ...spaceStyle(y, "Bottom"),
+    ...spaceStyle(x, "Left"),
+    ...spaceStyle(x, "Right"),
   };
+}
+
+/** Positive values become padding; negative values become negative margin (CSS has no negative padding). */
+function spaceStyle(value: number, side: "Top" | "Bottom" | "Left" | "Right"): React.CSSProperties {
+  return value < 0
+    ? ({ [`margin${side}`]: `${value}px`, [`padding${side}`]: "0px" } as React.CSSProperties)
+    : ({ [`padding${side}`]: `${value}px` } as React.CSSProperties);
 }
 
 /** Inline padding for one item inside a block. */
