@@ -237,11 +237,6 @@ function TextStyleFields({
         {!colorOnly && (
           <Field label="Size">
             <div className="flex items-center gap-2">
-              <Choice
-                value={style.sizePx ? ("" as unknown as TextSize) : (style.size ?? defaults.size)}
-                options={TEXT_SIZES}
-                onChange={(v) => set({ size: v, sizePx: undefined })}
-              />
               <SizeControl
                 style={style}
                 defaultSize={defaults.size}
@@ -3173,12 +3168,6 @@ export default function ObjectDesignPage() {
               value={es.font ?? kindDefaults?.font ?? defaultFont[fieldKey] ?? "sans"}
               options={TEXT_FONTS.map((f) => ({ value: f.value as string, label: f.label }))}
               onChange={(v) => set({ font: (v || undefined) as TextFont | undefined })}
-            />
-            <Dropdown
-              label="Size"
-              value={es.sizePx ? "" : (es.size ?? "")}
-              options={[{ value: "", label: "Default" }, ...TEXT_SIZES.map((s) => ({ value: s.value as string, label: SIZE_WORD[s.value] ?? s.label }))]}
-              onChange={(v) => set({ size: (v || undefined) as TextSize | undefined, sizePx: undefined })}
             />
             <SizeControl
               style={es}
