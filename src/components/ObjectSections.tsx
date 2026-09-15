@@ -240,6 +240,8 @@ export interface FreeImageGroupSettings {
   gallery?: "grid" | "carousel";
   perView?: number;
   imageHeight?: ImageHeight;
+  imageHeightPx?: number;
+  imageWidthPx?: number;
   imageAlign?: SectionAlign;
   imageBorder?: boolean;
   imageBorderColor?: TextColor;
