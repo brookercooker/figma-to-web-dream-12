@@ -2032,6 +2032,8 @@ export default function ObjectDesignPage() {
         gallery: own.gallery ?? section.gallery,
         perView: own.perView ?? section.perView,
         imageHeight: own.imageHeight ?? section.imageHeight,
+        imageHeightPx: own.imageHeightPx ?? section.imageHeightPx,
+        imageWidthPx: own.imageWidthPx ?? section.imageWidthPx,
         imageAlign: own.imageAlign ?? section.imageAlign,
         imageBorder: own.imageBorder ?? section.imageBorder,
         imageBorderColor: own.imageBorderColor ?? section.imageBorderColor,
