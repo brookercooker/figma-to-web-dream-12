@@ -187,6 +187,10 @@ export interface ImageText {
   divider?: { color?: TextColor; width?: "full" | "short"; widthPct?: number; thickness?: number };
   /** link settings when kind is "button" */
   button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor };
+  /** extra space above/below this item (px, may be negative) */
+  padY?: number;
+  /** extra space left/right of this item (px, may be negative) */
+  padX?: number;
 }
 
 export const IMAGE_TEXT_DEFAULTS: Record<
@@ -368,6 +372,14 @@ export function partPadStyle(
   if (x !== undefined) {
     style = { ...style, ...spaceStyle(x, "Left"), ...spaceStyle(x, "Right") };
   }
+  return style;
+}
+
+/** Inline spacing for one text/divider/button attached to an image. */
+export function imageTextPadStyle(t: { padY?: number; padX?: number }): React.CSSProperties {
+  let style: React.CSSProperties = {};
+  if (t.padY !== undefined) style = { ...style, ...spaceStyle(t.padY, "Top"), ...spaceStyle(t.padY, "Bottom") };
+  if (t.padX !== undefined) style = { ...style, ...spaceStyle(t.padX, "Left"), ...spaceStyle(t.padX, "Right") };
   return style;
 }
 
@@ -875,7 +887,7 @@ function FreeFigureBody({
         const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
         if (t.kind === "divider") {
           return (
-            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-3 flex w-full flex-col">
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-3 flex w-full flex-col" style={imageTextPadStyle(t)}>
               <DividerBar
                 divider={{ id: t.id, ...(t.divider ?? {}) }}
                 align={t.align ?? image.captionAlign ?? blockAlign}
@@ -886,7 +898,7 @@ function FreeFigureBody({
         }
         if (t.kind === "button") {
           return (
-            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`}>
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
               <SectionButton
                 label={t.text || "Button"}
                 href={t.button?.href || "#"}
@@ -902,7 +914,7 @@ function FreeFigureBody({
             key={t.id}
             data-part={`imagetext:${index}:${ti}`}
             className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
-            style={textInlineStyle(ts)}
+            style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
             {...richText(t.text)}
           />
         );
@@ -1300,7 +1312,7 @@ function OverlayImageTexts({
         const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
         if (t.kind === "divider") {
           return (
-            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-3 flex w-full flex-col">
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-3 flex w-full flex-col" style={imageTextPadStyle(t)}>
               <DividerBar
                 divider={{ id: t.id, ...(t.divider ?? {}) }}
                 align={t.align ?? image.captionAlign ?? blockAlign}
@@ -1311,7 +1323,7 @@ function OverlayImageTexts({
         }
         if (t.kind === "button") {
           return (
-            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`}>
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
               <SectionButton
                 label={t.text || "Button"}
                 href={t.button?.href || "#"}
@@ -1327,7 +1339,7 @@ function OverlayImageTexts({
             key={t.id}
             data-part={`imagetext:${index}:${ti}`}
             className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
-            style={textInlineStyle(ts)}
+            style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
             {...richText(t.text)}
           />
         );

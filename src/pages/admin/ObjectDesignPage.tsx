@@ -1511,6 +1511,39 @@ export default function ObjectDesignPage() {
                       />
                     </>
                   )}
+                  <Field label="Spacing">
+                    <div className="flex items-center gap-3">
+                      {([
+                        { key: "padY" as const, label: "Space above and below (px)", short: "V" },
+                        { key: "padX" as const, label: "Space left and right (px)", short: "H" },
+                      ]).map((o) => (
+                        <label key={o.key} className="flex items-center gap-1 text-xs text-muted-foreground" title={o.label}>
+                          {o.short}
+                          <Input
+                            type="number"
+                            min={-240}
+                            max={240}
+                            className="h-8 w-16"
+                            placeholder="0"
+                            aria-label={o.label}
+                            value={t[o.key] ?? ""}
+                            onChange={(e) => {
+                              const raw = e.target.value;
+                              if (raw === "") {
+                                patchImageText(section.id, index, ti, { [o.key]: undefined } as Partial<ImageText>);
+                                return;
+                              }
+                              const n = Number(raw);
+                              if (Number.isNaN(n)) return;
+                              patchImageText(section.id, index, ti, {
+                                [o.key]: Math.min(240, Math.max(-240, n)),
+                              } as Partial<ImageText>);
+                            }}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </Field>
                 </>
               )}
             </div>
