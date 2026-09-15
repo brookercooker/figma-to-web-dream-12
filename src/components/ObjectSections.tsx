@@ -1244,7 +1244,7 @@ function FreeText({
                 <div
                   key={it.part}
                   className={`flex flex-col px-3 ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
-                  style={flowWidthStyle(w)}
+                  style={{ ...flowWidthStyle(w), ...partPadStyle(section, it.part) }}
                 >
                   {it.node}
                 </div>
@@ -1263,7 +1263,7 @@ function FreeText({
               >
                 <div
                   className={`flex flex-col ${alignText[a]} ${w ? "" : "w-full"}`}
-                  style={flowWidthStyle(w)}
+                  style={{ ...flowWidthStyle(w), ...partPadStyle(section, it.part) }}
                 >
                   {it.node}
                 </div>
