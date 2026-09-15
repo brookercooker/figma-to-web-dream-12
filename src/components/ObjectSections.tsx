@@ -1402,8 +1402,19 @@ function FreeView({ section }: { section: FreeSection }) {
     return (
       <section style={sectionPadStyle(section)} className="py-12 space-y-8">
         <div className="grid gap-8 sm:gap-12 md:grid-cols-2 items-center">
-          <div className={section.imageSide === "right" ? "md:order-2" : ""}>
-            <FreeGallery section={{ ...section, columns: section.images.length > 1 ? 2 : 1 }} />
+          <div className={`space-y-6 ${section.imageSide === "right" ? "md:order-2" : ""}`}>
+            {imageGroups(section.images).map((g) => {
+              const part = imageGroupPart(g.key);
+              const gs = groupSection(section, g.key);
+              return (
+                <div key={g.key} data-part={part} className="w-full">
+                  <FreeGallery
+                    section={{ ...gs, columns: g.items.length > 1 ? 2 : 1 }}
+                    items={g.items}
+                  />
+                </div>
+              );
+            })}
           </div>
           <div className="max-w-xl w-full">
             <FreeText section={section} />
