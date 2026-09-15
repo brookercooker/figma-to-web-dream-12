@@ -650,6 +650,8 @@ export interface FreeSection {
   padX?: number;
   /** background color behind the whole block (subtle emphasis) */
   bg?: TextColor;
+  /** background image behind the whole block */
+  bgImage?: string;
 }
 
 export type Section =
