@@ -512,6 +512,10 @@ export interface FreeSection {
   flowWidths?: Record<string, number>;
   /** per-element alignment within its inline column, keyed by the same parts */
   flowAligns?: Record<string, SectionAlign>;
+  /** per-element vertical padding in pixels, keyed by the same parts */
+  padsY?: Record<string, number>;
+  /** per-element horizontal padding in pixels, keyed by the same parts */
+  padsX?: Record<string, number>;
   /** vertical alignment of items sharing a row */
   rowVAlign?: RowVAlign;
   /** separating bars shown under the text content */
