@@ -335,6 +335,16 @@ export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
 ];
 
 /** Flex style for an inline item with an optional width percentage. */
+/** Inline padding for a block; falls back to the default 48px vertical rhythm. */
+export function sectionPadStyle(section: { padY?: number; padX?: number }): React.CSSProperties {
+  return {
+    paddingTop: `${section.padY ?? 48}px`,
+    paddingBottom: `${section.padY ?? 48}px`,
+    paddingLeft: `${section.padX ?? 0}px`,
+    paddingRight: `${section.padX ?? 0}px`,
+  };
+}
+
 export function flowWidthStyle(width?: number): React.CSSProperties {
   if (!width || width <= 0) return {};
   const w = Math.min(100, Math.max(1, width));
@@ -553,6 +563,10 @@ export interface FreeSection {
   buttonVariant?: "solid" | "outline" | "link";
   /** background color for the button */
   buttonBg?: TextColor;
+  /** vertical padding around the block, in pixels */
+  padY?: number;
+  /** horizontal padding around the block, in pixels */
+  padX?: number;
 }
 
 export type Section =
@@ -1297,7 +1311,7 @@ function FreeView({ section }: { section: FreeSection }) {
 
   if (section.layout === "behind" && hasImages) {
     return (
-      <section className="py-12">
+      <section style={sectionPadStyle(section)} className="py-12">
         <div className={`flex flex-nowrap gap-6 ${alignRow[section.imageAlign ?? "left"]}`}>
           {section.images.map((img, i) => (
             <div
@@ -1323,7 +1337,7 @@ function FreeView({ section }: { section: FreeSection }) {
 
   if (section.layout === "beside" && hasImages) {
     return (
-      <section className="py-12 space-y-8">
+      <section style={sectionPadStyle(section)} className="py-12 space-y-8">
         <div className="grid gap-8 sm:gap-12 md:grid-cols-2 items-center">
           <div className={section.imageSide === "right" ? "md:order-2" : ""}>
             <FreeGallery section={{ ...section, columns: section.images.length > 1 ? 2 : 1 }} />
@@ -1350,7 +1364,7 @@ function FreeView({ section }: { section: FreeSection }) {
   if ((section.videos ?? []).length) media.push({ part: "videos", node: <div data-part="videos" className="w-full"><FreeVideos section={section} /></div> });
 
   return (
-    <section className="py-12 space-y-8">
+    <section style={sectionPadStyle(section)} className="py-12 space-y-8">
       <FreeText section={section} media={media} />
     </section>
   );
