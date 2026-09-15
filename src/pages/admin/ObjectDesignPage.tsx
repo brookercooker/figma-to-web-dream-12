@@ -3276,6 +3276,14 @@ export default function ObjectDesignPage() {
           setPicker(null);
         }}
       />
+      <ImagePickerDialog
+        open={!!bgPicker}
+        onOpenChange={(v) => { if (!v) setBgPicker(null); }}
+        onPick={({ url }) => {
+          if (bgPicker) patch(bgPicker, { bgImage: url } as Partial<Section>);
+          setBgPicker(null);
+        }}
+      />
       <VideoPickerDialog
         open={!!videoPicker}
         onOpenChange={(v) => { if (!v) setVideoPicker(null); }}
