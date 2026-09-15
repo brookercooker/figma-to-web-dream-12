@@ -2193,17 +2193,6 @@ export default function ObjectDesignPage() {
                 </>
               )}
               {section.layout !== "behind" && count > 0 && (
-                <Field label="Image height">
-                  <div>
-                    <Choice
-                      value={eff.imageHeight ?? "auto"}
-                      options={IMAGE_HEIGHTS.map((h) => ({ value: h.value, label: h.label }))}
-                      onChange={(v) => patchGroup({ imageHeight: v })}
-                    />
-                  </div>
-                </Field>
-              )}
-              {section.layout !== "behind" && count > 0 && (
                 <Field label="Exact size (px)">
                   <div className="flex items-center gap-2">
                     <label className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -3022,14 +3011,6 @@ export default function ObjectDesignPage() {
                   onChange={(e) => patchImage(sec.id, idx, { href: e.target.value })}
                 />
               </label>
-              {sec.layout !== "behind" && (
-                <Dropdown
-                  label="Height"
-                  value={gEff.imageHeight ?? "auto"}
-                  options={IMAGE_HEIGHTS.map((h) => ({ value: h.value as string, label: h.label }))}
-                  onChange={(v) => patchG({ imageHeight: v as ImageHeight })}
-                />
-              )}
               {sec.layout !== "behind" && (
                 <>
                   <label className="flex items-center gap-1 text-xs text-muted-foreground">
