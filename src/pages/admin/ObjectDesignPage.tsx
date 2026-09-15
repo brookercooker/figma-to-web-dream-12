@@ -237,11 +237,6 @@ function TextStyleFields({
         {!colorOnly && (
           <Field label="Size">
             <div className="flex items-center gap-2">
-              <Choice
-                value={style.sizePx ? ("" as unknown as TextSize) : (style.size ?? defaults.size)}
-                options={TEXT_SIZES}
-                onChange={(v) => set({ size: v, sizePx: undefined })}
-              />
               <SizeControl
                 style={style}
                 defaultSize={defaults.size}
