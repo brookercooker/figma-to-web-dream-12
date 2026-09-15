@@ -382,7 +382,7 @@ export function sectionPadStyle(section: {
 }
 
 /** Background choices for a block: default, a restrained emphasis tint, or any custom color. */
-export const EMPHASIS_BG = "#f2f2f2";
+export const EMPHASIS_BG = "#f7f5f3";
 
 export const BG_COLORS: { value: TextColor; label: string; swatch: string }[] = [
   { value: "", label: "Default", swatch: "transparent" },
