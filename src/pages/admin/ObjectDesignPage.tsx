@@ -505,6 +505,8 @@ export default function ObjectDesignPage() {
   const [libraryOpen, setLibraryOpen] = useState(true);
   // { sectionId, index } — index -1 means the section's single image
   const [picker, setPicker] = useState<{ sectionId: string; index: number } | null>(null);
+  // which block is choosing a background image
+  const [bgPicker, setBgPicker] = useState<string | null>(null);
   const [linkOpen, setLinkOpen] = useState<Record<string, boolean>>({});
   const [openSub, setOpenSub] = useState<Record<string, boolean>>({});
   // which video slot the video chooser is filling
@@ -2484,6 +2486,26 @@ export default function ObjectDesignPage() {
               options={BG_COLORS as { value: string; label: string; swatch: string }[]}
               onChange={(v) => patch(section.id, { bg: v || undefined } as Partial<Section>)}
             />
+            <button
+              type="button"
+              className={`flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs ${
+                (section as FreeSection).bgImage ? "border-foreground/40 bg-muted" : "bg-background"
+              }`}
+              title="Background image"
+              onClick={() => setBgPicker(section.id)}
+            >
+              <ImageIcon className="h-3.5 w-3.5" />
+              Image
+            </button>
+            {(section as FreeSection).bgImage ? (
+              <button
+                type="button"
+                className="h-7 rounded-md border bg-background px-2 text-xs"
+                onClick={() => patch(section.id, { bgImage: undefined } as Partial<Section>)}
+              >
+                Clear image
+              </button>
+            ) : null}
           </div>
           <div className="ml-auto flex gap-2">
             <Chip
@@ -3252,6 +3274,14 @@ export default function ObjectDesignPage() {
         onPick={({ url, alt }) => {
           if (picker) patchImage(picker.sectionId, picker.index, { url, alt: alt || "" });
           setPicker(null);
+        }}
+      />
+      <ImagePickerDialog
+        open={!!bgPicker}
+        onOpenChange={(v) => { if (!v) setBgPicker(null); }}
+        onPick={({ url }) => {
+          if (bgPicker) patch(bgPicker, { bgImage: url } as Partial<Section>);
+          setBgPicker(null);
         }}
       />
       <VideoPickerDialog

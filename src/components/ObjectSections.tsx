@@ -357,7 +357,12 @@ export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
 
 /** Flex style for an inline item with an optional width percentage. */
 /** Inline padding for a block; falls back to the default 48px vertical rhythm. */
-export function sectionPadStyle(section: { padY?: number; padX?: number; bg?: TextColor }): React.CSSProperties {
+export function sectionPadStyle(section: {
+  padY?: number;
+  padX?: number;
+  bg?: TextColor;
+  bgImage?: string;
+}): React.CSSProperties {
   const y = section.padY ?? 48;
   const x = section.padX ?? 0;
   return {
@@ -366,18 +371,22 @@ export function sectionPadStyle(section: { padY?: number; padX?: number; bg?: Te
     ...spaceStyle(x, "Left"),
     ...spaceStyle(x, "Right"),
     ...(section.bg ? { backgroundColor: bgColorCss(section.bg) } : {}),
+    ...(section.bgImage
+      ? {
+          backgroundImage: `url(${section.bgImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }
+      : {}),
   };
 }
 
-/** Background choices for a block — brand palette first, restrained surfaces. */
+/** Background choices for a block: default, a restrained emphasis tint, or any custom color. */
+export const EMPHASIS_BG = "#f2f2f2";
+
 export const BG_COLORS: { value: TextColor; label: string; swatch: string }[] = [
-  { value: "", label: "None", swatch: "transparent" },
-  { value: "cream", label: "White", swatch: "hsl(var(--nova-cream))" },
-  { value: "sand", label: "Sand", swatch: "hsl(var(--nova-sand))" },
-  { value: "glow", label: "Glow", swatch: "hsl(var(--nova-glow))" },
-  { value: "brass", label: "Tan", swatch: "hsl(var(--nova-brass))" },
-  { value: "stone", label: "Stone", swatch: "hsl(var(--nova-stone))" },
-  { value: "ink", label: "Ink", swatch: "hsl(var(--nova-ink))" },
+  { value: "", label: "Default", swatch: "transparent" },
+  { value: EMPHASIS_BG as TextColor, label: "Emphasis", swatch: EMPHASIS_BG },
 ];
 
 /** CSS color for a block background: brand surface token, or any custom color. */
@@ -650,6 +659,8 @@ export interface FreeSection {
   padX?: number;
   /** background color behind the whole block (subtle emphasis) */
   bg?: TextColor;
+  /** background image behind the whole block */
+  bgImage?: string;
 }
 
 export type Section =
