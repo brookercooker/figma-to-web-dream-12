@@ -73,7 +73,7 @@ export default function ImagePickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col overflow-hidden">
         <DialogHeader><DialogTitle>Choose an image</DialogTitle></DialogHeader>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -124,7 +124,7 @@ export default function ImagePickerDialog({
           </div>
         )}
 
-        <div className="mt-3 grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-[50vh] overflow-y-auto">
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
           {filtered.map((it) => (
             <button
               key={it.url}
