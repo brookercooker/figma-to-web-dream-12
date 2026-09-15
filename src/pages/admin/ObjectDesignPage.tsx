@@ -1562,8 +1562,10 @@ export default function ObjectDesignPage() {
   const flowField = (section: FreeSection, part: string) => {
     const flow = (section.flows?.[part] ?? "separate") as SectionFlow;
     return (
-      <Field label="Placement">
-        <div className="flex items-center gap-3">
+      <div className="rounded-md border p-3 space-y-3">
+        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Placement</p>
+        <div className="flex flex-wrap items-center gap-4">
+
           <Choice
             value={flow}
             options={[
