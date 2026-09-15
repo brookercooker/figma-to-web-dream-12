@@ -365,7 +365,7 @@ export function sectionPadStyle(section: { padY?: number; padX?: number; bg?: Te
     ...spaceStyle(y, "Bottom"),
     ...spaceStyle(x, "Left"),
     ...spaceStyle(x, "Right"),
-    ...(section.bg ? { backgroundColor: textColorCss(section.bg) } : {}),
+    ...(section.bg ? { backgroundColor: bgColorCss(section.bg) } : {}),
   };
 }
 
