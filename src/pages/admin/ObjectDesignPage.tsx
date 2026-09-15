@@ -2210,8 +2210,6 @@ export default function ObjectDesignPage() {
                       H
                       <Input
                         type="number"
-                        min={20}
-                        max={2000}
                         placeholder="auto"
                         className="h-8 w-20 text-xs"
                         value={eff.imageHeightPx ?? ""}
@@ -2219,7 +2217,7 @@ export default function ObjectDesignPage() {
                           const raw = e.target.value.trim();
                           const n = Number(raw);
                           patchGroup({
-                            imageHeightPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)),
+                            imageHeightPx: raw === "" || Number.isNaN(n) ? undefined : n,
                           });
                         }}
                       />
@@ -2228,8 +2226,6 @@ export default function ObjectDesignPage() {
                       W
                       <Input
                         type="number"
-                        min={20}
-                        max={2000}
                         placeholder="auto"
                         className="h-8 w-20 text-xs"
                         value={eff.imageWidthPx ?? ""}
@@ -2237,7 +2233,7 @@ export default function ObjectDesignPage() {
                           const raw = e.target.value.trim();
                           const n = Number(raw);
                           patchGroup({
-                            imageWidthPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)),
+                            imageWidthPx: raw === "" || Number.isNaN(n) ? undefined : n,
                           });
                         }}
                       />
@@ -3040,15 +3036,13 @@ export default function ObjectDesignPage() {
                     H px
                     <Input
                       type="number"
-                      min={20}
-                      max={2000}
                       placeholder="auto"
                       className="h-8 w-20 text-xs"
                       value={gEff.imageHeightPx ?? ""}
                       onChange={(e) => {
                         const raw = e.target.value.trim();
                         const n = Number(raw);
-                        patchG({ imageHeightPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)) });
+                        patchG({ imageHeightPx: raw === "" || Number.isNaN(n) ? undefined : n });
                       }}
                     />
                   </label>
@@ -3056,15 +3050,13 @@ export default function ObjectDesignPage() {
                     W px
                     <Input
                       type="number"
-                      min={20}
-                      max={2000}
                       placeholder="auto"
                       className="h-8 w-20 text-xs"
                       value={gEff.imageWidthPx ?? ""}
                       onChange={(e) => {
                         const raw = e.target.value.trim();
                         const n = Number(raw);
-                        patchG({ imageWidthPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)) });
+                        patchG({ imageWidthPx: raw === "" || Number.isNaN(n) ? undefined : n });
                       }}
                     />
                   </label>
