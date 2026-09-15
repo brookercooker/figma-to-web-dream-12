@@ -3005,6 +3005,8 @@ export default function ObjectDesignPage() {
             gallery: gOwn.gallery ?? sec.gallery,
             perView: gOwn.perView ?? sec.perView,
             imageHeight: gOwn.imageHeight ?? sec.imageHeight,
+            imageHeightPx: gOwn.imageHeightPx ?? sec.imageHeightPx,
+            imageWidthPx: gOwn.imageWidthPx ?? sec.imageWidthPx,
             imageAlign: gOwn.imageAlign ?? sec.imageAlign,
           };
           const patchG = (v: Partial<typeof gEff>) =>
