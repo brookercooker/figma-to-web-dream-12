@@ -2360,6 +2360,34 @@ export default function ObjectDesignPage() {
                 %
               </label>
             )}
+            <span className="mx-1 h-5 w-px bg-border" />
+            {([
+              { key: "padY" as const, label: "Space above and below (px)", short: "V" },
+              { key: "padX" as const, label: "Space left and right (px)", short: "H" },
+            ]).map((o) => (
+              <label key={o.key} className="ml-1 flex items-center gap-1 text-xs text-muted-foreground" title={o.label}>
+                {o.short}
+                <Input
+                  type="number"
+                  min={0}
+                  max={240}
+                  className="h-8 w-16"
+                  placeholder={o.key === "padY" ? "48" : "0"}
+                  aria-label={o.label}
+                  value={(section as { padY?: number; padX?: number })[o.key] ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      patch(section.id, { [o.key]: undefined } as Partial<Section>);
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (Number.isNaN(n)) return;
+                    patch(section.id, { [o.key]: Math.min(240, Math.max(0, n)) } as Partial<Section>);
+                  }}
+                />
+              </label>
+            ))}
           </div>
           <div className="ml-auto flex gap-2">
             <Chip
