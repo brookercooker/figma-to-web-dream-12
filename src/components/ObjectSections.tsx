@@ -164,6 +164,21 @@ export const imageHeightClass: Record<ImageHeight, string> = {
   xl: "h-96 sm:h-[32rem]",
 };
 
+/** Height class for an image, skipped when an exact pixel height is set. */
+export function imageBoxClass(section: FreeSection): string {
+  return section.imageHeightPx ? "" : imageHeightClass[section.imageHeight ?? "auto"];
+}
+
+/** Exact pixel height for an image, when one is set. */
+export function imageBoxStyle(section: FreeSection): React.CSSProperties | undefined {
+  return section.imageHeightPx ? { height: `${section.imageHeightPx}px` } : undefined;
+}
+
+/** Caps the width of an image (and its attached text) when an exact width is set. */
+export function imageWidthStyle(section: FreeSection): React.CSSProperties | undefined {
+  return section.imageWidthPx ? { width: "100%", maxWidth: `${section.imageWidthPx}px` } : undefined;
+}
+
 /** Extra text boxes (and rules) that sit under an image and scroll with it. */
 export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text" | "divider" | "button";
 
