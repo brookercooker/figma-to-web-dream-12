@@ -375,6 +375,14 @@ export function partPadStyle(
   return style;
 }
 
+/** Inline spacing for one text/divider/button attached to an image. */
+export function imageTextPadStyle(t: { padY?: number; padX?: number }): React.CSSProperties {
+  let style: React.CSSProperties = {};
+  if (t.padY !== undefined) style = { ...style, ...spaceStyle(t.padY, "Top"), ...spaceStyle(t.padY, "Bottom") };
+  if (t.padX !== undefined) style = { ...style, ...spaceStyle(t.padX, "Left"), ...spaceStyle(t.padX, "Right") };
+  return style;
+}
+
 export function flowWidthStyle(width?: number): React.CSSProperties {
   if (!width || width <= 0) return {};
   const w = Math.min(100, Math.max(1, width));
