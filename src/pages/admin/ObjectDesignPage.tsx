@@ -2411,7 +2411,7 @@ export default function ObjectDesignPage() {
                     }
                     const n = Number(raw);
                     if (Number.isNaN(n)) return;
-                    patch(section.id, { [o.key]: Math.min(240, Math.max(0, n)) } as Partial<Section>);
+                    patch(section.id, { [o.key]: Math.min(240, Math.max(-240, n)) } as Partial<Section>);
                   }}
                 />
               </label>
