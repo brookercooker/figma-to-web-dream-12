@@ -370,15 +370,37 @@ export function sectionPadStyle(section: {
     ...spaceStyle(y, "Bottom"),
     ...spaceStyle(x, "Left"),
     ...spaceStyle(x, "Right"),
-    ...(section.bg ? { backgroundColor: bgColorCss(section.bg) } : {}),
-    ...(section.bgImage
-      ? {
-          backgroundImage: `url(${section.bgImage})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }
-      : {}),
+    ...(section.bg || section.bgImage ? { position: "relative", isolation: "isolate" } : {}),
   };
+}
+
+/**
+ * Full-bleed background layer for a block: paints the block's colour or image
+ * edge-to-edge across the page while the content stays inside the container.
+ */
+export function SectionBg({ section }: { section: { bg?: TextColor; bgImage?: string } }) {
+  if (!section.bg && !section.bgImage) return null;
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        left: "calc(50% - 50vw)",
+        width: "100vw",
+        zIndex: -1,
+        ...(section.bg ? { backgroundColor: bgColorCss(section.bg) } : {}),
+        ...(section.bgImage
+          ? {
+              backgroundImage: `url(${section.bgImage})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+          : {}),
+      }}
+    />
+  );
 }
 
 /** Background choices for a block: default, a restrained emphasis tint, or any custom color. */
