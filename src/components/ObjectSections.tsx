@@ -361,14 +361,12 @@ export function partPadStyle(
 ): React.CSSProperties {
   const y = section.padsY?.[part];
   const x = section.padsX?.[part];
-  const style: React.CSSProperties = {};
+  let style: React.CSSProperties = {};
   if (y !== undefined) {
-    style.paddingTop = `${y}px`;
-    style.paddingBottom = `${y}px`;
+    style = { ...style, ...spaceStyle(y, "Top"), ...spaceStyle(y, "Bottom") };
   }
   if (x !== undefined) {
-    style.paddingLeft = `${x}px`;
-    style.paddingRight = `${x}px`;
+    style = { ...style, ...spaceStyle(x, "Left"), ...spaceStyle(x, "Right") };
   }
   return style;
 }
