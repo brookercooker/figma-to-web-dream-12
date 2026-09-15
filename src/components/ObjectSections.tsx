@@ -887,7 +887,7 @@ function FreeFigureBody({
         const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
         if (t.kind === "divider") {
           return (
-            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-3 flex w-full flex-col">
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-3 flex w-full flex-col" style={imageTextPadStyle(t)}>
               <DividerBar
                 divider={{ id: t.id, ...(t.divider ?? {}) }}
                 align={t.align ?? image.captionAlign ?? blockAlign}
@@ -898,7 +898,7 @@ function FreeFigureBody({
         }
         if (t.kind === "button") {
           return (
-            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`}>
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
               <SectionButton
                 label={t.text || "Button"}
                 href={t.button?.href || "#"}
@@ -914,7 +914,7 @@ function FreeFigureBody({
             key={t.id}
             data-part={`imagetext:${index}:${ti}`}
             className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
-            style={textInlineStyle(ts)}
+            style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
             {...richText(t.text)}
           />
         );
