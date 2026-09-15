@@ -3034,6 +3034,42 @@ export default function ObjectDesignPage() {
                   onChange={(v) => patchG({ imageHeight: v as ImageHeight })}
                 />
               )}
+              {sec.layout !== "behind" && (
+                <>
+                  <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                    H px
+                    <Input
+                      type="number"
+                      min={20}
+                      max={2000}
+                      placeholder="auto"
+                      className="h-8 w-20 text-xs"
+                      value={gEff.imageHeightPx ?? ""}
+                      onChange={(e) => {
+                        const raw = e.target.value.trim();
+                        const n = Number(raw);
+                        patchG({ imageHeightPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)) });
+                      }}
+                    />
+                  </label>
+                  <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                    W px
+                    <Input
+                      type="number"
+                      min={20}
+                      max={2000}
+                      placeholder="auto"
+                      className="h-8 w-20 text-xs"
+                      value={gEff.imageWidthPx ?? ""}
+                      onChange={(e) => {
+                        const raw = e.target.value.trim();
+                        const n = Number(raw);
+                        patchG({ imageWidthPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)) });
+                      }}
+                    />
+                  </label>
+                </>
+              )}
               {sec.layout !== "behind" && gEff.gallery !== "carousel" && (
                 <Dropdown
                   label="Position"
