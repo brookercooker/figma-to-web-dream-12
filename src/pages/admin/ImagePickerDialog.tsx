@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/prototype/client";
 
 interface Choice { url: string; alt: string }
+interface LibraryImage extends Choice { labels: string[] }
+
 
 /** Pick an image from the library, paste a URL, or upload one from the computer. */
 export default function ImagePickerDialog({
