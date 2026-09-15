@@ -164,6 +164,21 @@ export const imageHeightClass: Record<ImageHeight, string> = {
   xl: "h-96 sm:h-[32rem]",
 };
 
+/** Height class for an image, skipped when an exact pixel height is set. */
+export function imageBoxClass(section: FreeSection): string {
+  return section.imageHeightPx ? "" : imageHeightClass[section.imageHeight ?? "auto"];
+}
+
+/** Exact pixel height for an image, when one is set. */
+export function imageBoxStyle(section: FreeSection): React.CSSProperties | undefined {
+  return section.imageHeightPx ? { height: `${section.imageHeightPx}px` } : undefined;
+}
+
+/** Caps the width of an image (and its attached text) when an exact width is set. */
+export function imageWidthStyle(section: FreeSection): React.CSSProperties | undefined {
+  return section.imageWidthPx ? { width: "100%", maxWidth: `${section.imageWidthPx}px` } : undefined;
+}
+
 /** Extra text boxes (and rules) that sit under an image and scroll with it. */
 export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text" | "divider" | "button";
 
@@ -240,6 +255,8 @@ export interface FreeImageGroupSettings {
   gallery?: "grid" | "carousel";
   perView?: number;
   imageHeight?: ImageHeight;
+  imageHeightPx?: number;
+  imageWidthPx?: number;
   imageAlign?: SectionAlign;
   imageBorder?: boolean;
   imageBorderColor?: TextColor;
@@ -582,6 +599,10 @@ export interface FreeSection {
   perView?: number;
   /** shared height for every image in the block */
   imageHeight?: ImageHeight;
+  /** exact image height in px (overrides imageHeight) */
+  imageHeightPx?: number;
+  /** exact image width in px */
+  imageWidthPx?: number;
   /** horizontal position of images when they don't fill the width */
   imageAlign?: SectionAlign;
   /** horizontal alignment of image captions */
@@ -867,10 +888,10 @@ function FreeFigureBody({
   return (
     <div
       className={bordered ? "overflow-hidden" : ""}
-      style={bordered ? imageBorderStyleOf(section) : undefined}
+      style={{ ...(bordered ? imageBorderStyleOf(section) : {}), ...(imageWidthStyle(section) ?? {}) }}
     >
-      <div data-part={`image:${index}`}>
-        <Pic image={image} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
+      <div data-part={`image:${index}`} style={imageBoxStyle(section)}>
+        <Pic image={image} className={`w-full rounded-lg ${imageBoxClass(section)} ${section.imageHeightPx ? "h-full" : ""}`} />
       </div>
       {image.caption ? (
         <figcaption

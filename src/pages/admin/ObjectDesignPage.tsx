@@ -2032,6 +2032,8 @@ export default function ObjectDesignPage() {
         gallery: own.gallery ?? section.gallery,
         perView: own.perView ?? section.perView,
         imageHeight: own.imageHeight ?? section.imageHeight,
+        imageHeightPx: own.imageHeightPx ?? section.imageHeightPx,
+        imageWidthPx: own.imageWidthPx ?? section.imageWidthPx,
         imageAlign: own.imageAlign ?? section.imageAlign,
         imageBorder: own.imageBorder ?? section.imageBorder,
         imageBorderColor: own.imageBorderColor ?? section.imageBorderColor,
@@ -2198,6 +2200,48 @@ export default function ObjectDesignPage() {
                       options={IMAGE_HEIGHTS.map((h) => ({ value: h.value, label: h.label }))}
                       onChange={(v) => patchGroup({ imageHeight: v })}
                     />
+                  </div>
+                </Field>
+              )}
+              {section.layout !== "behind" && count > 0 && (
+                <Field label="Exact size (px)">
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                      H
+                      <Input
+                        type="number"
+                        min={20}
+                        max={2000}
+                        placeholder="auto"
+                        className="h-8 w-20 text-xs"
+                        value={eff.imageHeightPx ?? ""}
+                        onChange={(e) => {
+                          const raw = e.target.value.trim();
+                          const n = Number(raw);
+                          patchGroup({
+                            imageHeightPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)),
+                          });
+                        }}
+                      />
+                    </label>
+                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                      W
+                      <Input
+                        type="number"
+                        min={20}
+                        max={2000}
+                        placeholder="auto"
+                        className="h-8 w-20 text-xs"
+                        value={eff.imageWidthPx ?? ""}
+                        onChange={(e) => {
+                          const raw = e.target.value.trim();
+                          const n = Number(raw);
+                          patchGroup({
+                            imageWidthPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)),
+                          });
+                        }}
+                      />
+                    </label>
                   </div>
                 </Field>
               )}
@@ -2961,6 +3005,8 @@ export default function ObjectDesignPage() {
             gallery: gOwn.gallery ?? sec.gallery,
             perView: gOwn.perView ?? sec.perView,
             imageHeight: gOwn.imageHeight ?? sec.imageHeight,
+            imageHeightPx: gOwn.imageHeightPx ?? sec.imageHeightPx,
+            imageWidthPx: gOwn.imageWidthPx ?? sec.imageWidthPx,
             imageAlign: gOwn.imageAlign ?? sec.imageAlign,
           };
           const patchG = (v: Partial<typeof gEff>) =>
@@ -2987,6 +3033,42 @@ export default function ObjectDesignPage() {
                   options={IMAGE_HEIGHTS.map((h) => ({ value: h.value as string, label: h.label }))}
                   onChange={(v) => patchG({ imageHeight: v as ImageHeight })}
                 />
+              )}
+              {sec.layout !== "behind" && (
+                <>
+                  <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                    H px
+                    <Input
+                      type="number"
+                      min={20}
+                      max={2000}
+                      placeholder="auto"
+                      className="h-8 w-20 text-xs"
+                      value={gEff.imageHeightPx ?? ""}
+                      onChange={(e) => {
+                        const raw = e.target.value.trim();
+                        const n = Number(raw);
+                        patchG({ imageHeightPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)) });
+                      }}
+                    />
+                  </label>
+                  <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                    W px
+                    <Input
+                      type="number"
+                      min={20}
+                      max={2000}
+                      placeholder="auto"
+                      className="h-8 w-20 text-xs"
+                      value={gEff.imageWidthPx ?? ""}
+                      onChange={(e) => {
+                        const raw = e.target.value.trim();
+                        const n = Number(raw);
+                        patchG({ imageWidthPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)) });
+                      }}
+                    />
+                  </label>
+                </>
               )}
               {sec.layout !== "behind" && gEff.gallery !== "carousel" && (
                 <Dropdown
