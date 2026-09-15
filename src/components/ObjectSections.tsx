@@ -345,6 +345,25 @@ export function sectionPadStyle(section: { padY?: number; padX?: number }): Reac
   };
 }
 
+/** Inline padding for one item inside a block. */
+export function partPadStyle(
+  section: { padsY?: Record<string, number>; padsX?: Record<string, number> },
+  part: string,
+): React.CSSProperties {
+  const y = section.padsY?.[part];
+  const x = section.padsX?.[part];
+  const style: React.CSSProperties = {};
+  if (y !== undefined) {
+    style.paddingTop = `${y}px`;
+    style.paddingBottom = `${y}px`;
+  }
+  if (x !== undefined) {
+    style.paddingLeft = `${x}px`;
+    style.paddingRight = `${x}px`;
+  }
+  return style;
+}
+
 export function flowWidthStyle(width?: number): React.CSSProperties {
   if (!width || width <= 0) return {};
   const w = Math.min(100, Math.max(1, width));
@@ -512,6 +531,10 @@ export interface FreeSection {
   flowWidths?: Record<string, number>;
   /** per-element alignment within its inline column, keyed by the same parts */
   flowAligns?: Record<string, SectionAlign>;
+  /** per-element vertical padding in pixels, keyed by the same parts */
+  padsY?: Record<string, number>;
+  /** per-element horizontal padding in pixels, keyed by the same parts */
+  padsX?: Record<string, number>;
   /** vertical alignment of items sharing a row */
   rowVAlign?: RowVAlign;
   /** separating bars shown under the text content */
@@ -1221,7 +1244,7 @@ function FreeText({
                 <div
                   key={it.part}
                   className={`flex flex-col px-3 ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
-                  style={flowWidthStyle(w)}
+                  style={{ ...flowWidthStyle(w), ...partPadStyle(section, it.part) }}
                 >
                   {it.node}
                 </div>
@@ -1240,7 +1263,7 @@ function FreeText({
               >
                 <div
                   className={`flex flex-col ${alignText[a]} ${w ? "" : "w-full"}`}
-                  style={flowWidthStyle(w)}
+                  style={{ ...flowWidthStyle(w), ...partPadStyle(section, it.part) }}
                 >
                   {it.node}
                 </div>

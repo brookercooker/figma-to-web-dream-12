@@ -1580,6 +1580,34 @@ export default function ObjectDesignPage() {
               onChange={(v) => patch(section.id, { flowAligns: { ...(section.flowAligns ?? {}), [part]: v } })}
             />
           )}
+          {([
+            { key: "padsY" as const, label: "Space above and below (px)", short: "V" },
+            { key: "padsX" as const, label: "Space left and right (px)", short: "H" },
+          ]).map((o) => (
+            <label key={o.key} className="flex items-center gap-1 text-xs text-muted-foreground" title={o.label}>
+              {o.short}
+              <Input
+                type="number"
+                min={0}
+                max={240}
+                className="h-8 w-16"
+                placeholder="0"
+                aria-label={o.label}
+                value={section[o.key]?.[part] ?? ""}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  const next = { ...(section[o.key] ?? {}) };
+                  if (raw === "") delete next[part];
+                  else {
+                    const n = Number(raw);
+                    if (Number.isNaN(n)) return;
+                    next[part] = Math.min(240, Math.max(0, n));
+                  }
+                  patch(section.id, { [o.key]: next } as Partial<Section>);
+                }}
+              />
+            </label>
+          ))}
         </div>
       </Field>
     );
