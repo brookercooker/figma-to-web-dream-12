@@ -553,6 +553,10 @@ export interface FreeSection {
   buttonVariant?: "solid" | "outline" | "link";
   /** background color for the button */
   buttonBg?: TextColor;
+  /** vertical padding around the block, in pixels */
+  padY?: number;
+  /** horizontal padding around the block, in pixels */
+  padX?: number;
 }
 
 export type Section =
