@@ -1588,7 +1588,7 @@ export default function ObjectDesignPage() {
               {o.short}
               <Input
                 type="number"
-                min={0}
+                min={-240}
                 max={240}
                 className="h-8 w-16"
                 placeholder="0"
