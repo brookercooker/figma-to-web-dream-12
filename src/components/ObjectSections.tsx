@@ -345,6 +345,25 @@ export function sectionPadStyle(section: { padY?: number; padX?: number }): Reac
   };
 }
 
+/** Inline padding for one item inside a block. */
+export function partPadStyle(
+  section: { padsY?: Record<string, number>; padsX?: Record<string, number> },
+  part: string,
+): React.CSSProperties {
+  const y = section.padsY?.[part];
+  const x = section.padsX?.[part];
+  const style: React.CSSProperties = {};
+  if (y !== undefined) {
+    style.paddingTop = `${y}px`;
+    style.paddingBottom = `${y}px`;
+  }
+  if (x !== undefined) {
+    style.paddingLeft = `${x}px`;
+    style.paddingRight = `${x}px`;
+  }
+  return style;
+}
+
 export function flowWidthStyle(width?: number): React.CSSProperties {
   if (!width || width <= 0) return {};
   const w = Math.min(100, Math.max(1, width));
