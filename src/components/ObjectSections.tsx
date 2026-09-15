@@ -187,6 +187,10 @@ export interface ImageText {
   divider?: { color?: TextColor; width?: "full" | "short"; widthPct?: number; thickness?: number };
   /** link settings when kind is "button" */
   button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor };
+  /** extra space above/below this item (px, may be negative) */
+  padY?: number;
+  /** extra space left/right of this item (px, may be negative) */
+  padX?: number;
 }
 
 export const IMAGE_TEXT_DEFAULTS: Record<
