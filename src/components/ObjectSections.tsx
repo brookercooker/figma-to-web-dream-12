@@ -582,6 +582,10 @@ export interface FreeSection {
   perView?: number;
   /** shared height for every image in the block */
   imageHeight?: ImageHeight;
+  /** exact image height in px (overrides imageHeight) */
+  imageHeightPx?: number;
+  /** exact image width in px */
+  imageWidthPx?: number;
   /** horizontal position of images when they don't fill the width */
   imageAlign?: SectionAlign;
   /** horizontal alignment of image captions */
