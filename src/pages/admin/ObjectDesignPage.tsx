@@ -2193,17 +2193,6 @@ export default function ObjectDesignPage() {
                 </>
               )}
               {section.layout !== "behind" && count > 0 && (
-                <Field label="Image height">
-                  <div>
-                    <Choice
-                      value={eff.imageHeight ?? "auto"}
-                      options={IMAGE_HEIGHTS.map((h) => ({ value: h.value, label: h.label }))}
-                      onChange={(v) => patchGroup({ imageHeight: v })}
-                    />
-                  </div>
-                </Field>
-              )}
-              {section.layout !== "behind" && count > 0 && (
                 <Field label="Exact size (px)">
                   <div className="flex items-center gap-2">
                     <label className="flex items-center gap-1 text-xs text-muted-foreground">
