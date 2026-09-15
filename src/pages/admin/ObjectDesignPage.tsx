@@ -3023,14 +3023,6 @@ export default function ObjectDesignPage() {
                 />
               </label>
               {sec.layout !== "behind" && (
-                <Dropdown
-                  label="Height"
-                  value={gEff.imageHeight ?? "auto"}
-                  options={IMAGE_HEIGHTS.map((h) => ({ value: h.value as string, label: h.label }))}
-                  onChange={(v) => patchG({ imageHeight: v as ImageHeight })}
-                />
-              )}
-              {sec.layout !== "behind" && (
                 <>
                   <label className="flex items-center gap-1 text-xs text-muted-foreground">
                     H px
