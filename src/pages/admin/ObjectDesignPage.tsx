@@ -1588,7 +1588,7 @@ export default function ObjectDesignPage() {
               {o.short}
               <Input
                 type="number"
-                min={0}
+                min={-240}
                 max={240}
                 className="h-8 w-16"
                 placeholder="0"
@@ -1601,7 +1601,7 @@ export default function ObjectDesignPage() {
                   else {
                     const n = Number(raw);
                     if (Number.isNaN(n)) return;
-                    next[part] = Math.min(240, Math.max(0, n));
+                    next[part] = Math.min(240, Math.max(-240, n));
                   }
                   patch(section.id, { [o.key]: next } as Partial<Section>);
                 }}
@@ -2397,7 +2397,7 @@ export default function ObjectDesignPage() {
                 {o.short}
                 <Input
                   type="number"
-                  min={0}
+                  min={-240}
                   max={240}
                   className="h-8 w-16"
                   placeholder={o.key === "padY" ? "48" : "0"}
@@ -2411,7 +2411,7 @@ export default function ObjectDesignPage() {
                     }
                     const n = Number(raw);
                     if (Number.isNaN(n)) return;
-                    patch(section.id, { [o.key]: Math.min(240, Math.max(0, n)) } as Partial<Section>);
+                    patch(section.id, { [o.key]: Math.min(240, Math.max(-240, n)) } as Partial<Section>);
                   }}
                 />
               </label>
