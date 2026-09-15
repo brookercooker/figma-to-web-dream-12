@@ -16,31 +16,52 @@ export default function ImagePickerDialog({
   onOpenChange: (v: boolean) => void;
   onPick: (choice: Choice) => void;
 }) {
-  const [items, setItems] = useState<Choice[]>([]);
+  const [items, setItems] = useState<LibraryImage[]>([]);
   const [q, setQ] = useState("");
   const [url, setUrl] = useState("");
+  const [label, setLabel] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    setQ(""); setUrl("");
+    setQ(""); setUrl(""); setLabel("");
     (async () => {
       const { data } = await (supabase as any)
         .from("images")
-        .select("filename,web_path,alt_text")
+        .select("filename,web_path,alt_text,tags")
         .is("archived_at", null)
-        .limit(60);
-      const mapped: Choice[] = (data ?? []).map((row: any) => ({
+        .limit(120);
+      const mapped: LibraryImage[] = (data ?? []).map((row: any) => ({
         url: (supabase as any).storage.from("images-web").getPublicUrl(row.web_path).data.publicUrl,
         alt: row.alt_text || row.filename || "",
+        labels: Array.isArray(row.tags) ? row.tags.filter(Boolean) : [],
       }));
       setItems(mapped);
     })();
   }, [open]);
 
+  const allLabels = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((i) => i.labels.forEach((l) => set.add(l)));
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [items]);
+
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return term ? items.filter((i) => i.alt.toLowerCase().includes(term)) : items;
-  }, [items, q]);
+    const list = items.filter((i) => {
+      if (label && !i.labels.includes(label)) return false;
+      if (!term) return true;
+      return (
+        i.alt.toLowerCase().includes(term) ||
+        i.labels.some((l) => l.toLowerCase().includes(term))
+      );
+    });
+    // Sort by label first so search results group together by label.
+    return list.sort((a, b) => {
+      const la = (a.labels[0] ?? "\uffff").toLowerCase();
+      const lb = (b.labels[0] ?? "\uffff").toLowerCase();
+      return la === lb ? a.alt.localeCompare(b.alt) : la.localeCompare(lb);
+    });
+  }, [items, q, label]);
 
   const upload = async (file: File) => {
     const path = `design/${Date.now()}-${file.name}`;
