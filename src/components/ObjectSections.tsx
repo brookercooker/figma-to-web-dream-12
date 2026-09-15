@@ -380,6 +380,12 @@ export const BG_COLORS: { value: TextColor; label: string; swatch: string }[] = 
   { value: "ink", label: "Ink", swatch: "hsl(var(--nova-ink))" },
 ];
 
+/** CSS color for a block background: brand surface token, or any custom color. */
+export function bgColorCss(c: TextColor): string {
+  const token = BG_COLORS.find((t) => t.value === c && t.value !== "");
+  return token ? token.swatch : (c as string);
+}
+
 /** Positive values become padding; negative values become negative margin (CSS has no negative padding). */
 function spaceStyle(value: number, side: "Top" | "Bottom" | "Left" | "Right"): React.CSSProperties {
   return value < 0
