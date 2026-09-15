@@ -630,6 +630,8 @@ export interface FreeSection {
   padY?: number;
   /** horizontal padding around the block, in pixels */
   padX?: number;
+  /** background color behind the whole block (subtle emphasis) */
+  bg?: TextColor;
 }
 
 export type Section =
