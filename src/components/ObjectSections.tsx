@@ -1428,6 +1428,7 @@ function FreeView({ section }: { section: FreeSection }) {
   if (section.layout === "behind" && hasImages) {
     return (
       <section style={sectionPadStyle(section)} className="py-12">
+      <SectionBg section={section} />
         <div className={`flex flex-nowrap gap-6 ${alignRow[section.imageAlign ?? "left"]}`}>
           {section.images.map((img, i) => (
             <div
@@ -1454,6 +1455,7 @@ function FreeView({ section }: { section: FreeSection }) {
   if (section.layout === "beside" && hasImages) {
     return (
       <section style={sectionPadStyle(section)} className="py-12 space-y-8">
+      <SectionBg section={section} />
         <div className="grid gap-8 sm:gap-12 md:grid-cols-2 items-center">
           <div className={`space-y-6 ${section.imageSide === "right" ? "md:order-2" : ""}`}>
             {imageGroups(section.images).map((g) => {
@@ -1492,6 +1494,7 @@ function FreeView({ section }: { section: FreeSection }) {
 
   return (
     <section style={sectionPadStyle(section)} className="py-12 space-y-8">
+      <SectionBg section={section} />
       <FreeText section={section} media={media} />
     </section>
   );
