@@ -1639,8 +1639,9 @@ export default function ObjectDesignPage() {
             </label>
           ))}
         </div>
-      </Field>
+      </div>
     );
+
   };
 
   /** Parts of a free section that can be reordered, in their current order. */
