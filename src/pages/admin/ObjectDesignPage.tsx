@@ -21,7 +21,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
+  BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type RowVAlign, type ImageHeight,
   type TextColor, type TextFont, type TextSize, type TextStyle,
@@ -2476,6 +2476,14 @@ export default function ObjectDesignPage() {
                 />
               </label>
             ))}
+            <span className="mx-1 h-5 w-px bg-border" />
+            <ColorDropdown
+              label="Background"
+              value={(section as FreeSection).bg ?? ""}
+              fallback=""
+              options={BG_COLORS as { value: string; label: string; swatch: string }[]}
+              onChange={(v) => patch(section.id, { bg: v || undefined } as Partial<Section>)}
+            />
           </div>
           <div className="ml-auto flex gap-2">
             <Chip

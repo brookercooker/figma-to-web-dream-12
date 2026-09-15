@@ -357,7 +357,7 @@ export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
 
 /** Flex style for an inline item with an optional width percentage. */
 /** Inline padding for a block; falls back to the default 48px vertical rhythm. */
-export function sectionPadStyle(section: { padY?: number; padX?: number }): React.CSSProperties {
+export function sectionPadStyle(section: { padY?: number; padX?: number; bg?: TextColor }): React.CSSProperties {
   const y = section.padY ?? 48;
   const x = section.padX ?? 0;
   return {
@@ -365,7 +365,25 @@ export function sectionPadStyle(section: { padY?: number; padX?: number }): Reac
     ...spaceStyle(y, "Bottom"),
     ...spaceStyle(x, "Left"),
     ...spaceStyle(x, "Right"),
+    ...(section.bg ? { backgroundColor: bgColorCss(section.bg) } : {}),
   };
+}
+
+/** Background choices for a block — brand palette first, restrained surfaces. */
+export const BG_COLORS: { value: TextColor; label: string; swatch: string }[] = [
+  { value: "", label: "None", swatch: "transparent" },
+  { value: "cream", label: "White", swatch: "hsl(var(--nova-cream))" },
+  { value: "sand", label: "Sand", swatch: "hsl(var(--nova-sand))" },
+  { value: "glow", label: "Glow", swatch: "hsl(var(--nova-glow))" },
+  { value: "brass", label: "Tan", swatch: "hsl(var(--nova-brass))" },
+  { value: "stone", label: "Stone", swatch: "hsl(var(--nova-stone))" },
+  { value: "ink", label: "Ink", swatch: "hsl(var(--nova-ink))" },
+];
+
+/** CSS color for a block background: brand surface token, or any custom color. */
+export function bgColorCss(c: TextColor): string {
+  const token = BG_COLORS.find((t) => t.value === c && t.value !== "");
+  return token ? token.swatch : (c as string);
 }
 
 /** Positive values become padding; negative values become negative margin (CSS has no negative padding). */
@@ -630,6 +648,8 @@ export interface FreeSection {
   padY?: number;
   /** horizontal padding around the block, in pixels */
   padX?: number;
+  /** background color behind the whole block (subtle emphasis) */
+  bg?: TextColor;
 }
 
 export type Section =
