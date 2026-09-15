@@ -99,15 +99,45 @@ export default function ImagePickerDialog({
           </label>
         </div>
 
+        {allLabels.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+            <span className="text-xs text-muted-foreground mr-0.5">Labels</span>
+            <button
+              onClick={() => setLabel("")}
+              className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                label === "" ? "bg-foreground text-background border-foreground" : "hover:bg-muted text-muted-foreground"
+              }`}
+            >
+              All
+            </button>
+            {allLabels.map((l) => (
+              <button
+                key={l}
+                onClick={() => setLabel(label === l ? "" : l)}
+                className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                  label === l ? "bg-foreground text-background border-foreground" : "hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="mt-3 grid grid-cols-3 sm:grid-cols-5 gap-2 max-h-[50vh] overflow-y-auto">
           {filtered.map((it) => (
             <button
               key={it.url}
               onClick={() => { onPick(it); onOpenChange(false); }}
-              className="group rounded-lg overflow-hidden border hover:border-primary transition-colors"
-              title={it.alt}
+              className="group rounded-lg overflow-hidden border hover:border-primary transition-colors text-left"
+              title={it.labels.length ? `${it.alt} — ${it.labels.join(", ")}` : it.alt}
             >
               <img src={it.url} alt={it.alt} className="w-full aspect-square object-cover" loading="lazy" />
+              {it.labels.length > 0 && (
+                <span className="block truncate px-1.5 py-1 text-[10px] text-muted-foreground">
+                  {it.labels.join(" · ")}
+                </span>
+              )}
             </button>
           ))}
           {!filtered.length && (
