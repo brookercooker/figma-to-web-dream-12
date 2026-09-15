@@ -1601,7 +1601,7 @@ export default function ObjectDesignPage() {
                   else {
                     const n = Number(raw);
                     if (Number.isNaN(n)) return;
-                    next[part] = Math.min(240, Math.max(0, n));
+                    next[part] = Math.min(240, Math.max(-240, n));
                   }
                   patch(section.id, { [o.key]: next } as Partial<Section>);
                 }}
