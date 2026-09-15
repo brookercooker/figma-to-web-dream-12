@@ -1311,7 +1311,7 @@ function FreeView({ section }: { section: FreeSection }) {
 
   if (section.layout === "behind" && hasImages) {
     return (
-      <section className="py-12">
+      <section style={sectionPadStyle(section)} className="py-12">
         <div className={`flex flex-nowrap gap-6 ${alignRow[section.imageAlign ?? "left"]}`}>
           {section.images.map((img, i) => (
             <div
@@ -1337,7 +1337,7 @@ function FreeView({ section }: { section: FreeSection }) {
 
   if (section.layout === "beside" && hasImages) {
     return (
-      <section className="py-12 space-y-8">
+      <section style={sectionPadStyle(section)} className="py-12 space-y-8">
         <div className="grid gap-8 sm:gap-12 md:grid-cols-2 items-center">
           <div className={section.imageSide === "right" ? "md:order-2" : ""}>
             <FreeGallery section={{ ...section, columns: section.images.length > 1 ? 2 : 1 }} />
@@ -1364,7 +1364,7 @@ function FreeView({ section }: { section: FreeSection }) {
   if ((section.videos ?? []).length) media.push({ part: "videos", node: <div data-part="videos" className="w-full"><FreeVideos section={section} /></div> });
 
   return (
-    <section className="py-12 space-y-8">
+    <section style={sectionPadStyle(section)} className="py-12 space-y-8">
       <FreeText section={section} media={media} />
     </section>
   );
