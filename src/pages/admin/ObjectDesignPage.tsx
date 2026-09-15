@@ -2203,6 +2203,48 @@ export default function ObjectDesignPage() {
                   </div>
                 </Field>
               )}
+              {section.layout !== "behind" && count > 0 && (
+                <Field label="Exact size (px)">
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                      H
+                      <Input
+                        type="number"
+                        min={20}
+                        max={2000}
+                        placeholder="auto"
+                        className="h-8 w-20 text-xs"
+                        value={eff.imageHeightPx ?? ""}
+                        onChange={(e) => {
+                          const raw = e.target.value.trim();
+                          const n = Number(raw);
+                          patchGroup({
+                            imageHeightPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)),
+                          });
+                        }}
+                      />
+                    </label>
+                    <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                      W
+                      <Input
+                        type="number"
+                        min={20}
+                        max={2000}
+                        placeholder="auto"
+                        className="h-8 w-20 text-xs"
+                        value={eff.imageWidthPx ?? ""}
+                        onChange={(e) => {
+                          const raw = e.target.value.trim();
+                          const n = Number(raw);
+                          patchGroup({
+                            imageWidthPx: raw === "" || Number.isNaN(n) ? undefined : Math.min(2000, Math.max(20, n)),
+                          });
+                        }}
+                      />
+                    </label>
+                  </div>
+                </Field>
+              )}
               {section.layout !== "behind" && count > 0 && eff.gallery !== "carousel" && (
                 <Field label="Image position">
                   <div>
