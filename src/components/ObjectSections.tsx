@@ -888,10 +888,10 @@ function FreeFigureBody({
   return (
     <div
       className={bordered ? "overflow-hidden" : ""}
-      style={bordered ? imageBorderStyleOf(section) : undefined}
+      style={{ ...(bordered ? imageBorderStyleOf(section) : {}), ...(imageWidthStyle(section) ?? {}) }}
     >
-      <div data-part={`image:${index}`}>
-        <Pic image={image} className={`w-full rounded-lg ${imageHeightClass[section.imageHeight ?? "auto"]}`} />
+      <div data-part={`image:${index}`} style={imageBoxStyle(section)}>
+        <Pic image={image} className={`w-full rounded-lg ${imageBoxClass(section)} ${section.imageHeightPx ? "h-full" : ""}`} />
       </div>
       {image.caption ? (
         <figcaption
