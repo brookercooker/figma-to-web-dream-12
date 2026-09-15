@@ -335,6 +335,16 @@ export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
 ];
 
 /** Flex style for an inline item with an optional width percentage. */
+/** Inline padding for a block; falls back to the default 48px vertical rhythm. */
+export function sectionPadStyle(section: { padY?: number; padX?: number }): React.CSSProperties {
+  return {
+    paddingTop: `${section.padY ?? 48}px`,
+    paddingBottom: `${section.padY ?? 48}px`,
+    paddingLeft: `${section.padX ?? 0}px`,
+    paddingRight: `${section.padX ?? 0}px`,
+  };
+}
+
 export function flowWidthStyle(width?: number): React.CSSProperties {
   if (!width || width <= 0) return {};
   const w = Math.min(100, Math.max(1, width));
