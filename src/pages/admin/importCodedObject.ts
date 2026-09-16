@@ -323,6 +323,29 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
     if (texts.length) attached.set(el, texts);
   }
 
+  // A short label living in the same card as a single picture is that picture's
+  // caption, even when the picture has not finished loading.
+  for (const el of imageEls) {
+    if (attached.has(el)) continue;
+    let card: HTMLElement | null = el.parentElement;
+    for (let i = 0; card && i < 3; i += 1, card = card.parentElement) {
+      if (card.querySelectorAll("img").length !== 1) break;
+      const label = clean(card.innerText || card.textContent);
+      if (!label || label.length > 120) continue;
+      const leaves = textLeaves.filter(
+        (leaf) => card?.contains(leaf.el) && !consumed.has(leaf.el) && !el.contains(leaf.el),
+      );
+      if (!leaves.length || leaves.length > 2) continue;
+      const texts = leaves.map((leaf) => {
+        consumed.add(leaf.el);
+        return imageTextOf(leaf.el, clean(leaf.el.innerText || leaf.el.textContent));
+      });
+      attached.set(el, texts);
+      break;
+    }
+  }
+
+
   for (const el of candidates) {
     const tag = el.tagName.toLowerCase();
     if (consumed.has(el)) continue;
