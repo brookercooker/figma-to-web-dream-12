@@ -15,6 +15,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
+import { objectRegistry } from "@/components/objects/registry";
+import { sectionsFromDom } from "./importCodedObject";
 import ImagePickerDialog from "./ImagePickerDialog";
 import VideoPickerDialog from "./VideoPickerDialog";
 import {
