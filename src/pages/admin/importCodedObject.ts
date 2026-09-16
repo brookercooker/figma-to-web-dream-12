@@ -276,18 +276,61 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
     textBoxes.push({ part, box: boxOf(el) });
   };
 
-  const candidates = [
-    ...node.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6,p,span,img,a,button"),
-  ].filter(isVisible);
+  const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,span,img,a,button";
+  const all = [node, ...node.querySelectorAll<HTMLElement>("*")].filter(isVisible);
+  const candidates = all.filter((el) => el.matches(TEXTUAL) || !!bgImageUrl(el));
+
+  const isTextLeaf = (el: HTMLElement) => {
+    const tag = el.tagName.toLowerCase();
+    if (!/^(h[1-6]|p|span)$/.test(tag)) return false;
+    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6")) return false;
+    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) return false;
+    return !!clean(el.innerText || el.textContent);
+  };
+
+  // Text sitting on a picture, or reading as its caption, is attached to that
+  // picture so it can be moved behind, beside or above it afterwards.
+  const textLeaves = candidates.filter(isTextLeaf).map((el) => ({ el, box: boxOf(el) }));
+  const imageEls = all.filter((el) => el.tagName.toLowerCase() === "img" || !!bgImageUrl(el));
+  const attached = new Map<HTMLElement, ImageText[]>();
+  const consumed = new Set<HTMLElement>();
+  let overlaid: HTMLElement | null = null;
+
+  for (const el of imageEls) {
+    const box = boxOf(el);
+    const texts: ImageText[] = [];
+    for (const leaf of textLeaves) {
+      if (consumed.has(leaf.el) || leaf.el === el) continue;
+      const text = clean(leaf.el.innerText || leaf.el.textContent);
+      if (!text) continue;
+      const over = centerInside(leaf.box, box);
+      const near =
+        leaf.box.top >= box.bottom - 4 &&
+        leaf.box.top < box.bottom + 72 &&
+        hOverlap(leaf.box, box) > 0.6 &&
+        (leaf.el.parentElement === el.parentElement || !!el.parentElement?.contains(leaf.el));
+      if (!over && !near) continue;
+      if (over) overlaid = overlaid ?? leaf.el;
+      texts.push(imageTextOf(leaf.el, text));
+      consumed.add(leaf.el);
+    }
+    if (texts.length) attached.set(el, texts);
+  }
 
   for (const el of candidates) {
     const tag = el.tagName.toLowerCase();
+    if (consumed.has(el)) continue;
 
-    if (tag === "img") {
+    if (tag === "img" || (!el.matches(TEXTUAL) && bgImageUrl(el))) {
       const img = el as HTMLImageElement;
-      const url = img.currentSrc || img.src;
+      const url = tag === "img" ? img.currentSrc || img.src : (bgImageUrl(el) as string);
       if (url && !images.some((i) => i.url === url)) {
-        images.push({ url, alt: clean(img.alt), href: el.closest("a")?.getAttribute("href") ?? undefined });
+        images.push({
+          url,
+          alt: tag === "img" ? clean(img.alt) : "",
+          href: el.closest("a")?.getAttribute("href") ?? undefined,
+          texts: attached.get(el),
+        });
         imageBoxes.push(boxOf(el));
       }
       continue;
