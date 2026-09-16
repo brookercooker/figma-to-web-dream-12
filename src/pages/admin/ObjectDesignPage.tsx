@@ -1974,18 +1974,28 @@ export default function ObjectDesignPage() {
                     ))}
                   </select>
                 </Field>
-                <Field label={kindLabel}>
-                  <Textarea
-                    rows={kind === "text" ? 4 : 2}
+                {kind === "icon" ? (
+                  <IconPicker
                     value={t.text}
-                    onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                    style={t.style}
+                    onPick={(name) => patchExtra(section.id, i, { text: name })}
+                    onStyle={(v) => patchExtra(section.id, i, { style: v })}
                   />
-                </Field>
+                ) : (
+                  <Field label={kindLabel}>
+                    <Textarea
+                      rows={kind === "text" ? 4 : 2}
+                      value={t.text}
+                      onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                    />
+                  </Field>
+                )}
                 <TextStyleFields
                   label={`${kindLabel} style`}
                   value={kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style}
                   defaults={kindDefaults}
                   onChange={(v) => patchExtra(section.id, i, { style: v })}
+                  colorOnly={kind === "icon"}
                 />
               </>
             ),
