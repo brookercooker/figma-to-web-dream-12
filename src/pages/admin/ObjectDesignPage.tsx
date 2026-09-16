@@ -1347,6 +1347,17 @@ export default function ObjectDesignPage() {
               onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
             />
           )}
+          <Field label="Keep in view when cropped">
+            <select
+              className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              value={image.focus ?? "center"}
+              onChange={(e) => patchImage(section.id, index, { focus: e.target.value })}
+            >
+              {IMAGE_FOCUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Field>
         </>
       )}
       {showCaption && imgOpen && (
