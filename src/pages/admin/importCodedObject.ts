@@ -105,19 +105,65 @@ function styleOf(el: HTMLElement, heading: boolean): TextStyle {
   };
 }
 
-/** Items that share a horizontal row are kept inline, with their share of the width. */
-function flowOf(el: HTMLElement, node: HTMLElement): { flow: "inline" | "separate"; width?: number } {
-  const parent = el.parentElement;
-  if (!parent || parent === node) return { flow: "separate" };
-  const pcs = getComputedStyle(parent);
-  const row =
-    (pcs.display.includes("flex") && !pcs.flexDirection.startsWith("column")) ||
-    (pcs.display.includes("grid") && pcs.gridTemplateColumns.split(" ").filter(Boolean).length > 1);
-  if (!row) return { flow: "separate" };
-  const w = el.getBoundingClientRect().width;
-  const pw = parent.getBoundingClientRect().width || node.getBoundingClientRect().width;
-  if (!w || !pw || w / pw > 0.9) return { flow: "separate" };
-  return { flow: "inline", width: Math.max(10, Math.min(100, Math.round((w / pw) * 100))) };
+interface Box { top: number; bottom: number; left: number; right: number; width: number }
+
+const boxOf = (el: HTMLElement): Box => {
+  const r = el.getBoundingClientRect();
+  return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width };
+};
+
+const unionBox = (boxes: Box[]): Box | null =>
+  boxes.length
+    ? boxes.reduce((a, b) => ({
+        top: Math.min(a.top, b.top),
+        bottom: Math.max(a.bottom, b.bottom),
+        left: Math.min(a.left, b.left),
+        right: Math.max(a.right, b.right),
+        width: 0,
+      }))
+    : null;
+
+/** How much two boxes share the same vertical band (0-1). */
+function vOverlap(a: Box, b: Box): number {
+  const overlap = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  const smaller = Math.min(a.bottom - a.top, b.bottom - b.top) || 1;
+  return overlap / smaller;
+}
+
+/** How much two boxes share the same horizontal band (0-1). */
+function hOverlap(a: Box, b: Box): number {
+  const overlap = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  const smaller = Math.min(a.right - a.left, b.right - b.left) || 1;
+  return overlap / smaller;
+}
+
+/**
+ * Text that sat side by side on the page stays side by side: parts sharing a
+ * vertical band become inline items, each keeping its share of the width.
+ */
+function inlineRows(
+  parts: { part: string; box: Box }[],
+  nodeWidth: number,
+): { flows: Record<string, "inline">; widths: Record<string, number> } {
+  const flows: Record<string, "inline"> = {};
+  const widths: Record<string, number> = {};
+  const rows: { part: string; box: Box }[][] = [];
+
+  for (const item of parts) {
+    const row = rows.find((r) => r.every((other) => vOverlap(other.box, item.box) > 0.5));
+    if (row) row.push(item);
+    else rows.push([item]);
+  }
+
+  for (const row of rows) {
+    if (row.length < 2) continue;
+    for (const { part, box } of row) {
+      flows[part] = "inline";
+      const pct = nodeWidth ? Math.round((box.width / nodeWidth) * 100) : 0;
+      if (pct) widths[part] = Math.max(10, Math.min(100, pct));
+    }
+  }
+  return { flows, widths };
 }
 
 /** Background tint painted behind the block, when it isn't plain white. */
