@@ -55,7 +55,82 @@ function isVisible(el: HTMLElement): boolean {
   return true;
 }
 
-const serifStyle = (px: number): TextStyle => ({ font: "serif", px } as TextStyle);
+/** Nova palette, so colors coming out of the DOM keep their brand token. */
+const BRAND_HEX: { token: TextColor; rgb: [number, number, number] }[] = [
+  { token: "ink", rgb: [33, 33, 33] },
+  { token: "stone", rgb: [163, 155, 142] },
+  { token: "brass", rgb: [204, 190, 164] },
+  { token: "garnet", rgb: [133, 55, 50] },
+  { token: "cream", rgb: [255, 255, 255] },
+];
+
+function parseRgb(value: string): [number, number, number, number] | null {
+  const m = value.match(/rgba?\(([^)]+)\)/);
+  if (!m) return null;
+  const parts = m[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+  if (parts.length < 3 || parts.slice(0, 3).some((n) => Number.isNaN(n))) return null;
+  return [parts[0], parts[1], parts[2], parts[3] === undefined ? 1 : parts[3]];
+}
+
+const hex = (r: number, g: number, b: number) =>
+  `#${[r, g, b].map((n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0")).join("")}`;
+
+/** Closest brand token, or the exact color when nothing matches. */
+function colorOf(value: string): TextColor | undefined {
+  const rgb = parseRgb(value);
+  if (!rgb || rgb[3] === 0) return undefined;
+  const [r, g, b] = rgb;
+  for (const { token, rgb: t } of BRAND_HEX) {
+    const d = Math.abs(t[0] - r) + Math.abs(t[1] - g) + Math.abs(t[2] - b);
+    if (d <= 24) return token;
+  }
+  return hex(r, g, b);
+}
+
+/** Font, exact size, color and bold/italic/underline, read from the rendered text. */
+function styleOf(el: HTMLElement, heading: boolean): TextStyle {
+  const cs = getComputedStyle(el);
+  const px = Math.round(parseFloat(cs.fontSize)) || undefined;
+  const weight = Number(cs.fontWeight) || 400;
+  const family = cs.fontFamily.toLowerCase();
+  const serif = /serif/.test(family) && !/sans-serif/.test(family.replace(/, ?sans-serif$/, ""));
+  return {
+    font: serif || heading ? "serif" : "sans",
+    sizePx: px,
+    color: colorOf(cs.color),
+    bold: weight >= 600 ? true : undefined,
+    italic: cs.fontStyle === "italic" ? true : undefined,
+    underline: cs.textDecorationLine.includes("underline") ? true : undefined,
+  };
+}
+
+/** Items that share a horizontal row are kept inline, with their share of the width. */
+function flowOf(el: HTMLElement, node: HTMLElement): { flow: "inline" | "separate"; width?: number } {
+  const parent = el.parentElement;
+  if (!parent || parent === node) return { flow: "separate" };
+  const pcs = getComputedStyle(parent);
+  const row =
+    (pcs.display.includes("flex") && !pcs.flexDirection.startsWith("column")) ||
+    (pcs.display.includes("grid") && pcs.gridTemplateColumns.split(" ").filter(Boolean).length > 1);
+  if (!row) return { flow: "separate" };
+  const w = el.getBoundingClientRect().width;
+  const pw = parent.getBoundingClientRect().width || node.getBoundingClientRect().width;
+  if (!w || !pw || w / pw > 0.9) return { flow: "separate" };
+  return { flow: "inline", width: Math.max(10, Math.min(100, Math.round((w / pw) * 100))) };
+}
+
+/** Background tint painted behind the block, when it isn't plain white. */
+function backgroundOf(node: HTMLElement): TextColor | undefined {
+  let el: HTMLElement | null = node;
+  for (let i = 0; el && i < 3; i += 1, el = el.parentElement) {
+    const rgb = parseRgb(getComputedStyle(el).backgroundColor);
+    if (!rgb || rgb[3] === 0) continue;
+    const [r, g, b] = rgb;
+    if (r > 250 && g > 250 && b > 250) return undefined;
+    return colorOf(getComputedStyle(el).backgroundColor);
+  }
+  return undefined;
+}
 
 /** Containers we treat as one editable block each. */
 function blockRoots(root: HTMLElement): HTMLElement[] {
