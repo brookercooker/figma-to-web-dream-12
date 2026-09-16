@@ -768,7 +768,45 @@ export function parseSections(value: unknown): Section[] {
 /* ------------------------------- rendering ------------------------------- */
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft, ChevronRight, Pause, Play,
+  Calendar, Ruler, Compass, Lightbulb, MapPin, Phone, Mail, Clock, Star, Heart,
+  Sparkles, Truck, ShieldCheck, Award, Home, Sofa, PenTool, Palette, Camera,
+  Quote, Check, Leaf,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+/** Icons an author can drop into a block. */
+export const SECTION_ICONS: Record<string, LucideIcon> = {
+  calendar: Calendar, ruler: Ruler, compass: Compass, lightbulb: Lightbulb,
+  mapPin: MapPin, phone: Phone, mail: Mail, clock: Clock, star: Star, heart: Heart,
+  sparkles: Sparkles, truck: Truck, shield: ShieldCheck, award: Award, home: Home,
+  sofa: Sofa, pen: PenTool, palette: Palette, camera: Camera, quote: Quote,
+  check: Check, leaf: Leaf,
+};
+
+export const SECTION_ICON_NAMES = Object.keys(SECTION_ICONS);
+
+/** An icon item: the stored text is the icon name. */
+export function SectionIcon({
+  name, style, fallbackColor,
+}: { name: string; style?: TextStyle; fallbackColor?: TextColor }) {
+  const Icon = SECTION_ICONS[name?.trim()] ?? SECTION_ICONS.sparkles;
+  const size = style?.sizePx ?? 28;
+  const color = textColorCss(style?.color ?? fallbackColor ?? "ink");
+  if (style?.iconRing) {
+    const box = size * 2.2;
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-full border"
+        style={{ width: box, height: box, borderColor: color }}
+      >
+        <Icon style={{ width: size, height: size, color }} strokeWidth={1.4} />
+      </span>
+    );
+  }
+  return <Icon style={{ width: size, height: size, color }} strokeWidth={1.4} />;
+}
 
 const alignText: Record<SectionAlign, string> = {
   left: "text-left items-start",
