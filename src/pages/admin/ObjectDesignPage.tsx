@@ -2191,6 +2191,10 @@ export default function ObjectDesignPage() {
         imageBorderStyle: own.imageBorderStyle ?? section.imageBorderStyle,
         imageBorderRadius: own.imageBorderRadius ?? section.imageBorderRadius,
         imageBorderPad: own.imageBorderPad ?? section.imageBorderPad,
+        imageScrim: own.imageScrim ?? section.imageScrim,
+        imageScrimStrength: own.imageScrimStrength ?? section.imageScrimStrength,
+        imageShadow: own.imageShadow ?? section.imageShadow,
+        carouselControls: own.carouselControls ?? section.carouselControls,
       };
       const patchGroup = (v: Partial<typeof eff>) =>
         patch(section.id, {
