@@ -101,7 +101,7 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
     }
 
     if (tag === "a" || tag === "button") {
-      const label = clean(el.textContent);
+      const label = clean(el.innerText || el.textContent);
       // Skip wrappers around images or long blocks of copy.
       if (!label || label.length > 40 || el.querySelector("img,h1,h2,h3,p")) continue;
       if (base.buttonLabel) continue;
@@ -116,7 +116,7 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
     if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6")) continue;
     // Skip wrappers that hold other text so copy is not duplicated.
     if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) continue;
-    const text = clean(el.textContent);
+    const text = clean(el.innerText || el.textContent);
     if (!text || seenText.has(text)) continue;
     seenText.add(text);
 
