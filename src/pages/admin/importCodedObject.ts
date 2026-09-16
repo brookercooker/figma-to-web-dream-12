@@ -404,9 +404,15 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   if (Object.keys(flows).length) base.flows = flows;
   if (Object.keys(widths).length) base.flowWidths = widths;
 
+  // Text that sat on top of a picture keeps sitting on top of it.
+  if (overlaid) {
+    base.layout = "behind";
+    base.overlayVAlign = overlayVAlignOf(overlaid);
+  }
+
   // Images that sat in their own column beside the copy keep that arrangement.
   const imageUnion = unionBox(imageBoxes);
-  if (imageUnion) {
+  if (imageUnion && base.layout !== "behind") {
     const beside = textBoxes.filter((t) => vOverlap(t.box, imageUnion) > 0.3).map((t) => t.box);
     const besideUnion = unionBox(beside);
     if (besideUnion && hOverlap(besideUnion, imageUnion) < 0.2) {
