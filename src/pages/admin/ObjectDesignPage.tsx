@@ -261,6 +261,22 @@ function TextStyleFields({
             onChange={(v) => set({ color: v })}
           />
         </Field>
+        {!colorOnly && (
+          <Field label="Max lines">
+            <Input
+              className="w-20"
+              type="number"
+              min={0}
+              placeholder="All"
+              value={style.lines ?? ""}
+              onChange={(e) => {
+                const raw = e.target.value.trim();
+                const n = Number(raw);
+                set({ lines: raw === "" || !Number.isFinite(n) || n <= 0 ? undefined : n });
+              }}
+            />
+          </Field>
+        )}
       </div>
     </div>
   );
