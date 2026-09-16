@@ -217,7 +217,11 @@ function blockRoots(root: HTMLElement): HTMLElement[] {
     const bands = [...inner.children].filter(
       (c): c is HTMLElement => c instanceof HTMLElement && isVisible(c) && hasContent(c),
     );
-    return bands.length > 1 ? bands : [inner];
+    if (bands.length < 2) return [inner];
+    // A row or grid of cards stays one block; only stacked bands are split.
+    const boxes = bands.map(boxOf);
+    const sideBySide = boxes.some((a, i) => boxes.some((b, j) => j !== i && vOverlap(a, b) > 0.5));
+    return sideBySide ? [inner] : bands;
   });
 }
 
