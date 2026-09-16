@@ -1951,12 +1951,13 @@ export default function ObjectDesignPage() {
 
   /** Put `from` into the same group as `into` (or out of every group when undefined). */
   const withGroupMembership = (s: FreeSection, from: string, into?: string) => {
-    const boxes = (s.boxes ?? []).map((b) => ({ ...b, parts: b.parts.filter((p) => p !== from) }));
-    const target = into ? boxes.find((b) => (s.boxes ?? []).find((o) => o.id === b.id)?.parts.includes(into)) : undefined;
-    const next = target
-      ? boxes.map((b) => (b.id === target.id ? { ...b, parts: [...b.parts, from] } : b))
-      : boxes;
-    return next.filter((b) => b.parts.length);
+    const targetId = into ? (s.boxes ?? []).find((b) => b.parts?.includes(into))?.id : undefined;
+    return (s.boxes ?? [])
+      .map((b) => ({
+        ...b,
+        parts: b.id === targetId ? [...b.parts.filter((p) => p !== from), from] : b.parts.filter((p) => p !== from),
+      }))
+      .filter((b) => b.parts.length);
   };
 
   const movePartIn = (s: FreeSection, from: string, to: string, before = true) => {
