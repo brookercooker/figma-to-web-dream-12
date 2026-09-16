@@ -12,6 +12,7 @@ import {
   newSectionId,
   type FreeParagraph,
   type FreeSection,
+  type ImageText,
   type Section,
   type SectionAlign,
   type SectionImage,
@@ -216,9 +217,44 @@ function blockRoots(root: HTMLElement): HTMLElement[] {
     const bands = [...inner.children].filter(
       (c): c is HTMLElement => c instanceof HTMLElement && isVisible(c) && hasContent(c),
     );
-    return bands.length > 1 ? bands : [inner];
+    if (bands.length < 2) return [inner];
+    // A row or grid of cards stays one block; only stacked bands are split.
+    const boxes = bands.map(boxOf);
+    const sideBySide = boxes.some((a, i) => boxes.some((b, j) => j !== i && vOverlap(a, b) > 0.5));
+    return sideBySide ? [inner] : bands;
   });
 }
+
+/** Picture painted as a CSS background rather than an <img>. */
+function bgImageUrl(el: HTMLElement): string | undefined {
+  const m = getComputedStyle(el).backgroundImage.match(/url\(["']?(.*?)["']?\)/);
+  const url = m?.[1];
+  if (!url || url.startsWith("data:image/svg")) return undefined;
+  const r = el.getBoundingClientRect();
+  return r.width > 40 && r.height > 40 ? url : undefined;
+}
+
+/** Where text sitting over a picture is anchored. */
+function overlayVAlignOf(el: HTMLElement): "top" | "middle" | "bottom" {
+  const cs = getComputedStyle(el.parentElement ?? el);
+  const j = `${cs.justifyContent} ${cs.alignItems}`;
+  if (/end|bottom/.test(j)) return "bottom";
+  if (/center/.test(j)) return "middle";
+  return "top";
+}
+
+/** Text that sits on a picture or reads as its caption becomes part of that picture. */
+function imageTextOf(el: HTMLElement, text: string): ImageText {
+  const heading = /^h[1-6]$/.test(el.tagName.toLowerCase());
+  const kind: ImageText["kind"] = heading ? "title" : looksLikeEyebrow(el) ? "eyebrow" : "text";
+  return { id: id(), kind, text, style: styleOf(el, heading), align: alignOf(el) };
+}
+
+const centerInside = (inner: Box, outer: Box) => {
+  const cx = (inner.left + inner.right) / 2;
+  const cy = (inner.top + inner.bottom) / 2;
+  return cx >= outer.left && cx <= outer.right && cy >= outer.top && cy <= outer.bottom;
+};
 
 function sectionFromNode(node: HTMLElement): FreeSection | null {
   const base: FreeSection = {
@@ -245,18 +281,85 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
     textBoxes.push({ part, box: boxOf(el) });
   };
 
-  const candidates = [
-    ...node.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6,p,span,img,a,button"),
-  ].filter(isVisible);
+  const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,span,img,a,button";
+  const all = [node, ...node.querySelectorAll<HTMLElement>("*")].filter(isVisible);
+  const candidates = all.filter((el) => el.matches(TEXTUAL) || !!bgImageUrl(el));
+
+  const isTextLeaf = (el: HTMLElement) => {
+    const tag = el.tagName.toLowerCase();
+    if (!/^(h[1-6]|p|span)$/.test(tag)) return false;
+    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6")) return false;
+    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) return false;
+    return !!clean(el.innerText || el.textContent);
+  };
+
+  // Text sitting on a picture, or reading as its caption, is attached to that
+  // picture so it can be moved behind, beside or above it afterwards.
+  const textLeaves = candidates.filter(isTextLeaf).map((el) => ({ el, box: boxOf(el) }));
+  const imageEls = all.filter((el) => el.tagName.toLowerCase() === "img" || !!bgImageUrl(el));
+  const attached = new Map<HTMLElement, ImageText[]>();
+  const consumed = new Set<HTMLElement>();
+  let overlaid: HTMLElement | null = null;
+
+  for (const el of imageEls) {
+    const box = boxOf(el);
+    const texts: ImageText[] = [];
+    for (const leaf of textLeaves) {
+      if (consumed.has(leaf.el) || leaf.el === el) continue;
+      const text = clean(leaf.el.innerText || leaf.el.textContent);
+      if (!text) continue;
+      const over = centerInside(leaf.box, box);
+      const below = leaf.box.top >= box.bottom - 4 && leaf.box.top < box.bottom + 96;
+      const above = leaf.box.bottom <= box.top + 4 && leaf.box.bottom > box.top - 96;
+      const near =
+        (below || above) &&
+        hOverlap(leaf.box, box) > 0.6 &&
+        (leaf.el.parentElement === el.parentElement || !!el.parentElement?.contains(leaf.el));
+      if (!over && !near) continue;
+      if (over) overlaid = overlaid ?? leaf.el;
+      texts.push(imageTextOf(leaf.el, text));
+      consumed.add(leaf.el);
+    }
+    if (texts.length) attached.set(el, texts);
+  }
+
+  // A short label living in the same card as a single picture is that picture's
+  // caption, even when the picture has not finished loading.
+  for (const el of imageEls) {
+    if (attached.has(el)) continue;
+    let card: HTMLElement | null = el.parentElement;
+    for (let i = 0; card && i < 3; i += 1, card = card.parentElement) {
+      if (card.querySelectorAll("img").length !== 1) break;
+      const label = clean(card.innerText || card.textContent);
+      if (!label || label.length > 120) continue;
+      const leaves = textLeaves.filter(
+        (leaf) => card?.contains(leaf.el) && !consumed.has(leaf.el) && !el.contains(leaf.el),
+      );
+      if (!leaves.length || leaves.length > 2) continue;
+      const texts = leaves.map((leaf) => {
+        consumed.add(leaf.el);
+        return imageTextOf(leaf.el, clean(leaf.el.innerText || leaf.el.textContent));
+      });
+      attached.set(el, texts);
+      break;
+    }
+  }
+
 
   for (const el of candidates) {
     const tag = el.tagName.toLowerCase();
+    if (consumed.has(el)) continue;
 
-    if (tag === "img") {
+    if (tag === "img" || (!el.matches(TEXTUAL) && bgImageUrl(el))) {
       const img = el as HTMLImageElement;
-      const url = img.currentSrc || img.src;
+      const url = tag === "img" ? img.currentSrc || img.src : (bgImageUrl(el) as string);
       if (url && !images.some((i) => i.url === url)) {
-        images.push({ url, alt: clean(img.alt), href: el.closest("a")?.getAttribute("href") ?? undefined });
+        images.push({
+          url,
+          alt: tag === "img" ? clean(img.alt) : "",
+          href: el.closest("a")?.getAttribute("href") ?? undefined,
+          texts: attached.get(el),
+        });
         imageBoxes.push(boxOf(el));
       }
       continue;
@@ -329,9 +432,15 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   if (Object.keys(flows).length) base.flows = flows;
   if (Object.keys(widths).length) base.flowWidths = widths;
 
+  // Text that sat on top of a picture keeps sitting on top of it.
+  if (overlaid) {
+    base.layout = "behind";
+    base.overlayVAlign = overlayVAlignOf(overlaid);
+  }
+
   // Images that sat in their own column beside the copy keep that arrangement.
   const imageUnion = unionBox(imageBoxes);
-  if (imageUnion) {
+  if (imageUnion && base.layout !== "behind") {
     const beside = textBoxes.filter((t) => vOverlap(t.box, imageUnion) > 0.3).map((t) => t.box);
     const besideUnion = unionBox(beside);
     if (besideUnion && hOverlap(besideUnion, imageUnion) < 0.2) {
