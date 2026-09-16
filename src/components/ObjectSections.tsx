@@ -190,7 +190,7 @@ export function imageWidthStyle(section: FreeSection): React.CSSProperties | und
 }
 
 /** Extra text boxes (and rules) that sit under an image and scroll with it. */
-export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text" | "divider" | "button";
+export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text" | "divider" | "button" | "icon";
 
 export const IMAGE_TEXT_KINDS: { value: ImageTextKind; label: string }[] = [
   { value: "eyebrow", label: "Eyebrow" },
@@ -199,6 +199,7 @@ export const IMAGE_TEXT_KINDS: { value: ImageTextKind; label: string }[] = [
   { value: "text", label: "Text" },
   { value: "divider", label: "Divider" },
   { value: "button", label: "Button" },
+  { value: "icon", label: "Icon" },
 ];
 
 export interface ImageText {
