@@ -26,6 +26,10 @@ export interface TextStyle {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+  /** cut the text off after this many lines */
+  lines?: number;
+  /** draw a circle around an icon item */
+  iconRing?: boolean;
 }
 
 export const MIN_TEXT_PX = 10;
