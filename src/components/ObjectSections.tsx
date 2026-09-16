@@ -229,6 +229,7 @@ export const IMAGE_TEXT_DEFAULTS: Record<
   text: { font: "sans", color: "stone", size: "sm", heading: false },
   divider: { font: "sans", color: "stone", size: "sm", heading: false },
   button: { font: "sans", color: "ink", size: "sm", heading: false },
+  icon: { font: "sans", color: "ink", size: "md", heading: false },
 };
 
 export interface SectionImage {
