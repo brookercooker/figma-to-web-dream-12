@@ -901,18 +901,39 @@ function Placeholder({ className = "" }: { className?: string }) {
   );
 }
 
-function Pic({ image, className }: { image: SectionImage; className: string }) {
+/** The dark wash drawn over a picture, when one is set. */
+function scrimStyle(scrim: ImageScrim | undefined, strength = 55): React.CSSProperties | null {
+  if (!scrim || scrim === "none") return null;
+  const a = Math.min(100, Math.max(0, strength)) / 100;
+  if (scrim === "full") return { backgroundColor: `rgba(33,33,33,${a})` };
+  const dir = scrim === "bottom" ? "to top" : "to bottom";
+  return {
+    backgroundImage: `linear-gradient(${dir}, rgba(33,33,33,${a}) 0%, rgba(33,33,33,${a * 0.35}) 45%, rgba(33,33,33,0) 100%)`,
+  };
+}
+
+function Pic({
+  image, className, scrim, scrimStrength, shadow,
+}: {
+  image: SectionImage; className: string;
+  scrim?: ImageScrim; scrimStrength?: number; shadow?: ImageShadow;
+}) {
   if (!image?.url) return <Placeholder className={className} />;
   const href = image.href?.trim();
+  const wash = scrimStyle(scrim, scrimStrength);
   const inner = (
-    <img
-      src={image.url}
-      alt={image.alt || ""}
-      loading="lazy"
-      className="block h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]"
-    />
+    <>
+      <img
+        src={image.url}
+        alt={image.alt || ""}
+        loading="lazy"
+        style={image.focus ? { objectPosition: image.focus } : undefined}
+        className="block h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]"
+      />
+      {wash ? <span aria-hidden className="pointer-events-none absolute inset-0" style={wash} /> : null}
+    </>
   );
-  const box = `${className} group/pic overflow-hidden`;
+  const box = `${className} group/pic relative overflow-hidden ${shadow && shadow !== "none" ? IMAGE_SHADOW_CLASS[shadow] : ""}`;
   if (href) {
     const external = /^(https?:)?\/\//i.test(href);
     return (
