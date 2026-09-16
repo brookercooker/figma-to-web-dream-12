@@ -105,19 +105,70 @@ function styleOf(el: HTMLElement, heading: boolean): TextStyle {
   };
 }
 
-/** Items that share a horizontal row are kept inline, with their share of the width. */
-function flowOf(el: HTMLElement, node: HTMLElement): { flow: "inline" | "separate"; width?: number } {
-  const parent = el.parentElement;
-  if (!parent || parent === node) return { flow: "separate" };
-  const pcs = getComputedStyle(parent);
-  const row =
-    (pcs.display.includes("flex") && !pcs.flexDirection.startsWith("column")) ||
-    (pcs.display.includes("grid") && pcs.gridTemplateColumns.split(" ").filter(Boolean).length > 1);
-  if (!row) return { flow: "separate" };
-  const w = el.getBoundingClientRect().width;
-  const pw = parent.getBoundingClientRect().width || node.getBoundingClientRect().width;
-  if (!w || !pw || w / pw > 0.9) return { flow: "separate" };
-  return { flow: "inline", width: Math.max(10, Math.min(100, Math.round((w / pw) * 100))) };
+interface Box { top: number; bottom: number; left: number; right: number; width: number }
+
+const boxOf = (el: HTMLElement): Box => {
+  const r = el.getBoundingClientRect();
+  return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width };
+};
+
+const unionBox = (boxes: Box[]): Box | null =>
+  boxes.length
+    ? boxes.reduce((a, b) => ({
+        top: Math.min(a.top, b.top),
+        bottom: Math.max(a.bottom, b.bottom),
+        left: Math.min(a.left, b.left),
+        right: Math.max(a.right, b.right),
+        width: 0,
+      }))
+    : null;
+
+/** How much two boxes share the same vertical band (0-1). */
+function vOverlap(a: Box, b: Box): number {
+  const overlap = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+  const smaller = Math.min(a.bottom - a.top, b.bottom - b.top) || 1;
+  return overlap / smaller;
+}
+
+/** How much two boxes share the same horizontal band (0-1). */
+function hOverlap(a: Box, b: Box): number {
+  const overlap = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+  const smaller = Math.min(a.right - a.left, b.right - b.left) || 1;
+  return overlap / smaller;
+}
+
+/**
+ * Text that sat side by side on the page stays side by side: parts sharing a
+ * vertical band become inline items, each keeping its share of the width.
+ */
+function inlineRows(
+  parts: { part: string; box: Box }[],
+  nodeWidth: number,
+): { flows: Record<string, "inline">; widths: Record<string, number> } {
+  const flows: Record<string, "inline"> = {};
+  const widths: Record<string, number> = {};
+  const rows: { part: string; box: Box }[][] = [];
+
+  for (const item of parts) {
+    const row = rows.find((r) => r.every((other) => vOverlap(other.box, item.box) > 0.5));
+    if (row) row.push(item);
+    else rows.push([item]);
+  }
+
+  // A column holding several stacked texts can't be represented inline, so we
+  // only keep side-by-side items that stand alone in their column.
+  const alone = (item: { part: string; box: Box }) =>
+    !parts.some((o) => o.part !== item.part && hOverlap(o.box, item.box) > 0.5);
+
+  for (const row of rows) {
+    if (row.length < 2 || !row.every(alone)) continue;
+    for (const { part, box } of row) {
+      flows[part] = "inline";
+      const pct = nodeWidth ? Math.round((box.width / nodeWidth) * 100) : 0;
+      if (pct) widths[part] = Math.max(10, Math.min(100, pct));
+    }
+  }
+  return { flows, widths };
 }
 
 /** Background tint painted behind the block, when it isn't plain white. */
@@ -159,14 +210,11 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   const order: string[] = [];
   const extras: FreeParagraph[] = [];
   const images: SectionImage[] = [];
-  const flows: Record<string, "inline" | "separate"> = {};
-  const flowWidths: Record<string, number> = {};
+  const textBoxes: { part: string; box: Box }[] = [];
+  const imageBoxes: Box[] = [];
 
   const keepFlow = (part: string, el: HTMLElement) => {
-    const f = flowOf(el, node);
-    if (f.flow !== "inline") return;
-    flows[part] = "inline";
-    if (f.width) flowWidths[part] = f.width;
+    textBoxes.push({ part, box: boxOf(el) });
   };
 
   const candidates = [
@@ -181,6 +229,7 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
       const url = img.currentSrc || img.src;
       if (url && !images.some((i) => i.url === url)) {
         images.push({ url, alt: clean(img.alt), href: el.closest("a")?.getAttribute("href") ?? undefined });
+        imageBoxes.push(boxOf(el));
       }
       continue;
     }
@@ -246,8 +295,23 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   base.extras = extras;
   base.order = order;
   base.captionAlign = base.align;
+
+  const nodeWidth = node.getBoundingClientRect().width;
+  const { flows, widths } = inlineRows(textBoxes, nodeWidth);
   if (Object.keys(flows).length) base.flows = flows;
-  if (Object.keys(flowWidths).length) base.flowWidths = flowWidths;
+  if (Object.keys(widths).length) base.flowWidths = widths;
+
+  // Images that sat in their own column beside the copy keep that arrangement.
+  const imageUnion = unionBox(imageBoxes);
+  if (imageUnion) {
+    const beside = textBoxes.filter((t) => vOverlap(t.box, imageUnion) > 0.3).map((t) => t.box);
+    const besideUnion = unionBox(beside);
+    if (besideUnion && hOverlap(besideUnion, imageUnion) < 0.2) {
+      base.layout = "beside";
+      base.imageSide = imageUnion.left < besideUnion.left ? "left" : "right";
+    }
+  }
+
   const bg = backgroundOf(node);
   if (bg) base.bg = bg;
 
