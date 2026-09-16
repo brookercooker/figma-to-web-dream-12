@@ -570,10 +570,10 @@ export interface ButtonSection {
 export type FreeTextKind = "eyebrow" | "title" | "text" | "icon";
 
 export const FREE_TEXT_KINDS: { value: FreeTextKind; label: string }[] = [
-  { value: "icon", label: "Icon" },
   { value: "eyebrow", label: "Eyebrow" },
   { value: "title", label: "Title" },
   { value: "text", label: "Text" },
+  { value: "icon", label: "Icon" },
 ];
 
 export interface FreeParagraph {
