@@ -212,7 +212,7 @@ export interface ImageText {
   /** bar settings when kind is "divider" */
   divider?: { color?: TextColor; width?: "full" | "short"; widthPct?: number; thickness?: number };
   /** link settings when kind is "button" */
-  button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor };
+  button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor; icon?: string; iconSide?: "before" | "after" };
   /** extra space above/below this item (px, may be negative) */
   padY?: number;
   /** extra space left/right of this item (px, may be negative) */
@@ -738,6 +738,10 @@ export interface FreeSection {
   buttonVariant?: "solid" | "outline" | "link";
   /** background color for the button */
   buttonBg?: TextColor;
+  /** optional symbol shown beside the button label */
+  buttonIcon?: string;
+  /** which side the symbol sits on */
+  buttonIconSide?: "before" | "after";
   /** vertical padding around the block, in pixels */
   padY?: number;
   /** horizontal padding around the block, in pixels */
@@ -1126,6 +1130,8 @@ function FreeFigureBody({
                 variant={t.button?.variant ?? (onDark ? "outline" : "solid")}
                 style={t.style}
                 bg={t.button?.bg}
+                icon={t.button?.icon}
+                iconSide={t.button?.iconSide}
               />
             </div>
           );
@@ -1492,6 +1498,8 @@ function FreeText({
         variant={section.buttonVariant ?? (onDark ? "outline" : "solid")}
         style={section.labelStyle}
         bg={section.buttonBg}
+        icon={section.buttonIcon}
+        iconSide={section.buttonIconSide}
       />
     </div>
   ) });
@@ -1597,6 +1605,8 @@ function OverlayImageTexts({
                 variant={t.button?.variant ?? "outline"}
                 style={t.style}
                 bg={t.button?.bg}
+                icon={t.button?.icon}
+                iconSide={t.button?.iconSide}
               />
             </div>
           );
