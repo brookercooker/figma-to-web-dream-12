@@ -15,6 +15,7 @@ import {
   type Section,
   type SectionAlign,
   type SectionImage,
+  type TextColor,
   type TextStyle,
 } from "@/components/ObjectSections";
 
