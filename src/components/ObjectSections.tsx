@@ -212,7 +212,7 @@ export interface ImageText {
   /** bar settings when kind is "divider" */
   divider?: { color?: TextColor; width?: "full" | "short"; widthPct?: number; thickness?: number };
   /** link settings when kind is "button" */
-  button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor };
+  button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor; icon?: string; iconSide?: "before" | "after" };
   /** extra space above/below this item (px, may be negative) */
   padY?: number;
   /** extra space left/right of this item (px, may be negative) */
@@ -738,6 +738,10 @@ export interface FreeSection {
   buttonVariant?: "solid" | "outline" | "link";
   /** background color for the button */
   buttonBg?: TextColor;
+  /** optional symbol shown beside the button label */
+  buttonIcon?: string;
+  /** which side the symbol sits on */
+  buttonIconSide?: "before" | "after";
   /** vertical padding around the block, in pixels */
   padY?: number;
   /** horizontal padding around the block, in pixels */
@@ -961,9 +965,9 @@ const bgTextColor: Record<TextColorToken, TextColor> = {
 };
 
 function SectionButton({
-  label, href, variant = "solid", style, bg,
-}: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle; bg?: TextColor }) {
-  const base = "inline-flex items-center justify-center uppercase tracking-[0.18em] transition-colors";
+  label, href, variant = "solid", style, bg, icon, iconSide = "before",
+}: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle; bg?: TextColor; icon?: string; iconSide?: "before" | "after" }) {
+  const base = "inline-flex items-center justify-center gap-2 uppercase tracking-[0.18em] transition-colors";
   const fill = bg ?? "ink";
   const custom = isCustomColor(fill);
   const styles =
@@ -979,8 +983,20 @@ function SectionButton({
     inline.backgroundColor = fill as string;
     if (!style?.color) inline.color = contrastOn(fill as string);
   }
+  if (!icon) {
+    return (
+      <a href={href || "#"} className={`${base} ${styles} ${text}`} style={inline} {...richText(label)} />
+    );
+  }
+  const Icon = SECTION_ICONS[icon.trim()] ?? SECTION_ICONS.sparkles;
+  const glyphSize = Math.max(12, Math.round((style?.sizePx ?? 14) * 1.1));
+  const glyph = <Icon style={{ width: glyphSize, height: glyphSize }} strokeWidth={1.6} className="shrink-0" />;
   return (
-    <a href={href || "#"} className={`${base} ${styles} ${text}`} style={inline} {...richText(label)} />
+    <a href={href || "#"} className={`${base} ${styles} ${text}`} style={inline}>
+      {iconSide === "before" ? glyph : null}
+      <span {...richText(label)} />
+      {iconSide === "after" ? glyph : null}
+    </a>
   );
 }
 
@@ -1114,6 +1130,8 @@ function FreeFigureBody({
                 variant={t.button?.variant ?? (onDark ? "outline" : "solid")}
                 style={t.style}
                 bg={t.button?.bg}
+                icon={t.button?.icon}
+                iconSide={t.button?.iconSide}
               />
             </div>
           );
@@ -1480,6 +1498,8 @@ function FreeText({
         variant={section.buttonVariant ?? (onDark ? "outline" : "solid")}
         style={section.labelStyle}
         bg={section.buttonBg}
+        icon={section.buttonIcon}
+        iconSide={section.buttonIconSide}
       />
     </div>
   ) });
@@ -1585,6 +1605,8 @@ function OverlayImageTexts({
                 variant={t.button?.variant ?? "outline"}
                 style={t.style}
                 bg={t.button?.bg}
+                icon={t.button?.icon}
+                iconSide={t.button?.iconSide}
               />
             </div>
           );
