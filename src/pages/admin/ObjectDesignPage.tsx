@@ -2892,7 +2892,32 @@ export default function ObjectDesignPage() {
 
 
 
-        {parts.map((p) => <Fragment key={p}>{renderPart(p)}</Fragment>)}
+        {(() => {
+          // draw items that share a group nested inside a labelled container
+          const groups = section.boxes ?? [];
+          const groupOf = (p: string) => groups.find((b) => b.parts?.includes(p));
+          const runs: { group?: FreeBox; items: string[] }[] = [];
+          parts.forEach((p) => {
+            const g = groupOf(p);
+            const last = runs[runs.length - 1];
+            if (g && last && last.group?.id === g.id) last.items.push(p);
+            else runs.push({ group: g, items: [p] });
+          });
+          return runs.map((run) =>
+            run.group ? (
+              <div key={run.group.id} className="rounded-lg border border-dashed border-foreground/25 bg-muted/30 p-3">
+                <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+                  {`Group ${groups.findIndex((b) => b.id === run.group!.id) + 1}`}
+                </p>
+                <div className="space-y-3 border-l-2 border-foreground/15 pl-3">
+                  {run.items.map((p) => <Fragment key={p}>{renderPart(p)}</Fragment>)}
+                </div>
+              </div>
+            ) : (
+              <Fragment key={run.items[0]}>{renderPart(run.items[0])}</Fragment>
+            ),
+          );
+        })()}
 
 
 
