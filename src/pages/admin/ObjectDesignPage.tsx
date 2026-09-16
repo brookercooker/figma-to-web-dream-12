@@ -648,6 +648,8 @@ export default function ObjectDesignPage() {
   const [blocksExpanded, setBlocksExpanded] = useState(false);
   const [dragPart, setDragPart] = useState<{ sectionId: string; part: string } | null>(null);
   const [dropAt, setDropAt] = useState<{ sectionId: string; part: string; before: boolean } | null>(null);
+  // hovered group container (or "none" for the leave-group strip) while dragging an item
+  const [dropGroup, setDropGroup] = useState<{ sectionId: string; groupId: string } | null>(null);
   // drag and drop for the text boxes attached to an image
   const [dragText, setDragText] = useState<{ sectionId: string; index: number; ti: number } | null>(null);
   const [dropText, setDropText] = useState<{ sectionId: string; index: number; ti: number; before: boolean } | null>(null);
@@ -1949,6 +1951,17 @@ export default function ObjectDesignPage() {
     return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
   };
 
+  /** Put `from` into the same group as `into` (or out of every group when undefined). */
+  const withGroupMembership = (s: FreeSection, from: string, into?: string) => {
+    const targetId = into ? (s.boxes ?? []).find((b) => b.parts?.includes(into))?.id : undefined;
+    return (s.boxes ?? [])
+      .map((b) => ({
+        ...b,
+        parts: b.id === targetId ? [...b.parts.filter((p) => p !== from), from] : b.parts.filter((p) => p !== from),
+      }))
+      .filter((b) => b.parts.length);
+  };
+
   const movePartIn = (s: FreeSection, from: string, to: string, before = true) => {
     if (from === to) return;
     const parts = orderablePartsOf(s);
@@ -1956,7 +1969,23 @@ export default function ObjectDesignPage() {
     const at = next.indexOf(to);
     if (at === -1) next.push(from);
     else next.splice(before ? at : at + 1, 0, from);
-    patch(s.id, { order: next });
+    patch(s.id, { order: next, boxes: withGroupMembership(s, from, to) });
+  };
+
+  /** Drop an item into a group (at the end) or out of all groups. */
+  const dropPartInGroup = (s: FreeSection, from: string, groupId?: string) => {
+    const group = (s.boxes ?? []).find((b) => b.id === groupId);
+    const anchor = group?.parts.filter((p) => p !== from).slice(-1)[0];
+    const parts = orderablePartsOf(s).filter((p) => p !== from);
+    if (anchor) {
+      const at = parts.indexOf(anchor);
+      parts.splice(at === -1 ? parts.length : at + 1, 0, from);
+    } else parts.push(from);
+    const boxes = (s.boxes ?? []).map((b) => ({
+      ...b,
+      parts: b.id === groupId ? [...b.parts.filter((p) => p !== from), from] : b.parts.filter((p) => p !== from),
+    }));
+    patch(s.id, { order: parts, boxes: boxes.filter((b) => b.parts.length) });
   };
 
   const Block = ({
@@ -2903,19 +2932,67 @@ export default function ObjectDesignPage() {
             if (g && last && last.group?.id === g.id) last.items.push(p);
             else runs.push({ group: g, items: [p] });
           });
-          return runs.map((run) =>
-            run.group ? (
-              <div key={run.group.id} className="rounded-lg border border-dashed border-foreground/25 bg-muted/30 p-3">
-                <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
-                  {`Group ${groups.findIndex((b) => b.id === run.group!.id) + 1}`}
-                </p>
-                <div className="space-y-3 border-l-2 border-foreground/15 pl-3">
-                  {run.items.map((p) => <Fragment key={p}>{renderPart(p)}</Fragment>)}
+          const dragHere = dragPart?.sectionId === section.id;
+          const dragged = dragHere ? dragPart!.part : "";
+          const nested = (id: string) => dropGroup?.sectionId === section.id && dropGroup.groupId === id;
+          const zone = (id: string) => ({
+            onDragOver: (e: React.DragEvent) => {
+              if (!dragHere || e.defaultPrevented) return;
+              e.preventDefault();
+              setDropGroup((d) => (d && d.sectionId === section.id && d.groupId === id ? d : { sectionId: section.id, groupId: id }));
+            },
+            onDragLeave: (e: React.DragEvent) => {
+              if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+              setDropGroup((d) => (d && d.groupId === id ? null : d));
+            },
+            onDrop: (e: React.DragEvent) => {
+              setDropGroup(null);
+              if (!dragHere || e.defaultPrevented) return;
+              e.preventDefault();
+              dropPartInGroup(section, dragged, id === "none" ? undefined : id);
+              setDragPart(null);
+              setDropAt(null);
+            },
+          });
+          const inAnyGroup = groups.some((b) => b.parts?.includes(dragged));
+          return (
+            <>
+              {runs.map((run) =>
+                run.group ? (
+                  <div
+                    key={run.group.id}
+                    {...zone(run.group.id)}
+                    className={`rounded-lg border border-dashed p-3 transition-colors ${
+                      nested(run.group.id) ? "border-primary bg-primary/5" : "border-foreground/25 bg-muted/30"
+                    }`}
+                  >
+                    <p className="mb-2 text-[11px] uppercase tracking-widest text-muted-foreground">
+                      {`Group ${groups.findIndex((b) => b.id === run.group!.id) + 1}`}
+                    </p>
+                    <div className="space-y-3 border-l-2 border-foreground/15 pl-3">
+                      {run.items.map((p) => <Fragment key={p}>{renderPart(p)}</Fragment>)}
+                    </div>
+                    {dragHere && !run.group.parts.includes(dragged) ? (
+                      <p className="mt-2 rounded-md border border-dashed border-primary/50 py-2 text-center text-[11px] text-muted-foreground">
+                        Drop here to put inside this group
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <Fragment key={run.items[0]}>{renderPart(run.items[0])}</Fragment>
+                ),
+              )}
+              {dragHere && inAnyGroup ? (
+                <div
+                  {...zone("none")}
+                  className={`rounded-lg border border-dashed py-4 text-center text-xs transition-colors ${
+                    nested("none") ? "border-primary bg-primary/5 text-foreground" : "border-foreground/25 text-muted-foreground"
+                  }`}
+                >
+                  Drop here to take it out of the group
                 </div>
-              </div>
-            ) : (
-              <Fragment key={run.items[0]}>{renderPart(run.items[0])}</Fragment>
-            ),
+              ) : null}
+            </>
           );
         })()}
 
