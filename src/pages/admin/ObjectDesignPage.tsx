@@ -1949,6 +1949,16 @@ export default function ObjectDesignPage() {
     return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
   };
 
+  /** Put `from` into the same group as `into` (or out of every group when undefined). */
+  const withGroupMembership = (s: FreeSection, from: string, into?: string) => {
+    const boxes = (s.boxes ?? []).map((b) => ({ ...b, parts: b.parts.filter((p) => p !== from) }));
+    const target = into ? boxes.find((b) => (s.boxes ?? []).find((o) => o.id === b.id)?.parts.includes(into)) : undefined;
+    const next = target
+      ? boxes.map((b) => (b.id === target.id ? { ...b, parts: [...b.parts, from] } : b))
+      : boxes;
+    return next.filter((b) => b.parts.length);
+  };
+
   const movePartIn = (s: FreeSection, from: string, to: string, before = true) => {
     if (from === to) return;
     const parts = orderablePartsOf(s);
@@ -1956,7 +1966,23 @@ export default function ObjectDesignPage() {
     const at = next.indexOf(to);
     if (at === -1) next.push(from);
     else next.splice(before ? at : at + 1, 0, from);
-    patch(s.id, { order: next });
+    patch(s.id, { order: next, boxes: withGroupMembership(s, from, to) });
+  };
+
+  /** Drop an item into a group (at the end) or out of all groups. */
+  const dropPartInGroup = (s: FreeSection, from: string, groupId?: string) => {
+    const group = (s.boxes ?? []).find((b) => b.id === groupId);
+    const anchor = group?.parts.filter((p) => p !== from).slice(-1)[0];
+    const parts = orderablePartsOf(s).filter((p) => p !== from);
+    if (anchor) {
+      const at = parts.indexOf(anchor);
+      parts.splice(at === -1 ? parts.length : at + 1, 0, from);
+    } else parts.push(from);
+    const boxes = (s.boxes ?? []).map((b) => ({
+      ...b,
+      parts: b.id === groupId ? [...b.parts.filter((p) => p !== from), from] : b.parts.filter((p) => p !== from),
+    }));
+    patch(s.id, { order: parts, boxes: boxes.filter((b) => b.parts.length) });
   };
 
   const Block = ({
