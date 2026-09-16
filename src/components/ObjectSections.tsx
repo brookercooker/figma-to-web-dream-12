@@ -291,7 +291,34 @@ export interface FreeImageGroupSettings {
   imageBorderRadius?: number;
   imageBorderPad?: number;
   imageBorderStyle?: "solid" | "dashed" | "dotted";
+  imageScrim?: ImageScrim;
+  imageScrimStrength?: number;
+  imageShadow?: ImageShadow;
+  carouselControls?: boolean;
 }
+
+/** A dark wash over a picture so text on top of it stays readable. */
+export type ImageScrim = "none" | "bottom" | "top" | "full";
+
+export const IMAGE_SCRIMS: { value: ImageScrim; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "bottom", label: "From bottom" },
+  { value: "top", label: "From top" },
+  { value: "full", label: "Even" },
+];
+
+export type ImageShadow = "none" | "sm" | "md" | "lg";
+
+export const IMAGE_SHADOWS: { value: ImageShadow; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "sm", label: "Soft" },
+  { value: "md", label: "Medium" },
+  { value: "lg", label: "Deep" },
+];
+
+export const IMAGE_SHADOW_CLASS: Record<ImageShadow, string> = {
+  none: "", sm: "shadow-md", md: "shadow-xl", lg: "shadow-2xl",
+};
 
 /** CSS color value for a brand token or a custom color. */
 export function textColorCss(c: TextColor): string {
