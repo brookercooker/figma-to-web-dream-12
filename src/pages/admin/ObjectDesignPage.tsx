@@ -282,6 +282,66 @@ function TextStyleFields({
   );
 }
 
+/** Pick a symbol, its size, and whether it sits inside a circle. */
+function IconPicker({
+  value, style, onPick, onStyle,
+}: {
+  value: string;
+  style: TextStyle | undefined;
+  onPick: (name: string) => void;
+  onStyle: (next: TextStyle) => void;
+}) {
+  const current = (value || "sparkles").trim();
+  const s = style ?? {};
+  return (
+    <div className="rounded-md border p-3 space-y-3">
+      <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Symbol</p>
+      <div className="grid grid-cols-8 gap-1">
+        {SECTION_ICON_NAMES.map((name) => {
+          const Icon = SECTION_ICONS[name];
+          return (
+            <button
+              key={name}
+              type="button"
+              title={name}
+              aria-label={name}
+              onClick={() => onPick(name)}
+              className={`flex h-8 items-center justify-center rounded border ${name === current ? "border-primary bg-accent" : "border-transparent hover:bg-muted"}`}
+            >
+              <Icon className="h-4 w-4" />
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-end gap-4">
+        <Field label="Size">
+          <Input
+            className="w-20"
+            type="number"
+            placeholder="28"
+            value={s.sizePx ?? ""}
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              const n = Number(raw);
+              onStyle({ ...s, sizePx: raw === "" || !Number.isFinite(n) ? undefined : n });
+            }}
+          />
+        </Field>
+        <Field label="Circle">
+          <Button
+            type="button"
+            variant={s.iconRing ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => onStyle({ ...s, iconRing: s.iconRing ? undefined : true })}
+          >
+            {s.iconRing ? "On" : "Off"}
+          </Button>
+        </Field>
+      </div>
+    </div>
+  );
+}
+
 // Which style field on a section each clickable text part maps to.
 const STYLE_FIELD: Record<string, keyof FreeSection | undefined> = {
   eyebrow: "eyebrowStyle",
