@@ -220,6 +220,37 @@ function blockRoots(root: HTMLElement): HTMLElement[] {
   });
 }
 
+/** Picture painted as a CSS background rather than an <img>. */
+function bgImageUrl(el: HTMLElement): string | undefined {
+  const m = getComputedStyle(el).backgroundImage.match(/url\(["']?(.*?)["']?\)/);
+  const url = m?.[1];
+  if (!url || url.startsWith("data:image/svg")) return undefined;
+  const r = el.getBoundingClientRect();
+  return r.width > 40 && r.height > 40 ? url : undefined;
+}
+
+/** Where text sitting over a picture is anchored. */
+function overlayVAlignOf(el: HTMLElement): "top" | "middle" | "bottom" {
+  const cs = getComputedStyle(el.parentElement ?? el);
+  const j = `${cs.justifyContent} ${cs.alignItems}`;
+  if (/end|bottom/.test(j)) return "bottom";
+  if (/center/.test(j)) return "middle";
+  return "top";
+}
+
+/** Text that sits on a picture or reads as its caption becomes part of that picture. */
+function imageTextOf(el: HTMLElement, text: string): ImageText {
+  const heading = /^h[1-6]$/.test(el.tagName.toLowerCase());
+  const kind: ImageText["kind"] = heading ? "title" : looksLikeEyebrow(el) ? "eyebrow" : "text";
+  return { id: id(), kind, text, style: styleOf(el, heading), align: alignOf(el) };
+}
+
+const centerInside = (inner: Box, outer: Box) => {
+  const cx = (inner.left + inner.right) / 2;
+  const cy = (inner.top + inner.bottom) / 2;
+  return cx >= outer.left && cx <= outer.right && cy >= outer.top && cy <= outer.bottom;
+};
+
 function sectionFromNode(node: HTMLElement): FreeSection | null {
   const base: FreeSection = {
     id: id(),
