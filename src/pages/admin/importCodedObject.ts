@@ -224,6 +224,7 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
       const url = img.currentSrc || img.src;
       if (url && !images.some((i) => i.url === url)) {
         images.push({ url, alt: clean(img.alt), href: el.closest("a")?.getAttribute("href") ?? undefined });
+        imageBoxes.push(boxOf(el));
       }
       continue;
     }
