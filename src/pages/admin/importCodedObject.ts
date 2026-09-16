@@ -309,9 +309,10 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
       const text = clean(leaf.el.innerText || leaf.el.textContent);
       if (!text) continue;
       const over = centerInside(leaf.box, box);
+      const below = leaf.box.top >= box.bottom - 4 && leaf.box.top < box.bottom + 96;
+      const above = leaf.box.bottom <= box.top + 4 && leaf.box.bottom > box.top - 96;
       const near =
-        leaf.box.top >= box.bottom - 4 &&
-        leaf.box.top < box.bottom + 72 &&
+        (below || above) &&
         hOverlap(leaf.box, box) > 0.6 &&
         (leaf.el.parentElement === el.parentElement || !!el.parentElement?.contains(leaf.el));
       if (!over && !near) continue;
