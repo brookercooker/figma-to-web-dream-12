@@ -184,12 +184,40 @@ function backgroundOf(node: HTMLElement): TextColor | undefined {
   return undefined;
 }
 
-/** Containers we treat as one editable block each. */
+const hasContent = (el: HTMLElement) =>
+  !!clean(el.innerText || el.textContent) || !!el.querySelector("img");
+
+/** Walks past plain wrappers (containers, width limiters) to the real content. */
+function contentRoot(el: HTMLElement): HTMLElement {
+  let node = el;
+  for (let i = 0; i < 6; i += 1) {
+    const kids = [...node.children].filter(
+      (c): c is HTMLElement => c instanceof HTMLElement && isVisible(c) && hasContent(c),
+    );
+    if (kids.length !== 1) return node;
+    node = kids[0];
+  }
+  return node;
+}
+
+/**
+ * Each visual band of the original layout becomes its own block, so a header,
+ * an image-and-text row and a grid of cards stay separate instead of collapsing
+ * into one long block.
+ */
 function blockRoots(root: HTMLElement): HTMLElement[] {
   const sections = [...root.querySelectorAll<HTMLElement>("section")].filter(
     (s) => !s.parentElement?.closest("section"),
   );
-  return sections.length ? sections : [root];
+  const tops = sections.length ? sections : [root];
+
+  return tops.flatMap((top) => {
+    const inner = contentRoot(top);
+    const bands = [...inner.children].filter(
+      (c): c is HTMLElement => c instanceof HTMLElement && isVisible(c) && hasContent(c),
+    );
+    return bands.length > 1 ? bands : [inner];
+  });
 }
 
 function sectionFromNode(node: HTMLElement): FreeSection | null {
