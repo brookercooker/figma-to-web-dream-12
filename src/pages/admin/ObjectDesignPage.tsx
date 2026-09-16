@@ -1573,15 +1573,6 @@ export default function ObjectDesignPage() {
                           }
                         />
                       </Field>
-                      <ButtonIconField
-                        icon={t.button?.icon}
-                        side={t.button?.iconSide}
-                        onChange={(n) =>
-                          patchImageText(section.id, index, ti, {
-                            button: { ...(t.button ?? {}), icon: n.icon, iconSide: n.iconSide },
-                          })
-                        }
-                      />
                       <Choice
                         value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
                         options={[
@@ -1627,6 +1618,15 @@ export default function ObjectDesignPage() {
                           }
                         />
                       </Field>
+                      <ButtonIconField
+                        icon={t.button?.icon}
+                        side={t.button?.iconSide}
+                        onChange={(n) =>
+                          patchImageText(section.id, index, ti, {
+                            button: { ...(t.button ?? {}), icon: n.icon, iconSide: n.iconSide },
+                          })
+                        }
+                      />
                       {(t.button?.variant ?? "solid") === "solid" && (
                         <ColorDropdown
                           label="Fill"
