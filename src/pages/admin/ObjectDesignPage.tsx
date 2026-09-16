@@ -2747,7 +2747,23 @@ export default function ObjectDesignPage() {
     );
 
     return (
-      <div className="space-y-4">
+      <div
+        className="space-y-4"
+        onDragOver={(e) => {
+          // bare space outside any group: allow dropping to leave the group
+          if (dragPart?.sectionId !== section.id || e.defaultPrevented) return;
+          e.preventDefault();
+          setDropGroup(null);
+        }}
+        onDrop={(e) => {
+          if (dragPart?.sectionId !== section.id || e.defaultPrevented) return;
+          e.preventDefault();
+          patch(section.id, { boxes: withGroupMembership(section, dragPart.part) });
+          setDragPart(null);
+          setDropAt(null);
+          setDropGroup(null);
+        }}
+      >
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap items-center gap-1 rounded-lg border bg-background p-1.5 shadow-sm">
             {([
