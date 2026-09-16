@@ -979,8 +979,20 @@ function SectionButton({
     inline.backgroundColor = fill as string;
     if (!style?.color) inline.color = contrastOn(fill as string);
   }
+  if (!icon) {
+    return (
+      <a href={href || "#"} className={`${base} ${styles} ${text}`} style={inline} {...richText(label)} />
+    );
+  }
+  const Icon = SECTION_ICONS[icon.trim()] ?? SECTION_ICONS.sparkles;
+  const glyphSize = Math.max(12, Math.round((style?.sizePx ?? 14) * 1.1));
+  const glyph = <Icon style={{ width: glyphSize, height: glyphSize }} strokeWidth={1.6} className="shrink-0" />;
   return (
-    <a href={href || "#"} className={`${base} ${styles} ${text}`} style={inline} {...richText(label)} />
+    <a href={href || "#"} className={`${base} ${styles} ${text}`} style={inline}>
+      {iconSide === "before" ? glyph : null}
+      <span {...richText(label)} />
+      {iconSide === "after" ? glyph : null}
+    </a>
   );
 }
 
