@@ -38,6 +38,7 @@ const IMAGE_TEXT_ICONS: Record<ImageTextKind, LucideIcon> = {
   text: AlignLeft,
   divider: Minus,
   button: MousePointerClick,
+  icon: Sparkles,
 };
 
 /**
