@@ -3,6 +3,8 @@
  * Blocks are stored as JSON on the `pages.content` column.
  */
 
+import ObjectBlockView from "@/components/ObjectBlockView";
+
 export type BlockAlign = "left" | "center" | "right";
 
 export interface TextBlock {
@@ -25,7 +27,16 @@ export interface ImageBlock {
   width: 50 | 75 | 100;
 }
 
-export type Block = TextBlock | ImageBlock;
+export interface ObjectBlock {
+  id: string;
+  type: "object";
+  /** id of the row in the object registry — rendered live, so edits flow through */
+  objectId: string;
+  name?: string;
+  align: BlockAlign;
+}
+
+export type Block = TextBlock | ImageBlock | ObjectBlock;
 
 export const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? `b-${Math.random().toString(36).slice(2)}`;
@@ -76,6 +87,10 @@ const widthClass: Record<ImageBlock["width"], string> = {
 };
 
 export function BlockView({ block }: { block: Block }) {
+  if (block.type === "object") {
+    return <ObjectBlockView objectId={block.objectId} name={block.name} />;
+  }
+
   if (block.type === "image") {
     if (!block.url) return null;
     return (
