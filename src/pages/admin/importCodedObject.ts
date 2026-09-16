@@ -94,7 +94,7 @@ function styleOf(el: HTMLElement, heading: boolean): TextStyle {
   const px = Math.round(parseFloat(cs.fontSize)) || undefined;
   const weight = Number(cs.fontWeight) || 400;
   const family = cs.fontFamily.toLowerCase();
-  const serif = /serif/.test(family) && !/sans-serif/.test(family.replace(/, ?sans-serif$/, ""));
+  const serif = /serif/.test(family.replace(/sans-serif/g, ""));
   return {
     font: serif || heading ? "serif" : "sans",
     sizePx: px,
