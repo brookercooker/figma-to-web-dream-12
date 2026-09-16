@@ -1066,7 +1066,13 @@ function FreeFigureBody({
       style={{ ...(bordered ? imageBorderStyleOf(section) : {}), ...(imageWidthStyle(section) ?? {}) }}
     >
       <div data-part={`image:${index}`} style={imageBoxStyle(section)}>
-        <Pic image={image} className={`w-full rounded-lg ${imageBoxClass(section)} ${section.imageHeightPx ? "h-full" : ""}`} />
+        <Pic
+          image={image}
+          className={`w-full rounded-lg ${imageBoxClass(section)} ${section.imageHeightPx ? "h-full" : ""}`}
+          scrim={section.imageScrim}
+          scrimStrength={section.imageScrimStrength}
+          shadow={section.imageShadow}
+        />
       </div>
       {image.caption ? (
         <figcaption
