@@ -1079,6 +1079,7 @@ export default function ObjectDesignPage() {
     { kind: "eyebrow", label: "Eyebrow", icon: Tag },
     { kind: "title", label: "Title", icon: Heading },
     { kind: "text", label: "Text", icon: AlignLeft },
+    { kind: "icon", label: "Icon", icon: Sparkles },
     { kind: "image", label: "Image", icon: ImageIcon },
     { kind: "video", label: "Video", icon: VideoIcon },
     { kind: "divider", label: "Divider", icon: Minus },
