@@ -1558,9 +1558,14 @@ function FreeView({ section }: { section: FreeSection }) {
               className={`group/pic relative basis-0 grow min-w-0 overflow-hidden rounded-lg ${overlayHeight[section.height]}`}
             >
               <div data-part={`image:${i}`} className="absolute inset-0">
-                <Pic image={img} className="absolute inset-0 h-full w-full" />
+                <Pic
+                  image={img}
+                  className="absolute inset-0 h-full w-full"
+                  scrim={section.imageScrim}
+                  scrimStrength={section.imageScrimStrength}
+                />
               </div>
-              <div className="absolute inset-0 bg-ink/35" />
+              {(section.imageScrim ?? "none") === "none" ? <div className="absolute inset-0 bg-ink/35" /> : null}
               <div className={`relative flex h-full flex-col ${OVERLAY_VALIGN_CLASS[section.overlayVAlign ?? "middle"]} px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
                 {i === 0 ? <FreeText section={section} onDark /> : null}
                 <OverlayImageTexts section={section} image={img} index={i} />
