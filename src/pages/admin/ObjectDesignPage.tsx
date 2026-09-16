@@ -1048,6 +1048,12 @@ export default function ObjectDesignPage() {
       }
       return;
     }
+    if (kind === "icon") {
+      const id = newSectionId();
+      patch(s.id, { extras: [...(s.extras ?? []), { id, text: "sparkles", kind: "icon" as const }] });
+      openBlock(id);
+      return;
+    }
     if (kind === "title") {
       if (s.heading === undefined) {
         patch(s.id, { heading: "A quiet statement" });
