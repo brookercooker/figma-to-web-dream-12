@@ -44,6 +44,12 @@ export function textInlineStyle(style: TextStyle | undefined): React.CSSProperti
   const css: React.CSSProperties = {};
   if (style?.sizePx) css.fontSize = `${style.sizePx}px`;
   if (isCustomColor(style?.color)) css.color = style?.color as string;
+  if (style?.lines && style.lines > 0) {
+    css.display = "-webkit-box";
+    (css as Record<string, unknown>).WebkitLineClamp = style.lines;
+    (css as Record<string, unknown>).WebkitBoxOrient = "vertical";
+    css.overflow = "hidden";
+  }
   return Object.keys(css).length ? css : undefined;
 }
 
