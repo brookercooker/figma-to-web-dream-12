@@ -282,6 +282,56 @@ function TextStyleFields({
   );
 }
 
+/** Optional symbol shown before or after a button label. */
+function ButtonIconField({
+  icon, side, onChange,
+}: {
+  icon?: string;
+  side?: "before" | "after";
+  onChange: (next: { icon?: string; iconSide?: "before" | "after" }) => void;
+}) {
+  return (
+    <div className="rounded-md border p-3 space-y-2">
+      <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Symbol</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={icon ? "outline" : "secondary"}
+          onClick={() => onChange({ icon: undefined, iconSide: side })}
+        >
+          None
+        </Button>
+        <Choice
+          value={side ?? "before"}
+          options={[
+            { value: "before" as const, label: "Before" },
+            { value: "after" as const, label: "After" },
+          ]}
+          onChange={(v) => onChange({ icon, iconSide: v })}
+        />
+      </div>
+      <div className="grid grid-cols-8 gap-1">
+        {SECTION_ICON_NAMES.map((name) => {
+          const Icon = SECTION_ICONS[name];
+          return (
+            <button
+              key={name}
+              type="button"
+              title={name}
+              aria-label={name}
+              onClick={() => onChange({ icon: name, iconSide: side ?? "before" })}
+              className={`flex h-8 items-center justify-center rounded border ${name === icon ? "border-primary bg-accent" : "border-transparent hover:bg-muted"}`}
+            >
+              <Icon className="h-4 w-4" />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /** Pick a symbol, its size, and whether it sits inside a circle. */
 function IconPicker({
   value, style, onPick, onStyle,
@@ -1523,6 +1573,15 @@ export default function ObjectDesignPage() {
                           }
                         />
                       </Field>
+                      <ButtonIconField
+                        icon={t.button?.icon}
+                        side={t.button?.iconSide}
+                        onChange={(n) =>
+                          patchImageText(section.id, index, ti, {
+                            button: { ...(t.button ?? {}), icon: n.icon, iconSide: n.iconSide },
+                          })
+                        }
+                      />
                       <Choice
                         value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
                         options={[
@@ -2022,6 +2081,11 @@ export default function ObjectDesignPage() {
                 </div>
               </Field>
             </div>
+            <ButtonIconField
+              icon={section.buttonIcon}
+              side={section.buttonIconSide}
+              onChange={(n) => patch(section.id, { buttonIcon: n.icon, buttonIconSide: n.iconSide })}
+            />
             <TextStyleFields
               label="Button label style"
               value={section.labelStyle}
