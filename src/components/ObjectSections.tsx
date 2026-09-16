@@ -1173,11 +1173,13 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, n, loop]);
 
+  const [playing, setPlaying] = useState(true);
+
   useEffect(() => {
-    if (steps < 2) return;
+    if (steps < 2 || !playing) return;
     const t = setInterval(() => { nextRef.current(); }, 5000);
     return () => clearInterval(t);
-  }, [steps]);
+  }, [steps, playing]);
 
   const nextRef = useRef(next);
   nextRef.current = next;
