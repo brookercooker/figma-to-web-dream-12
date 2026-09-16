@@ -1412,6 +1412,14 @@ function FreeText({
       ) });
       return;
     }
+    if (kind === "icon") {
+      items.push({ part, node: (
+        <div data-part={part}>
+          <SectionIcon name={t.text} style={t.style} fallbackColor={onDark ? "cream" : "ink"} />
+        </div>
+      ) });
+      return;
+    }
     if (kind === "eyebrow") {
       const es = withEyebrowDefaults(t.style);
       items.push({ part, node: (
