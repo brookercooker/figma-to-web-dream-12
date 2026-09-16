@@ -258,7 +258,16 @@ export default function DesignTab() {
                     >
                       {active && (
                         <div className="sticky top-16 z-10 -mx-3 mb-2 flex flex-wrap items-center gap-1 border-b bg-background/95 px-3 py-2 backdrop-blur">
-                          {b.type !== "image" ? (
+                          {b.type === "object" ? (
+                            <>
+                              <span className="px-1 text-xs text-muted-foreground">
+                                Object: {b.name ?? "Saved object"} — edits made in Objects show up here
+                              </span>
+                              <ToolButton title="Swap object" onClick={() => setObjectFor(b.id)}>
+                                <Boxes className="w-4 h-4" />
+                              </ToolButton>
+                            </>
+                          ) : b.type !== "image" ? (
                             <>
                               <ToolButton
                                 title={b.type === "heading" ? "Turn into text" : "Turn into heading"}
