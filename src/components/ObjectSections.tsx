@@ -677,6 +677,8 @@ export interface FreeSection {
   padsX?: Record<string, number>;
   /** vertical alignment of items sharing a row */
   rowVAlign?: RowVAlign;
+  /** groups of items drawn together inside a box */
+  boxes?: FreeBox[];
   /** separating bars shown under the text content */
   dividers?: FreeDivider[];
   /** explicit stacking order of text parts (eyebrow, heading, body, text:i, divider:i, button) */
@@ -1374,6 +1376,41 @@ const dividerSelf: Record<SectionAlign, string> = {
 };
 
 /** Sort rendered parts by an explicit order list; unlisted parts keep their default spot. */
+/** A group of items in a block, drawn together inside a bordered/filled box. */
+export interface FreeBox {
+  id: string;
+  /** the parts (eyebrow, heading, text:0, ...) that sit inside this box */
+  parts: string[];
+  /** fill behind the box */
+  bg?: TextColor;
+  /** outline colour; leave unset for no outline */
+  border?: TextColor;
+  /** outline thickness in px */
+  borderWidth?: number;
+  /** corner rounding in px */
+  radius?: number;
+  /** inner spacing in px */
+  padY?: number;
+  padX?: number;
+}
+
+export function boxStyle(box: FreeBox): React.CSSProperties {
+  const style: React.CSSProperties = {
+    paddingTop: box.padY ?? 24,
+    paddingBottom: box.padY ?? 24,
+    paddingLeft: box.padX ?? 24,
+    paddingRight: box.padX ?? 24,
+    borderRadius: box.radius ?? 8,
+  };
+  if (box.bg) style.backgroundColor = textColorCss(box.bg);
+  if (box.border) {
+    style.borderStyle = "solid";
+    style.borderWidth = box.borderWidth ?? 1;
+    style.borderColor = textColorCss(box.border);
+  }
+  return style;
+}
+
 export function orderParts<T extends { part: string }>(items: T[], order?: string[]): T[] {
   if (!order?.length) return items;
   const rank = new Map(order.map((p, i) => [p, i]));
@@ -1522,9 +1559,17 @@ function FreeText({
 
   const groups = groupByFlow(ordered, (it) => flowOf(it.part));
 
-  return (
-    <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
-      {groups.map((group) =>
+  const boxes = section.boxes ?? [];
+  const boxOf = (part: string) => boxes.find((b) => b.parts?.includes(part));
+  const chunks: { box?: FreeBox; groups: typeof groups }[] = [];
+  groups.forEach((g) => {
+    const b = boxOf(g[0].part);
+    const last = chunks[chunks.length - 1];
+    if (b && last && last.box?.id === b.id) last.groups.push(g);
+    else chunks.push({ box: b, groups: [g] });
+  });
+
+  const renderGroup = (group: (typeof groups)[number]) =>
         group.length > 1 ? (
           <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap ${ROW_VALIGN_CLASS[section.rowVAlign ?? "middle"]} ${alignRow[section.align]}`}>
             {group.map((it) => {
@@ -1560,8 +1605,18 @@ function FreeText({
               </div>
             );
           })()
-        )
+        );
 
+  return (
+    <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
+      {chunks.map((chunk, ci) =>
+        chunk.box ? (
+          <div key={chunk.box.id} className={`flex w-full flex-col gap-4 ${alignText[section.align]}`} style={boxStyle(chunk.box)}>
+            {chunk.groups.map(renderGroup)}
+          </div>
+        ) : (
+          <React.Fragment key={`chunk-${ci}`}>{chunk.groups.map(renderGroup)}</React.Fragment>
+        )
       )}
     </div>
   );
