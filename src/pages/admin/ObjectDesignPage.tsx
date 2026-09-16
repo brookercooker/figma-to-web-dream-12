@@ -2921,12 +2921,28 @@ export default function ObjectDesignPage() {
             </div>
           ) : preview ? (
             <div className="border rounded-lg bg-background overflow-hidden">
-              <div className="border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-                This is how the object looks. Switch to Edit to change it.
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+                {!sections.length && codedKey
+                  ? "This object was built in code. Make it editable to change it here."
+                  : "This is how the object looks. Switch to Edit to change it."}
+                {!sections.length && codedKey && (
+                  <Button size="sm" className="gap-2" onClick={makeCodedEditable}>
+                    <Pencil className="w-4 h-4" /> Make editable
+                  </Button>
+                )}
               </div>
               <div className="p-4">
                 {sections.length ? (
                   <SectionFlowList sections={sections} />
+                ) : codedKey ? (
+                  <div ref={codedRef}>
+                    <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-muted" />}>
+                      {(() => {
+                        const C = objectRegistry[codedKey].component as React.ComponentType;
+                        return <C />;
+                      })()}
+                    </Suspense>
+                  </div>
                 ) : (
                   <p className="py-16 text-center text-sm text-muted-foreground">
                     Nothing here yet. Switch to Edit and add a section.
