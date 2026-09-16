@@ -1590,6 +1590,35 @@ export default function ObjectDesignPage() {
                         onChange={(v) => patchImageText(section.id, index, ti, { style: v })}
                       />
                     </>
+                  ) : t.kind === "icon" ? (
+                    <>
+                      <IconPicker
+                        value={t.text}
+                        style={t.style}
+                        onPick={(name) => patchImageText(section.id, index, ti, { text: name })}
+                        onStyle={(v) => patchImageText(section.id, index, ti, { style: v })}
+                      />
+                      <Choice
+                        value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
+                        options={[
+                          { value: "left" as const, label: "Left", icon: AlignLeft },
+                          { value: "center" as const, label: "Center", icon: AlignCenter },
+                          { value: "right" as const, label: "Right", icon: AlignRight },
+                        ]}
+                        onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
+                      />
+                      <TextStyleFields
+                        label="Symbol color"
+                        value={t.style}
+                        defaults={{
+                          font: IMAGE_TEXT_DEFAULTS.icon.font,
+                          color: IMAGE_TEXT_DEFAULTS.icon.color,
+                          size: IMAGE_TEXT_DEFAULTS.icon.size,
+                        }}
+                        onChange={(v) => patchImageText(section.id, index, ti, { style: v })}
+                        colorOnly
+                      />
+                    </>
                   ) : (
                     <>
                       <Textarea
