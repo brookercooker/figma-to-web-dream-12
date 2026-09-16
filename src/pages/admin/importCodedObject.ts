@@ -206,23 +206,27 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
     seenText.add(text);
 
     const heading = /^h[1-6]$/.test(tag);
-    const px = Math.round(parseFloat(getComputedStyle(el).fontSize)) || undefined;
+    const style = styleOf(el, heading);
 
     if (!base.eyebrow && !heading && looksLikeEyebrow(el)) {
       base.eyebrow = text;
+      base.eyebrowStyle = style;
       order.push("eyebrow");
+      keepFlow("eyebrow", el);
       continue;
     }
     if (heading && !base.heading) {
       base.heading = text;
-      base.textStyle = serifStyle(px ?? 48);
+      base.textStyle = style;
       order.push("heading");
+      keepFlow("heading", el);
       continue;
     }
     if (!heading && !base.body && text.length > 24) {
       base.body = text;
-      base.bodyStyle = { font: "sans", px } as TextStyle;
+      base.bodyStyle = style;
       order.push("body");
+      keepFlow("body", el);
       continue;
     }
 
@@ -230,16 +234,22 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
       id: id(),
       text,
       kind: heading ? "title" : "text",
-      style: { font: heading ? "serif" : "sans", px } as TextStyle,
+      style,
     };
     extras.push(extra);
-    order.push(`text:${extras.length - 1}`);
+    const part = `text:${extras.length - 1}`;
+    order.push(part);
+    keepFlow(part, el);
   }
 
   base.images = images;
   base.extras = extras;
   base.order = order;
   base.captionAlign = base.align;
+  if (Object.keys(flows).length) base.flows = flows;
+  if (Object.keys(flowWidths).length) base.flowWidths = flowWidths;
+  const bg = backgroundOf(node);
+  if (bg) base.bg = bg;
 
   const empty = !base.heading && !base.eyebrow && !base.body && !images.length && !extras.length;
   return empty ? null : base;
