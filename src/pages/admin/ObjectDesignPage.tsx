@@ -648,6 +648,8 @@ export default function ObjectDesignPage() {
   const [blocksExpanded, setBlocksExpanded] = useState(false);
   const [dragPart, setDragPart] = useState<{ sectionId: string; part: string } | null>(null);
   const [dropAt, setDropAt] = useState<{ sectionId: string; part: string; before: boolean } | null>(null);
+  // hovered group container (or "none" for the leave-group strip) while dragging an item
+  const [dropGroup, setDropGroup] = useState<{ sectionId: string; groupId: string } | null>(null);
   // drag and drop for the text boxes attached to an image
   const [dragText, setDragText] = useState<{ sectionId: string; index: number; ti: number } | null>(null);
   const [dropText, setDropText] = useState<{ sectionId: string; index: number; ti: number; before: boolean } | null>(null);
