@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
+import { objectRegistry } from "@/components/objects/registry";
+import { sectionsFromDom } from "./importCodedObject";
 import ImagePickerDialog from "./ImagePickerDialog";
 import VideoPickerDialog from "./VideoPickerDialog";
 import {
@@ -676,10 +678,18 @@ export default function ObjectDesignPage() {
     [objects, selectedId],
   );
 
+  const codedKey = object?.component_key && objectRegistry[object.component_key] ? object.component_key : null;
+  const codedRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const parsed = parseSections(object?.content);
     if (parsed.length) {
       setSections(parsed);
+      setActiveId("");
+      setPreview(true);
+    } else if (object?.component_key && objectRegistry[object.component_key]) {
+      // Built in code: show it as it is today until the user makes it editable.
+      setSections([]);
       setActiveId("");
       setPreview(true);
     } else {
@@ -691,6 +701,22 @@ export default function ObjectDesignPage() {
     }
     setDirty(false);
   }, [object?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Rebuild the coded object as editable blocks from what it renders today. */
+  const makeCodedEditable = () => {
+    const root = codedRef.current;
+    if (!root) return;
+    const built = sectionsFromDom(root);
+    if (!built.length) {
+      toast.error("Could not read this object's layout. Try adding blocks yourself.");
+      return;
+    }
+    setSections(built);
+    setActiveId(built[0].id);
+    setPreview(false);
+    setDirty(true);
+    toast.success("Ready to edit — save when the layout looks right.");
+  };
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -2895,12 +2921,28 @@ export default function ObjectDesignPage() {
             </div>
           ) : preview ? (
             <div className="border rounded-lg bg-background overflow-hidden">
-              <div className="border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-                This is how the object looks. Switch to Edit to change it.
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+                {!sections.length && codedKey
+                  ? "This object was built in code. Make it editable to change it here."
+                  : "This is how the object looks. Switch to Edit to change it."}
+                {!sections.length && codedKey && (
+                  <Button size="sm" className="gap-2" onClick={makeCodedEditable}>
+                    <Pencil className="w-4 h-4" /> Make editable
+                  </Button>
+                )}
               </div>
               <div className="p-4">
                 {sections.length ? (
                   <SectionFlowList sections={sections} />
+                ) : codedKey ? (
+                  <div ref={codedRef}>
+                    <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-muted" />}>
+                      {(() => {
+                        const C = objectRegistry[codedKey].component as React.ComponentType;
+                        return <C />;
+                      })()}
+                    </Suspense>
+                  </div>
                 ) : (
                   <p className="py-16 text-center text-sm text-muted-foreground">
                     Nothing here yet. Switch to Edit and add a section.
