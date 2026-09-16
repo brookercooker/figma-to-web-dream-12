@@ -2218,6 +2218,52 @@ export default function ObjectDesignPage() {
                 <Plus className="w-4 h-4" /> Add image
               </Button>
             </div>
+            <div className="flex flex-wrap items-end gap-4">
+              <Field label="Shade over image">
+                <div>
+                  <IconSelect
+                    value={eff.imageScrim ?? "none"}
+                    options={IMAGE_SCRIMS.map((o) => ({ value: o.value, label: o.label }))}
+                    onChange={(v) => patchGroup({ imageScrim: v })}
+                  />
+                </div>
+              </Field>
+              {(eff.imageScrim ?? "none") !== "none" && (
+                <Field label="Shade strength (%)">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="h-8 w-20"
+                    value={eff.imageScrimStrength ?? 55}
+                    onChange={(e) => patchGroup({ imageScrimStrength: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })}
+                  />
+                </Field>
+              )}
+              <Field label="Shadow">
+                <div>
+                  <IconSelect
+                    value={eff.imageShadow ?? "none"}
+                    options={IMAGE_SHADOWS.map((o) => ({ value: o.value, label: o.label }))}
+                    onChange={(v) => patchGroup({ imageShadow: v })}
+                  />
+                </div>
+              </Field>
+              {(eff.gallery ?? section.gallery) === "carousel" && (
+                <Field label="Carousel controls">
+                  <div>
+                    <Choice
+                      value={eff.carouselControls === false ? "off" : "on"}
+                      options={[
+                        { value: "on" as const, label: "Show" },
+                        { value: "off" as const, label: "Hide" },
+                      ]}
+                      onChange={(v) => patchGroup({ carouselControls: v === "on" })}
+                    />
+                  </div>
+                </Field>
+              )}
+            </div>
             <Field label="Border around image and text">
               <div>
                 <Choice
