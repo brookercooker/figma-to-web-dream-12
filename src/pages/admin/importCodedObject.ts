@@ -12,6 +12,7 @@ import {
   newSectionId,
   type FreeParagraph,
   type FreeSection,
+  type ImageText,
   type Section,
   type SectionAlign,
   type SectionImage,
