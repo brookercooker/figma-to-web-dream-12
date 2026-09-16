@@ -719,6 +719,14 @@ export interface FreeSection {
   imageBorderRadius?: number;
   imageBorderPad?: number;
   imageBorderStyle?: "solid" | "dashed" | "dotted";
+  /** dark wash over the picture so text on top stays readable */
+  imageScrim?: ImageScrim;
+  /** how strong that wash is (0-100) */
+  imageScrimStrength?: number;
+  /** drop shadow under each picture */
+  imageShadow?: ImageShadow;
+  /** show dots, a counter and a pause button under a carousel */
+  carouselControls?: boolean;
   /** per image-grid overrides, keyed by grid number */
   groupSettings?: Record<string, FreeImageGroupSettings>;
   align: SectionAlign;
