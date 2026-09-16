@@ -112,8 +112,10 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
       continue;
     }
 
-    // Only take leaf text so we don't duplicate wrapper copy.
-    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,span,img,a,button")) continue;
+    // Spans inside a paragraph or heading belong to that text, not their own.
+    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6")) continue;
+    // Skip wrappers that hold other text so copy is not duplicated.
+    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) continue;
     const text = clean(el.textContent);
     if (!text || seenText.has(text)) continue;
     seenText.add(text);
