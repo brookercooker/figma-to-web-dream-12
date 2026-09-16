@@ -1219,6 +1219,35 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
           </button>
         </>
       )}
+      {steps > 1 && section.carouselControls !== false && (
+        <div
+          className="mt-4 flex items-center justify-center gap-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-2">
+            {Array.from({ length: n }).map((_, d) => (
+              <button
+                key={d}
+                type="button"
+                aria-label={`Go to item ${d + 1}`}
+                onClick={(e) => { e.stopPropagation(); setAnim(true); setI(d); }}
+                className={`h-1.5 rounded-full transition-all ${d === ((i % n) + n) % n ? "w-6 bg-ink" : "w-1.5 bg-stone/60 hover:bg-stone"}`}
+              />
+            ))}
+          </div>
+          <span className="text-[11px] uppercase tracking-[0.18em] text-stone">
+            {(((i % n) + n) % n) + 1} of {n}
+          </span>
+          <button
+            type="button"
+            aria-label={playing ? "Pause" : "Play"}
+            onClick={(e) => { e.stopPropagation(); setPlaying((v) => !v); }}
+            className="rounded-full border border-sand p-1.5 text-ink hover:bg-sand/50"
+          >
+            {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
