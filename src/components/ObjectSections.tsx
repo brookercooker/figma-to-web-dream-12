@@ -961,9 +961,9 @@ const bgTextColor: Record<TextColorToken, TextColor> = {
 };
 
 function SectionButton({
-  label, href, variant = "solid", style, bg,
-}: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle; bg?: TextColor }) {
-  const base = "inline-flex items-center justify-center uppercase tracking-[0.18em] transition-colors";
+  label, href, variant = "solid", style, bg, icon, iconSide = "before",
+}: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle; bg?: TextColor; icon?: string; iconSide?: "before" | "after" }) {
+  const base = "inline-flex items-center justify-center gap-2 uppercase tracking-[0.18em] transition-colors";
   const fill = bg ?? "ink";
   const custom = isCustomColor(fill);
   const styles =
