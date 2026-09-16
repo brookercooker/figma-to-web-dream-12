@@ -26,6 +26,10 @@ export interface TextStyle {
   bold?: boolean;
   italic?: boolean;
   underline?: boolean;
+  /** cut the text off after this many lines */
+  lines?: number;
+  /** draw a circle around an icon item */
+  iconRing?: boolean;
 }
 
 export const MIN_TEXT_PX = 10;
@@ -40,6 +44,12 @@ export function textInlineStyle(style: TextStyle | undefined): React.CSSProperti
   const css: React.CSSProperties = {};
   if (style?.sizePx) css.fontSize = `${style.sizePx}px`;
   if (isCustomColor(style?.color)) css.color = style?.color as string;
+  if (style?.lines && style.lines > 0) {
+    css.display = "-webkit-box";
+    (css as Record<string, unknown>).WebkitLineClamp = style.lines;
+    (css as Record<string, unknown>).WebkitBoxOrient = "vertical";
+    css.overflow = "hidden";
+  }
   return Object.keys(css).length ? css : undefined;
 }
 
@@ -180,7 +190,7 @@ export function imageWidthStyle(section: FreeSection): React.CSSProperties | und
 }
 
 /** Extra text boxes (and rules) that sit under an image and scroll with it. */
-export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text" | "divider" | "button";
+export type ImageTextKind = "eyebrow" | "title" | "subheading" | "text" | "divider" | "button" | "icon";
 
 export const IMAGE_TEXT_KINDS: { value: ImageTextKind; label: string }[] = [
   { value: "eyebrow", label: "Eyebrow" },
@@ -189,6 +199,7 @@ export const IMAGE_TEXT_KINDS: { value: ImageTextKind; label: string }[] = [
   { value: "text", label: "Text" },
   { value: "divider", label: "Divider" },
   { value: "button", label: "Button" },
+  { value: "icon", label: "Icon" },
 ];
 
 export interface ImageText {
@@ -218,6 +229,7 @@ export const IMAGE_TEXT_DEFAULTS: Record<
   text: { font: "sans", color: "stone", size: "sm", heading: false },
   divider: { font: "sans", color: "stone", size: "sm", heading: false },
   button: { font: "sans", color: "ink", size: "sm", heading: false },
+  icon: { font: "sans", color: "ink", size: "md", heading: false },
 };
 
 export interface SectionImage {
@@ -232,7 +244,22 @@ export interface SectionImage {
   href?: string;
   /** which image grid inside the block this image belongs to (default 0) */
   group?: number;
+  /** which part of the picture stays in view when it is cropped (CSS object-position) */
+  focus?: string;
 }
+
+/** Where a picture is anchored when it gets cropped. */
+export const IMAGE_FOCUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "center", label: "Center" },
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
+  { value: "left", label: "Left" },
+  { value: "right", label: "Right" },
+  { value: "left top", label: "Top left" },
+  { value: "right top", label: "Top right" },
+  { value: "left bottom", label: "Bottom left" },
+  { value: "right bottom", label: "Bottom right" },
+];
 
 /** Images of a free block split into their grids, keeping original indexes. */
 export function imageGroups(images: SectionImage[]): { key: number; items: { image: SectionImage; index: number }[] }[] {
@@ -264,7 +291,34 @@ export interface FreeImageGroupSettings {
   imageBorderRadius?: number;
   imageBorderPad?: number;
   imageBorderStyle?: "solid" | "dashed" | "dotted";
+  imageScrim?: ImageScrim;
+  imageScrimStrength?: number;
+  imageShadow?: ImageShadow;
+  carouselControls?: boolean;
 }
+
+/** A dark wash over a picture so text on top of it stays readable. */
+export type ImageScrim = "none" | "bottom" | "top" | "full";
+
+export const IMAGE_SCRIMS: { value: ImageScrim; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "bottom", label: "From bottom" },
+  { value: "top", label: "From top" },
+  { value: "full", label: "Even" },
+];
+
+export type ImageShadow = "none" | "sm" | "md" | "lg";
+
+export const IMAGE_SHADOWS: { value: ImageShadow; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "sm", label: "Soft" },
+  { value: "md", label: "Medium" },
+  { value: "lg", label: "Deep" },
+];
+
+export const IMAGE_SHADOW_CLASS: Record<ImageShadow, string> = {
+  none: "", sm: "shadow-md", md: "shadow-xl", lg: "shadow-2xl",
+};
 
 /** CSS color value for a brand token or a custom color. */
 export function textColorCss(c: TextColor): string {
@@ -557,12 +611,13 @@ export interface ButtonSection {
 }
 
 /** Freeform block: a blank space you add text and images to. */
-export type FreeTextKind = "eyebrow" | "title" | "text";
+export type FreeTextKind = "eyebrow" | "title" | "text" | "icon";
 
 export const FREE_TEXT_KINDS: { value: FreeTextKind; label: string }[] = [
   { value: "eyebrow", label: "Eyebrow" },
   { value: "title", label: "Title" },
   { value: "text", label: "Text" },
+  { value: "icon", label: "Icon" },
 ];
 
 export interface FreeParagraph {
@@ -664,6 +719,14 @@ export interface FreeSection {
   imageBorderRadius?: number;
   imageBorderPad?: number;
   imageBorderStyle?: "solid" | "dashed" | "dotted";
+  /** dark wash over the picture so text on top stays readable */
+  imageScrim?: ImageScrim;
+  /** how strong that wash is (0-100) */
+  imageScrimStrength?: number;
+  /** drop shadow under each picture */
+  imageShadow?: ImageShadow;
+  /** show dots, a counter and a pause button under a carousel */
+  carouselControls?: boolean;
   /** per image-grid overrides, keyed by grid number */
   groupSettings?: Record<string, FreeImageGroupSettings>;
   align: SectionAlign;
@@ -757,7 +820,45 @@ export function parseSections(value: unknown): Section[] {
 /* ------------------------------- rendering ------------------------------- */
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft, ChevronRight, Pause, Play,
+  Calendar, Ruler, Compass, Lightbulb, MapPin, Phone, Mail, Clock, Star, Heart,
+  Sparkles, Truck, ShieldCheck, Award, Home, Sofa, PenTool, Palette, Camera,
+  Quote, Check, Leaf,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+/** Icons an author can drop into a block. */
+export const SECTION_ICONS: Record<string, LucideIcon> = {
+  calendar: Calendar, ruler: Ruler, compass: Compass, lightbulb: Lightbulb,
+  mapPin: MapPin, phone: Phone, mail: Mail, clock: Clock, star: Star, heart: Heart,
+  sparkles: Sparkles, truck: Truck, shield: ShieldCheck, award: Award, home: Home,
+  sofa: Sofa, pen: PenTool, palette: Palette, camera: Camera, quote: Quote,
+  check: Check, leaf: Leaf,
+};
+
+export const SECTION_ICON_NAMES = Object.keys(SECTION_ICONS);
+
+/** An icon item: the stored text is the icon name. */
+export function SectionIcon({
+  name, style, fallbackColor,
+}: { name: string; style?: TextStyle; fallbackColor?: TextColor }) {
+  const Icon = SECTION_ICONS[name?.trim()] ?? SECTION_ICONS.sparkles;
+  const size = style?.sizePx ?? 28;
+  const color = textColorCss(style?.color ?? fallbackColor ?? "ink");
+  if (style?.iconRing) {
+    const box = size * 2.2;
+    return (
+      <span
+        className="inline-flex items-center justify-center rounded-full border"
+        style={{ width: box, height: box, borderColor: color }}
+      >
+        <Icon style={{ width: size, height: size, color }} strokeWidth={1.4} />
+      </span>
+    );
+  }
+  return <Icon style={{ width: size, height: size, color }} strokeWidth={1.4} />;
+}
 
 const alignText: Record<SectionAlign, string> = {
   left: "text-left items-start",
@@ -800,18 +901,39 @@ function Placeholder({ className = "" }: { className?: string }) {
   );
 }
 
-function Pic({ image, className }: { image: SectionImage; className: string }) {
+/** The dark wash drawn over a picture, when one is set. */
+function scrimStyle(scrim: ImageScrim | undefined, strength = 55): React.CSSProperties | null {
+  if (!scrim || scrim === "none") return null;
+  const a = Math.min(100, Math.max(0, strength)) / 100;
+  if (scrim === "full") return { backgroundColor: `rgba(33,33,33,${a})` };
+  const dir = scrim === "bottom" ? "to top" : "to bottom";
+  return {
+    backgroundImage: `linear-gradient(${dir}, rgba(33,33,33,${a}) 0%, rgba(33,33,33,${a * 0.35}) 45%, rgba(33,33,33,0) 100%)`,
+  };
+}
+
+function Pic({
+  image, className, scrim, scrimStrength, shadow,
+}: {
+  image: SectionImage; className: string;
+  scrim?: ImageScrim; scrimStrength?: number; shadow?: ImageShadow;
+}) {
   if (!image?.url) return <Placeholder className={className} />;
   const href = image.href?.trim();
+  const wash = scrimStyle(scrim, scrimStrength);
   const inner = (
-    <img
-      src={image.url}
-      alt={image.alt || ""}
-      loading="lazy"
-      className="block h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]"
-    />
+    <>
+      <img
+        src={image.url}
+        alt={image.alt || ""}
+        loading="lazy"
+        style={image.focus ? { objectPosition: image.focus } : undefined}
+        className="block h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]"
+      />
+      {wash ? <span aria-hidden className="pointer-events-none absolute inset-0" style={wash} /> : null}
+    </>
   );
-  const box = `${className} group/pic overflow-hidden`;
+  const box = `${className} group/pic relative overflow-hidden ${shadow && shadow !== "none" ? IMAGE_SHADOW_CLASS[shadow] : ""}`;
   if (href) {
     const external = /^(https?:)?\/\//i.test(href);
     return (
@@ -944,7 +1066,13 @@ function FreeFigureBody({
       style={{ ...(bordered ? imageBorderStyleOf(section) : {}), ...(imageWidthStyle(section) ?? {}) }}
     >
       <div data-part={`image:${index}`} style={imageBoxStyle(section)}>
-        <Pic image={image} className={`w-full rounded-lg ${imageBoxClass(section)} ${section.imageHeightPx ? "h-full" : ""}`} />
+        <Pic
+          image={image}
+          className={`w-full rounded-lg ${imageBoxClass(section)} ${section.imageHeightPx ? "h-full" : ""}`}
+          scrim={section.imageScrim}
+          scrimStrength={section.imageScrimStrength}
+          shadow={section.imageShadow}
+        />
       </div>
       {image.caption ? (
         <figcaption
@@ -967,6 +1095,13 @@ function FreeFigureBody({
                 align={t.align ?? image.captionAlign ?? blockAlign}
                 onDark={onDark}
               />
+            </div>
+          );
+        }
+        if (t.kind === "icon") {
+          return (
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
+              <SectionIcon name={t.text} style={t.style} fallbackColor={onDark ? "cream" : "ink"} />
             </div>
           );
         }
@@ -1038,11 +1173,13 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, n, loop]);
 
+  const [playing, setPlaying] = useState(true);
+
   useEffect(() => {
-    if (steps < 2) return;
+    if (steps < 2 || !playing) return;
     const t = setInterval(() => { nextRef.current(); }, 5000);
     return () => clearInterval(t);
-  }, [steps]);
+  }, [steps, playing]);
 
   const nextRef = useRef(next);
   nextRef.current = next;
@@ -1081,6 +1218,35 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
             <ChevronRight className="h-5 w-5 text-ink" />
           </button>
         </>
+      )}
+      {steps > 1 && section.carouselControls !== false && (
+        <div
+          className="mt-4 flex items-center justify-center gap-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-center gap-2">
+            {Array.from({ length: n }).map((_, d) => (
+              <button
+                key={d}
+                type="button"
+                aria-label={`Go to item ${d + 1}`}
+                onClick={(e) => { e.stopPropagation(); setAnim(true); setI(d); }}
+                className={`h-1.5 rounded-full transition-all ${d === ((i % n) + n) % n ? "w-6 bg-ink" : "w-1.5 bg-stone/60 hover:bg-stone"}`}
+              />
+            ))}
+          </div>
+          <span className="text-[11px] uppercase tracking-[0.18em] text-stone">
+            {(((i % n) + n) % n) + 1} of {n}
+          </span>
+          <button
+            type="button"
+            aria-label={playing ? "Pause" : "Play"}
+            onClick={(e) => { e.stopPropagation(); setPlaying((v) => !v); }}
+            className="rounded-full border border-sand p-1.5 text-ink hover:bg-sand/50"
+          >
+            {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -1277,6 +1443,14 @@ function FreeText({
       ) });
       return;
     }
+    if (kind === "icon") {
+      items.push({ part, node: (
+        <div data-part={part}>
+          <SectionIcon name={t.text} style={t.style} fallbackColor={onDark ? "cream" : "ink"} />
+        </div>
+      ) });
+      return;
+    }
     if (kind === "eyebrow") {
       const es = withEyebrowDefaults(t.style);
       items.push({ part, node: (
@@ -1395,6 +1569,13 @@ function OverlayImageTexts({
             </div>
           );
         }
+        if (t.kind === "icon") {
+          return (
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
+              <SectionIcon name={t.text} style={t.style} fallbackColor="cream" />
+            </div>
+          );
+        }
         if (t.kind === "button") {
           return (
             <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
@@ -1436,9 +1617,14 @@ function FreeView({ section }: { section: FreeSection }) {
               className={`group/pic relative basis-0 grow min-w-0 overflow-hidden rounded-lg ${overlayHeight[section.height]}`}
             >
               <div data-part={`image:${i}`} className="absolute inset-0">
-                <Pic image={img} className="absolute inset-0 h-full w-full" />
+                <Pic
+                  image={img}
+                  className="absolute inset-0 h-full w-full"
+                  scrim={section.imageScrim}
+                  scrimStrength={section.imageScrimStrength}
+                />
               </div>
-              <div className="absolute inset-0 bg-ink/35" />
+              {(section.imageScrim ?? "none") === "none" ? <div className="absolute inset-0 bg-ink/35" /> : null}
               <div className={`relative flex h-full flex-col ${OVERLAY_VALIGN_CLASS[section.overlayVAlign ?? "middle"]} px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
                 {i === 0 ? <FreeText section={section} onDark /> : null}
                 <OverlayImageTexts section={section} image={img} index={i} />

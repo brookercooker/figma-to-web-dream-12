@@ -12,6 +12,7 @@ import {
   LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
   Video as VideoIcon, Minus, Link as LinkIcon, Copy, PanelLeftClose, PanelLeftOpen,
   AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, Baseline,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
@@ -23,7 +24,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
+  BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type RowVAlign, type ImageHeight,
   type TextColor, type TextFont, type TextSize, type TextStyle,
@@ -37,6 +38,7 @@ const IMAGE_TEXT_ICONS: Record<ImageTextKind, LucideIcon> = {
   text: AlignLeft,
   divider: Minus,
   button: MousePointerClick,
+  icon: Sparkles,
 };
 
 /**
@@ -258,6 +260,82 @@ function TextStyleFields({
             value={style.color ?? defaults.color}
             onChange={(v) => set({ color: v })}
           />
+        </Field>
+        {!colorOnly && (
+          <Field label="Max lines">
+            <Input
+              className="w-20"
+              type="number"
+              min={0}
+              placeholder="All"
+              value={style.lines ?? ""}
+              onChange={(e) => {
+                const raw = e.target.value.trim();
+                const n = Number(raw);
+                set({ lines: raw === "" || !Number.isFinite(n) || n <= 0 ? undefined : n });
+              }}
+            />
+          </Field>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Pick a symbol, its size, and whether it sits inside a circle. */
+function IconPicker({
+  value, style, onPick, onStyle,
+}: {
+  value: string;
+  style: TextStyle | undefined;
+  onPick: (name: string) => void;
+  onStyle: (next: TextStyle) => void;
+}) {
+  const current = (value || "sparkles").trim();
+  const s = style ?? {};
+  return (
+    <div className="rounded-md border p-3 space-y-3">
+      <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Symbol</p>
+      <div className="grid grid-cols-8 gap-1">
+        {SECTION_ICON_NAMES.map((name) => {
+          const Icon = SECTION_ICONS[name];
+          return (
+            <button
+              key={name}
+              type="button"
+              title={name}
+              aria-label={name}
+              onClick={() => onPick(name)}
+              className={`flex h-8 items-center justify-center rounded border ${name === current ? "border-primary bg-accent" : "border-transparent hover:bg-muted"}`}
+            >
+              <Icon className="h-4 w-4" />
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-end gap-4">
+        <Field label="Size">
+          <Input
+            className="w-20"
+            type="number"
+            placeholder="28"
+            value={s.sizePx ?? ""}
+            onChange={(e) => {
+              const raw = e.target.value.trim();
+              const n = Number(raw);
+              onStyle({ ...s, sizePx: raw === "" || !Number.isFinite(n) ? undefined : n });
+            }}
+          />
+        </Field>
+        <Field label="Circle">
+          <Button
+            type="button"
+            variant={s.iconRing ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => onStyle({ ...s, iconRing: s.iconRing ? undefined : true })}
+          >
+            {s.iconRing ? "On" : "Off"}
+          </Button>
         </Field>
       </div>
     </div>
@@ -1005,7 +1083,7 @@ export default function ObjectDesignPage() {
     setVideoPicker({ sectionId: id, index: newIndex });
   };
 
-  type AddKind = "eyebrow" | "title" | "text" | "image" | "video" | "divider" | "button";
+  type AddKind = "eyebrow" | "title" | "text" | "icon" | "image" | "video" | "divider" | "button";
 
   /** Add an element to a section (defaults to the active or last free section). */
   const addElement = (kind: AddKind, sectionId?: string) => {
@@ -1046,6 +1124,12 @@ export default function ObjectDesignPage() {
       }
       return;
     }
+    if (kind === "icon") {
+      const id = newSectionId();
+      patch(s.id, { extras: [...(s.extras ?? []), { id, text: "sparkles", kind: "icon" as const }] });
+      openBlock(id);
+      return;
+    }
     if (kind === "title") {
       if (s.heading === undefined) {
         patch(s.id, { heading: "A quiet statement" });
@@ -1071,6 +1155,7 @@ export default function ObjectDesignPage() {
     { kind: "eyebrow", label: "Eyebrow", icon: Tag },
     { kind: "title", label: "Title", icon: Heading },
     { kind: "text", label: "Text", icon: AlignLeft },
+    { kind: "icon", label: "Icon", icon: Sparkles },
     { kind: "image", label: "Image", icon: ImageIcon },
     { kind: "video", label: "Video", icon: VideoIcon },
     { kind: "divider", label: "Divider", icon: Minus },
@@ -1262,6 +1347,17 @@ export default function ObjectDesignPage() {
               onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
             />
           )}
+          <Field label="Keep in view when cropped">
+            <select
+              className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+              value={image.focus ?? "center"}
+              onChange={(e) => patchImage(section.id, index, { focus: e.target.value })}
+            >
+              {IMAGE_FOCUS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </Field>
         </>
       )}
       {showCaption && imgOpen && (
@@ -1503,6 +1599,35 @@ export default function ObjectDesignPage() {
                           size: IMAGE_TEXT_DEFAULTS.button.size,
                         }}
                         onChange={(v) => patchImageText(section.id, index, ti, { style: v })}
+                      />
+                    </>
+                  ) : t.kind === "icon" ? (
+                    <>
+                      <IconPicker
+                        value={t.text}
+                        style={t.style}
+                        onPick={(name) => patchImageText(section.id, index, ti, { text: name })}
+                        onStyle={(v) => patchImageText(section.id, index, ti, { style: v })}
+                      />
+                      <Choice
+                        value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
+                        options={[
+                          { value: "left" as const, label: "Left", icon: AlignLeft },
+                          { value: "center" as const, label: "Center", icon: AlignCenter },
+                          { value: "right" as const, label: "Right", icon: AlignRight },
+                        ]}
+                        onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
+                      />
+                      <TextStyleFields
+                        label="Symbol color"
+                        value={t.style}
+                        defaults={{
+                          font: IMAGE_TEXT_DEFAULTS.icon.font,
+                          color: IMAGE_TEXT_DEFAULTS.icon.color,
+                          size: IMAGE_TEXT_DEFAULTS.icon.size,
+                        }}
+                        onChange={(v) => patchImageText(section.id, index, ti, { style: v })}
+                        colorOnly
                       />
                     </>
                   ) : (
@@ -1949,18 +2074,28 @@ export default function ObjectDesignPage() {
                     ))}
                   </select>
                 </Field>
-                <Field label={kindLabel}>
-                  <Textarea
-                    rows={kind === "text" ? 4 : 2}
+                {kind === "icon" ? (
+                  <IconPicker
                     value={t.text}
-                    onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                    style={t.style}
+                    onPick={(name) => patchExtra(section.id, i, { text: name })}
+                    onStyle={(v) => patchExtra(section.id, i, { style: v })}
                   />
-                </Field>
+                ) : (
+                  <Field label={kindLabel}>
+                    <Textarea
+                      rows={kind === "text" ? 4 : 2}
+                      value={t.text}
+                      onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                    />
+                  </Field>
+                )}
                 <TextStyleFields
                   label={`${kindLabel} style`}
                   value={kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style}
                   defaults={kindDefaults}
                   onChange={(v) => patchExtra(section.id, i, { style: v })}
+                  colorOnly={kind === "icon"}
                 />
               </>
             ),
@@ -2067,6 +2202,10 @@ export default function ObjectDesignPage() {
         imageBorderStyle: own.imageBorderStyle ?? section.imageBorderStyle,
         imageBorderRadius: own.imageBorderRadius ?? section.imageBorderRadius,
         imageBorderPad: own.imageBorderPad ?? section.imageBorderPad,
+        imageScrim: own.imageScrim ?? section.imageScrim,
+        imageScrimStrength: own.imageScrimStrength ?? section.imageScrimStrength,
+        imageShadow: own.imageShadow ?? section.imageShadow,
+        carouselControls: own.carouselControls ?? section.carouselControls,
       };
       const patchGroup = (v: Partial<typeof eff>) =>
         patch(section.id, {
@@ -2089,6 +2228,52 @@ export default function ObjectDesignPage() {
               <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id, groupKey)}>
                 <Plus className="w-4 h-4" /> Add image
               </Button>
+            </div>
+            <div className="flex flex-wrap items-end gap-4">
+              <Field label="Shade over image">
+                <div>
+                  <IconSelect
+                    value={eff.imageScrim ?? "none"}
+                    options={IMAGE_SCRIMS.map((o) => ({ value: o.value, label: o.label }))}
+                    onChange={(v) => patchGroup({ imageScrim: v })}
+                  />
+                </div>
+              </Field>
+              {(eff.imageScrim ?? "none") !== "none" && (
+                <Field label="Shade strength (%)">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="h-8 w-20"
+                    value={eff.imageScrimStrength ?? 55}
+                    onChange={(e) => patchGroup({ imageScrimStrength: Math.min(100, Math.max(0, Number(e.target.value) || 0)) })}
+                  />
+                </Field>
+              )}
+              <Field label="Shadow">
+                <div>
+                  <IconSelect
+                    value={eff.imageShadow ?? "none"}
+                    options={IMAGE_SHADOWS.map((o) => ({ value: o.value, label: o.label }))}
+                    onChange={(v) => patchGroup({ imageShadow: v })}
+                  />
+                </div>
+              </Field>
+              {(eff.gallery ?? section.gallery) === "carousel" && (
+                <Field label="Carousel controls">
+                  <div>
+                    <Choice
+                      value={eff.carouselControls === false ? "off" : "on"}
+                      options={[
+                        { value: "on" as const, label: "Show" },
+                        { value: "off" as const, label: "Hide" },
+                      ]}
+                      onChange={(v) => patchGroup({ carouselControls: v === "on" })}
+                    />
+                  </div>
+                </Field>
+              )}
             </div>
             <Field label="Border around image and text">
               <div>
