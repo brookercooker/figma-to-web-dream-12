@@ -205,14 +205,11 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   const order: string[] = [];
   const extras: FreeParagraph[] = [];
   const images: SectionImage[] = [];
-  const flows: Record<string, "inline" | "separate"> = {};
-  const flowWidths: Record<string, number> = {};
+  const textBoxes: { part: string; box: Box }[] = [];
+  const imageBoxes: Box[] = [];
 
   const keepFlow = (part: string, el: HTMLElement) => {
-    const f = flowOf(el, node);
-    if (f.flow !== "inline") return;
-    flows[part] = "inline";
-    if (f.width) flowWidths[part] = f.width;
+    textBoxes.push({ part, box: boxOf(el) });
   };
 
   const candidates = [
