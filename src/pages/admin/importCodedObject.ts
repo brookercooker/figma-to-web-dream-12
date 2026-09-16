@@ -158,6 +158,15 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   const order: string[] = [];
   const extras: FreeParagraph[] = [];
   const images: SectionImage[] = [];
+  const flows: Record<string, "inline" | "separate"> = {};
+  const flowWidths: Record<string, number> = {};
+
+  const keepFlow = (part: string, el: HTMLElement) => {
+    const f = flowOf(el, node);
+    if (f.flow !== "inline") return;
+    flows[part] = "inline";
+    if (f.width) flowWidths[part] = f.width;
+  };
 
   const candidates = [
     ...node.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6,p,span,img,a,button"),
