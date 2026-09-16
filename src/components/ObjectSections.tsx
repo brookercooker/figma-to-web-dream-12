@@ -1098,6 +1098,13 @@ function FreeFigureBody({
             </div>
           );
         }
+        if (t.kind === "icon") {
+          return (
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
+              <SectionIcon name={t.text} style={t.style} fallbackColor={onDark ? "cream" : "ink"} />
+            </div>
+          );
+        }
         if (t.kind === "button") {
           return (
             <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
