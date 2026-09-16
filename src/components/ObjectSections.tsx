@@ -244,7 +244,22 @@ export interface SectionImage {
   href?: string;
   /** which image grid inside the block this image belongs to (default 0) */
   group?: number;
+  /** which part of the picture stays in view when it is cropped (CSS object-position) */
+  focus?: string;
 }
+
+/** Where a picture is anchored when it gets cropped. */
+export const IMAGE_FOCUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "center", label: "Center" },
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
+  { value: "left", label: "Left" },
+  { value: "right", label: "Right" },
+  { value: "left top", label: "Top left" },
+  { value: "right top", label: "Top right" },
+  { value: "left bottom", label: "Bottom left" },
+  { value: "right bottom", label: "Bottom right" },
+];
 
 /** Images of a free block split into their grids, keeping original indexes. */
 export function imageGroups(images: SectionImage[]): { key: number; items: { image: SectionImage; index: number }[] }[] {
