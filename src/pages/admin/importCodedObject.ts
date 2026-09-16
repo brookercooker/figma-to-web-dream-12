@@ -155,8 +155,13 @@ function inlineRows(
     else rows.push([item]);
   }
 
+  // A column holding several stacked texts can't be represented inline, so we
+  // only keep side-by-side items that stand alone in their column.
+  const alone = (item: { part: string; box: Box }) =>
+    !parts.some((o) => o.part !== item.part && hOverlap(o.box, item.box) > 0.5);
+
   for (const row of rows) {
-    if (row.length < 2) continue;
+    if (row.length < 2 || !row.every(alone)) continue;
     for (const { part, box } of row) {
       flows[part] = "inline";
       const pct = nodeWidth ? Math.round((box.width / nodeWidth) * 100) : 0;
@@ -297,11 +302,14 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   if (Object.keys(widths).length) base.flowWidths = widths;
 
   // Images that sat in their own column beside the copy keep that arrangement.
-  const textUnion = unionBox(textBoxes.map((t) => t.box));
   const imageUnion = unionBox(imageBoxes);
-  if (textUnion && imageUnion && vOverlap(textUnion, imageUnion) > 0.4 && hOverlap(textUnion, imageUnion) < 0.2) {
-    base.layout = "beside";
-    base.imageSide = imageUnion.left < textUnion.left ? "left" : "right";
+  if (imageUnion) {
+    const beside = textBoxes.filter((t) => vOverlap(t.box, imageUnion) > 0.3).map((t) => t.box);
+    const besideUnion = unionBox(beside);
+    if (besideUnion && hOverlap(besideUnion, imageUnion) < 0.2) {
+      base.layout = "beside";
+      base.imageSide = imageUnion.left < besideUnion.left ? "left" : "right";
+    }
   }
 
   const bg = backgroundOf(node);
