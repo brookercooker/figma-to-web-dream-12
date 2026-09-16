@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
-  type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
+  type FreeBox, type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type RowVAlign, type ImageHeight,
   type TextColor, type TextFont, type TextSize, type TextStyle,
 } from "@/components/ObjectSections";
@@ -1771,6 +1771,84 @@ export default function ObjectDesignPage() {
   );
 
   /** Inline / separate control for one element inside a block. */
+  /** Put an item into a shared box, and style that box. */
+  const setBoxes = (section: FreeSection, boxes: FreeBox[]) =>
+    patch(section.id, { boxes: boxes.filter((b) => b.parts.length) });
+
+  const assignBox = (section: FreeSection, part: string, boxId: string) => {
+    const boxes = (section.boxes ?? []).map((b) => ({ ...b, parts: b.parts.filter((p) => p !== part) }));
+    if (boxId === "none") { setBoxes(section, boxes); return; }
+    if (boxId === "new") {
+      setBoxes(section, [...boxes, { id: newSectionId(), parts: [part], border: "sand", bg: undefined }]);
+      return;
+    }
+    setBoxes(section, boxes.map((b) => (b.id === boxId ? { ...b, parts: [...b.parts, part] } : b)));
+  };
+
+  const patchBox = (section: FreeSection, boxId: string, next: Partial<FreeBox>) =>
+    setBoxes(section, (section.boxes ?? []).map((b) => (b.id === boxId ? { ...b, ...next } : b)));
+
+  const boxField = (section: FreeSection, part: string) => {
+    const boxes = section.boxes ?? [];
+    const mine = boxes.find((b) => b.parts?.includes(part));
+    const numberOf = (b: FreeBox) => boxes.findIndex((x) => x.id === b.id) + 1;
+    return (
+      <div className="flex w-full flex-wrap items-center gap-3 border-t pt-3">
+        <span className="text-xs text-muted-foreground">Box</span>
+        <select
+          className="h-8 rounded-md border bg-background px-2 text-xs"
+          value={mine?.id ?? "none"}
+          onChange={(e) => assignBox(section, part, e.target.value)}
+        >
+          <option value="none">None</option>
+          {boxes.map((b) => (
+            <option key={b.id} value={b.id}>{`Box ${numberOf(b)}`}</option>
+          ))}
+          <option value="new">New box…</option>
+        </select>
+        {mine ? (
+          <>
+            <ColorDropdown
+              label="Fill"
+              value={mine.bg ?? ""}
+              fallback="None"
+              options={[{ value: "", label: "None", swatch: "transparent" }, ...TEXT_COLORS]}
+              onChange={(v) => patchBox(section, mine.id, { bg: (v || undefined) as TextColor | undefined })}
+            />
+            <ColorDropdown
+              label="Outline"
+              value={mine.border ?? ""}
+              fallback="None"
+              options={[{ value: "", label: "None", swatch: "transparent" }, ...TEXT_COLORS]}
+              onChange={(v) => patchBox(section, mine.id, { border: (v || undefined) as TextColor | undefined })}
+            />
+            {([
+              { key: "borderWidth" as const, short: "Line", ph: "1" },
+              { key: "radius" as const, short: "Corner", ph: "8" },
+              { key: "padY" as const, short: "V", ph: "24" },
+              { key: "padX" as const, short: "H", ph: "24" },
+            ]).map((o) => (
+              <label key={o.key} className="flex items-center gap-1 text-xs text-muted-foreground">
+                {o.short}
+                <Input
+                  type="number"
+                  className="h-8 w-16"
+                  placeholder={o.ph}
+                  value={mine[o.key] ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    const n = Number(raw);
+                    patchBox(section, mine.id, { [o.key]: raw === "" || !Number.isFinite(n) ? undefined : n });
+                  }}
+                />
+              </label>
+            ))}
+          </>
+        ) : null}
+      </div>
+    );
+  };
+
   const flowField = (section: FreeSection, part: string) => {
     const flow = (section.flows?.[part] ?? "separate") as SectionFlow;
     return (
@@ -1822,6 +1900,7 @@ export default function ObjectDesignPage() {
               onChange={(v) => patch(section.id, { flowAligns: { ...(section.flowAligns ?? {}), [part]: v } })}
             />
           )}
+          {boxField(section, part)}
           {([
             { key: "padsY" as const, label: "Space above and below (px)", short: "V" },
             { key: "padsX" as const, label: "Space left and right (px)", short: "H" },

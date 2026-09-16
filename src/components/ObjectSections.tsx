@@ -825,7 +825,7 @@ export function parseSections(value: unknown): Section[] {
 
 /* ------------------------------- rendering ------------------------------- */
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   ChevronLeft, ChevronRight, Pause, Play,
   Calendar, Ruler, Compass, Lightbulb, MapPin, Phone, Mail, Clock, Star, Heart,
@@ -1615,7 +1615,7 @@ function FreeText({
             {chunk.groups.map(renderGroup)}
           </div>
         ) : (
-          <React.Fragment key={`chunk-${ci}`}>{chunk.groups.map(renderGroup)}</React.Fragment>
+          <Fragment key={`chunk-${ci}`}>{chunk.groups.map(renderGroup)}</Fragment>
         )
       )}
     </div>
