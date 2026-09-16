@@ -1007,7 +1007,7 @@ export default function ObjectDesignPage() {
     setVideoPicker({ sectionId: id, index: newIndex });
   };
 
-  type AddKind = "eyebrow" | "title" | "text" | "image" | "video" | "divider" | "button";
+  type AddKind = "eyebrow" | "title" | "text" | "icon" | "image" | "video" | "divider" | "button";
 
   /** Add an element to a section (defaults to the active or last free section). */
   const addElement = (kind: AddKind, sectionId?: string) => {
