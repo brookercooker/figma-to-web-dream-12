@@ -829,7 +829,7 @@ import {
   Calendar, Ruler, Compass, Lightbulb, MapPin, Phone, Mail, Clock, Star, Heart,
   Sparkles, Truck, ShieldCheck, Award, Home, Sofa, PenTool, Palette, Camera,
   Quote, Check, Leaf,
-  ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, ChevronRight, ChevronLeft, MoveRight,
+  ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, MoveRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
