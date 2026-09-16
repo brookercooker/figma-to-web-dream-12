@@ -7,11 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
-  AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil,
+  AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
 } from "lucide-react";
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
-import { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type TextBlock } from "@/components/PageBlocks";
+import ObjectPickerDialog from "./ObjectPickerDialog";
+import { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock } from "@/components/PageBlocks";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string }
 
@@ -48,6 +49,8 @@ export default function DesignTab() {
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
+  // block id waiting for an object choice, or "new" when adding one
+  const [objectFor, setObjectFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [showLive, setShowLive] = useState(true);
 
@@ -213,6 +216,9 @@ export default function DesignTab() {
               <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image")}>
                 <ImageIcon className="w-4 h-4" /> Image
               </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
+                <Boxes className="w-4 h-4" /> Object
+              </Button>
               <Button size="sm" className="gap-2" onClick={save} disabled={saving || !dirty}>
                 <Save className="w-4 h-4" /> {saving ? "Saving…" : dirty ? "Save" : "Saved"}
               </Button>
@@ -258,7 +264,16 @@ export default function DesignTab() {
                     >
                       {active && (
                         <div className="sticky top-16 z-10 -mx-3 mb-2 flex flex-wrap items-center gap-1 border-b bg-background/95 px-3 py-2 backdrop-blur">
-                          {b.type !== "image" ? (
+                          {b.type === "object" ? (
+                            <>
+                              <span className="px-1 text-xs text-muted-foreground">
+                                Object: {b.name ?? "Saved object"} — edits made in Objects show up here
+                              </span>
+                              <ToolButton title="Swap object" onClick={() => setObjectFor(b.id)}>
+                                <Boxes className="w-4 h-4" />
+                              </ToolButton>
+                            </>
+                          ) : b.type !== "image" ? (
                             <>
                               <ToolButton
                                 title={b.type === "heading" ? "Turn into text" : "Turn into heading"}
@@ -306,7 +321,13 @@ export default function DesignTab() {
                         </div>
                       )}
 
-                      {b.type === "image" ? (
+                      {b.type === "object" ? (
+                        <div className="py-2">
+                          <div className="pointer-events-none">
+                            <BlockView block={b} />
+                          </div>
+                        </div>
+                      ) : b.type === "image" ? (
                         <div className="py-2">
                           {b.url ? (
                             <BlockView block={b} />
@@ -351,6 +372,22 @@ export default function DesignTab() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreated={async (p) => { await load(); select(p.id); }}
+      />
+      <ObjectPickerDialog
+        open={!!objectFor}
+        onOpenChange={(v) => { if (!v) setObjectFor(null); }}
+        onPick={({ id, name }) => {
+          if (objectFor === "new") {
+            const block: ObjectBlock = { id: newId(), type: "object", objectId: id, name, align: "left" };
+            setBlocks((prev) => [...prev, block]);
+            setActiveId(block.id);
+            setShowLive(false);
+          } else if (objectFor) {
+            update(objectFor, { objectId: id, name } as Partial<Block>);
+          }
+          setDirty(true);
+          setObjectFor(null);
+        }}
       />
       <ImagePickerDialog
         open={!!pickerFor}
