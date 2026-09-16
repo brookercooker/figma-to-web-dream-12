@@ -829,6 +829,7 @@ import {
   Calendar, Ruler, Compass, Lightbulb, MapPin, Phone, Mail, Clock, Star, Heart,
   Sparkles, Truck, ShieldCheck, Award, Home, Sofa, PenTool, Palette, Camera,
   Quote, Check, Leaf,
+  ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, ChevronRight, ChevronLeft, MoveRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -839,6 +840,8 @@ export const SECTION_ICONS: Record<string, LucideIcon> = {
   sparkles: Sparkles, truck: Truck, shield: ShieldCheck, award: Award, home: Home,
   sofa: Sofa, pen: PenTool, palette: Palette, camera: Camera, quote: Quote,
   check: Check, leaf: Leaf,
+  arrowRight: ArrowRight, arrowLeft: ArrowLeft, arrowUp: ArrowUp, arrowDown: ArrowDown,
+  arrowUpRight: ArrowUpRight, chevronRight: ChevronRight, chevronLeft: ChevronLeft, longArrow: MoveRight,
 };
 
 export const SECTION_ICON_NAMES = Object.keys(SECTION_ICONS);
