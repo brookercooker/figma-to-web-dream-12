@@ -156,30 +156,6 @@ function inlineRows(
     else rows.push([item]);
   }
 
-  const setInline = (row: { part: string; box: Box }[]) => {
-    for (const { part, box } of row) {
-      flows[part] = "inline";
-      const pct = nodeWidth ? Math.round((box.width / nodeWidth) * 100) : 0;
-      if (pct) widths[part] = Math.max(10, Math.min(100, pct));
-    }
-  };
-
-  // A grid (equal rows whose columns line up) keeps its shape: every cell goes
-  // inline at its width share, so the items wrap back into the same grid.
-  const ordered = rows
-    .map((r) => [...r].sort((a, b) => a.box.left - b.box.left))
-    .sort((a, b) => a[0].box.top - b[0].box.top);
-  const cols = ordered[0]?.length ?? 0;
-  const isGrid =
-    ordered.length > 1 &&
-    cols > 1 &&
-    ordered.every((r) => r.length === cols) &&
-    ordered.every((r) => r.every((cell, i) => hOverlap(cell.box, ordered[0][i].box) > 0.5));
-  if (isGrid) {
-    ordered.forEach(setInline);
-    return { flows, widths };
-  }
-
   // A column holding several stacked texts can't be represented inline, so we
   // only keep side-by-side items that stand alone in their column.
   const alone = (item: { part: string; box: Box }) =>
@@ -187,9 +163,12 @@ function inlineRows(
 
   for (const row of rows) {
     if (row.length < 2 || !row.every(alone)) continue;
-    setInline(row);
+    for (const { part, box } of row) {
+      flows[part] = "inline";
+      const pct = nodeWidth ? Math.round((box.width / nodeWidth) * 100) : 0;
+      if (pct) widths[part] = Math.max(10, Math.min(100, pct));
+    }
   }
-
   return { flows, widths };
 }
 
