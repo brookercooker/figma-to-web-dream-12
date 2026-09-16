@@ -315,7 +315,13 @@ export default function DesignTab() {
                         </div>
                       )}
 
-                      {b.type === "image" ? (
+                      {b.type === "object" ? (
+                        <div className="py-2">
+                          <div className="pointer-events-none">
+                            <BlockView block={b} />
+                          </div>
+                        </div>
+                      ) : b.type === "image" ? (
                         <div className="py-2">
                           {b.url ? (
                             <BlockView block={b} />
