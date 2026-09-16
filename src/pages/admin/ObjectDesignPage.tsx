@@ -1794,7 +1794,7 @@ export default function ObjectDesignPage() {
     const numberOf = (b: FreeBox) => boxes.findIndex((x) => x.id === b.id) + 1;
     return (
       <div className="flex w-full flex-wrap items-center gap-3 border-t pt-3">
-        <span className="text-xs text-muted-foreground">Box</span>
+        <span className="text-xs text-muted-foreground">Group</span>
         <select
           className="h-8 rounded-md border bg-background px-2 text-xs"
           value={mine?.id ?? "none"}
@@ -1802,9 +1802,9 @@ export default function ObjectDesignPage() {
         >
           <option value="none">None</option>
           {boxes.map((b) => (
-            <option key={b.id} value={b.id}>{`Box ${numberOf(b)}`}</option>
+            <option key={b.id} value={b.id}>{`Group ${numberOf(b)}`}</option>
           ))}
-          <option value="new">New box…</option>
+          <option value="new">New group…</option>
         </select>
         {mine ? (
           <>
