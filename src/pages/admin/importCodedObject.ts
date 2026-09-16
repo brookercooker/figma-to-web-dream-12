@@ -289,8 +289,20 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   base.extras = extras;
   base.order = order;
   base.captionAlign = base.align;
+
+  const nodeWidth = node.getBoundingClientRect().width;
+  const { flows, widths } = inlineRows(textBoxes, nodeWidth);
   if (Object.keys(flows).length) base.flows = flows;
-  if (Object.keys(flowWidths).length) base.flowWidths = flowWidths;
+  if (Object.keys(widths).length) base.flowWidths = widths;
+
+  // Images that sat in their own column beside the copy keep that arrangement.
+  const textUnion = unionBox(textBoxes.map((t) => t.box));
+  const imageUnion = unionBox(imageBoxes);
+  if (textUnion && imageUnion && vOverlap(textUnion, imageUnion) > 0.4 && hOverlap(textUnion, imageUnion) < 0.2) {
+    base.layout = "beside";
+    base.imageSide = imageUnion.left < textUnion.left ? "left" : "right";
+  }
+
   const bg = backgroundOf(node);
   if (bg) base.bg = bg;
 
