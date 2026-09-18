@@ -625,6 +625,7 @@ function FloatingToolbar({
 function BlockCanvas({
   section,
   showHandles,
+  activePart,
   onResize,
   onClick,
   onDoubleClick,
@@ -632,6 +633,7 @@ function BlockCanvas({
 }: {
   section: Section;
   showHandles: boolean;
+  activePart: string;
   onResize: (groupKey: number, size: { imageHeightPx?: number; imageWidthPx?: number }) => void;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick: (e: React.MouseEvent) => void;
@@ -647,7 +649,7 @@ function BlockCanvas({
     >
       {children}
       {showHandles && section.type === "free" && (
-        <ImageResizeHandles section={section} containerRef={ref} onResize={onResize} />
+        <ImageResizeHandles section={section} containerRef={ref} activePart={activePart} onResize={onResize} />
       )}
     </div>
   );
@@ -3498,6 +3500,7 @@ export default function ObjectDesignPage() {
                     <BlockCanvas
                       section={s}
                       showHandles={active && s.type === "free" && !!s.images.length}
+                      activePart={active ? focusPart : ""}
                       onResize={(groupKey, size) => resizeImageGroup(s.id, groupKey, size)}
                       onClick={(e) => pickPart(s.id, e)}
                       onDoubleClick={(e) => editInline(s.id, e)}

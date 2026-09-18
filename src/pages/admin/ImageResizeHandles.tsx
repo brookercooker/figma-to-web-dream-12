@@ -10,10 +10,13 @@ type Rect = { part: string; groupKey: number; left: number; top: number; width: 
 export default function ImageResizeHandles({
   section,
   containerRef,
+  activePart,
   onResize,
 }: {
   section: FreeSection;
   containerRef: React.RefObject<HTMLDivElement>;
+  /** Part name of the item being edited — handles show only on that image. */
+  activePart: string;
   onResize: (groupKey: number, size: { imageHeightPx?: number; imageWidthPx?: number }) => void;
 }) {
   const [rects, setRects] = useState<Rect[]>([]);
@@ -85,7 +88,12 @@ export default function ImageResizeHandles({
     window.addEventListener("pointerup", up);
   };
 
-  if (!rects.length) return null;
+  const focusIndex = (() => {
+    const m = /^(?:image|caption|imagetext):(\d+)/.exec(activePart ?? "");
+    return m ? Number(m[1]) : -1;
+  })();
+  const shown = rects.filter((r) => r.part === `image:${focusIndex}`);
+  if (!shown.length) return null;
 
   const handles: {
     key: string;
@@ -106,7 +114,7 @@ export default function ImageResizeHandles({
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
-      {rects.map((r) => (
+      {shown.map((r) => (
         <div
           key={r.part}
           className="absolute"
