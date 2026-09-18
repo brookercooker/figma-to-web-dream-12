@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/prototype/client";
+import { joinPath, leafOf, matchesLabelFilter, splitPath } from "./labelPath";
+
 
 interface Choice { url: string; alt: string }
 interface LibraryImage extends Choice { labels: string[] }
