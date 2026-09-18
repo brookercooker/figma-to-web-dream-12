@@ -937,7 +937,7 @@ function Pic({
         alt={image.alt || ""}
         loading="lazy"
         style={image.focus ? { objectPosition: image.focus } : undefined}
-        className={`block w-full object-cover transition-transform ${/(^|\s)h-auto(\s|$)/.test(className) ? "h-auto" : "h-full"}`.concat(" transition-transform").replace(" transition-transform transition-transform"," transition-transform") + " duration-700 duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]"
+        className={`block w-full ${/(^|\s)h-auto(\s|$)/.test(className) ? "h-auto" : "h-full"} object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]`}
       />
       {wash ? <span aria-hidden className="pointer-events-none absolute inset-0" style={wash} /> : null}
     </>
