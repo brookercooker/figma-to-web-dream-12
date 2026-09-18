@@ -3237,8 +3237,11 @@ export default function ObjectDesignPage() {
           );
         })()}
 
-
-
+        {parts.length ? null : (
+          <p className="rounded-lg border border-dashed py-6 text-center text-xs text-muted-foreground">
+            Click anything above to change it, or add something new from the right.
+          </p>
+        )}
 
       </div>
     );
