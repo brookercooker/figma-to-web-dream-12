@@ -56,6 +56,7 @@ export default function DesignTab() {
   // Pages built in code have no editable blocks yet: show them as one locked section.
   const [hasExisting, setHasExisting] = useState(false);
   const [currentFirst, setCurrentFirst] = useState(true);
+  const [objectAt, setObjectAt] = useState<number | null>(null);
 
 
   const load = async () => {
@@ -174,7 +175,7 @@ export default function DesignTab() {
 
   const existingCard = page ? (
     <div key="current-page-section">
-      {addRow(0, "Add a section above")}
+      {addRow(currentFirst ? 0 : blocks.length, "Add a section above")}
       <div className="overflow-hidden rounded-lg border bg-background">
         <div className="flex items-center gap-2 border-b bg-muted px-3 py-2">
           <span className="text-xs font-semibold uppercase tracking-[0.14em]">Current page</span>
@@ -435,7 +436,10 @@ export default function DesignTab() {
         onPick={({ id, name }) => {
           if (objectFor === "new") {
             const block: ObjectBlock = { id: newId(), type: "object", objectId: id, name, align: "left" };
-            setBlocks((prev) => [...prev, block]);
+            setBlocks((prev) => {
+              const i = objectAt === null ? prev.length : Math.max(0, Math.min(prev.length, objectAt));
+              return [...prev.slice(0, i), block, ...prev.slice(i)];
+            });
             setActiveId(block.id);
             setShowLive(false);
           } else if (objectFor) {
@@ -443,6 +447,7 @@ export default function DesignTab() {
           }
           setDirty(true);
           setObjectFor(null);
+          setObjectAt(null);
         }}
       />
       <ImagePickerDialog
