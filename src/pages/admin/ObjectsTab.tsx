@@ -426,6 +426,7 @@ export default function ObjectsTab() {
               <col style={{ width: 90 }} />
               <col style={{ width: 48 }} />
               <col style={{ width: 48 }} />
+              <col style={{ width: 48 }} />
             </colgroup>
             <thead>
               <tr className="border-b bg-muted/30">
