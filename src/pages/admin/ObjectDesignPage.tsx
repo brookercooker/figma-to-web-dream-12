@@ -3084,15 +3084,6 @@ export default function ObjectDesignPage() {
               icon={ChevronsDownUp}
               onClick={() => { setBlocksExpanded(false); setOpenBlocks({}); setFocusPart(""); }}
             />
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-destructive hover:text-destructive"
-              title="Delete block"
-              onClick={() => remove(section.id)}
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Delete
-            </Button>
           </div>
         </div>
 
