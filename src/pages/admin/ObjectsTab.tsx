@@ -447,6 +447,7 @@ export default function ObjectsTab() {
                 <th className="px-3 py-3 text-center">Copy</th>
                 <th className="px-3 py-3 text-left">Labels</th>
                 <th className="px-3 py-3 text-center">Last Mod</th>
+                <th className="px-2 py-3 text-center"><span className="sr-only">Edit</span></th>
                 <th className="px-2 py-3 text-center"><span className="sr-only">Open</span></th>
                 <th className="px-2 py-3 text-center"><span className="sr-only">More</span></th>
               </tr>
