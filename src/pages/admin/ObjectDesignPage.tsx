@@ -3500,7 +3500,8 @@ export default function ObjectDesignPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPreview(false)}
+                  onClick={() => enterEdit()}
+
                   className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 ${!preview ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
                 >
                   <Pencil className="w-3.5 h-3.5" /> Edit
