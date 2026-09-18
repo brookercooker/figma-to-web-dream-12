@@ -1018,14 +1018,43 @@ export default function ObjectDesignPage() {
     id: string,
     groupKey: number,
     size: { imageHeightPx?: number; imageWidthPx?: number },
+    info?: { part: string; widthPct?: number },
   ) => {
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id || s.type !== "free") return s;
         const own = s.groupSettings?.[String(groupKey)] ?? {};
+        const next = { ...size };
+        let flowWidths = s.flowWidths;
+        // An image sharing a row is sized by percentage so its neighbours shrink or grow with it.
+        const key = info ? canvasPartKey(s, info.part) : null;
+        if (key && info?.widthPct != null && s.flows?.[key] === "inline") {
+          const parts = orderablePartsOf(s).filter((p) => (s.flows ?? {})[p] === "inline" || p === key);
+          const order = orderablePartsOf(s);
+          const at = order.indexOf(key);
+          let start = at;
+          while (start > 0 && s.flows?.[order[start - 1]] === "inline") start--;
+          let end = at;
+          while (end < order.length - 1 && s.flows?.[order[end + 1]] === "inline") end++;
+          const row = order.slice(start, end + 1).filter((p) => parts.includes(p));
+          const others = row.filter((p) => p !== key && s.stacks?.[p] !== s.stacks?.[key]);
+          if (others.length) {
+            const mine = Math.max(10, Math.min(90, Math.round(info.widthPct)));
+            const prevOthers = others.map((p) => s.flowWidths?.[p] ?? (100 - mine) / others.length);
+            const total = prevOthers.reduce((a, b) => a + b, 0) || 1;
+            const widths = { ...(s.flowWidths ?? {}) };
+            widths[key] = mine;
+            const sameCol = row.filter((p) => p !== key && s.stacks?.[p] && s.stacks[p] === s.stacks?.[key]);
+            sameCol.forEach((p) => { widths[p] = mine; });
+            others.forEach((p, i) => { widths[p] = Math.max(5, Math.round(((100 - mine) * prevOthers[i]) / total)); });
+            flowWidths = widths;
+            delete next.imageWidthPx;
+          }
+        }
         return {
           ...s,
-          groupSettings: { ...(s.groupSettings ?? {}), [String(groupKey)]: { ...own, ...size } },
+          ...(flowWidths ? { flowWidths } : {}),
+          groupSettings: { ...(s.groupSettings ?? {}), [String(groupKey)]: { ...own, ...next } },
         } as Section;
       }),
     );
