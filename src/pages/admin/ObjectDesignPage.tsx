@@ -1332,48 +1332,51 @@ export default function ObjectDesignPage() {
     if (kind === "video") return addVideoSlot(s.id);
     if (kind === "divider") {
       const id = newSectionId();
+      const at = (s.dividers ?? []).length;
       patch(s.id, { dividers: [...(s.dividers ?? []), { id, color: "stone", width: "full", thickness: 1 }] });
-      openBlock(id);
+      openBlock(id, `divider:${at}`);
       return;
     }
     if (kind === "button") {
       if (s.buttonLabel === undefined) patch(s.id, { buttonLabel: "Explore", buttonHref: "/" });
-      openBlock("button");
+      openBlock("button", "button");
       return;
     }
+    const nextExtra = (s.extras ?? []).length;
     if (kind === "eyebrow") {
       if (s.eyebrow === undefined) {
         patch(s.id, { eyebrow: "Since 1951" });
-        openBlock("eyebrow");
+        openBlock("eyebrow", "eyebrow");
       } else {
         const id = newSectionId();
         patch(s.id, { extras: [...(s.extras ?? []), { id, text: "Since 1951", kind: "eyebrow" as const }] });
-        openBlock(id);
+        openBlock(id, `text:${nextExtra}`);
       }
       return;
     }
     if (kind === "icon") {
       const id = newSectionId();
       patch(s.id, { extras: [...(s.extras ?? []), { id, text: "sparkles", kind: "icon" as const }] });
-      openBlock(id);
+      openBlock(id, `text:${nextExtra}`);
       return;
     }
     if (kind === "title") {
       if (s.heading === undefined) {
         patch(s.id, { heading: "A quiet statement" });
-        openBlock("heading");
+        openBlock("heading", "heading");
       } else {
         const id = newSectionId();
         patch(s.id, { extras: [...(s.extras ?? []), { id, text: "A quiet statement", kind: "title" as const }] });
-        openBlock(id);
+        openBlock(id, `text:${nextExtra}`);
       }
       return;
     }
     // Every added text is an extra so it always carries the style preset picker.
     const id = newSectionId();
     patch(s.id, { extras: [...(s.extras ?? []), { id, text: "New text", kind: "text" as const }] });
-    openBlock(id);
+    openBlock(id, `text:${nextExtra}`);
   };
+
 
   const ADD_ITEMS: { kind: AddKind; label: string; icon: LucideIcon }[] = [
     { kind: "text", label: "Text", icon: AlignLeft },
