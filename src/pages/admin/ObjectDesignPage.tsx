@@ -3787,25 +3787,14 @@ export default function ObjectDesignPage() {
               )}
               <IconSelect
                 label="Sits"
-                value={sec.layout ?? "stacked"}
+                value={sec.layout === "behind" ? "behind" : "stacked"}
                 options={[
-                  { value: "stacked", label: "Below text", icon: Rows2 },
-                  { value: "beside", label: "Beside text", icon: Columns2 },
+                  { value: "stacked", label: "In place", icon: Rows2 },
                   { value: "behind", label: "Behind text", icon: Layers },
                 ]}
                 onChange={(v) => patch(sec.id, { layout: v })}
               />
-              {sec.layout === "beside" && (
-                <Dropdown
-                  label="Side"
-                  value={sec.imageSide ?? "left"}
-                  options={[
-                    { value: "left", label: "Left", icon: PanelLeft },
-                    { value: "right", label: "Right", icon: PanelRight },
-                  ]}
-                  onChange={(v) => patch(sec.id, { imageSide: v })}
-                />
-              )}
+
               {sec.layout !== "behind" && gCount > 1 && (
                 <Dropdown
                   label="Show as"
