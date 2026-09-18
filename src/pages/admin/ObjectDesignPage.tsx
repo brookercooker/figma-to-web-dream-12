@@ -1204,8 +1204,6 @@ export default function ObjectDesignPage() {
   };
 
   const ADD_ITEMS: { kind: AddKind; label: string; icon: LucideIcon }[] = [
-    { kind: "eyebrow", label: "Eyebrow", icon: Tag },
-    { kind: "title", label: "Title", icon: Heading },
     { kind: "text", label: "Text", icon: AlignLeft },
     { kind: "icon", label: "Icon", icon: Sparkles },
     { kind: "image", label: "Image", icon: ImageIcon },
@@ -1415,7 +1413,7 @@ export default function ObjectDesignPage() {
       {showCaption && imgOpen && (
         <div className="space-y-2 rounded-md border border-dashed p-2">
           <div className="flex flex-wrap items-center gap-1">
-            {IMAGE_TEXT_KINDS.map((k) => {
+            {IMAGE_TEXT_KINDS.filter((k) => !["eyebrow", "title", "subheading"].includes(k.value)).map((k) => {
               const Icon = IMAGE_TEXT_ICONS[k.value];
               return (
                 <Button
@@ -1508,7 +1506,7 @@ export default function ObjectDesignPage() {
                   <IconSelect
                     value={t.kind}
                     options={IMAGE_TEXT_KINDS.map((k) => ({ value: k.value, label: k.label }))}
-                    onChange={(v) => patchImageText(section.id, index, ti, { kind: v })}
+                    onChange={(v) => patchImageText(section.id, index, ti, { kind: v, style: undefined })}
                   />
                   {t.kind === "divider" ? (
                     <>
@@ -2235,11 +2233,17 @@ export default function ObjectDesignPage() {
             onDuplicate: () => duplicateExtra(section.id, i),
             children: (
               <>
-                <Field label="Type">
+                <Field label="Style preset">
                   <select
                     className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
                     value={kind}
-                    onChange={(e) => patchExtra(section.id, i, { kind: e.target.value as FreeTextKind })}
+                    onChange={(e) =>
+                      patchExtra(section.id, i, {
+                        kind: e.target.value as FreeTextKind,
+                        // start from the preset's look; every field stays editable below
+                        style: undefined,
+                      })
+                    }
                   >
                     {FREE_TEXT_KINDS.map((k) => (
                       <option key={k.value} value={k.value}>{k.label}</option>
