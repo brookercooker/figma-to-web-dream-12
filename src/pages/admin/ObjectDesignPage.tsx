@@ -772,7 +772,6 @@ export default function ObjectDesignPage() {
   const [dragPart, setDragPart] = useState<{ sectionId: string; part: string } | null>(null);
   const [dropAt, setDropAt] = useState<{ sectionId: string; part: string; before: boolean } | null>(null);
   // hovered group container (or "none" for the leave-group strip) while dragging an item
-  const [dropGroup, setDropGroup] = useState<{ sectionId: string; groupId: string } | null>(null);
   // drag and drop for the text boxes attached to an image
   const [dragText, setDragText] = useState<{ sectionId: string; index: number; ti: number } | null>(null);
   const [dropText, setDropText] = useState<{ sectionId: string; index: number; ti: number; before: boolean } | null>(null);
@@ -1964,83 +1963,6 @@ export default function ObjectDesignPage() {
 
   /** Inline / separate control for one element inside a block. */
   /** Put an item into a shared box, and style that box. */
-  const setBoxes = (section: FreeSection, boxes: FreeBox[]) =>
-    patch(section.id, { boxes: boxes.filter((b) => b.parts.length) });
-
-  const assignBox = (section: FreeSection, part: string, boxId: string) => {
-    const boxes = (section.boxes ?? []).map((b) => ({ ...b, parts: b.parts.filter((p) => p !== part) }));
-    if (boxId === "none") { setBoxes(section, boxes); return; }
-    if (boxId === "new") {
-      setBoxes(section, [...boxes, { id: newSectionId(), parts: [part], border: "sand", bg: undefined }]);
-      return;
-    }
-    setBoxes(section, boxes.map((b) => (b.id === boxId ? { ...b, parts: [...b.parts, part] } : b)));
-  };
-
-  const patchBox = (section: FreeSection, boxId: string, next: Partial<FreeBox>) =>
-    setBoxes(section, (section.boxes ?? []).map((b) => (b.id === boxId ? { ...b, ...next } : b)));
-
-  const boxField = (section: FreeSection, part: string) => {
-    const boxes = section.boxes ?? [];
-    const mine = boxes.find((b) => b.parts?.includes(part));
-    const numberOf = (b: FreeBox) => boxes.findIndex((x) => x.id === b.id) + 1;
-    return (
-      <div className="flex w-full flex-wrap items-center gap-3 border-t pt-3">
-        <span className="text-xs text-muted-foreground">Group</span>
-        <select
-          className="h-8 rounded-md border bg-background px-2 text-xs"
-          value={mine?.id ?? "none"}
-          onChange={(e) => assignBox(section, part, e.target.value)}
-        >
-          <option value="none">None</option>
-          {boxes.map((b) => (
-            <option key={b.id} value={b.id}>{`Group ${numberOf(b)}`}</option>
-          ))}
-          <option value="new">New group…</option>
-        </select>
-        {mine ? (
-          <>
-            <ColorDropdown
-              label="Fill"
-              value={mine.bg ?? ""}
-              fallback="None"
-              options={[{ value: "", label: "None", swatch: "transparent" }, ...TEXT_COLORS]}
-              onChange={(v) => patchBox(section, mine.id, { bg: (v || undefined) as TextColor | undefined })}
-            />
-            <ColorDropdown
-              label="Outline"
-              value={mine.border ?? ""}
-              fallback="None"
-              options={[{ value: "", label: "None", swatch: "transparent" }, ...TEXT_COLORS]}
-              onChange={(v) => patchBox(section, mine.id, { border: (v || undefined) as TextColor | undefined })}
-            />
-            {([
-              { key: "borderWidth" as const, short: "Line", ph: "1" },
-              { key: "radius" as const, short: "Corner", ph: "8" },
-              { key: "padY" as const, short: "V", ph: "24" },
-              { key: "padX" as const, short: "H", ph: "24" },
-            ]).map((o) => (
-              <label key={o.key} className="flex items-center gap-1 text-xs text-muted-foreground">
-                {o.short}
-                <Input
-                  type="number"
-                  className="h-8 w-16"
-                  placeholder={o.ph}
-                  value={mine[o.key] ?? ""}
-                  onChange={(e) => {
-                    const raw = e.target.value.trim();
-                    const n = Number(raw);
-                    patchBox(section, mine.id, { [o.key]: raw === "" || !Number.isFinite(n) ? undefined : n });
-                  }}
-                />
-              </label>
-            ))}
-          </>
-        ) : null}
-      </div>
-    );
-  };
-
   const flowField = (section: FreeSection, part: string) => {
     const flow = (section.flows?.[part] ?? "separate") as SectionFlow;
     return (
