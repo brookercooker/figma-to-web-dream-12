@@ -2125,9 +2125,23 @@ export default function ObjectDesignPage() {
     if (side) {
       flows[from] = "inline";
       flows[to] = "inline";
-      flowWidths[from] = 50;
-      flowWidths[to] = 50;
       delete stacks[from];
+      // Share the row evenly between however many columns it now holds.
+      const anchor = next.indexOf(to);
+      let start = anchor;
+      while (start > 0 && flows[next[start - 1]] === "inline") start--;
+      let end = anchor;
+      while (end < next.length - 1 && flows[next[end + 1]] === "inline") end++;
+      const row = next.slice(start, end + 1);
+      const columns: string[][] = [];
+      row.forEach((p) => {
+        const sid = stacks[p];
+        const last = columns[columns.length - 1];
+        if (sid && last && stacks[last[0]] === sid) last.push(p);
+        else columns.push([p]);
+      });
+      const width = Math.round(100 / columns.length);
+      row.forEach((p) => { flowWidths[p] = width; });
     } else if (flows[to] === "inline") {
       // Dropped above/below an item that shares a row: stack the two inside that column.
       const sid = stacks[to] ?? `stack-${to}`;
