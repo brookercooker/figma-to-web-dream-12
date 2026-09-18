@@ -2086,6 +2086,17 @@ export default function ObjectDesignPage() {
     return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
   };
 
+  /** Map an element's data-part in the preview to the item name used for ordering. */
+  const canvasPartKey = (s: FreeSection, raw: string): string | null => {
+    if (!raw) return null;
+    const img = /^(?:image|caption|imagetext):(\d+)/.exec(raw);
+    if (img) {
+      const image = s.images[Number(img[1])];
+      return image ? imageGroupPart(image.group ?? 0) : null;
+    }
+    return raw;
+  };
+
   /** Put `from` into the same group as `into` (or out of every group when undefined). */
   const withGroupMembership = (s: FreeSection, from: string, into?: string) => {
     const targetId = into ? (s.boxes ?? []).find((b) => b.parts?.includes(into))?.id : undefined;
