@@ -2345,7 +2345,11 @@ export default function ObjectDesignPage() {
     const hasBody = section.body !== undefined;
     const hasButton = section.buttonLabel !== undefined;
 
-    const parts = orderablePartsOf(section);
+    // Only the item the user clicked in the preview gets a settings panel.
+    const rawFocus = focusPart.startsWith("video:") ? "videos" : focusPart;
+    const selected = rawFocus ? canvasPartKey(section, rawFocus) : null;
+    const parts = orderablePartsOf(section).filter((p) => p === selected);
+
 
     const renderPart = (p: string): React.ReactNode => {
       if (p === "eyebrow") return hasEyebrow ? Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, onDelete: () => patch(section.id, { eyebrow: undefined }), onDuplicate: () => duplicateTextInto(section, section.eyebrow, withEyebrowDefaults(section.eyebrowStyle)), children: (
