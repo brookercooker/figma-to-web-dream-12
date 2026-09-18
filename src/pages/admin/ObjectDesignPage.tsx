@@ -3084,15 +3084,6 @@ export default function ObjectDesignPage() {
               icon={ChevronsDownUp}
               onClick={() => { setBlocksExpanded(false); setOpenBlocks({}); setFocusPart(""); }}
             />
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-destructive hover:text-destructive"
-              title="Delete block"
-              onClick={() => remove(section.id)}
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Delete
-            </Button>
           </div>
         </div>
 
@@ -3931,8 +3922,9 @@ export default function ObjectDesignPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="gap-1.5 text-destructive hover:text-destructive"
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
               title="Delete this item"
+              aria-label="Delete this item"
               onClick={() => {
                 if (imgText) removeImageText(toolbar.sectionId, imgText.img, imgText.t);
                 else if (extraIdx >= 0) removeExtra(toolbar.sectionId, extraIdx);
@@ -3951,7 +3943,7 @@ export default function ObjectDesignPage() {
                 setFocusPart("");
               }}
             >
-              <Trash2 className="w-3.5 h-3.5" /> Delete
+              <Trash2 className="w-4 h-4" />
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setToolbar(null)}>Done</Button>
           </FloatingToolbar>
