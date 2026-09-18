@@ -2739,30 +2739,15 @@ export default function ObjectDesignPage() {
               <Field label="Images sit">
                 <div>
                   <IconSelect
-                    value={section.layout}
+                    value={section.layout === "behind" ? "behind" : "stacked"}
                     options={[
-                      { value: "stacked" as const, label: "Below text", icon: Rows2 },
-                      { value: "beside" as const, label: "Beside text", icon: Columns2 },
+                      { value: "stacked" as const, label: "In place", icon: Rows2 },
                       { value: "behind" as const, label: "Behind text", icon: Layers },
                     ]}
                     onChange={(v) => patch(section.id, { layout: v })}
                   />
                 </div>
               </Field>
-              {section.layout === "beside" && (
-                <Field label="Image side">
-                  <div>
-                    <Choice
-                      value={section.imageSide}
-                      options={[
-                        { value: "left" as const, label: "Left", icon: PanelLeft },
-                        { value: "right" as const, label: "Right", icon: PanelRight },
-                      ]}
-                      onChange={(v) => patch(section.id, { imageSide: v })}
-                    />
-                  </div>
-                </Field>
-              )}
               {section.layout === "behind" && (
                 <Field label="Height">
                   <div>
@@ -3802,25 +3787,14 @@ export default function ObjectDesignPage() {
               )}
               <IconSelect
                 label="Sits"
-                value={sec.layout ?? "stacked"}
+                value={sec.layout === "behind" ? "behind" : "stacked"}
                 options={[
-                  { value: "stacked", label: "Below text", icon: Rows2 },
-                  { value: "beside", label: "Beside text", icon: Columns2 },
+                  { value: "stacked", label: "In place", icon: Rows2 },
                   { value: "behind", label: "Behind text", icon: Layers },
                 ]}
                 onChange={(v) => patch(sec.id, { layout: v })}
               />
-              {sec.layout === "beside" && (
-                <Dropdown
-                  label="Side"
-                  value={sec.imageSide ?? "left"}
-                  options={[
-                    { value: "left", label: "Left", icon: PanelLeft },
-                    { value: "right", label: "Right", icon: PanelRight },
-                  ]}
-                  onChange={(v) => patch(sec.id, { imageSide: v })}
-                />
-              )}
+
               {sec.layout !== "behind" && gCount > 1 && (
                 <Dropdown
                   label="Show as"
