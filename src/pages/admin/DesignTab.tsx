@@ -53,6 +53,7 @@ export default function DesignTab() {
   const [objectFor, setObjectFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [showLive, setShowLive] = useState(true);
+  const [previewNonce, setPreviewNonce] = useState(0);
 
 
   const load = async () => {
@@ -129,18 +130,20 @@ export default function DesignTab() {
     setDirty(true);
   };
 
-  const save = async () => {
+  const save = async (next?: Block[], quiet = false) => {
     if (!page) return;
+    const payload = next ?? blocks;
     setSaving(true);
     try {
       const { error } = await (supabase as any)
         .from("pages")
-        .update({ content: blocks, build_status: "ready" })
+        .update({ content: payload, build_status: "ready" })
         .eq("id", page.id);
       if (error) throw error;
       await load();
       setDirty(false);
-      toast.success(`Saved — your page is live at ${page.path}`);
+      setPreviewNonce((n) => n + 1);
+      if (!quiet) toast.success(`Saved — your page is live at ${page.path}`);
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save the page");
     } finally { setSaving(false); }
@@ -219,7 +222,7 @@ export default function DesignTab() {
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
                 <Boxes className="w-4 h-4" /> Object
               </Button>
-              <Button size="sm" className="gap-2" onClick={save} disabled={saving || !dirty}>
+              <Button size="sm" className="gap-2" onClick={() => save()} disabled={saving || !dirty}>
                 <Save className="w-4 h-4" /> {saving ? "Saving…" : dirty ? "Save" : "Saved"}
               </Button>
             </div>
@@ -237,7 +240,7 @@ export default function DesignTab() {
                   </Button>
                 </div>
                 <iframe
-                  key={`${page.id}-${page.updated_at}`}
+                  key={`${page.id}-${page.updated_at}-${previewNonce}`}
                   src={page.path}
                   title={`${page.name} preview`}
                   className="w-full h-[70vh] bg-background"
@@ -377,16 +380,20 @@ export default function DesignTab() {
         open={!!objectFor}
         onOpenChange={(v) => { if (!v) setObjectFor(null); }}
         onPick={({ id, name }) => {
+          let next: Block[] = blocks;
           if (objectFor === "new") {
             const block: ObjectBlock = { id: newId(), type: "object", objectId: id, name, align: "left" };
-            setBlocks((prev) => [...prev, block]);
+            next = [...blocks, block];
             setActiveId(block.id);
             setShowLive(false);
           } else if (objectFor) {
-            update(objectFor, { objectId: id, name } as Partial<Block>);
+            next = blocks.map((b) => (b.id === objectFor ? ({ ...b, objectId: id, name } as Block) : b));
           }
+          setBlocks(next);
           setDirty(true);
           setObjectFor(null);
+          // Put it on the page right away so every preview shows it.
+          void save(next, true);
         }}
       />
       <ImagePickerDialog
