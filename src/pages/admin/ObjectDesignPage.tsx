@@ -621,7 +621,7 @@ function FloatingToolbar({
   );
 }
 
-/** The block preview area in the editor, with drag handles over images while editing. */
+/** The block preview area in the editor: drag handles on images, drag-and-drop to reorder items. */
 function BlockCanvas({
   section,
   showHandles,
@@ -629,6 +629,9 @@ function BlockCanvas({
   onResize,
   onClick,
   onDoubleClick,
+  draggableParts,
+  partKeyOf,
+  onMovePart,
   children,
 }: {
   section: Section;
@@ -637,17 +640,98 @@ function BlockCanvas({
   onResize: (groupKey: number, size: { imageHeightPx?: number; imageWidthPx?: number }) => void;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick: (e: React.MouseEvent) => void;
+  /** Item names that can be reordered in this block. */
+  draggableParts: string[];
+  /** Map a rendered element's data-part to the item name that can be reordered. */
+  partKeyOf: (raw: string) => string | null;
+  onMovePart: (from: string, to: string, before: boolean) => void;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [from, setFrom] = useState("");
+  const [drop, setDrop] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const canReorder = draggableParts.length > 1;
+
+  // Mark the rendered items as draggable so they can be picked up in the preview.
+  useEffect(() => {
+    const host = ref.current;
+    if (!host) return;
+    const touched: HTMLElement[] = [];
+    for (const el of [...host.querySelectorAll<HTMLElement>("[data-part]")]) {
+      const key = partKeyOf(el.dataset.part ?? "");
+      if (!canReorder || !key || !draggableParts.includes(key) || el.isContentEditable) continue;
+      el.draggable = true;
+      touched.push(el);
+    }
+    return () => { for (const el of touched) el.draggable = false; };
+  });
+
+  /** Find the reorderable item under the pointer. */
+  const targetOf = (e: React.DragEvent) => {
+    let el = e.target as HTMLElement | null;
+    while (el && el !== ref.current) {
+      const key = partKeyOf(el.dataset?.part ?? "");
+      if (key && draggableParts.includes(key)) return { el, key };
+      el = el.parentElement;
+    }
+    return null;
+  };
+
+  /** Where the dragged item would land relative to the item under the pointer. */
+  const placeAt = (el: HTMLElement, e: React.DragEvent) => {
+    const r = el.getBoundingClientRect();
+    const vertical = r.width / Math.max(r.height, 1) < 0.9;
+    const before = vertical ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
+    return { r, vertical, before };
+  };
+
   return (
     <div
       ref={ref}
       className="relative px-4 cursor-pointer [&_img]:!scale-100 [&_img]:!transition-none [&_[data-part]]:cursor-pointer [&_[data-part]]:rounded-sm [&_[data-part]]:transition-shadow [&_[data-part]:hover]:ring-2 [&_[data-part]:hover]:ring-primary/50 [&_[data-part]:hover]:ring-offset-2"
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onDragStart={(e) => {
+        const t = targetOf(e);
+        if (!t) return;
+        e.stopPropagation();
+        e.dataTransfer.effectAllowed = "move";
+        setFrom(t.key);
+      }}
+      onDragEnd={() => { setFrom(""); setDrop(null); }}
+      onDragOver={(e) => {
+        if (!from) return;
+        const t = targetOf(e);
+        const host = ref.current;
+        if (!t || !host || t.key === from) { setDrop(null); return; }
+        e.preventDefault();
+        const base = host.getBoundingClientRect();
+        const { r, vertical, before } = placeAt(t.el, e);
+        setDrop(
+          vertical
+            ? { left: (before ? r.left : r.right) - base.left - 1, top: r.top - base.top, width: 2, height: r.height }
+            : { left: r.left - base.left, top: (before ? r.top : r.bottom) - base.top - 1, width: r.width, height: 2 },
+        );
+      }}
+      onDrop={(e) => {
+        if (!from) return;
+        const t = targetOf(e);
+        if (t && t.key !== from) {
+          e.preventDefault();
+          e.stopPropagation();
+          onMovePart(from, t.key, placeAt(t.el, e).before);
+        }
+        setFrom("");
+        setDrop(null);
+      }}
     >
       {children}
+      {drop && (
+        <div
+          className="pointer-events-none absolute z-30 rounded bg-primary"
+          style={{ left: drop.left, top: drop.top, width: drop.width, height: drop.height }}
+        />
+      )}
       {showHandles && section.type === "free" && (
         <ImageResizeHandles section={section} containerRef={ref} activePart={activePart} onResize={onResize} />
       )}
@@ -2000,6 +2084,17 @@ export default function ObjectDesignPage() {
     if (s.buttonLabel !== undefined) base.push("button");
     (s.dividers ?? []).forEach((_, i) => base.push(`divider:${i}`));
     return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
+  };
+
+  /** Map an element's data-part in the preview to the item name used for ordering. */
+  const canvasPartKey = (s: FreeSection, raw: string): string | null => {
+    if (!raw) return null;
+    const img = /^(?:image|caption|imagetext):(\d+)/.exec(raw);
+    if (img) {
+      const image = s.images[Number(img[1])];
+      return image ? imageGroupPart(image.group ?? 0) : null;
+    }
+    return raw;
   };
 
   /** Put `from` into the same group as `into` (or out of every group when undefined). */
@@ -3504,6 +3599,11 @@ export default function ObjectDesignPage() {
                       onResize={(groupKey, size) => resizeImageGroup(s.id, groupKey, size)}
                       onClick={(e) => pickPart(s.id, e)}
                       onDoubleClick={(e) => editInline(s.id, e)}
+                      draggableParts={active && s.type === "free" ? orderablePartsOf(s) : []}
+                      partKeyOf={(raw) => (s.type === "free" ? canvasPartKey(s, raw) : null)}
+                      onMovePart={(fromPart, toPart, before) => {
+                        if (s.type === "free") movePartIn(s, fromPart, toPart, before);
+                      }}
                     >
                       {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel &&
                       !(s.extras ?? []).length && !(s.dividers ?? []).length && !(s.videos ?? []).length ? (
