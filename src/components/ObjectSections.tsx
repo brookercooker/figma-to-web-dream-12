@@ -1571,14 +1571,18 @@ function FreeText({
 
   const renderGroup = (group: (typeof groups)[number]) =>
         group.length > 1 ? (
-          <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap ${ROW_VALIGN_CLASS[section.rowVAlign ?? "middle"]} ${alignRow[section.align]}`}>
+          // Side-by-side items share one row height: media stretches to it, text centres within it.
+          <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap items-stretch ${alignRow[section.align]}`}>
             {group.map((it) => {
               const w = section.flowWidths?.[it.part];
               const a = section.flowAligns?.[it.part] ?? section.align;
+              const isMedia = it.part.startsWith("image") || it.part.startsWith("media") || it.part.startsWith("video");
+              const valign = section.rowVAlign ?? "middle";
+              const justify = valign === "top" ? "justify-start" : valign === "bottom" ? "justify-end" : "justify-center";
               return (
                 <div
                   key={it.part}
-                  className={`flex flex-col px-3 ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
+                  className={`flex flex-col px-3 ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
                   style={{ ...flowWidthStyle(w), ...partPadStyle(section, it.part) }}
                 >
                   {it.node}
