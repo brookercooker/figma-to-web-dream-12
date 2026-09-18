@@ -53,6 +53,9 @@ export default function DesignTab() {
   const [objectFor, setObjectFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [showLive, setShowLive] = useState(true);
+  // Pages built in code have no editable blocks yet: show them as one locked section.
+  const [hasExisting, setHasExisting] = useState(false);
+  const [currentFirst, setCurrentFirst] = useState(true);
 
 
   const load = async () => {
