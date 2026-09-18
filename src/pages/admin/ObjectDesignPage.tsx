@@ -19,6 +19,7 @@ import CreateObjectDialog from "./CreateObjectDialog";
 import { objectRegistry } from "@/components/objects/registry";
 import { sectionsFromDom } from "./importCodedObject";
 import ImagePickerDialog from "./ImagePickerDialog";
+import ImageResizeHandles from "./ImageResizeHandles";
 import VideoPickerDialog from "./VideoPickerDialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
