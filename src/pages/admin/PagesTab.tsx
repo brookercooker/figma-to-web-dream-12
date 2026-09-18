@@ -506,7 +506,7 @@ export default function PagesTab() {
         <tbody>
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={8} className="px-3 py-10 text-center text-muted-foreground text-sm">
+              <td colSpan={9} className="px-3 py-10 text-center text-muted-foreground text-sm">
                 {timeRange === "hour" ? "No pages modified in the last hour."
                 : timeRange === "day" ? "No pages modified in the last 24 hours."
                 : timeRange === "week" ? "No pages modified in the last 7 days."
