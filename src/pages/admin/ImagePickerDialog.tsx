@@ -126,7 +126,8 @@ export default function ImagePickerDialog({
                   label === l ? "bg-foreground text-background border-foreground" : "hover:bg-muted text-muted-foreground"
                 }`}
               >
-                {l}
+                {leafOf(l)}
+
               </button>
             ))}
           </div>
