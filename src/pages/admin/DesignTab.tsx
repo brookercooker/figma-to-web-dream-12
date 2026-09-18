@@ -158,18 +158,10 @@ export default function DesignTab() {
   const addRow = (at: number, label: string) => (
     <div className="my-3 flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2">
       <span className="mr-1 text-xs text-muted-foreground">{label}</span>
-      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("heading", at)}>
-        <Heading className="w-4 h-4" /> Heading
-      </Button>
-      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("text", at)}>
-        <Type className="w-4 h-4" /> Text
-      </Button>
-      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image", at)}>
-        <ImageIcon className="w-4 h-4" /> Image
-      </Button>
       <Button variant="outline" size="sm" className="gap-2" onClick={() => { setObjectAt(at); setObjectFor("new"); }}>
         <Boxes className="w-4 h-4" /> Object
       </Button>
+
     </div>
   );
 
@@ -262,15 +254,6 @@ export default function DesignTab() {
                   Edit
                 </button>
               </div>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("heading")}>
-                <Heading className="w-4 h-4" /> Heading
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("text")}>
-                <Type className="w-4 h-4" /> Text
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image")}>
-                <ImageIcon className="w-4 h-4" /> Image
-              </Button>
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
                 <Boxes className="w-4 h-4" /> Object
               </Button>
