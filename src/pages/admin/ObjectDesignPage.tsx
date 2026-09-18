@@ -1308,7 +1308,7 @@ export default function ObjectDesignPage() {
       }),
     );
     setDirty(true);
-    openBlock("Videos");
+    openBlock("Videos", "videos");
     setVideoPicker({ sectionId: id, index: newIndex });
   };
 
