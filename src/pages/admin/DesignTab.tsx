@@ -53,6 +53,10 @@ export default function DesignTab() {
   const [objectFor, setObjectFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [showLive, setShowLive] = useState(true);
+  // Pages built in code have no editable blocks yet: show them as one locked section.
+  const [hasExisting, setHasExisting] = useState(false);
+  const [currentFirst, setCurrentFirst] = useState(true);
+  const [objectAt, setObjectAt] = useState<number | null>(null);
 
 
   const load = async () => {
@@ -76,6 +80,8 @@ export default function DesignTab() {
     setDirty(false);
     // Pages that already have a design open showing exactly how they look today.
     setShowLive(!parsed.length);
+    setHasExisting(!parsed.length && !!page);
+    setCurrentFirst(true);
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
@@ -97,7 +103,7 @@ export default function DesignTab() {
     setDirty(true);
   };
 
-  const addBlock = (type: Block["type"]) => {
+  const addBlock = (type: Block["type"], at?: number) => {
     const base = { id: newId(), align: "left" as BlockAlign };
     const block: Block =
       type === "image"
@@ -105,7 +111,10 @@ export default function DesignTab() {
         : type === "heading"
           ? { ...base, type: "heading", text: "New heading", size: "lg" } as TextBlock
           : { ...base, type: "text", text: "Write something here.", size: "md" } as TextBlock;
-    setBlocks((prev) => [...prev, block]);
+    setBlocks((prev) => {
+      const i = at === undefined ? prev.length : Math.max(0, Math.min(prev.length, at));
+      return [...prev.slice(0, i), block, ...prev.slice(i)];
+    });
     setActiveId(block.id);
     setShowLive(false);
     setDirty(true);
@@ -145,6 +154,52 @@ export default function DesignTab() {
       toast.error(e?.message ?? "Could not save the page");
     } finally { setSaving(false); }
   };
+
+  const addRow = (at: number, label: string) => (
+    <div className="my-3 flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2">
+      <span className="mr-1 text-xs text-muted-foreground">{label}</span>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("heading", at)}>
+        <Heading className="w-4 h-4" /> Heading
+      </Button>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("text", at)}>
+        <Type className="w-4 h-4" /> Text
+      </Button>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image", at)}>
+        <ImageIcon className="w-4 h-4" /> Image
+      </Button>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => { setObjectAt(at); setObjectFor("new"); }}>
+        <Boxes className="w-4 h-4" /> Object
+      </Button>
+    </div>
+  );
+
+  const existingCard = page ? (
+    <div key="current-page-section">
+      {addRow(currentFirst ? 0 : blocks.length, "Add a section above")}
+      <div className="overflow-hidden rounded-lg border bg-background">
+        <div className="flex items-center gap-2 border-b bg-muted px-3 py-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.14em]">Current page</span>
+          <span className="text-xs text-muted-foreground">Built in code — shown here so you can add around it</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setCurrentFirst((v) => !v)}
+          >
+            {currentFirst ? <ArrowDown className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
+          </Button>
+        </div>
+        <iframe
+          key={`${page.id}-${page.updated_at}-inline`}
+          src={page.path}
+          title={`${page.name} current content`}
+          className="h-[46vh] w-full bg-background"
+        />
+      </div>
+      {addRow(blocks.length, "Add a section below")}
+    </div>
+  ) : null;
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
@@ -245,13 +300,14 @@ export default function DesignTab() {
               </div>
             ) : (
             <div className="border rounded-lg bg-background p-6 sm:p-10 min-h-[50vh]">
-              {!blocks.length && (
+              {!blocks.length && !hasExisting && (
                 <p className="text-sm text-muted-foreground text-center py-16">
                   This page is empty. Add a heading, some text, or an image to begin.
                 </p>
               )}
 
               <div className="max-w-3xl mx-auto">
+                {hasExisting && currentFirst && existingCard}
                 {blocks.map((b, i) => {
                   const active = b.id === activeId;
                   return (
@@ -361,6 +417,7 @@ export default function DesignTab() {
                     </div>
                   );
                 })}
+                {hasExisting && !currentFirst && existingCard}
               </div>
             </div>
             )}
@@ -379,7 +436,10 @@ export default function DesignTab() {
         onPick={({ id, name }) => {
           if (objectFor === "new") {
             const block: ObjectBlock = { id: newId(), type: "object", objectId: id, name, align: "left" };
-            setBlocks((prev) => [...prev, block]);
+            setBlocks((prev) => {
+              const i = objectAt === null ? prev.length : Math.max(0, Math.min(prev.length, objectAt));
+              return [...prev.slice(0, i), block, ...prev.slice(i)];
+            });
             setActiveId(block.id);
             setShowLive(false);
           } else if (objectFor) {
@@ -387,6 +447,7 @@ export default function DesignTab() {
           }
           setDirty(true);
           setObjectFor(null);
+          setObjectAt(null);
         }}
       />
       <ImagePickerDialog
