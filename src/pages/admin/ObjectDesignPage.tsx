@@ -3616,8 +3616,8 @@ export default function ObjectDesignPage() {
                       onDoubleClick={(e) => editInline(s.id, e)}
                       draggableParts={active && s.type === "free" ? orderablePartsOf(s) : []}
                       partKeyOf={(raw) => (s.type === "free" ? canvasPartKey(s, raw) : null)}
-                      onMovePart={(fromPart, toPart, before) => {
-                        if (s.type === "free") movePartIn(s, fromPart, toPart, before);
+                      onMovePart={(fromPart, toPart, before, side) => {
+                        if (s.type === "free") movePartIn(s, fromPart, toPart, before, side);
                       }}
                     >
                       {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel &&
