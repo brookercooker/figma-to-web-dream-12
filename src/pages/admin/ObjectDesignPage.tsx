@@ -1403,6 +1403,22 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  /** Switching to edit always leaves a block ready to work on. */
+  const enterEdit = () => {
+    setPreview(false);
+    setSections((prev) => {
+      if (prev.length) {
+        setActiveId((cur) => (cur && prev.some((s) => s.id === cur) ? cur : prev[0].id));
+        return prev;
+      }
+      const s = makeSection("free");
+      setActiveId(s.id);
+      setDirty(true);
+      return [s];
+    });
+  };
+
+
   const add = (type: SectionType) => {
     const s = makeSection(type);
     setSections((prev) => [...prev, s]);
