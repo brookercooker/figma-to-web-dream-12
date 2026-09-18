@@ -3445,7 +3445,8 @@ export default function ObjectDesignPage() {
                       onClick={(e) => pickPart(s.id, e)}
                       onDoubleClick={(e) => editInline(s.id, e)}
                     >
-                      {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel ? (
+                      {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel &&
+                      !(s.extras ?? []).length && !(s.dividers ?? []).length && !(s.videos ?? []).length ? (
                         <p className="py-12 text-center text-sm text-muted-foreground">
                           Blank space — add a title, an eyebrow, text, an image, or a button below.
                         </p>
