@@ -1204,8 +1204,6 @@ export default function ObjectDesignPage() {
   };
 
   const ADD_ITEMS: { kind: AddKind; label: string; icon: LucideIcon }[] = [
-    { kind: "eyebrow", label: "Eyebrow", icon: Tag },
-    { kind: "title", label: "Title", icon: Heading },
     { kind: "text", label: "Text", icon: AlignLeft },
     { kind: "icon", label: "Icon", icon: Sparkles },
     { kind: "image", label: "Image", icon: ImageIcon },
@@ -2235,11 +2233,17 @@ export default function ObjectDesignPage() {
             onDuplicate: () => duplicateExtra(section.id, i),
             children: (
               <>
-                <Field label="Type">
+                <Field label="Style preset">
                   <select
                     className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
                     value={kind}
-                    onChange={(e) => patchExtra(section.id, i, { kind: e.target.value as FreeTextKind })}
+                    onChange={(e) =>
+                      patchExtra(section.id, i, {
+                        kind: e.target.value as FreeTextKind,
+                        // start from the preset's look; every field stays editable below
+                        style: undefined,
+                      })
+                    }
                   >
                     {FREE_TEXT_KINDS.map((k) => (
                       <option key={k.value} value={k.value}>{k.label}</option>
