@@ -1193,14 +1193,10 @@ export default function ObjectDesignPage() {
       }
       return;
     }
-    if (s.body === undefined) {
-      patch(s.id, { body: "" });
-      openBlock("body");
-    } else {
-      const id = newSectionId();
-      patch(s.id, { extras: [...(s.extras ?? []), { id, text: "" }] });
-      openBlock(id);
-    }
+    // Every added text is an extra so it always carries the style preset picker.
+    const id = newSectionId();
+    patch(s.id, { extras: [...(s.extras ?? []), { id, text: "", kind: "text" as const }] });
+    openBlock(id);
   };
 
   const ADD_ITEMS: { kind: AddKind; label: string; icon: LucideIcon }[] = [
