@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { matchesLabelFilter } from "./labelPath";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import TagsPanel from "./TagsPanel";
 import InlineEdit from "./InlineEdit";
 import ConfirmDialog from "./ConfirmDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
-import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw } from "lucide-react";
+import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, Pencil } from "lucide-react";
 import { CopyRefButton, buildPageRef } from "./copyReference";
 import { clearAllRouteSnapshots } from "./routeSnapshot";
 import { reservedPrefixFor } from "./reservedPaths";
@@ -80,6 +80,7 @@ const openLive = (path: string) => {
 };
 
 export default function PagesTab() {
+  const navigate = useNavigate();
   const [pages, setPages] = useState<Page[]>([]);
   const [q, setQ] = useState("");
   const [searchField, setSearchField] = useState<Field>("all");
@@ -496,6 +497,7 @@ export default function PagesTab() {
             <th className="px-3 py-3 text-center truncate">Copy</th>
             <th className="px-3 py-3 text-left truncate">Labels</th>
             <th className="px-3 py-3 text-left truncate">Last Mod</th>
+            <th className="px-2 py-3 text-center truncate"><span className="sr-only">Edit</span></th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">Open</span></th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">More</span></th>
           </tr>
@@ -504,7 +506,7 @@ export default function PagesTab() {
         <tbody>
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={8} className="px-3 py-10 text-center text-muted-foreground text-sm">
+              <td colSpan={9} className="px-3 py-10 text-center text-muted-foreground text-sm">
                 {timeRange === "hour" ? "No pages modified in the last hour."
                 : timeRange === "day" ? "No pages modified in the last 24 hours."
                 : timeRange === "week" ? "No pages modified in the last 7 days."
@@ -597,6 +599,16 @@ export default function PagesTab() {
                 </td>
                 <td className="px-2 py-3 text-xs text-muted-foreground whitespace-nowrap leading-tight" title={fmtDateTimeFull(p.updated_at)}>
                   {fmtDateTime(p.updated_at) || "—"}
+                </td>
+                <td className="px-1 py-3 text-center">
+                  <button
+                    onClick={() => navigate(`/manage/design?page=${p.id}`)}
+                    aria-label="Edit design"
+                    title="Edit design"
+                    className="p-1.5 rounded border hover:bg-muted inline-flex"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                 </td>
                 <td className="px-1 py-3 text-center">
                   <button

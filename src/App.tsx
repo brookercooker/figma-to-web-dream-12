@@ -32,6 +32,7 @@ const AdminIndex = lazyRetry(() => import("./pages/admin/AdminIndex.tsx"));
 const AdminUsersPage = lazyRetry(() => import("./pages/admin/UsersPage.tsx"));
 const ObjectPreview = lazyRetry(() => import("./pages/admin/ObjectPreview.tsx"));
 const ObjectWorkspace = lazyRetry(() => import("./pages/admin/ObjectWorkspace.tsx"));
+const PageDesignPage = lazyRetry(() => import("./pages/admin/PageDesignPage.tsx"));
 const ObjectDesignPage = lazyRetry(() => import("./pages/admin/ObjectDesignPage.tsx"));
 const CapturePage = lazyRetry(() => import("./pages/admin/CapturePage.tsx"));
 
@@ -97,7 +98,7 @@ const AppShell = () => {
             {/* Site Manager routes — each tab has its own URL. */}
             <Route path="/manage" element={<Navigate to="/manage/pages" replace />} />
             <Route path="/manage/pages" element={<AdminIndex />} />
-            <Route path="/manage/design" element={<AdminIndex />} />
+            <Route path="/manage/design" element={<PageDesignPage />} />
             <Route path="/manage/objects" element={<AdminIndex />} />
             <Route path="/manage/objects/design" element={<ObjectDesignPage />} />
             <Route path="/manage/objects/workspace/:slugId" element={<ObjectWorkspace />} />
