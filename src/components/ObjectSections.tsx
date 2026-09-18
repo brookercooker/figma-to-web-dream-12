@@ -167,7 +167,7 @@ export const IMAGE_HEIGHTS: { value: ImageHeight; label: string }[] = [
 
 /** Fixed heights so every image in a row lines up. */
 export const imageHeightClass: Record<ImageHeight, string> = {
-  auto: "aspect-[4/3]",
+  auto: "h-auto",
   sm: "h-40 sm:h-48",
   md: "h-56 sm:h-64",
   lg: "h-72 sm:h-96",
@@ -937,7 +937,7 @@ function Pic({
         alt={image.alt || ""}
         loading="lazy"
         style={image.focus ? { objectPosition: image.focus } : undefined}
-        className="block h-full w-full object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]"
+        className={`block w-full ${/(^|\s)h-auto(\s|$)/.test(className) ? "h-auto" : "h-full"} object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]`}
       />
       {wash ? <span aria-hidden className="pointer-events-none absolute inset-0" style={wash} /> : null}
     </>
@@ -1571,14 +1571,18 @@ function FreeText({
 
   const renderGroup = (group: (typeof groups)[number]) =>
         group.length > 1 ? (
-          <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap ${ROW_VALIGN_CLASS[section.rowVAlign ?? "middle"]} ${alignRow[section.align]}`}>
+          // Side-by-side items share one row height: media stretches to it, text centres within it.
+          <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap items-stretch ${alignRow[section.align]}`}>
             {group.map((it) => {
               const w = section.flowWidths?.[it.part];
               const a = section.flowAligns?.[it.part] ?? section.align;
+              const isMedia = it.part.startsWith("image") || it.part.startsWith("media") || it.part.startsWith("video");
+              const valign = section.rowVAlign ?? "middle";
+              const justify = valign === "top" ? "justify-start" : valign === "bottom" ? "justify-end" : "justify-center";
               return (
                 <div
                   key={it.part}
-                  className={`flex flex-col px-3 ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
+                  className={`flex flex-col px-3 ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
                   style={{ ...flowWidthStyle(w), ...partPadStyle(section, it.part) }}
                 >
                   {it.node}
