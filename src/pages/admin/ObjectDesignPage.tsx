@@ -3488,9 +3488,27 @@ export default function ObjectDesignPage() {
                     >
                       {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel &&
                       !(s.extras ?? []).length && !(s.dividers ?? []).length && !(s.videos ?? []).length ? (
-                        <p className="py-12 text-center text-sm text-muted-foreground">
-                          Blank space — add a title, an eyebrow, text, an image, or a button below.
-                        </p>
+                        <div className="flex flex-col items-center gap-3 py-12">
+                          <p className="text-sm text-muted-foreground">Blank space — pick something to add.</p>
+                          <div className="flex flex-wrap items-center justify-center gap-2">
+                            {ADD_ITEMS.map((item) => (
+                              <button
+                                key={item.kind}
+                                type="button"
+                                title={`Add ${item.label.toLowerCase()}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveId(s.id);
+                                  addElement(item.kind, s.id);
+                                }}
+                                className="flex items-center gap-1.5 rounded-md border bg-background px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground"
+                              >
+                                <item.icon className="h-4 w-4" />
+                                {item.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       ) : (
                         <SectionView section={s} />
                       )}
