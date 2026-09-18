@@ -19,6 +19,7 @@ import CreateObjectDialog from "./CreateObjectDialog";
 import { objectRegistry } from "@/components/objects/registry";
 import { sectionsFromDom } from "./importCodedObject";
 import ImagePickerDialog from "./ImagePickerDialog";
+import ImageResizeHandles from "./ImageResizeHandles";
 import VideoPickerDialog from "./VideoPickerDialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -620,6 +621,39 @@ function FloatingToolbar({
   );
 }
 
+/** The block preview area in the editor, with drag handles over images while editing. */
+function BlockCanvas({
+  section,
+  showHandles,
+  onResize,
+  onClick,
+  onDoubleClick,
+  children,
+}: {
+  section: Section;
+  showHandles: boolean;
+  onResize: (groupKey: number, size: { imageHeightPx?: number; imageWidthPx?: number }) => void;
+  onClick: (e: React.MouseEvent) => void;
+  onDoubleClick: (e: React.MouseEvent) => void;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  return (
+    <div
+      ref={ref}
+      className="relative px-4 cursor-pointer [&_img]:!scale-100 [&_img]:!transition-none [&_[data-part]]:cursor-pointer [&_[data-part]]:rounded-sm [&_[data-part]]:transition-shadow [&_[data-part]:hover]:ring-2 [&_[data-part]:hover]:ring-primary/50 [&_[data-part]:hover]:ring-offset-2"
+      onClick={onClick}
+      onDoubleClick={onDoubleClick}
+    >
+      {children}
+      {showHandles && section.type === "free" && (
+        <ImageResizeHandles section={section} containerRef={ref} onResize={onResize} />
+      )}
+    </div>
+  );
+}
+
+
 export default function ObjectDesignPage() {
   const [params, setParams] = useSearchParams();
   const selectedId = params.get("object") ?? "";
@@ -889,6 +923,27 @@ export default function ObjectDesignPage() {
     setSections((prev) => prev.map((s) => (s.id === id ? ({ ...s, ...changes } as Section) : s)));
     setDirty(true);
   };
+
+  /** Set an image grid's exact height/width from a canvas drag handle. */
+  const resizeImageGroup = (
+    id: string,
+    groupKey: number,
+    size: { imageHeightPx?: number; imageWidthPx?: number },
+  ) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const own = s.groupSettings?.[String(groupKey)] ?? {};
+        return {
+          ...s,
+          groupSettings: { ...(s.groupSettings ?? {}), [String(groupKey)]: { ...own, ...size } },
+        } as Section;
+      }),
+    );
+    setDirty(true);
+  };
+
+
 
   const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind }) => {
     setSections((prev) =>
@@ -3440,8 +3495,10 @@ export default function ObjectDesignPage() {
                       </div>
                     </div>
 
-                    <div
-                      className="px-4 cursor-pointer [&_img]:!scale-100 [&_img]:!transition-none [&_[data-part]]:cursor-pointer [&_[data-part]]:rounded-sm [&_[data-part]]:transition-shadow [&_[data-part]:hover]:ring-2 [&_[data-part]:hover]:ring-primary/50 [&_[data-part]:hover]:ring-offset-2"
+                    <BlockCanvas
+                      section={s}
+                      showHandles={active && s.type === "free" && !!s.images.length}
+                      onResize={(groupKey, size) => resizeImageGroup(s.id, groupKey, size)}
                       onClick={(e) => pickPart(s.id, e)}
                       onDoubleClick={(e) => editInline(s.id, e)}
                     >
@@ -3453,7 +3510,7 @@ export default function ObjectDesignPage() {
                       ) : (
                         <SectionView section={s} />
                       )}
-                    </div>
+                    </BlockCanvas>
 
                     {active && (
                       <div data-inspector-section={s.id} className="border-t bg-muted/20 p-4">
