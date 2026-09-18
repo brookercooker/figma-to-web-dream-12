@@ -3,7 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/prototype/client";
-import { joinPath, leafOf, matchesLabelFilter, splitPath } from "./labelPath";
+import { leafOf, matchesLabelFilter } from "./labelPath";
+import { useLabelsForScope } from "./useAllLabels";
+
 
 
 interface Choice { url: string; alt: string }
@@ -41,16 +43,16 @@ export default function ImagePickerDialog({
     })();
   }, [open]);
 
-  // Label chips list every label path in use plus their parent paths, so a
-  // parent chip rolls up everything nested beneath it (same as the Images page).
-  const allLabels = useMemo(() => {
-    const set = new Set<string>();
-    items.forEach((i) => i.labels.forEach((l) => {
-      const segs = splitPath(l);
-      for (let n = 1; n <= segs.length; n++) set.add(joinPath(segs.slice(0, n)));
-    }));
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [items]);
+  // Labels come from the same per-tool label registry the Images page uses,
+  // so chips reflect user-created labels and refresh when they change.
+  const { data: labelRows = [], refetch: refetchLabels } = useLabelsForScope("images");
+  useEffect(() => { if (open) refetchLabels(); }, [open, refetchLabels]);
+  const allLabels = useMemo(
+    () => labelRows.map((r) => r.path).sort((a, b) => a.localeCompare(b)),
+    [labelRows],
+  );
+
+
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
