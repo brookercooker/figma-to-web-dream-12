@@ -791,6 +791,7 @@ export default function ObjectDesignPage() {
   const [videoPicker, setVideoPicker] = useState<{ sectionId: string; index: number } | null>(null);
   // which element of the active section the user clicked on in the preview
   const [focusPart, setFocusPart] = useState("");
+  const [optionsFor, setOptionsFor] = useState("");
   // collapsible editing blocks: explicit overrides plus an expand/collapse-all default
   const [openBlocks, setOpenBlocks] = useState<Record<string, boolean>>({});
   const [blocksExpanded, setBlocksExpanded] = useState(false);
