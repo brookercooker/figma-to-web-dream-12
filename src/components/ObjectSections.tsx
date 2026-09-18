@@ -1616,15 +1616,20 @@ function FreeText({
                 className={`flex w-full ${alignRow[a]}`}
               >
                 <div
-                  className={`flex flex-col ${alignText[a]} ${w ? "" : "w-full"}`}
+                  className={`flex flex-col gap-4 ${alignText[a]} ${w ? "" : "w-full"}`}
                   style={{ ...flowWidthStyle(w), ...partPadStyle(section, it.part) }}
                 >
-                  {it.node}
+                  {columns[0].items.map((ci) => (
+                    <div key={ci.part} className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}>
+                      {ci.node}
+                    </div>
+                  ))}
                 </div>
               </div>
             );
           })()
         );
+  };
 
   return (
     <div className={`flex flex-col gap-4 ${alignText[section.align]}`}>
