@@ -32,7 +32,7 @@ const AdminIndex = lazyRetry(() => import("./pages/admin/AdminIndex.tsx"));
 const AdminUsersPage = lazyRetry(() => import("./pages/admin/UsersPage.tsx"));
 const ObjectPreview = lazyRetry(() => import("./pages/admin/ObjectPreview.tsx"));
 const ObjectWorkspace = lazyRetry(() => import("./pages/admin/ObjectWorkspace.tsx"));
-const PageDesignPage = lazy(() => import("./pages/admin/PageDesignPage"));
+const PageDesignPage = lazyRetry(() => import("./pages/admin/PageDesignPage.tsx"));
 const ObjectDesignPage = lazyRetry(() => import("./pages/admin/ObjectDesignPage.tsx"));
 const CapturePage = lazyRetry(() => import("./pages/admin/CapturePage.tsx"));
 
