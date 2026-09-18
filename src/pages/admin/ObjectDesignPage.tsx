@@ -101,6 +101,32 @@ function Choice<T extends string | number>({
   );
 }
 
+/** Tiny previews so each button style shows what it looks like. */
+const SolidStyleIcon = ((props: { className?: string }) => (
+  <svg viewBox="0 0 24 14" fill="none" className={props.className} aria-hidden="true">
+    <rect x="1" y="1" width="22" height="12" rx="3" fill="currentColor" />
+  </svg>
+)) as unknown as LucideIcon;
+
+const OutlineStyleIcon = ((props: { className?: string }) => (
+  <svg viewBox="0 0 24 14" fill="none" className={props.className} aria-hidden="true">
+    <rect x="1.5" y="1.5" width="21" height="11" rx="3" stroke="currentColor" strokeWidth="1.5" />
+  </svg>
+)) as unknown as LucideIcon;
+
+const LinkStyleIcon = ((props: { className?: string }) => (
+  <svg viewBox="0 0 24 14" fill="none" className={props.className} aria-hidden="true">
+    <path d="M4 7h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M4 11h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+  </svg>
+)) as unknown as LucideIcon;
+
+const BUTTON_STYLE_OPTIONS = [
+  { value: "solid" as const, label: "Solid", icon: SolidStyleIcon },
+  { value: "outline" as const, label: "Outline", icon: OutlineStyleIcon },
+  { value: "link" as const, label: "Text link", icon: LinkStyleIcon },
+];
+
 /**
  * Any color is allowed. The brand palette sits first, with a custom picker
  * after it so bespoke colors stay a deliberate second step.
@@ -1797,11 +1823,7 @@ export default function ObjectDesignPage() {
                       <Field label="Style">
                         <IconSelect
                           value={t.button?.variant ?? "solid"}
-                          options={[
-                            { value: "solid" as const, label: "Solid" },
-                            { value: "outline" as const, label: "Outline" },
-                            { value: "link" as const, label: "Text link" },
-                          ]}
+                          options={BUTTON_STYLE_OPTIONS}
                           onChange={(v) =>
                             patchImageText(section.id, index, ti, {
                               button: { ...(t.button ?? {}), variant: v as "solid" | "outline" | "link" },
@@ -2475,11 +2497,7 @@ export default function ObjectDesignPage() {
                 <div>
                   <Choice
                     value={section.buttonVariant ?? "solid"}
-                    options={[
-                      { value: "solid" as const, label: "Solid" },
-                      { value: "outline" as const, label: "Outline" },
-                      { value: "link" as const, label: "Text link" },
-                    ]}
+                    options={BUTTON_STYLE_OPTIONS}
                     onChange={(v) => patch(section.id, { buttonVariant: v })}
                   />
                 </div>
@@ -3262,11 +3280,7 @@ export default function ObjectDesignPage() {
                 <div>
                   <Choice
                     value={section.variant}
-                    options={[
-                      { value: "solid" as const, label: "Solid" },
-                      { value: "outline" as const, label: "Outline" },
-                      { value: "link" as const, label: "Text link" },
-                    ]}
+                    options={BUTTON_STYLE_OPTIONS}
                     onChange={(v) => patch(section.id, { variant: v })}
                   />
                 </div>
@@ -3775,11 +3789,7 @@ export default function ObjectDesignPage() {
               <Dropdown
                 label="Style"
                 value={sec.buttonVariant ?? "solid"}
-                options={[
-                  { value: "solid", label: "Solid" },
-                  { value: "outline", label: "Outline" },
-                  { value: "link", label: "Text link" },
-                ]}
+                options={BUTTON_STYLE_OPTIONS}
                 onChange={(v) => patch(toolbar.sectionId, { buttonVariant: v as FreeSection["buttonVariant"] })}
               />
             )}
