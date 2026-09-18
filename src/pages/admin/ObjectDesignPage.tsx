@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
 import { objectRegistry } from "@/components/objects/registry";
-import { sectionsFromDom } from "./importCodedObject";
 import ImagePickerDialog from "./ImagePickerDialog";
 import ImageResizeHandles from "./ImageResizeHandles";
 import VideoPickerDialog from "./VideoPickerDialog";
@@ -959,7 +958,6 @@ export default function ObjectDesignPage() {
   );
 
   const codedKey = object?.component_key && objectRegistry[object.component_key] ? object.component_key : null;
-  const codedRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const parsed = parseSections(object?.content);
@@ -981,22 +979,6 @@ export default function ObjectDesignPage() {
     }
     setDirty(false);
   }, [object?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /** Rebuild the coded object as editable blocks from what it renders today. */
-  const makeCodedEditable = () => {
-    const root = codedRef.current;
-    if (!root) return;
-    const built = sectionsFromDom(root);
-    if (!built.length) {
-      toast.error("Could not read this object's layout. Try adding blocks yourself.");
-      return;
-    }
-    setSections(built);
-    setActiveId(built[0].id);
-    setPreview(false);
-    setDirty(true);
-    toast.success("Ready to edit — save when the layout looks right.");
-  };
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
