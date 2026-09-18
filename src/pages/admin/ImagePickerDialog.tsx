@@ -45,11 +45,13 @@ export default function ImagePickerDialog({
 
   // Labels come from the same per-tool label registry the Images page uses,
   // so chips reflect user-created labels and refresh when they change.
-  const { data: labelRows = [] } = useLabelsForScope("images");
+  const { data: labelRows = [], refetch: refetchLabels } = useLabelsForScope("images");
+  useEffect(() => { if (open) refetchLabels(); }, [open, refetchLabels]);
   const allLabels = useMemo(
     () => labelRows.map((r) => r.path).sort((a, b) => a.localeCompare(b)),
     [labelRows],
   );
+
 
 
   const filtered = useMemo(() => {
