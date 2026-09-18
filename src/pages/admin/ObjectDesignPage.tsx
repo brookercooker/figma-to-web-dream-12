@@ -888,7 +888,9 @@ export default function ObjectDesignPage() {
     const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
     if ((e.target as HTMLElement).closest?.("a")) e.preventDefault();
     setActiveId(sectionId);
-    if (!el) return;
+    setOpenBlocks({});
+    if (!el) { setFocusPart(""); return; }
+
     const part = el.getAttribute("data-part") ?? "";
     // captions and image text boxes are edited alongside their image
     setFocusPart(
@@ -1138,11 +1140,12 @@ export default function ObjectDesignPage() {
   };
 
   // Opening a newly added element collapses every other panel.
-  const openBlock = (key: string) => {
+  const openBlock = (key: string, part = "") => {
     setBlocksExpanded(false);
-    setFocusPart("");
+    setFocusPart(part);
     setOpenBlocks({ [key]: true });
   };
+
 
   const addImageText = (sectionId: string, index: number, kind: ImageTextKind) => {
     const texts = imageTextsOf(sectionId, index);
@@ -1195,7 +1198,8 @@ export default function ObjectDesignPage() {
       }),
     );
     setDirty(true);
-    openBlock("images");
+    openBlock("images", `image:${newIndex}`);
+
     setOpenSub((s) => ({ ...s, [`img:${id}:${newIndex}`]: true }));
     setPicker({ sectionId: id, index: newIndex });
   };
@@ -1304,7 +1308,7 @@ export default function ObjectDesignPage() {
       }),
     );
     setDirty(true);
-    openBlock("Videos");
+    openBlock("Videos", "videos");
     setVideoPicker({ sectionId: id, index: newIndex });
   };
 
@@ -1329,48 +1333,51 @@ export default function ObjectDesignPage() {
     if (kind === "video") return addVideoSlot(s.id);
     if (kind === "divider") {
       const id = newSectionId();
+      const at = (s.dividers ?? []).length;
       patch(s.id, { dividers: [...(s.dividers ?? []), { id, color: "stone", width: "full", thickness: 1 }] });
-      openBlock(id);
+      openBlock(id, `divider:${at}`);
       return;
     }
     if (kind === "button") {
       if (s.buttonLabel === undefined) patch(s.id, { buttonLabel: "Explore", buttonHref: "/" });
-      openBlock("button");
+      openBlock("button", "button");
       return;
     }
+    const nextExtra = (s.extras ?? []).length;
     if (kind === "eyebrow") {
       if (s.eyebrow === undefined) {
         patch(s.id, { eyebrow: "Since 1951" });
-        openBlock("eyebrow");
+        openBlock("eyebrow", "eyebrow");
       } else {
         const id = newSectionId();
         patch(s.id, { extras: [...(s.extras ?? []), { id, text: "Since 1951", kind: "eyebrow" as const }] });
-        openBlock(id);
+        openBlock(id, `text:${nextExtra}`);
       }
       return;
     }
     if (kind === "icon") {
       const id = newSectionId();
       patch(s.id, { extras: [...(s.extras ?? []), { id, text: "sparkles", kind: "icon" as const }] });
-      openBlock(id);
+      openBlock(id, `text:${nextExtra}`);
       return;
     }
     if (kind === "title") {
       if (s.heading === undefined) {
         patch(s.id, { heading: "A quiet statement" });
-        openBlock("heading");
+        openBlock("heading", "heading");
       } else {
         const id = newSectionId();
         patch(s.id, { extras: [...(s.extras ?? []), { id, text: "A quiet statement", kind: "title" as const }] });
-        openBlock(id);
+        openBlock(id, `text:${nextExtra}`);
       }
       return;
     }
     // Every added text is an extra so it always carries the style preset picker.
     const id = newSectionId();
     patch(s.id, { extras: [...(s.extras ?? []), { id, text: "New text", kind: "text" as const }] });
-    openBlock(id);
+    openBlock(id, `text:${nextExtra}`);
   };
+
 
   const ADD_ITEMS: { kind: AddKind; label: string; icon: LucideIcon }[] = [
     { kind: "text", label: "Text", icon: AlignLeft },
@@ -2345,7 +2352,11 @@ export default function ObjectDesignPage() {
     const hasBody = section.body !== undefined;
     const hasButton = section.buttonLabel !== undefined;
 
-    const parts = orderablePartsOf(section);
+    // Only the item the user clicked in the preview gets a settings panel.
+    const rawFocus = focusPart.startsWith("video:") ? "videos" : focusPart;
+    const selected = rawFocus ? canvasPartKey(section, rawFocus) : null;
+    const parts = orderablePartsOf(section).filter((p) => p === selected);
+
 
     const renderPart = (p: string): React.ReactNode => {
       if (p === "eyebrow") return hasEyebrow ? Block({ title: "Eyebrow", icon: Tag, part: "eyebrow", flowSection: section, onDelete: () => patch(section.id, { eyebrow: undefined }), onDuplicate: () => duplicateTextInto(section, section.eyebrow, withEyebrowDefaults(section.eyebrowStyle)), children: (
@@ -3128,17 +3139,15 @@ export default function ObjectDesignPage() {
             ) : null}
           </div>
           <div className="ml-auto flex gap-2">
-            <Chip
-              label="Expand all"
-              icon={ChevronsUpDown}
-              onClick={() => { setBlocksExpanded(true); setOpenBlocks({}); }}
-            />
-            <Chip
-              label="Collapse all"
-              icon={ChevronsDownUp}
-              onClick={() => { setBlocksExpanded(false); setOpenBlocks({}); setFocusPart(""); }}
-            />
+            {parts.length ? (
+              <Chip
+                label="Close item"
+                icon={ChevronsDownUp}
+                onClick={() => { setOpenBlocks({}); setFocusPart(""); }}
+              />
+            ) : null}
           </div>
+
         </div>
 
 
@@ -3233,8 +3242,11 @@ export default function ObjectDesignPage() {
           );
         })()}
 
-
-
+        {parts.length ? null : (
+          <p className="rounded-lg border border-dashed py-6 text-center text-xs text-muted-foreground">
+            Click anything above to change it, or add something new from the right.
+          </p>
+        )}
 
       </div>
     );
