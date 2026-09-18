@@ -1594,10 +1594,14 @@ function FreeText({
                 <div
                   key={col.key}
                   className={`flex flex-col gap-4 px-3 ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
-                  style={{ ...flowWidthStyle(w), ...partPadStyle(section, it.part) }}
+                  style={flowWidthStyle(w)}
                 >
                   {col.items.map((ci) => (
-                    <div key={ci.part} className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}>
+                    <div
+                      key={ci.part}
+                      className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}
+                      style={partPadStyle(section, ci.part)}
+                    >
                       {ci.node}
                     </div>
                   ))}
@@ -1617,10 +1621,14 @@ function FreeText({
               >
                 <div
                   className={`flex flex-col gap-4 ${alignText[a]} ${w ? "" : "w-full"}`}
-                  style={{ ...flowWidthStyle(w), ...partPadStyle(section, it.part) }}
+                  style={flowWidthStyle(w)}
                 >
                   {columns[0].items.map((ci) => (
-                    <div key={ci.part} className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}>
+                    <div
+                      key={ci.part}
+                      className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}
+                      style={partPadStyle(section, ci.part)}
+                    >
                       {ci.node}
                     </div>
                   ))}
