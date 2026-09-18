@@ -365,6 +365,7 @@ export default function DesignTab() {
                     </div>
                   );
                 })}
+                {hasExisting && !currentFirst && existingCard}
               </div>
             </div>
             )}
