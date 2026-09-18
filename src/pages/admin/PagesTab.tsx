@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { matchesLabelFilter } from "./labelPath";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import TagsPanel from "./TagsPanel";
 import InlineEdit from "./InlineEdit";
 import ConfirmDialog from "./ConfirmDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
-import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw } from "lucide-react";
+import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, Pencil } from "lucide-react";
 import { CopyRefButton, buildPageRef } from "./copyReference";
 import { clearAllRouteSnapshots } from "./routeSnapshot";
 import { reservedPrefixFor } from "./reservedPaths";
@@ -597,6 +597,16 @@ export default function PagesTab() {
                 </td>
                 <td className="px-2 py-3 text-xs text-muted-foreground whitespace-nowrap leading-tight" title={fmtDateTimeFull(p.updated_at)}>
                   {fmtDateTime(p.updated_at) || "—"}
+                </td>
+                <td className="px-1 py-3 text-center">
+                  <button
+                    onClick={() => navigate(`/manage/design?page=${p.id}`)}
+                    aria-label="Edit design"
+                    title="Edit design"
+                    className="p-1.5 rounded border hover:bg-muted inline-flex"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
                 </td>
                 <td className="px-1 py-3 text-center">
                   <button
