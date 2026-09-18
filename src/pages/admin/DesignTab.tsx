@@ -53,6 +53,7 @@ export default function DesignTab() {
   const [objectFor, setObjectFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [showLive, setShowLive] = useState(true);
+  const [previewNonce, setPreviewNonce] = useState(0);
 
 
   const load = async () => {
@@ -129,18 +130,20 @@ export default function DesignTab() {
     setDirty(true);
   };
 
-  const save = async () => {
+  const save = async (next?: Block[], quiet = false) => {
     if (!page) return;
+    const payload = next ?? blocks;
     setSaving(true);
     try {
       const { error } = await (supabase as any)
         .from("pages")
-        .update({ content: blocks, build_status: "ready" })
+        .update({ content: payload, build_status: "ready" })
         .eq("id", page.id);
       if (error) throw error;
       await load();
       setDirty(false);
-      toast.success(`Saved — your page is live at ${page.path}`);
+      setPreviewNonce((n) => n + 1);
+      if (!quiet) toast.success(`Saved — your page is live at ${page.path}`);
     } catch (e: any) {
       toast.error(e?.message ?? "Could not save the page");
     } finally { setSaving(false); }
