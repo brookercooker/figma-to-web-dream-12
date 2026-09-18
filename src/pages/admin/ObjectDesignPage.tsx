@@ -1195,7 +1195,7 @@ export default function ObjectDesignPage() {
     }
     // Every added text is an extra so it always carries the style preset picker.
     const id = newSectionId();
-    patch(s.id, { extras: [...(s.extras ?? []), { id, text: "", kind: "text" as const }] });
+    patch(s.id, { extras: [...(s.extras ?? []), { id, text: "New text", kind: "text" as const }] });
     openBlock(id);
   };
 
