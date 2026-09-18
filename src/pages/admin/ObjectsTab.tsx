@@ -455,7 +455,7 @@ export default function ObjectsTab() {
             <tbody>
               {!isLoading && visible.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-3 py-16 text-center text-muted-foreground text-sm">
+                  <td colSpan={11} className="px-3 py-16 text-center text-muted-foreground text-sm">
                     {timeRange === "hour" ? "No objects modified in the last hour."
                     : timeRange === "day" ? "No objects modified in the last 24 hours."
                     : timeRange === "week" ? "No objects modified in the last 7 days."
