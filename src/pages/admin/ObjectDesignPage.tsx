@@ -2690,19 +2690,10 @@ export default function ObjectDesignPage() {
         !!group && Block({ title: groups.length > 1 ? `Images ${groups.findIndex((g) => g.key === groupKey) + 1}` : "Images", icon: ImageIcon, part, key: part, flowSection: section, onDelete: () => patch(section.id, { images: section.images.filter((img) => (img.group ?? 0) !== groupKey) }), children: (
           <>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              {group.items.map(({ image: img, index: i }) => (
-                <div key={i} data-inspector-part={`image:${i}`} className="scroll-mt-24">
-                  {ImageEditor({ section, index: i, image: img, showCaption: true })}
-                </div>
-              ))}
-
-            </div>
-            <div>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id, groupKey)}>
-                <Plus className="w-4 h-4" /> Add image
-              </Button>
-            </div>
+            <div className="rounded-md border bg-muted/20 p-3 space-y-3">
+              <div className="text-xs font-medium text-muted-foreground">
+                Applies to all {count === 1 ? "1 image" : `${count} images`} in this group
+              </div>
             <div className="flex flex-wrap items-end gap-4">
               <Field label="Shade over image">
                 <div>
@@ -2945,6 +2936,20 @@ export default function ObjectDesignPage() {
                   )}
                 </>
               )}
+            </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {group.items.map(({ image: img, index: i }) => (
+                <div key={i} data-inspector-part={`image:${i}`} className="scroll-mt-24">
+                  {ImageEditor({ section, index: i, image: img, showCaption: true })}
+                </div>
+              ))}
+
+            </div>
+            <div>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id, groupKey)}>
+                <Plus className="w-4 h-4" /> Add image
+              </Button>
             </div>
 
           </>
