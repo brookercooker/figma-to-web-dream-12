@@ -671,6 +671,8 @@ export interface FreeSection {
   flowWidths?: Record<string, number>;
   /** per-element alignment within its inline column, keyed by the same parts */
   flowAligns?: Record<string, SectionAlign>;
+  /** items sharing a stack id are stacked vertically inside one column of a side-by-side row */
+  stacks?: Record<string, string>;
   /** per-element vertical padding in pixels, keyed by the same parts */
   padsY?: Record<string, number>;
   /** per-element horizontal padding in pixels, keyed by the same parts */
@@ -1569,23 +1571,36 @@ function FreeText({
     else chunks.push({ box: b, groups: [g] });
   });
 
-  const renderGroup = (group: (typeof groups)[number]) =>
-        group.length > 1 ? (
+  const renderGroup = (group: (typeof groups)[number]) => {
+    // Items sharing a stack id occupy one column of the row, stacked vertically.
+    const columns: { key: string; items: typeof group }[] = [];
+    group.forEach((it) => {
+      const sid = section.stacks?.[it.part];
+      const last = columns[columns.length - 1];
+      if (sid && last && section.stacks?.[last.items[0].part] === sid) last.items.push(it);
+      else columns.push({ key: it.part, items: [it] });
+    });
+    return columns.length > 1 ? (
           // Side-by-side items share one row height: media stretches to it, text centres within it.
           <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap items-stretch ${alignRow[section.align]}`}>
-            {group.map((it) => {
+            {columns.map((col) => {
+              const it = col.items[0];
               const w = section.flowWidths?.[it.part];
               const a = section.flowAligns?.[it.part] ?? section.align;
-              const isMedia = it.part.startsWith("image") || it.part.startsWith("media") || it.part.startsWith("video");
+              const isMedia = col.items.length === 1 && (it.part.startsWith("image") || it.part.startsWith("media") || it.part.startsWith("video"));
               const valign = section.rowVAlign ?? "middle";
               const justify = valign === "top" ? "justify-start" : valign === "bottom" ? "justify-end" : "justify-center";
               return (
                 <div
-                  key={it.part}
-                  className={`flex flex-col px-3 ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
+                  key={col.key}
+                  className={`flex flex-col gap-4 px-3 ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
                   style={{ ...flowWidthStyle(w), ...partPadStyle(section, it.part) }}
                 >
-                  {it.node}
+                  {col.items.map((ci) => (
+                    <div key={ci.part} className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}>
+                      {ci.node}
+                    </div>
+                  ))}
                 </div>
               );
             })}
