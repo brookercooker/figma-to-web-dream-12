@@ -1823,11 +1823,7 @@ export default function ObjectDesignPage() {
                       <Field label="Style">
                         <IconSelect
                           value={t.button?.variant ?? "solid"}
-                          options={[
-                            { value: "solid" as const, label: "Solid" },
-                            { value: "outline" as const, label: "Outline" },
-                            { value: "link" as const, label: "Text link" },
-                          ]}
+                          options={BUTTON_STYLE_OPTIONS}
                           onChange={(v) =>
                             patchImageText(section.id, index, ti, {
                               button: { ...(t.button ?? {}), variant: v as "solid" | "outline" | "link" },
