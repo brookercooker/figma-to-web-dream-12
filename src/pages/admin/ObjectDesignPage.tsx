@@ -3588,6 +3588,11 @@ export default function ObjectDesignPage() {
                       onResize={(groupKey, size) => resizeImageGroup(s.id, groupKey, size)}
                       onClick={(e) => pickPart(s.id, e)}
                       onDoubleClick={(e) => editInline(s.id, e)}
+                      draggableParts={active && s.type === "free" ? orderablePartsOf(s) : []}
+                      partKeyOf={(raw) => (s.type === "free" ? canvasPartKey(s, raw) : null)}
+                      onMovePart={(fromPart, toPart, before) => {
+                        if (s.type === "free") movePartIn(s, fromPart, toPart, before);
+                      }}
                     >
                       {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel &&
                       !(s.extras ?? []).length && !(s.dividers ?? []).length && !(s.videos ?? []).length ? (
