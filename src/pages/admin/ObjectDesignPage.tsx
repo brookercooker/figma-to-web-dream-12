@@ -2111,14 +2111,26 @@ export default function ObjectDesignPage() {
       .filter((b) => b.parts.length);
   };
 
-  const movePartIn = (s: FreeSection, from: string, to: string, before = true) => {
+  const movePartIn = (s: FreeSection, from: string, to: string, before = true, side = false) => {
     if (from === to) return;
     const parts = orderablePartsOf(s);
     const next = parts.filter((p) => p !== from);
     const at = next.indexOf(to);
     if (at === -1) next.push(from);
     else next.splice(before ? at : at + 1, 0, from);
-    patch(s.id, { order: next, boxes: withGroupMembership(s, from, to) });
+    // Dropped beside an item: sit the two side by side, half the width each.
+    const flows = { ...(s.flows ?? {}) };
+    const flowWidths = { ...(s.flowWidths ?? {}) };
+    if (side) {
+      flows[from] = "inline";
+      flows[to] = "inline";
+      flowWidths[from] = 50;
+      flowWidths[to] = 50;
+    } else {
+      flows[from] = "separate";
+      delete flowWidths[from];
+    }
+    patch(s.id, { order: next, flows, flowWidths, boxes: withGroupMembership(s, from, to) });
   };
 
   /** Drop an item into a group (at the end) or out of all groups. */
