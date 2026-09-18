@@ -1730,12 +1730,12 @@ function FreeView({ section }: { section: FreeSection }) {
               </div>
               {(section.imageScrim ?? "none") === "none" ? <div className="absolute inset-0 bg-ink/35" /> : null}
               <div className={`relative flex h-full flex-col ${OVERLAY_VALIGN_CLASS[section.overlayVAlign ?? "middle"]} px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
-                {i === 0 ? <FreeText section={section} onDark /> : null}
                 <OverlayImageTexts section={section} image={img} index={i} />
               </div>
             </div>
           ))}
         </div>
+        <div className="mt-8"><FreeText section={section} /></div>
         <div className="mt-8"><FreeVideos section={section} /></div>
       </section>
     );
