@@ -680,9 +680,11 @@ function BlockCanvas({
   /** Where the dragged item would land relative to the item under the pointer. */
   const placeAt = (el: HTMLElement, e: React.DragEvent) => {
     const r = el.getBoundingClientRect();
-    const vertical = r.width / Math.max(r.height, 1) < 0.9;
-    const before = vertical ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
-    return { r, vertical, before };
+    // Near the left/right edge means "put these side by side"; otherwise stack above/below.
+    const edge = Math.max(24, Math.min(r.width * 0.3, 160));
+    const side = e.clientX < r.left + edge || e.clientX > r.right - edge;
+    const before = side ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
+    return { r, vertical: side, side, before };
   };
 
   return (
