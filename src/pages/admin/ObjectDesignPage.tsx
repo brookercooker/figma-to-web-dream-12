@@ -791,6 +791,7 @@ export default function ObjectDesignPage() {
   const [videoPicker, setVideoPicker] = useState<{ sectionId: string; index: number } | null>(null);
   // which element of the active section the user clicked on in the preview
   const [focusPart, setFocusPart] = useState("");
+  const [optionsFor, setOptionsFor] = useState("");
   // collapsible editing blocks: explicit overrides plus an expand/collapse-all default
   const [openBlocks, setOpenBlocks] = useState<Record<string, boolean>>({});
   const [blocksExpanded, setBlocksExpanded] = useState(false);
@@ -3501,6 +3502,21 @@ export default function ObjectDesignPage() {
                         <Button variant="ghost" size="sm" disabled={i === sections.length - 1} onClick={() => move(s.id, 1)}>
                           <ArrowDown className="w-4 h-4" />
                         </Button>
+                        {s.type === "free" && (
+                          <Button
+                            variant={optionsFor === s.id ? "secondary" : "ghost"}
+                            size="sm"
+                            title="Block options"
+                            aria-label="Block options"
+                            onClick={() => {
+                              setActiveId(s.id);
+                              setFocusPart("");
+                              setOptionsFor(optionsFor === s.id ? "" : s.id);
+                            }}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm" title="Duplicate block" onClick={() => duplicateSection(s.id)}>
                           <Copy className="w-4 h-4" />
                         </Button>
@@ -3510,7 +3526,7 @@ export default function ObjectDesignPage() {
                       </div>
                     </div>
 
-                    {active && s.type === "free" && !focusPart && (
+                    {active && s.type === "free" && optionsFor === s.id && !focusPart && (
                       <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s)}</div>
                     )}
 
