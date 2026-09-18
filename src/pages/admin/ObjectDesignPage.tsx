@@ -888,7 +888,9 @@ export default function ObjectDesignPage() {
     const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
     if ((e.target as HTMLElement).closest?.("a")) e.preventDefault();
     setActiveId(sectionId);
-    if (!el) return;
+    setOpenBlocks({});
+    if (!el) { setFocusPart(""); return; }
+
     const part = el.getAttribute("data-part") ?? "";
     // captions and image text boxes are edited alongside their image
     setFocusPart(
