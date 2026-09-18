@@ -2501,11 +2501,7 @@ export default function ObjectDesignPage() {
                 <div>
                   <Choice
                     value={section.buttonVariant ?? "solid"}
-                    options={[
-                      { value: "solid" as const, label: "Solid" },
-                      { value: "outline" as const, label: "Outline" },
-                      { value: "link" as const, label: "Text link" },
-                    ]}
+                    options={BUTTON_STYLE_OPTIONS}
                     onChange={(v) => patch(section.id, { buttonVariant: v })}
                   />
                 </div>
@@ -3288,11 +3284,7 @@ export default function ObjectDesignPage() {
                 <div>
                   <Choice
                     value={section.variant}
-                    options={[
-                      { value: "solid" as const, label: "Solid" },
-                      { value: "outline" as const, label: "Outline" },
-                      { value: "link" as const, label: "Text link" },
-                    ]}
+                    options={BUTTON_STYLE_OPTIONS}
                     onChange={(v) => patch(section.id, { variant: v })}
                   />
                 </div>
@@ -3801,11 +3793,7 @@ export default function ObjectDesignPage() {
               <Dropdown
                 label="Style"
                 value={sec.buttonVariant ?? "solid"}
-                options={[
-                  { value: "solid", label: "Solid" },
-                  { value: "outline", label: "Outline" },
-                  { value: "link", label: "Text link" },
-                ]}
+                options={BUTTON_STYLE_OPTIONS}
                 onChange={(v) => patch(toolbar.sectionId, { buttonVariant: v as FreeSection["buttonVariant"] })}
               />
             )}
