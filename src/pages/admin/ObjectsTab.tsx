@@ -582,6 +582,17 @@ export default function ObjectsTab() {
                       {fmtDateTime(obj.updated_at) || "—"}
                     </td>
                     <td className="px-1 py-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/manage/objects/design?object=${obj.id}`)}
+                        aria-label="Edit in the object editor"
+                        title="Edit"
+                        className="inline-flex items-center justify-center p-1.5 rounded border hover:bg-muted"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    </td>
+                    <td className="px-1 py-3 text-center">
                       <a
                         href={`/objects/${obj.slug_id}`}
                         target="_blank"
