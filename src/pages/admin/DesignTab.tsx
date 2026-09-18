@@ -97,7 +97,7 @@ export default function DesignTab() {
     setDirty(true);
   };
 
-  const addBlock = (type: Block["type"]) => {
+  const addBlock = (type: Block["type"], at?: number) => {
     const base = { id: newId(), align: "left" as BlockAlign };
     const block: Block =
       type === "image"
@@ -105,7 +105,10 @@ export default function DesignTab() {
         : type === "heading"
           ? { ...base, type: "heading", text: "New heading", size: "lg" } as TextBlock
           : { ...base, type: "text", text: "Write something here.", size: "md" } as TextBlock;
-    setBlocks((prev) => [...prev, block]);
+    setBlocks((prev) => {
+      const i = at === undefined ? prev.length : Math.max(0, Math.min(prev.length, at));
+      return [...prev.slice(0, i), block, ...prev.slice(i)];
+    });
     setActiveId(block.id);
     setShowLive(false);
     setDirty(true);
