@@ -17,7 +17,11 @@ export default function ImageResizeHandles({
   containerRef: React.RefObject<HTMLDivElement>;
   /** Part name of the item being edited — handles show only on that image. */
   activePart: string;
-  onResize: (groupKey: number, size: { imageHeightPx?: number; imageWidthPx?: number }) => void;
+  onResize: (
+    groupKey: number,
+    size: { imageHeightPx?: number; imageWidthPx?: number },
+    info?: { part: string; widthPct?: number },
+  ) => void;
 }) {
   const [rects, setRects] = useState<Rect[]>([]);
   const dragging = useRef(false);
@@ -72,11 +76,17 @@ export default function ImageResizeHandles({
     const startY = e.clientY;
     const startW = Math.round(rect.width);
     const startH = Math.round(rect.height);
+    const hostWidth = containerRef.current?.getBoundingClientRect().width ?? 0;
     const move = (ev: PointerEvent) => {
       const size: { imageHeightPx?: number; imageWidthPx?: number } = {};
-      if (dx) size.imageWidthPx = Math.max(24, startW + dx * (ev.clientX - startX));
+      let widthPct: number | undefined;
+      if (dx) {
+        const w = Math.max(24, startW + dx * (ev.clientX - startX));
+        size.imageWidthPx = w;
+        if (hostWidth > 0) widthPct = (w / hostWidth) * 100;
+      }
       if (dy) size.imageHeightPx = Math.max(24, startH + dy * (ev.clientY - startY));
-      onResize(rect.groupKey, size);
+      onResize(rect.groupKey, size, { part: rect.part, widthPct });
     };
     const up = () => {
       dragging.current = false;
