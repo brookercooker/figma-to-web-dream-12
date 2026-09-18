@@ -644,7 +644,7 @@ function BlockCanvas({
   draggableParts: string[];
   /** Map a rendered element's data-part to the item name that can be reordered. */
   partKeyOf: (raw: string) => string | null;
-  onMovePart: (from: string, to: string, before: boolean) => void;
+  onMovePart: (from: string, to: string, before: boolean, side?: boolean) => void;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -680,9 +680,11 @@ function BlockCanvas({
   /** Where the dragged item would land relative to the item under the pointer. */
   const placeAt = (el: HTMLElement, e: React.DragEvent) => {
     const r = el.getBoundingClientRect();
-    const vertical = r.width / Math.max(r.height, 1) < 0.9;
-    const before = vertical ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
-    return { r, vertical, before };
+    // Near the left/right edge means "put these side by side"; otherwise stack above/below.
+    const edge = Math.max(24, Math.min(r.width * 0.3, 160));
+    const side = e.clientX < r.left + edge || e.clientX > r.right - edge;
+    const before = side ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
+    return { r, vertical: side, side, before };
   };
 
   return (
@@ -719,7 +721,8 @@ function BlockCanvas({
         if (t && t.key !== from) {
           e.preventDefault();
           e.stopPropagation();
-          onMovePart(from, t.key, placeAt(t.el, e).before);
+          const at = placeAt(t.el, e);
+          onMovePart(from, t.key, at.before, at.side);
         }
         setFrom("");
         setDrop(null);
@@ -2108,14 +2111,26 @@ export default function ObjectDesignPage() {
       .filter((b) => b.parts.length);
   };
 
-  const movePartIn = (s: FreeSection, from: string, to: string, before = true) => {
+  const movePartIn = (s: FreeSection, from: string, to: string, before = true, side = false) => {
     if (from === to) return;
     const parts = orderablePartsOf(s);
     const next = parts.filter((p) => p !== from);
     const at = next.indexOf(to);
     if (at === -1) next.push(from);
     else next.splice(before ? at : at + 1, 0, from);
-    patch(s.id, { order: next, boxes: withGroupMembership(s, from, to) });
+    // Dropped beside an item: sit the two side by side, half the width each.
+    const flows = { ...(s.flows ?? {}) };
+    const flowWidths = { ...(s.flowWidths ?? {}) };
+    if (side) {
+      flows[from] = "inline";
+      flows[to] = "inline";
+      flowWidths[from] = 50;
+      flowWidths[to] = 50;
+    } else {
+      flows[from] = "separate";
+      delete flowWidths[from];
+    }
+    patch(s.id, { order: next, flows, flowWidths, boxes: withGroupMembership(s, from, to) });
   };
 
   /** Drop an item into a group (at the end) or out of all groups. */
@@ -3601,8 +3616,8 @@ export default function ObjectDesignPage() {
                       onDoubleClick={(e) => editInline(s.id, e)}
                       draggableParts={active && s.type === "free" ? orderablePartsOf(s) : []}
                       partKeyOf={(raw) => (s.type === "free" ? canvasPartKey(s, raw) : null)}
-                      onMovePart={(fromPart, toPart, before) => {
-                        if (s.type === "free") movePartIn(s, fromPart, toPart, before);
+                      onMovePart={(fromPart, toPart, before, side) => {
+                        if (s.type === "free") movePartIn(s, fromPart, toPart, before, side);
                       }}
                     >
                       {s.type === "free" && !s.images.length && !s.heading && !s.eyebrow && !s.body && !s.buttonLabel &&
