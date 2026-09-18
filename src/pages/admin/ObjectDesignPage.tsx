@@ -1198,7 +1198,8 @@ export default function ObjectDesignPage() {
       }),
     );
     setDirty(true);
-    openBlock("images");
+    openBlock("images", `image:${newIndex}`);
+
     setOpenSub((s) => ({ ...s, [`img:${id}:${newIndex}`]: true }));
     setPicker({ sectionId: id, index: newIndex });
   };
