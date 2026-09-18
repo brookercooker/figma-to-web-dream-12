@@ -1140,11 +1140,12 @@ export default function ObjectDesignPage() {
   };
 
   // Opening a newly added element collapses every other panel.
-  const openBlock = (key: string) => {
+  const openBlock = (key: string, part = "") => {
     setBlocksExpanded(false);
-    setFocusPart("");
+    setFocusPart(part);
     setOpenBlocks({ [key]: true });
   };
+
 
   const addImageText = (sectionId: string, index: number, kind: ImageTextKind) => {
     const texts = imageTextsOf(sectionId, index);
