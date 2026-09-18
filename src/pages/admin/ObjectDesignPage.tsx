@@ -644,7 +644,7 @@ function BlockCanvas({
   draggableParts: string[];
   /** Map a rendered element's data-part to the item name that can be reordered. */
   partKeyOf: (raw: string) => string | null;
-  onMovePart: (from: string, to: string, before: boolean) => void;
+  onMovePart: (from: string, to: string, before: boolean, side?: boolean) => void;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -721,7 +721,8 @@ function BlockCanvas({
         if (t && t.key !== from) {
           e.preventDefault();
           e.stopPropagation();
-          onMovePart(from, t.key, placeAt(t.el, e).before);
+          const at = placeAt(t.el, e);
+          onMovePart(from, t.key, at.before, at.side);
         }
         setFrom("");
         setDrop(null);
