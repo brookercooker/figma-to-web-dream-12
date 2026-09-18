@@ -60,11 +60,8 @@ export default function ImageResizeHandles({
     };
   }, [measure, containerRef, section]);
 
-  const startDrag = (
-    e: React.PointerEvent,
-    rect: Rect,
-    axis: "w" | "h" | "both",
-  ) => {
+  /** dx / dy: which way a drag on this handle grows the image (+1 right/down, -1 left/up, 0 none). */
+  const startDrag = (e: React.PointerEvent, rect: Rect, dx: -1 | 0 | 1, dy: -1 | 0 | 1) => {
     e.preventDefault();
     e.stopPropagation();
     dragging.current = true;
@@ -74,8 +71,8 @@ export default function ImageResizeHandles({
     const startH = Math.round(rect.height);
     const move = (ev: PointerEvent) => {
       const size: { imageHeightPx?: number; imageWidthPx?: number } = {};
-      if (axis !== "h") size.imageWidthPx = Math.max(24, startW + (ev.clientX - startX));
-      if (axis !== "w") size.imageHeightPx = Math.max(24, startH + (ev.clientY - startY));
+      if (dx) size.imageWidthPx = Math.max(24, startW + dx * (ev.clientX - startX));
+      if (dy) size.imageHeightPx = Math.max(24, startH + dy * (ev.clientY - startY));
       onResize(rect.groupKey, size);
     };
     const up = () => {
@@ -90,6 +87,23 @@ export default function ImageResizeHandles({
 
   if (!rects.length) return null;
 
+  const handles: {
+    key: string;
+    label: string;
+    dx: -1 | 0 | 1;
+    dy: -1 | 0 | 1;
+    className: string;
+  }[] = [
+    { key: "e", label: "Drag to set width", dx: 1, dy: 0, className: "right-[-5px] top-1/2 h-6 w-2.5 -translate-y-1/2 cursor-ew-resize" },
+    { key: "w", label: "Drag to set width", dx: -1, dy: 0, className: "left-[-5px] top-1/2 h-6 w-2.5 -translate-y-1/2 cursor-ew-resize" },
+    { key: "s", label: "Drag to set height", dx: 0, dy: 1, className: "bottom-[-5px] left-1/2 h-2.5 w-6 -translate-x-1/2 cursor-ns-resize" },
+    { key: "n", label: "Drag to set height", dx: 0, dy: -1, className: "top-[-5px] left-1/2 h-2.5 w-6 -translate-x-1/2 cursor-ns-resize" },
+    { key: "se", label: "Drag to set size", dx: 1, dy: 1, className: "bottom-[-5px] right-[-5px] h-3 w-3 cursor-nwse-resize" },
+    { key: "sw", label: "Drag to set size", dx: -1, dy: 1, className: "bottom-[-5px] left-[-5px] h-3 w-3 cursor-nesw-resize" },
+    { key: "ne", label: "Drag to set size", dx: 1, dy: -1, className: "right-[-5px] top-[-5px] h-3 w-3 cursor-nesw-resize" },
+    { key: "nw", label: "Drag to set size", dx: -1, dy: -1, className: "left-[-5px] top-[-5px] h-3 w-3 cursor-nwse-resize" },
+  ];
+
   return (
     <div className="pointer-events-none absolute inset-0 z-20">
       {rects.map((r) => (
@@ -99,30 +113,17 @@ export default function ImageResizeHandles({
           style={{ left: r.left, top: r.top, width: r.width, height: r.height }}
         >
           <div className="absolute inset-0 rounded-sm ring-1 ring-primary/30" />
-          <button
-            type="button"
-            aria-label="Drag to set image width"
-            title="Drag to set width"
-            onPointerDown={(e) => startDrag(e, r, "w")}
-            onClick={(e) => e.stopPropagation()}
-            className="pointer-events-auto absolute right-[-5px] top-1/2 h-6 w-2.5 -translate-y-1/2 cursor-ew-resize rounded-sm border border-background bg-primary"
-          />
-          <button
-            type="button"
-            aria-label="Drag to set image height"
-            title="Drag to set height"
-            onPointerDown={(e) => startDrag(e, r, "h")}
-            onClick={(e) => e.stopPropagation()}
-            className="pointer-events-auto absolute bottom-[-5px] left-1/2 h-2.5 w-6 -translate-x-1/2 cursor-ns-resize rounded-sm border border-background bg-primary"
-          />
-          <button
-            type="button"
-            aria-label="Drag to set image height and width"
-            title="Drag to set size"
-            onPointerDown={(e) => startDrag(e, r, "both")}
-            onClick={(e) => e.stopPropagation()}
-            className="pointer-events-auto absolute bottom-[-5px] right-[-5px] h-3 w-3 cursor-nwse-resize rounded-sm border border-background bg-primary"
-          />
+          {handles.map((h) => (
+            <button
+              key={h.key}
+              type="button"
+              aria-label={h.label}
+              title={h.label}
+              onPointerDown={(e) => startDrag(e, r, h.dx, h.dy)}
+              onClick={(e) => e.stopPropagation()}
+              className={`pointer-events-auto absolute rounded-sm border border-background bg-primary ${h.className}`}
+            />
+          ))}
         </div>
       ))}
     </div>
