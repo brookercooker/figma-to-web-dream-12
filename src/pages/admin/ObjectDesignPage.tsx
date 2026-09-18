@@ -3922,8 +3922,9 @@ export default function ObjectDesignPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="gap-1.5 text-destructive hover:text-destructive"
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
               title="Delete this item"
+              aria-label="Delete this item"
               onClick={() => {
                 if (imgText) removeImageText(toolbar.sectionId, imgText.img, imgText.t);
                 else if (extraIdx >= 0) removeExtra(toolbar.sectionId, extraIdx);
