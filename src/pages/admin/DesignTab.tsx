@@ -79,6 +79,8 @@ export default function DesignTab() {
     setDirty(false);
     // Pages that already have a design open showing exactly how they look today.
     setShowLive(!parsed.length);
+    setHasExisting(!parsed.length && !!page);
+    setCurrentFirst(true);
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
