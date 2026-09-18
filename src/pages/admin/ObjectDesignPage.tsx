@@ -819,6 +819,50 @@ export default function ObjectDesignPage() {
     };
   }, [toolbar]);
 
+  // Undo history: Ctrl+Z (Cmd+Z) steps back through edits to the blocks.
+  const historyRef = useRef<Section[][]>([]);
+  const lastSectionsRef = useRef<Section[]>(sections);
+  const histObjRef = useRef(selectedId);
+  const undoingRef = useRef(false);
+
+  useEffect(() => {
+    if (histObjRef.current !== selectedId) {
+      histObjRef.current = selectedId;
+      historyRef.current = [];
+      lastSectionsRef.current = sections;
+      return;
+    }
+    if (undoingRef.current) {
+      undoingRef.current = false;
+      lastSectionsRef.current = sections;
+      return;
+    }
+    const prev = lastSectionsRef.current;
+    if (prev !== sections) {
+      historyRef.current = [...historyRef.current.slice(-49), prev];
+      lastSectionsRef.current = sections;
+    }
+  }, [sections, selectedId]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.key.toLowerCase() !== "z") return;
+      const el = e.target as HTMLElement | null;
+      // let the browser handle undo while typing in a field
+      if (el && (el.isContentEditable || el.tagName === "INPUT" || el.tagName === "TEXTAREA")) return;
+      const prev = historyRef.current.pop();
+      if (!prev) return;
+      e.preventDefault();
+      undoingRef.current = true;
+      setSections(prev);
+      setDirty(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+
+
 
   // Clicking an element in the preview jumps to (and focuses) its controls.
   useEffect(() => {
