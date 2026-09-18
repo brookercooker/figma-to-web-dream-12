@@ -73,7 +73,7 @@ export default function ImagePickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[88vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-5xl h-[88vh] flex flex-col overflow-hidden">
         <DialogHeader><DialogTitle>Choose an image</DialogTitle></DialogHeader>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -124,7 +124,7 @@ export default function ImagePickerDialog({
           </div>
         )}
 
-        <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-4 flex-1 min-h-0 overflow-y-auto overscroll-contain pr-2">
           {filtered.map((it) => (
             <button
               key={it.url}
@@ -132,7 +132,7 @@ export default function ImagePickerDialog({
               className="group rounded-lg overflow-hidden border hover:border-primary transition-colors text-left"
               title={it.labels.length ? `${it.alt} — ${it.labels.join(", ")}` : it.alt}
             >
-              <img src={it.url} alt={it.alt} className="w-full aspect-square object-cover" loading="lazy" />
+              <img src={it.url} alt={it.alt} className="w-full h-48 object-cover bg-muted" loading="lazy" />
               {it.labels.length > 0 && (
                 <span className="block truncate px-1.5 py-1 text-[10px] text-muted-foreground">
                   {it.labels.join(" · ")}
