@@ -154,6 +154,52 @@ export default function DesignTab() {
     } finally { setSaving(false); }
   };
 
+  const addRow = (at: number, label: string) => (
+    <div className="my-3 flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2">
+      <span className="mr-1 text-xs text-muted-foreground">{label}</span>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("heading", at)}>
+        <Heading className="w-4 h-4" /> Heading
+      </Button>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("text", at)}>
+        <Type className="w-4 h-4" /> Text
+      </Button>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image", at)}>
+        <ImageIcon className="w-4 h-4" /> Image
+      </Button>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => { setObjectAt(at); setObjectFor("new"); }}>
+        <Boxes className="w-4 h-4" /> Object
+      </Button>
+    </div>
+  );
+
+  const existingCard = page ? (
+    <div key="current-page-section">
+      {addRow(0, "Add a section above")}
+      <div className="overflow-hidden rounded-lg border bg-background">
+        <div className="flex items-center gap-2 border-b bg-muted px-3 py-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.14em]">Current page</span>
+          <span className="text-xs text-muted-foreground">Built in code — shown here so you can add around it</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setCurrentFirst((v) => !v)}
+          >
+            {currentFirst ? <ArrowDown className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
+          </Button>
+        </div>
+        <iframe
+          key={`${page.id}-${page.updated_at}-inline`}
+          src={page.path}
+          title={`${page.name} current content`}
+          className="h-[46vh] w-full bg-background"
+        />
+      </div>
+      {addRow(blocks.length, "Add a section below")}
+    </div>
+  ) : null;
+
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
       {/* Page list */}
