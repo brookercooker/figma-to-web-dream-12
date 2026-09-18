@@ -121,7 +121,9 @@ export default function ImagePickerDialog({
             {allLabels.map((l) => (
               <button
                 key={l}
+                title={l}
                 onClick={() => setLabel(label === l ? "" : l)}
+
                 className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
                   label === l ? "bg-foreground text-background border-foreground" : "hover:bg-muted text-muted-foreground"
                 }`}
