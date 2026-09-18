@@ -3943,7 +3943,7 @@ export default function ObjectDesignPage() {
                 setFocusPart("");
               }}
             >
-              <Trash2 className="w-3.5 h-3.5" /> Delete
+              <Trash2 className="w-4 h-4" />
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setToolbar(null)}>Done</Button>
           </FloatingToolbar>
