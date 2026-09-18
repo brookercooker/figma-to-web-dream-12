@@ -2121,16 +2121,26 @@ export default function ObjectDesignPage() {
     // Dropped beside an item: sit the two side by side, half the width each.
     const flows = { ...(s.flows ?? {}) };
     const flowWidths = { ...(s.flowWidths ?? {}) };
+    const stacks = { ...(s.stacks ?? {}) };
     if (side) {
       flows[from] = "inline";
       flows[to] = "inline";
       flowWidths[from] = 50;
       flowWidths[to] = 50;
+      delete stacks[from];
+    } else if (flows[to] === "inline") {
+      // Dropped above/below an item that shares a row: stack the two inside that column.
+      const sid = stacks[to] ?? `stack-${to}`;
+      stacks[to] = sid;
+      stacks[from] = sid;
+      flows[from] = "inline";
+      delete flowWidths[from];
     } else {
       flows[from] = "separate";
       delete flowWidths[from];
+      delete stacks[from];
     }
-    patch(s.id, { order: next, flows, flowWidths, boxes: withGroupMembership(s, from, to) });
+    patch(s.id, { order: next, flows, flowWidths, stacks, boxes: withGroupMembership(s, from, to) });
   };
 
   /** Drop an item into a group (at the end) or out of all groups. */
