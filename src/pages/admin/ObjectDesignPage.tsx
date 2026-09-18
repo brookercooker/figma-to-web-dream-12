@@ -3412,19 +3412,14 @@ export default function ObjectDesignPage() {
             <div className="border rounded-lg bg-background overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
                 {!sections.length && codedKey
-                  ? "This object was built in code. Make it editable to change it here."
+                  ? "This object was built in code and can't be changed here."
                   : "This is how the object looks. Switch to Edit to change it."}
-                {!sections.length && codedKey && (
-                  <Button size="sm" className="gap-2" onClick={makeCodedEditable}>
-                    <Pencil className="w-4 h-4" /> Make editable
-                  </Button>
-                )}
               </div>
               <div className="p-4">
                 {sections.length ? (
                   <SectionFlowList sections={sections} />
                 ) : codedKey ? (
-                  <div ref={codedRef}>
+                  <div>
                     <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-muted" />}>
                       {(() => {
                         const C = objectRegistry[codedKey].component as React.ComponentType;
