@@ -3132,17 +3132,15 @@ export default function ObjectDesignPage() {
             ) : null}
           </div>
           <div className="ml-auto flex gap-2">
-            <Chip
-              label="Expand all"
-              icon={ChevronsUpDown}
-              onClick={() => { setBlocksExpanded(true); setOpenBlocks({}); }}
-            />
-            <Chip
-              label="Collapse all"
-              icon={ChevronsDownUp}
-              onClick={() => { setBlocksExpanded(false); setOpenBlocks({}); setFocusPart(""); }}
-            />
+            {parts.length ? (
+              <Chip
+                label="Close item"
+                icon={ChevronsDownUp}
+                onClick={() => { setOpenBlocks({}); setFocusPart(""); }}
+              />
+            ) : null}
           </div>
+
         </div>
 
 
