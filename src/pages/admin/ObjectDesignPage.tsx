@@ -620,6 +620,39 @@ function FloatingToolbar({
   );
 }
 
+/** The block preview area in the editor, with drag handles over images while editing. */
+function BlockCanvas({
+  section,
+  showHandles,
+  onResize,
+  onClick,
+  onDoubleClick,
+  children,
+}: {
+  section: Section;
+  showHandles: boolean;
+  onResize: (groupKey: number, size: { imageHeightPx?: number; imageWidthPx?: number }) => void;
+  onClick: (e: React.MouseEvent) => void;
+  onDoubleClick: (e: React.MouseEvent) => void;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  return (
+    <div
+      ref={ref}
+      className="relative px-4 cursor-pointer [&_img]:!scale-100 [&_img]:!transition-none [&_[data-part]]:cursor-pointer [&_[data-part]]:rounded-sm [&_[data-part]]:transition-shadow [&_[data-part]:hover]:ring-2 [&_[data-part]:hover]:ring-primary/50 [&_[data-part]:hover]:ring-offset-2"
+      onClick={onClick}
+      onDoubleClick={onDoubleClick}
+    >
+      {children}
+      {showHandles && section.type === "free" && (
+        <ImageResizeHandles section={section} containerRef={ref} onResize={onResize} />
+      )}
+    </div>
+  );
+}
+
+
 export default function ObjectDesignPage() {
   const [params, setParams] = useSearchParams();
   const selectedId = params.get("object") ?? "";
