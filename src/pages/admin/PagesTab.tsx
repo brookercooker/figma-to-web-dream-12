@@ -80,6 +80,7 @@ const openLive = (path: string) => {
 };
 
 export default function PagesTab() {
+  const navigate = useNavigate();
   const [pages, setPages] = useState<Page[]>([]);
   const [q, setQ] = useState("");
   const [searchField, setSearchField] = useState<Field>("all");
@@ -496,6 +497,7 @@ export default function PagesTab() {
             <th className="px-3 py-3 text-center truncate">Copy</th>
             <th className="px-3 py-3 text-left truncate">Labels</th>
             <th className="px-3 py-3 text-left truncate">Last Mod</th>
+            <th className="px-2 py-3 text-center truncate"><span className="sr-only">Edit</span></th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">Open</span></th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">More</span></th>
           </tr>
