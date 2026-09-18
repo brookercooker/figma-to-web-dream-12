@@ -254,15 +254,6 @@ export default function DesignTab() {
                   Edit
                 </button>
               </div>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("heading")}>
-                <Heading className="w-4 h-4" /> Heading
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("text")}>
-                <Type className="w-4 h-4" /> Text
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image")}>
-                <ImageIcon className="w-4 h-4" /> Image
-              </Button>
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
                 <Boxes className="w-4 h-4" /> Object
               </Button>
