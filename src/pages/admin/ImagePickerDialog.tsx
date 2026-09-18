@@ -39,20 +39,25 @@ export default function ImagePickerDialog({
     })();
   }, [open]);
 
+  // Label chips list every label path in use plus their parent paths, so a
+  // parent chip rolls up everything nested beneath it (same as the Images page).
   const allLabels = useMemo(() => {
     const set = new Set<string>();
-    items.forEach((i) => i.labels.forEach((l) => set.add(l)));
+    items.forEach((i) => i.labels.forEach((l) => {
+      const segs = splitPath(l);
+      for (let n = 1; n <= segs.length; n++) set.add(joinPath(segs.slice(0, n)));
+    }));
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [items]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     const list = items.filter((i) => {
-      if (label && !i.labels.includes(label)) return false;
+      if (label && !matchesLabelFilter(i.labels, label)) return false;
       if (!term) return true;
       return (
         i.alt.toLowerCase().includes(term) ||
-        i.labels.some((l) => l.toLowerCase().includes(term))
+        i.labels.some((l) => l.toLowerCase().includes(term) || leafOf(l).toLowerCase().includes(term))
       );
     });
     // Sort by label first so search results group together by label.
@@ -62,6 +67,7 @@ export default function ImagePickerDialog({
       return la === lb ? a.alt.localeCompare(b.alt) : la.localeCompare(lb);
     });
   }, [items, q, label]);
+
 
   const upload = async (file: File) => {
     const path = `design/${Date.now()}-${file.name}`;
