@@ -1413,7 +1413,7 @@ export default function ObjectDesignPage() {
       {showCaption && imgOpen && (
         <div className="space-y-2 rounded-md border border-dashed p-2">
           <div className="flex flex-wrap items-center gap-1">
-            {IMAGE_TEXT_KINDS.map((k) => {
+            {IMAGE_TEXT_KINDS.filter((k) => !["eyebrow", "title", "subheading"].includes(k.value)).map((k) => {
               const Icon = IMAGE_TEXT_ICONS[k.value];
               return (
                 <Button
@@ -1506,7 +1506,7 @@ export default function ObjectDesignPage() {
                   <IconSelect
                     value={t.kind}
                     options={IMAGE_TEXT_KINDS.map((k) => ({ value: k.value, label: k.label }))}
-                    onChange={(v) => patchImageText(section.id, index, ti, { kind: v })}
+                    onChange={(v) => patchImageText(section.id, index, ti, { kind: v, style: undefined })}
                   />
                   {t.kind === "divider" ? (
                     <>
