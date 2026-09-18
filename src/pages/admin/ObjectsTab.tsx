@@ -426,6 +426,7 @@ export default function ObjectsTab() {
               <col style={{ width: 90 }} />
               <col style={{ width: 48 }} />
               <col style={{ width: 48 }} />
+              <col style={{ width: 48 }} />
             </colgroup>
             <thead>
               <tr className="border-b bg-muted/30">
@@ -446,6 +447,7 @@ export default function ObjectsTab() {
                 <th className="px-3 py-3 text-center">Copy</th>
                 <th className="px-3 py-3 text-left">Labels</th>
                 <th className="px-3 py-3 text-center">Last Mod</th>
+                <th className="px-2 py-3 text-center"><span className="sr-only">Edit</span></th>
                 <th className="px-2 py-3 text-center"><span className="sr-only">Open</span></th>
                 <th className="px-2 py-3 text-center"><span className="sr-only">More</span></th>
               </tr>
@@ -453,7 +455,7 @@ export default function ObjectsTab() {
             <tbody>
               {!isLoading && visible.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-3 py-16 text-center text-muted-foreground text-sm">
+                  <td colSpan={11} className="px-3 py-16 text-center text-muted-foreground text-sm">
                     {timeRange === "hour" ? "No objects modified in the last hour."
                     : timeRange === "day" ? "No objects modified in the last 24 hours."
                     : timeRange === "week" ? "No objects modified in the last 7 days."
@@ -578,6 +580,17 @@ export default function ObjectsTab() {
                     </td>
                     <td className="px-2 py-3 text-xs text-muted-foreground whitespace-nowrap leading-tight text-center" title={fmtDateTimeFull(obj.updated_at)}>
                       {fmtDateTime(obj.updated_at) || "—"}
+                    </td>
+                    <td className="px-1 py-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/manage/objects/design?object=${obj.id}`)}
+                        aria-label="Edit in the object editor"
+                        title="Edit"
+                        className="inline-flex items-center justify-center p-1.5 rounded border hover:bg-muted"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
                     </td>
                     <td className="px-1 py-3 text-center">
                       <a
