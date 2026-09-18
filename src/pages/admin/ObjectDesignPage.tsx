@@ -3928,6 +3928,31 @@ export default function ObjectDesignPage() {
                 onChange={(v) => patch(toolbar.sectionId, { buttonBg: (v || undefined) as TextColor | undefined })}
               />
             )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1.5 text-destructive hover:text-destructive"
+              title="Delete this item"
+              onClick={() => {
+                if (imgText) removeImageText(toolbar.sectionId, imgText.img, imgText.t);
+                else if (extraIdx >= 0) removeExtra(toolbar.sectionId, extraIdx);
+                else {
+                  const contentField: Record<string, string> = {
+                    eyebrowStyle: "eyebrow",
+                    textStyle: "heading",
+                    bodyStyle: "body",
+                    captionStyle: "caption",
+                    labelStyle: "buttonLabel",
+                  };
+                  const f = contentField[fieldKey];
+                  if (f) patch(toolbar.sectionId, { [f]: undefined } as Partial<Section>);
+                }
+                setToolbar(null);
+                setFocusPart("");
+              }}
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => setToolbar(null)}>Done</Button>
           </FloatingToolbar>
         );
