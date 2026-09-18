@@ -248,13 +248,14 @@ export default function DesignTab() {
               </div>
             ) : (
             <div className="border rounded-lg bg-background p-6 sm:p-10 min-h-[50vh]">
-              {!blocks.length && (
+              {!blocks.length && !hasExisting && (
                 <p className="text-sm text-muted-foreground text-center py-16">
                   This page is empty. Add a heading, some text, or an image to begin.
                 </p>
               )}
 
               <div className="max-w-3xl mx-auto">
+                {hasExisting && currentFirst && existingCard}
                 {blocks.map((b, i) => {
                   const active = b.id === activeId;
                   return (
