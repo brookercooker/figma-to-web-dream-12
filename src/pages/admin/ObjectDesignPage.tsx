@@ -2346,6 +2346,165 @@ export default function ObjectDesignPage() {
   };
 
 
+  const freeToolbar = (section: FreeSection) => {
+    const parts = orderablePartsOf(section);
+    return (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1 rounded-lg border bg-background p-1.5 shadow-sm">
+            {([
+              { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
+              { value: "center" as SectionAlign, label: "Align center", icon: AlignCenter },
+              { value: "right" as SectionAlign, label: "Align right", icon: AlignRight },
+            ]).map((o) => (
+              <Button
+                key={o.value}
+                type="button"
+                size="sm"
+                variant={section.align === o.value ? "default" : "ghost"}
+                aria-label={o.label}
+                title={o.label}
+                className="h-8 w-8 p-0"
+                onClick={() => patch(section.id, { align: o.value })}
+              >
+                <o.icon className="h-4 w-4" />
+              </Button>
+            ))}
+            {parts.length > 1 && (
+              <>
+                <span className="mx-1 h-5 w-px bg-border" />
+                {([
+                  { value: "top" as RowVAlign, label: "Same row: top", icon: AlignVerticalJustifyStart },
+                  { value: "middle" as RowVAlign, label: "Same row: middle", icon: AlignVerticalJustifyCenter },
+                  { value: "bottom" as RowVAlign, label: "Same row: bottom", icon: AlignVerticalJustifyEnd },
+                  { value: "baseline" as RowVAlign, label: "Same row: text line", icon: Baseline },
+                ]).map((o) => (
+                  <Button
+                    key={o.value}
+                    type="button"
+                    size="sm"
+                    variant={(section.rowVAlign ?? "middle") === o.value ? "default" : "ghost"}
+                    aria-label={o.label}
+                    title={o.label}
+                    className="h-8 w-8 p-0"
+                    onClick={() => patch(section.id, { rowVAlign: o.value })}
+                  >
+                    <o.icon className="h-4 w-4" />
+                  </Button>
+                ))}
+              </>
+            )}
+            <span className="mx-1 h-5 w-px bg-border" />
+            {([
+              { value: "separate" as SectionFlow, label: "Vertical stack", icon: Rows2 },
+              { value: "inline" as SectionFlow, label: "Horizontal stack", icon: Columns2 },
+            ]).map((o) => (
+              <Button
+                key={o.value}
+                type="button"
+                size="sm"
+                variant={(section.flow ?? "separate") === o.value ? "default" : "ghost"}
+                aria-label={o.label}
+                title={o.label}
+                className="h-8 w-8 p-0"
+                onClick={() => patch(section.id, { flow: o.value } as Partial<Section>)}
+              >
+                <o.icon className="h-4 w-4" />
+              </Button>
+            ))}
+            {section.flow === "inline" && (
+              <label className="ml-1 flex items-center gap-1 text-xs text-muted-foreground">
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  className="h-8 w-20"
+                  placeholder="Auto"
+                  value={section.flowWidth ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      patch(section.id, { flowWidth: undefined } as Partial<Section>);
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (Number.isNaN(n)) return;
+                    patch(section.id, { flowWidth: Math.min(100, Math.max(0, n)) } as Partial<Section>);
+                  }}
+                />
+                %
+              </label>
+            )}
+            <span className="mx-1 h-5 w-px bg-border" />
+            {([
+              { key: "padY" as const, label: "Space above and below (px)", short: "V" },
+              { key: "padX" as const, label: "Space left and right (px)", short: "H" },
+            ]).map((o) => (
+              <label key={o.key} className="ml-1 flex items-center gap-1 text-xs text-muted-foreground" title={o.label}>
+                {o.short}
+                <Input
+                  type="number"
+                  min={-240}
+                  max={240}
+                  className="h-8 w-16"
+                  placeholder={o.key === "padY" ? "48" : "0"}
+                  aria-label={o.label}
+                  value={(section as { padY?: number; padX?: number })[o.key] ?? ""}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      patch(section.id, { [o.key]: undefined } as Partial<Section>);
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (Number.isNaN(n)) return;
+                    patch(section.id, { [o.key]: Math.min(240, Math.max(-240, n)) } as Partial<Section>);
+                  }}
+                />
+              </label>
+            ))}
+            <span className="mx-1 h-5 w-px bg-border" />
+            <ColorDropdown
+              label="Background"
+              value={(section as FreeSection).bg ?? ""}
+              fallback=""
+              options={BG_COLORS as { value: string; label: string; swatch: string }[]}
+              onChange={(v) => patch(section.id, { bg: v || undefined } as Partial<Section>)}
+            />
+            <button
+              type="button"
+              className={`flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs ${
+                (section as FreeSection).bgImage ? "border-foreground/40 bg-muted" : "bg-background"
+              }`}
+              title="Background image"
+              onClick={() => setBgPicker(section.id)}
+            >
+              <ImageIcon className="h-3.5 w-3.5" />
+              Image
+            </button>
+            {(section as FreeSection).bgImage ? (
+              <button
+                type="button"
+                className="h-7 rounded-md border bg-background px-2 text-xs"
+                onClick={() => patch(section.id, { bgImage: undefined } as Partial<Section>)}
+              >
+                Clear image
+              </button>
+            ) : null}
+          </div>
+          <div className="ml-auto flex gap-2">
+            {parts.length ? (
+              <Chip
+                label="Close item"
+                icon={ChevronsDownUp}
+                onClick={() => { setOpenBlocks({}); setFocusPart(""); }}
+              />
+            ) : null}
+          </div>
+
+        </div>
+    );
+  };
+
   const freeInspector = (section: FreeSection) => {
     const hasTitle = section.heading !== undefined;
     const hasEyebrow = section.eyebrow !== undefined;
@@ -2996,159 +3155,6 @@ export default function ObjectDesignPage() {
           setDropGroup(null);
         }}
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap items-center gap-1 rounded-lg border bg-background p-1.5 shadow-sm">
-            {([
-              { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
-              { value: "center" as SectionAlign, label: "Align center", icon: AlignCenter },
-              { value: "right" as SectionAlign, label: "Align right", icon: AlignRight },
-            ]).map((o) => (
-              <Button
-                key={o.value}
-                type="button"
-                size="sm"
-                variant={section.align === o.value ? "default" : "ghost"}
-                aria-label={o.label}
-                title={o.label}
-                className="h-8 w-8 p-0"
-                onClick={() => patch(section.id, { align: o.value })}
-              >
-                <o.icon className="h-4 w-4" />
-              </Button>
-            ))}
-            {parts.length > 1 && (
-              <>
-                <span className="mx-1 h-5 w-px bg-border" />
-                {([
-                  { value: "top" as RowVAlign, label: "Same row: top", icon: AlignVerticalJustifyStart },
-                  { value: "middle" as RowVAlign, label: "Same row: middle", icon: AlignVerticalJustifyCenter },
-                  { value: "bottom" as RowVAlign, label: "Same row: bottom", icon: AlignVerticalJustifyEnd },
-                  { value: "baseline" as RowVAlign, label: "Same row: text line", icon: Baseline },
-                ]).map((o) => (
-                  <Button
-                    key={o.value}
-                    type="button"
-                    size="sm"
-                    variant={(section.rowVAlign ?? "middle") === o.value ? "default" : "ghost"}
-                    aria-label={o.label}
-                    title={o.label}
-                    className="h-8 w-8 p-0"
-                    onClick={() => patch(section.id, { rowVAlign: o.value })}
-                  >
-                    <o.icon className="h-4 w-4" />
-                  </Button>
-                ))}
-              </>
-            )}
-            <span className="mx-1 h-5 w-px bg-border" />
-            {([
-              { value: "separate" as SectionFlow, label: "Vertical stack", icon: Rows2 },
-              { value: "inline" as SectionFlow, label: "Horizontal stack", icon: Columns2 },
-            ]).map((o) => (
-              <Button
-                key={o.value}
-                type="button"
-                size="sm"
-                variant={(section.flow ?? "separate") === o.value ? "default" : "ghost"}
-                aria-label={o.label}
-                title={o.label}
-                className="h-8 w-8 p-0"
-                onClick={() => patch(section.id, { flow: o.value } as Partial<Section>)}
-              >
-                <o.icon className="h-4 w-4" />
-              </Button>
-            ))}
-            {section.flow === "inline" && (
-              <label className="ml-1 flex items-center gap-1 text-xs text-muted-foreground">
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  className="h-8 w-20"
-                  placeholder="Auto"
-                  value={section.flowWidth ?? ""}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    if (raw === "") {
-                      patch(section.id, { flowWidth: undefined } as Partial<Section>);
-                      return;
-                    }
-                    const n = Number(raw);
-                    if (Number.isNaN(n)) return;
-                    patch(section.id, { flowWidth: Math.min(100, Math.max(0, n)) } as Partial<Section>);
-                  }}
-                />
-                %
-              </label>
-            )}
-            <span className="mx-1 h-5 w-px bg-border" />
-            {([
-              { key: "padY" as const, label: "Space above and below (px)", short: "V" },
-              { key: "padX" as const, label: "Space left and right (px)", short: "H" },
-            ]).map((o) => (
-              <label key={o.key} className="ml-1 flex items-center gap-1 text-xs text-muted-foreground" title={o.label}>
-                {o.short}
-                <Input
-                  type="number"
-                  min={-240}
-                  max={240}
-                  className="h-8 w-16"
-                  placeholder={o.key === "padY" ? "48" : "0"}
-                  aria-label={o.label}
-                  value={(section as { padY?: number; padX?: number })[o.key] ?? ""}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    if (raw === "") {
-                      patch(section.id, { [o.key]: undefined } as Partial<Section>);
-                      return;
-                    }
-                    const n = Number(raw);
-                    if (Number.isNaN(n)) return;
-                    patch(section.id, { [o.key]: Math.min(240, Math.max(-240, n)) } as Partial<Section>);
-                  }}
-                />
-              </label>
-            ))}
-            <span className="mx-1 h-5 w-px bg-border" />
-            <ColorDropdown
-              label="Background"
-              value={(section as FreeSection).bg ?? ""}
-              fallback=""
-              options={BG_COLORS as { value: string; label: string; swatch: string }[]}
-              onChange={(v) => patch(section.id, { bg: v || undefined } as Partial<Section>)}
-            />
-            <button
-              type="button"
-              className={`flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs ${
-                (section as FreeSection).bgImage ? "border-foreground/40 bg-muted" : "bg-background"
-              }`}
-              title="Background image"
-              onClick={() => setBgPicker(section.id)}
-            >
-              <ImageIcon className="h-3.5 w-3.5" />
-              Image
-            </button>
-            {(section as FreeSection).bgImage ? (
-              <button
-                type="button"
-                className="h-7 rounded-md border bg-background px-2 text-xs"
-                onClick={() => patch(section.id, { bgImage: undefined } as Partial<Section>)}
-              >
-                Clear image
-              </button>
-            ) : null}
-          </div>
-          <div className="ml-auto flex gap-2">
-            {parts.length ? (
-              <Chip
-                label="Close item"
-                icon={ChevronsDownUp}
-                onClick={() => { setOpenBlocks({}); setFocusPart(""); }}
-              />
-            ) : null}
-          </div>
-
-        </div>
 
 
 
@@ -3673,6 +3679,10 @@ export default function ObjectDesignPage() {
                         </Button>
                       </div>
                     </div>
+
+                    {active && s.type === "free" && (
+                      <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s)}</div>
+                    )}
 
                     <BlockCanvas
                       section={s}
