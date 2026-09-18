@@ -890,6 +890,27 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  /** Set an image grid's exact height/width from a canvas drag handle. */
+  const resizeImageGroup = (
+    id: string,
+    groupKey: number,
+    size: { imageHeightPx?: number; imageWidthPx?: number },
+  ) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const own = s.groupSettings?.[String(groupKey)] ?? {};
+        return {
+          ...s,
+          groupSettings: { ...(s.groupSettings ?? {}), [String(groupKey)]: { ...own, ...size } },
+        } as Section;
+      }),
+    );
+    setDirty(true);
+  };
+
+
+
   const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind }) => {
     setSections((prev) =>
       prev.map((s) => {
