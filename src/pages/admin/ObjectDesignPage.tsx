@@ -1159,7 +1159,8 @@ export default function ObjectDesignPage() {
     patchImage(sectionId, index, {
       texts: [...texts, { id: newSectionId(), kind, text: "" }],
     });
-    openBlock("images");
+    // keep the image's own panel open when a text or other element is added to it
+    openBlock("images", `image:${index}`);
     setOpenSub((s) => ({
       ...s,
       [`img:${sectionId}:${index}`]: true,
@@ -1247,7 +1248,7 @@ export default function ObjectDesignPage() {
       }),
     );
     setDirty(true);
-    openBlock("images");
+    openBlock("images", `image:${index + 1}`);
     setOpenSub((s) => ({ ...s, [`img:${id}:${index + 1}`]: true }));
   };
 
