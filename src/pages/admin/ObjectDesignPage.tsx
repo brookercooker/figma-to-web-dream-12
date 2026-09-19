@@ -2690,13 +2690,20 @@ export default function ObjectDesignPage() {
                     </Field>
                   </>
                 ) : (
-                  <Field label={kindLabel}>
-                    <Textarea
-                      rows={kind === "text" ? 4 : 2}
-                      value={t.text}
-                      onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                  <>
+                    <Field label={kindLabel}>
+                      <Textarea
+                        rows={kind === "text" ? 4 : 2}
+                        value={t.text}
+                        onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                      />
+                    </Field>
+                    <TextIconField
+                      icon={t.icon}
+                      side={t.iconSide}
+                      onChange={(n) => patchExtra(section.id, i, { icon: n.icon, iconSide: n.iconSide })}
                     />
-                  </Field>
+                  </>
                 )}
                 <TextStyleFields
                   label={`${kindLabel} style`}
