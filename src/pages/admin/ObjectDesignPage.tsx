@@ -3527,9 +3527,6 @@ export default function ObjectDesignPage() {
                       </div>
                     </div>
 
-                    {active && s.type === "free" && optionsFor === s.id && !focusPart && (
-                      <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s)}</div>
-                    )}
 
                     <BlockCanvas
                       section={s}
@@ -3572,42 +3569,50 @@ export default function ObjectDesignPage() {
                       )}
                     </BlockCanvas>
 
-                    {active && (
-                      <div data-inspector-section={s.id} className="border-t bg-muted/20 p-4">
-                        {Inspector({ section: s })}
-                      </div>
-                    )}
 
                   </div>
                 );
               })}
+
+              <div className="rounded-lg border bg-background p-3 shadow-sm">
+                <p className="pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Add
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {ADD_ITEMS.map((item) => (
+                    <button
+                      key={item.kind}
+                      type="button"
+                      title={`Add ${item.label.toLowerCase()}`}
+                      onClick={() => addElement(item.kind)}
+                      className="flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </section>
 
-        {object && !preview && (
-          <aside className="hidden lg:block lg:sticky lg:top-4 lg:self-start">
-            <div className="w-[84px] rounded-lg border bg-background p-2 shadow-sm">
-              <p className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Add
-              </p>
-              <div className="flex flex-col gap-1.5">
-                {ADD_ITEMS.map((item) => (
-                  <button
-                    key={item.kind}
-                    type="button"
-                    title={`Add ${item.label.toLowerCase()}`}
-                    onClick={() => addElement(item.kind)}
-                    className="flex flex-col items-center gap-1 rounded-md border border-transparent px-1 py-2 text-[10px] text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground"
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {item.label}
-                  </button>
-                ))}
+        {object && !preview && (() => {
+          const s = sections.find((x) => x.id === activeId);
+          if (!s) return null;
+          const showToolbar = s.type === "free" && optionsFor === s.id && !focusPart;
+          return (
+            <aside className="lg:sticky lg:top-4 lg:self-start">
+              <div className="w-full lg:w-[380px] max-h-[82vh] overflow-y-auto rounded-lg border bg-background shadow-sm">
+                <p className="border-b bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  {showToolbar ? "Block options" : "Settings"}
+                </p>
+                {showToolbar && <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s)}</div>}
+                <div data-inspector-section={s.id} className="p-4">{Inspector({ section: s })}</div>
               </div>
-            </div>
-          </aside>
-        )}
+            </aside>
+          );
+        })()}
       </main>
 
       {toolbar && (() => {
