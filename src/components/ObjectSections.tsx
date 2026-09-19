@@ -835,7 +835,7 @@ export function parseSections(value: unknown): Section[] {
 
 /* ------------------------------- rendering ------------------------------- */
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   ChevronLeft, ChevronRight, Pause, Play,
   Calendar, Ruler, Compass, Lightbulb, MapPin, Phone, Mail, Clock, Star, Heart,
