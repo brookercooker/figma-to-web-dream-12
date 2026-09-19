@@ -101,6 +101,14 @@ function Choice<T extends string | number>({
   );
 }
 
+/** Screen widths the editor can preview at. */
+type ViewportKey = "desktop" | "tablet" | "mobile";
+const VIEWPORTS: { key: ViewportKey; label: string; width?: number; icon: LucideIcon }[] = [
+  { key: "desktop", label: "Desktop", icon: Monitor },
+  { key: "tablet", label: "Tablet", width: 768, icon: Tablet },
+  { key: "mobile", label: "Mobile", width: 390, icon: Smartphone },
+];
+
 /** Tiny previews so each button style shows what it looks like. */
 const SolidStyleIcon = ((props: { className?: string }) => (
   <svg viewBox="0 0 24 14" fill="none" className={props.className} aria-hidden="true">
