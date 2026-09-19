@@ -11,12 +11,20 @@ import {
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
   LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
   Video as VideoIcon, Minus, Link as LinkIcon, Copy, PanelLeftClose, PanelLeftOpen,
+  PanelTop, PanelBottom,
   Monitor, Tablet, Smartphone,
   AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, Baseline,
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
+
+const ICON_LABEL_SIDES: { value: "before" | "after" | "above" | "below"; label: string; icon: LucideIcon }[] = [
+  { value: "before", label: "Before the icon", icon: PanelLeft },
+  { value: "after", label: "After the icon", icon: PanelRight },
+  { value: "above", label: "Above the icon", icon: PanelTop },
+  { value: "below", label: "Below the icon", icon: PanelBottom },
+];
 import { objectRegistry } from "@/components/objects/registry";
 import ImagePickerDialog from "./ImagePickerDialog";
 import ImageResizeHandles from "./ImageResizeHandles";
@@ -1942,20 +1950,12 @@ export default function ObjectDesignPage() {
                         />
                       </Field>
                       <Field label="Text sits">
-                        <select
-                          className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                        <Choice
                           value={t.iconLabelSide ?? "after"}
-                          onChange={(e) =>
-                            patchImageText(section.id, index, ti, {
-                              iconLabelSide: e.target.value as "before" | "after" | "above" | "below",
-                            })
-                          }
-                        >
-                          <option value="after">After the icon</option>
-                          <option value="before">Before the icon</option>
-                          <option value="above">Above the icon</option>
-                          <option value="below">Below the icon</option>
-                        </select>
+                          options={ICON_LABEL_SIDES}
+                          hideLabels
+                          onChange={(v) => patchImageText(section.id, index, ti, { iconLabelSide: v })}
+                        />
                       </Field>
                       <Choice
                         value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
@@ -2630,20 +2630,12 @@ export default function ObjectDesignPage() {
                       />
                     </Field>
                     <Field label="Text sits">
-                      <select
-                        className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                      <Choice
                         value={t.iconLabelSide ?? "after"}
-                        onChange={(e) =>
-                          patchExtra(section.id, i, {
-                            iconLabelSide: e.target.value as "before" | "after" | "above" | "below",
-                          })
-                        }
-                      >
-                        <option value="after">After the icon</option>
-                        <option value="before">Before the icon</option>
-                        <option value="above">Above the icon</option>
-                        <option value="below">Below the icon</option>
-                      </select>
+                        options={ICON_LABEL_SIDES}
+                        hideLabels
+                        onChange={(v) => patchExtra(section.id, i, { iconLabelSide: v })}
+                      />
                     </Field>
                   </>
                 ) : (
