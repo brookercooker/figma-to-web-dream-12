@@ -1177,6 +1177,7 @@ function Carousel({ section }: { section: CarouselSection }) {
 function FreeFigureBody({
   section, image, index, onDark,
 }: { section: FreeSection; image: SectionImage; index: number; onDark?: boolean }) {
+  const imgTextEditing = useContext(SectionEditing);
   const blockAlign: SectionAlign = section.captionAlign ?? "left";
   const align = alignTextOnly[image.captionAlign ?? blockAlign];
   const baseColor: TextColor = onDark ? "cream" : "stone";
