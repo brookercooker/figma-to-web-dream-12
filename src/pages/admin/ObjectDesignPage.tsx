@@ -2248,8 +2248,8 @@ export default function ObjectDesignPage() {
           </div>
         ) : null}
         <div className="space-y-3">
-          {children}
           {flowSection && part ? flowField(flowSection, part) : null}
+          {children}
         </div>
       </div>
     );
