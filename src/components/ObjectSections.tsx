@@ -217,6 +217,10 @@ export interface ImageText {
   iconLabel?: string;
   /** where the icon's wording sits */
   iconLabelSide?: "before" | "after" | "above" | "below";
+  /** optional symbol shown with this text */
+  icon?: string;
+  /** where that symbol sits relative to the text */
+  iconSide?: "before" | "after" | "above" | "below";
   /** extra space above/below this item (px, may be negative) */
   padY?: number;
   /** extra space left/right of this item (px, may be negative) */
