@@ -2630,20 +2630,12 @@ export default function ObjectDesignPage() {
                       />
                     </Field>
                     <Field label="Text sits">
-                      <select
-                        className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                      <Choice
                         value={t.iconLabelSide ?? "after"}
-                        onChange={(e) =>
-                          patchExtra(section.id, i, {
-                            iconLabelSide: e.target.value as "before" | "after" | "above" | "below",
-                          })
-                        }
-                      >
-                        <option value="after">After the icon</option>
-                        <option value="before">Before the icon</option>
-                        <option value="above">Above the icon</option>
-                        <option value="below">Below the icon</option>
-                      </select>
+                        options={ICON_LABEL_SIDES}
+                        hideLabels
+                        onChange={(v) => patchExtra(section.id, i, { iconLabelSide: v })}
+                      />
                     </Field>
                   </>
                 ) : (
