@@ -2037,6 +2037,11 @@ export default function ObjectDesignPage() {
                         placeholder={`${kindLabel}…`}
                         onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
                       />
+                      <TextIconField
+                        icon={t.icon}
+                        side={t.iconSide}
+                        onChange={(n) => patchImageText(section.id, index, ti, { icon: n.icon, iconSide: n.iconSide })}
+                      />
                       <Choice
                         value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
                         options={[
