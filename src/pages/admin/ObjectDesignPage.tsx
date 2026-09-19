@@ -982,11 +982,17 @@ export default function ObjectDesignPage() {
       ? iconLabelEl
       : field === "buttonLabel"
       ? ((el.querySelector("a, button") as HTMLElement | null) ?? el)
-      : el;
+      : el.hasAttribute("data-text-body")
+      ? el
+      : ((el.querySelector("[data-text-body]") as HTMLElement | null) ?? el);
     if (target.isContentEditable) return;
     if (iconLabelEl?.hasAttribute("data-icon-label-empty")) {
       iconLabelEl.textContent = "";
       iconLabelEl.classList.remove("opacity-40");
+    }
+    if (target.hasAttribute("data-empty-text")) {
+      target.textContent = "";
+      target.removeAttribute("data-empty-text");
     }
 
 
