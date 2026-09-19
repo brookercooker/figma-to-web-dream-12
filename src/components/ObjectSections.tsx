@@ -860,23 +860,47 @@ export const SECTION_ICON_NAMES = Object.keys(SECTION_ICONS);
 
 /** An icon item: the stored text is the icon name. */
 export function SectionIcon({
-  name, style, fallbackColor,
-}: { name: string; style?: TextStyle; fallbackColor?: TextColor }) {
+  name, style, fallbackColor, label, labelSide = "after",
+}: {
+  name: string;
+  style?: TextStyle;
+  fallbackColor?: TextColor;
+  label?: string;
+  labelSide?: "before" | "after" | "above" | "below";
+}) {
   const Icon = SECTION_ICONS[name?.trim()] ?? SECTION_ICONS.sparkles;
   const size = style?.sizePx ?? 28;
   const color = textColorCss(style?.color ?? fallbackColor ?? "ink");
+  let glyph = <Icon style={{ width: size, height: size, color }} strokeWidth={1.4} />;
   if (style?.iconRing) {
     const box = size * 2.2;
-    return (
+    glyph = (
       <span
         className="inline-flex items-center justify-center rounded-full border"
         style={{ width: box, height: box, borderColor: color }}
       >
-        <Icon style={{ width: size, height: size, color }} strokeWidth={1.4} />
+        {glyph}
       </span>
     );
   }
-  return <Icon style={{ width: size, height: size, color }} strokeWidth={1.4} />;
+  const text = label?.trim();
+  if (!text) return glyph;
+  const stack = labelSide === "above" || labelSide === "below";
+  const first = labelSide === "before" || labelSide === "above";
+  const wording = (
+    <span
+      className="whitespace-pre-wrap leading-snug"
+      style={{ color, fontSize: Math.max(12, Math.round(size * 0.55)) }}
+    >
+      {text}
+    </span>
+  );
+  return (
+    <span className={`inline-flex ${stack ? "flex-col" : "flex-row"} items-center gap-2 align-middle`}>
+      {first ? wording : glyph}
+      {first ? glyph : wording}
+    </span>
+  );
 }
 
 const alignText: Record<SectionAlign, string> = {
