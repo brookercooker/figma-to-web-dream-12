@@ -859,6 +859,9 @@ export const SECTION_ICONS: Record<string, LucideIcon> = {
 export const SECTION_ICON_NAMES = Object.keys(SECTION_ICONS);
 
 /** An icon item: the stored text is the icon name. */
+/** True while sections are shown inside the object editor canvas. */
+export const SectionEditing = createContext(false);
+
 export function SectionIcon({
   name, style, fallbackColor, label, labelSide = "after",
 }: {
