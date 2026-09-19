@@ -1244,12 +1244,13 @@ function FreeFigureBody({
           );
         }
         return (
-          <TextWithIcon key={t.id} item={{ ...t, style: ts }} align={t.align ?? image.captionAlign ?? blockAlign} fallbackColor={onDark ? "cream" : d.color}>
+          <TextWithIcon key={t.id} item={{ ...t, style: ts }} align={t.align ?? image.captionAlign ?? blockAlign} fallbackColor={onDark ? "cream" : d.color} part={`imagetext:${index}:${ti}`}>
             <p
               data-part={`imagetext:${index}:${ti}`}
+              data-text-body=""
               className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
               style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
-              {...richText(t.text)}
+              {...richTextOrPlaceholder(t.text, imgTextEditing)}
             />
           </TextWithIcon>
         );
