@@ -3148,7 +3148,7 @@ export default function ObjectDesignPage() {
               )}
             </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 grid-cols-1">
               {group.items.map(({ image: img, index: i }) => (
                 <div key={i} data-inspector-part={`image:${i}`} className="scroll-mt-24">
                   {ImageEditor({ section, index: i, image: img, showCaption: true })}
