@@ -3573,6 +3573,26 @@ export default function ObjectDesignPage() {
                   </div>
                 );
               })}
+
+              <div className="rounded-lg border bg-background p-3 shadow-sm">
+                <p className="pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Add
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {ADD_ITEMS.map((item) => (
+                    <button
+                      key={item.kind}
+                      type="button"
+                      title={`Add ${item.label.toLowerCase()}`}
+                      onClick={() => addElement(item.kind)}
+                      className="flex items-center gap-1.5 rounded-md border px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </section>
