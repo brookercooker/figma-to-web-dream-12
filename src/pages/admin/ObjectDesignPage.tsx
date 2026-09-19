@@ -2399,6 +2399,8 @@ export default function ObjectDesignPage() {
                 Clear image
               </button>
             ) : null}
+            </div>
+            </div>
           </div>
           <div className="ml-auto flex gap-2">
             {parts.length ? (
