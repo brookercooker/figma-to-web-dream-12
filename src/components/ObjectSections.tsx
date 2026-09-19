@@ -953,7 +953,7 @@ export function TextWithIcon({
   const first = side === "before" || side === "above";
   const justify = align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
   return (
-    <span className={`flex gap-2 ${stack ? `flex-col ${align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start"}` : `flex-row items-center ${justify}`}`}>
+    <span data-part={part} className={`flex gap-2 ${stack ? `flex-col ${align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start"}` : `flex-row items-center ${justify}`}`}>
       {first ? glyph : null}
       {children}
       {first ? null : glyph}
