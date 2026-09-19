@@ -199,7 +199,6 @@ export const IMAGE_TEXT_KINDS: { value: ImageTextKind; label: string }[] = [
   { value: "text", label: "Text" },
   { value: "divider", label: "Divider" },
   { value: "button", label: "Button" },
-  { value: "icon", label: "Icon" },
 ];
 
 export interface ImageText {
