@@ -2370,8 +2370,11 @@ export default function ObjectDesignPage() {
                 />
               </label>
             ))}
-            <span className="mx-1 h-5 w-px bg-border" />
-            <span className="ml-1 text-[11px] uppercase tracking-widest text-muted-foreground">Block styling</span>
+            </div>
+            </div>
+            <div className="flex flex-col gap-1">
+            <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Block styling</span>
+            <div className="flex flex-wrap items-center gap-1">
             <ColorDropdown
               label="Background"
               value={(section as FreeSection).bg ?? ""}
