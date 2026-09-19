@@ -1577,12 +1577,14 @@ function FreeText({
     const kind = t.kind ?? "text";
     if (kind === "title") {
       items.push({ part, node: (
-        <h2
-          data-part={part}
-          className={`max-w-2xl ${boxSelf(part)} ${headingClasses(t.style, { color: base, size: "xl" })}`}
-          style={textInlineStyle(t.style)}
-          {...richText(t.text)}
-        />
+        <TextWithIcon item={t} align={section.align} fallbackColor={base}>
+          <h2
+            data-part={part}
+            className={`max-w-2xl ${boxSelf(part)} ${headingClasses(t.style, { color: base, size: "xl" })}`}
+            style={textInlineStyle(t.style)}
+            {...richText(t.text)}
+          />
+        </TextWithIcon>
       ) });
       return;
     }
@@ -1597,22 +1599,26 @@ function FreeText({
     if (kind === "eyebrow") {
       const es = withEyebrowDefaults(t.style);
       items.push({ part, node: (
-        <p
-          data-part={part}
-          className={`uppercase tracking-[0.24em] ${bodyClasses(es, { color: onDark ? "cream" : "stone", size: "sm" })}`}
-          style={textInlineStyle(es)}
-          {...richText(t.text)}
-        />
+        <TextWithIcon item={{ ...t, style: es }} align={section.align} fallbackColor={onDark ? "cream" : "stone"}>
+          <p
+            data-part={part}
+            className={`uppercase tracking-[0.24em] ${bodyClasses(es, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+            style={textInlineStyle(es)}
+            {...richText(t.text)}
+          />
+        </TextWithIcon>
       ) });
       return;
     }
     items.push({ part, node: (
-      <p
-        data-part={part}
-        className={`max-w-xl ${boxSelf(part)} leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
-        style={textInlineStyle(t.style)}
-        {...richText(t.text)}
-      />
+      <TextWithIcon item={t} align={section.align} fallbackColor={onDark ? "cream" : "stone"}>
+        <p
+          data-part={part}
+          className={`max-w-xl ${boxSelf(part)} leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
+          style={textInlineStyle(t.style)}
+          {...richText(t.text)}
+        />
+      </TextWithIcon>
     ) });
   });
   if (section.buttonLabel) items.push({ part: "button", node: (
