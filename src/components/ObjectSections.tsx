@@ -625,7 +625,6 @@ export const FREE_TEXT_KINDS: { value: FreeTextKind; label: string }[] = [
   { value: "eyebrow", label: "Eyebrow" },
   { value: "title", label: "Title" },
   { value: "text", label: "Text" },
-  { value: "icon", label: "Icon" },
 ];
 
 export interface FreeParagraph {
@@ -638,6 +637,10 @@ export interface FreeParagraph {
   iconLabel?: string;
   /** where the icon's wording sits */
   iconLabelSide?: "before" | "after" | "above" | "below";
+  /** optional symbol shown with this text */
+  icon?: string;
+  /** where that symbol sits relative to the text */
+  iconSide?: "before" | "after" | "above" | "below";
 }
 
 /** A separating bar placed between content. */
