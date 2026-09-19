@@ -3576,7 +3576,7 @@ export default function ObjectDesignPage() {
               })}
 
               <div className="sticky bottom-4 z-40 flex justify-center">
-                <div className="flex w-full flex-wrap items-center gap-2 rounded-full border bg-background/95 px-3 py-2 shadow-lg backdrop-blur">
+                <div className="flex w-full flex-wrap items-center gap-3 rounded-2xl border bg-background/95 px-5 py-4 shadow-lg backdrop-blur">
                   <span className="pl-1 pr-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                     Add
                   </span>
@@ -3586,7 +3586,7 @@ export default function ObjectDesignPage() {
                       type="button"
                       title={`Add ${item.label.toLowerCase()}`}
                       onClick={() => addElement(item.kind)}
-                      className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground"
+                      className="flex h-10 items-center gap-2 rounded-full border px-4 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground"
                     >
                       <item.icon className="h-4 w-4" />
                       {item.label}
