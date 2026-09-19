@@ -1554,6 +1554,7 @@ function FreeText({
   onDark,
   media,
 }: { section: FreeSection; onDark?: boolean; media?: { part: string; node: React.ReactNode }[] }) {
+  const editing = useContext(SectionEditing);
   const hasText =
     section.eyebrow || section.heading || section.body || section.buttonLabel ||
     (section.extras ?? []).length || (section.dividers ?? []).length || (media ?? []).length;
