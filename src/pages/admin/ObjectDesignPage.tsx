@@ -2031,7 +2031,15 @@ export default function ObjectDesignPage() {
       <div className="rounded-md border p-3 space-y-3">
         <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Placement</p>
         <div className="flex flex-wrap items-center gap-4">
-
+          <Choice
+            value={(section.flowAligns?.[part] ?? section.align) as SectionAlign}
+            options={[
+              { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
+              { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
+              { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
+            ]}
+            onChange={(v) => patch(section.id, { flowAligns: { ...(section.flowAligns ?? {}), [part]: v } })}
+          />
           <Choice
             value={flow}
             options={[
@@ -2064,17 +2072,6 @@ export default function ObjectDesignPage() {
               />
               %
             </label>
-          )}
-          {flow === "inline" && (
-            <Choice
-              value={(section.flowAligns?.[part] ?? section.align) as SectionAlign}
-              options={[
-                { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
-                { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
-                { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
-              ]}
-              onChange={(v) => patch(section.id, { flowAligns: { ...(section.flowAligns ?? {}), [part]: v } })}
-            />
           )}
           {([
             { key: "padsY" as const, label: "Space above and below (px)", short: "V" },
@@ -2248,8 +2245,8 @@ export default function ObjectDesignPage() {
           </div>
         ) : null}
         <div className="space-y-3">
-          {children}
           {flowSection && part ? flowField(flowSection, part) : null}
+          {children}
         </div>
       </div>
     );
