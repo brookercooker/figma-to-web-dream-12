@@ -2214,106 +2214,43 @@ export default function ObjectDesignPage() {
       (focusPart === part ||
         (title === "Images" && (focusPart.startsWith("image:") || focusPart.startsWith("caption:") || focusPart.startsWith("imagetext:"))) ||
         (title === "Videos" && focusPart.startsWith("video:")));
-    const open = openBlocks[blockKey] ?? (blocksExpanded || focused);
-    const canDrag = !!(flowSection && part && orderablePartsOf(flowSection).includes(part));
-    const dragging = canDrag && dragPart?.sectionId === flowSection!.id && dragPart.part === part;
-    const showBar =
-      canDrag && !dragging && dropAt?.sectionId === flowSection!.id && dropAt.part === part
-        ? dropAt.before
-          ? "before"
-          : "after"
-        : null;
-    const bar = (
-      <div className="pointer-events-none absolute inset-x-0 z-10 flex items-center" style={showBar === "before" ? { top: -14 } : { bottom: -14 }}>
-        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-        <span className="h-0.5 flex-1 rounded-full bg-primary" />
-        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-      </div>
-    );
+    void blockKey;
+    void focused;
+    void Icon;
     return (
-      <div
-        key={key}
-        data-inspector-part={part}
-        onDragOver={canDrag ? (e) => {
-          if (dragPart?.sectionId !== flowSection!.id) return;
-          e.preventDefault();
-          if (dragPart.part === part) { setDropAt(null); return; }
-          const r = e.currentTarget.getBoundingClientRect();
-          const before = e.clientY < r.top + r.height / 2;
-          setDropAt((d) =>
-            d && d.sectionId === flowSection!.id && d.part === part && d.before === before
-              ? d
-              : { sectionId: flowSection!.id, part: part!, before },
-          );
-        } : undefined}
-        onDragLeave={canDrag ? (e) => {
-          if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-          setDropAt((d) => (d && d.part === part && d.sectionId === flowSection!.id ? null : d));
-        } : undefined}
-        onDrop={canDrag ? (e) => {
-          e.preventDefault();
-          if (dragPart?.sectionId === flowSection!.id) {
-            const r = e.currentTarget.getBoundingClientRect();
-            const before = e.clientY < r.top + r.height / 2;
-            movePartIn(flowSection!, dragPart.part, part!, before);
-          }
-          setDragPart(null);
-          setDropAt(null);
-        } : undefined}
-        className={`relative scroll-mt-24 rounded-lg border bg-background shadow-sm transition-[margin] ${dragging ? "border-primary opacity-70" : ""} ${showBar === "before" ? "mt-4" : ""} ${showBar === "after" ? "mb-4" : ""}`}
-      >
-        {showBar ? bar : null}
-        <div
-          draggable={canDrag}
-          onDragStart={canDrag ? () => setDragPart({ sectionId: flowSection!.id, part: part! }) : undefined}
-          onDragEnd={canDrag ? () => { setDragPart(null); setDropAt(null); } : undefined}
-          className="flex items-center gap-1 rounded-t-lg border-b-2 border-foreground/20 bg-foreground pr-2 transition-colors hover:bg-foreground/90"
-        >
-          {canDrag ? (
-            <GripVertical className="ml-2 h-4 w-4 shrink-0 cursor-grab text-background/70" />
-          ) : null}
-          <button
-            type="button"
-            onClick={() => setOpenBlocks((o) => ({ ...o, [blockKey]: !open }))}
-            className={`flex flex-1 items-center gap-2 py-2.5 pr-3 text-left ${canDrag ? "pl-1" : "pl-3"}`}
-          >
-            <Icon className="h-4 w-4 text-background" />
-            <span className="text-xs font-bold uppercase tracking-[0.18em] text-background">{title}</span>
-            <ChevronDown
-              className={`ml-auto h-4 w-4 text-background/70 transition-transform ${open ? "" : "-rotate-90"}`}
-            />
-          </button>
-          {onDuplicate ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label={`Duplicate ${title}`}
-              title={`Duplicate ${title}`}
-              className="h-7 w-7 p-0 text-background/70 hover:bg-background/10 hover:text-background"
-              onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          ) : null}
-          {onDelete ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label={`Delete ${title}`}
-              className="h-7 w-7 p-0 text-background/70 hover:bg-background/10 hover:text-destructive"
-              onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          ) : null}
-
-        </div>
-        {open ? (
-          <div className="space-y-3 p-3">
-            {children}
-            {flowSection && part ? flowField(flowSection, part) : null}
+      <div key={key} data-inspector-part={part} className="relative scroll-mt-24">
+        {onDuplicate || onDelete ? (
+          <div className="flex items-center justify-end gap-1 pb-1">
+            {onDuplicate ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`Duplicate ${title}`}
+                title={`Duplicate ${title}`}
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            ) : null}
+            {onDelete ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`Delete ${title}`}
+                title={`Delete ${title}`}
+                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            ) : null}
           </div>
         ) : null}
+        <div className="space-y-3">
+          {children}
+          {flowSection && part ? flowField(flowSection, part) : null}
+        </div>
       </div>
     );
   };
