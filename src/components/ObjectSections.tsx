@@ -199,7 +199,6 @@ export const IMAGE_TEXT_KINDS: { value: ImageTextKind; label: string }[] = [
   { value: "text", label: "Text" },
   { value: "divider", label: "Divider" },
   { value: "button", label: "Button" },
-  { value: "icon", label: "Icon" },
 ];
 
 export interface ImageText {
@@ -217,6 +216,10 @@ export interface ImageText {
   iconLabel?: string;
   /** where the icon's wording sits */
   iconLabelSide?: "before" | "after" | "above" | "below";
+  /** optional symbol shown with this text */
+  icon?: string;
+  /** where that symbol sits relative to the text */
+  iconSide?: "before" | "after" | "above" | "below";
   /** extra space above/below this item (px, may be negative) */
   padY?: number;
   /** extra space left/right of this item (px, may be negative) */
@@ -621,7 +624,6 @@ export const FREE_TEXT_KINDS: { value: FreeTextKind; label: string }[] = [
   { value: "eyebrow", label: "Eyebrow" },
   { value: "title", label: "Title" },
   { value: "text", label: "Text" },
-  { value: "icon", label: "Icon" },
 ];
 
 export interface FreeParagraph {
@@ -634,6 +636,10 @@ export interface FreeParagraph {
   iconLabel?: string;
   /** where the icon's wording sits */
   iconLabelSide?: "before" | "after" | "above" | "below";
+  /** optional symbol shown with this text */
+  icon?: string;
+  /** where that symbol sits relative to the text */
+  iconSide?: "before" | "after" | "above" | "below";
 }
 
 /** A separating bar placed between content. */
@@ -917,6 +923,36 @@ export function SectionIcon({
   );
 }
 
+/** Wraps a piece of text with its optional symbol. */
+export function TextWithIcon({
+  item, fallbackColor, align, children,
+}: {
+  item: { icon?: string; iconSide?: "before" | "after" | "above" | "below"; style?: TextStyle };
+  fallbackColor?: TextColor;
+  align?: SectionAlign;
+  children: React.ReactNode;
+}) {
+  const name = item.icon?.trim();
+  if (!name) return <>{children}</>;
+  const Icon = SECTION_ICONS[name] ?? SECTION_ICONS.sparkles;
+  const size = Math.max(14, Math.round((item.style?.sizePx ?? 20) * 1.2));
+  const color = textColorCss(item.style?.color ?? fallbackColor ?? "ink");
+  const glyph = <Icon style={{ width: size, height: size, color, flex: "none" }} strokeWidth={1.4} />;
+  const side = item.iconSide ?? "before";
+  const stack = side === "above" || side === "below";
+  const first = side === "before" || side === "above";
+  const justify = align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
+  return (
+    <span className={`flex gap-2 ${stack ? `flex-col ${align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start"}` : `flex-row items-center ${justify}`}`}>
+      {first ? glyph : null}
+      {children}
+      {first ? null : glyph}
+    </span>
+  );
+}
+
+
+
 const alignText: Record<SectionAlign, string> = {
   left: "text-left items-start",
   center: "text-center items-center",
@@ -1190,13 +1226,14 @@ function FreeFigureBody({
           );
         }
         return (
-          <p
-            key={t.id}
-            data-part={`imagetext:${index}:${ti}`}
-            className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
-            style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
-            {...richText(t.text)}
-          />
+          <TextWithIcon key={t.id} item={{ ...t, style: ts }} align={t.align ?? image.captionAlign ?? blockAlign} fallbackColor={onDark ? "cream" : d.color}>
+            <p
+              data-part={`imagetext:${index}:${ti}`}
+              className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
+              style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
+              {...richText(t.text)}
+            />
+          </TextWithIcon>
         );
       })}
     </div>
@@ -1540,12 +1577,14 @@ function FreeText({
     const kind = t.kind ?? "text";
     if (kind === "title") {
       items.push({ part, node: (
-        <h2
-          data-part={part}
-          className={`max-w-2xl ${boxSelf(part)} ${headingClasses(t.style, { color: base, size: "xl" })}`}
-          style={textInlineStyle(t.style)}
-          {...richText(t.text)}
-        />
+        <TextWithIcon item={t} align={section.align} fallbackColor={base}>
+          <h2
+            data-part={part}
+            className={`max-w-2xl ${boxSelf(part)} ${headingClasses(t.style, { color: base, size: "xl" })}`}
+            style={textInlineStyle(t.style)}
+            {...richText(t.text)}
+          />
+        </TextWithIcon>
       ) });
       return;
     }
@@ -1560,22 +1599,26 @@ function FreeText({
     if (kind === "eyebrow") {
       const es = withEyebrowDefaults(t.style);
       items.push({ part, node: (
-        <p
-          data-part={part}
-          className={`uppercase tracking-[0.24em] ${bodyClasses(es, { color: onDark ? "cream" : "stone", size: "sm" })}`}
-          style={textInlineStyle(es)}
-          {...richText(t.text)}
-        />
+        <TextWithIcon item={{ ...t, style: es }} align={section.align} fallbackColor={onDark ? "cream" : "stone"}>
+          <p
+            data-part={part}
+            className={`uppercase tracking-[0.24em] ${bodyClasses(es, { color: onDark ? "cream" : "stone", size: "sm" })}`}
+            style={textInlineStyle(es)}
+            {...richText(t.text)}
+          />
+        </TextWithIcon>
       ) });
       return;
     }
     items.push({ part, node: (
-      <p
-        data-part={part}
-        className={`max-w-xl ${boxSelf(part)} leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
-        style={textInlineStyle(t.style)}
-        {...richText(t.text)}
-      />
+      <TextWithIcon item={t} align={section.align} fallbackColor={onDark ? "cream" : "stone"}>
+        <p
+          data-part={part}
+          className={`max-w-xl ${boxSelf(part)} leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
+          style={textInlineStyle(t.style)}
+          {...richText(t.text)}
+        />
+      </TextWithIcon>
     ) });
   });
   if (section.buttonLabel) items.push({ part: "button", node: (
@@ -1748,13 +1791,14 @@ function OverlayImageTexts({
           );
         }
         return (
-          <p
-            key={t.id}
-            data-part={`imagetext:${index}:${ti}`}
-            className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
-            style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
-            {...richText(t.text)}
-          />
+          <TextWithIcon key={t.id} item={{ ...t, style: ts }} align={t.align ?? image.captionAlign ?? blockAlign} fallbackColor="cream">
+            <p
+              data-part={`imagetext:${index}:${ti}`}
+              className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
+              style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
+              {...richText(t.text)}
+            />
+          </TextWithIcon>
         );
       })}
     </>

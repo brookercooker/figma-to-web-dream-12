@@ -20,10 +20,10 @@ import {
 import CreateObjectDialog from "./CreateObjectDialog";
 
 const ICON_LABEL_SIDES: { value: "before" | "after" | "above" | "below"; label: string; icon: LucideIcon }[] = [
-  { value: "before", label: "Before the icon", icon: PanelLeft },
-  { value: "after", label: "After the icon", icon: PanelRight },
-  { value: "above", label: "Above the icon", icon: PanelTop },
-  { value: "below", label: "Below the icon", icon: PanelBottom },
+  { value: "before", label: "Before", icon: PanelLeft },
+  { value: "after", label: "After", icon: PanelRight },
+  { value: "above", label: "Above", icon: PanelTop },
+  { value: "below", label: "Below", icon: PanelBottom },
 ];
 import { objectRegistry } from "@/components/objects/registry";
 import ImagePickerDialog from "./ImagePickerDialog";
@@ -374,6 +374,58 @@ function ButtonIconField({
     </div>
   );
 }
+
+/** Optional symbol shown with a piece of text. */
+function TextIconField({
+  icon, side, onChange,
+}: {
+  icon?: string;
+  side?: "before" | "after" | "above" | "below";
+  onChange: (next: { icon?: string; iconSide?: "before" | "after" | "above" | "below" }) => void;
+}) {
+  return (
+    <div className="rounded-md border p-3 space-y-2">
+      <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Symbol</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={icon ? "outline" : "secondary"}
+          onClick={() => onChange({ icon: undefined, iconSide: side })}
+        >
+          None
+        </Button>
+        {icon ? (
+          <Choice
+            value={side ?? "before"}
+            options={ICON_LABEL_SIDES}
+            hideLabels
+            onChange={(v) => onChange({ icon, iconSide: v })}
+          />
+        ) : null}
+      </div>
+      <div className="grid grid-cols-8 gap-1">
+        {SECTION_ICON_NAMES.map((name) => {
+          const Icon = SECTION_ICONS[name];
+          return (
+            <button
+              key={name}
+              type="button"
+              title={name}
+              aria-label={name}
+              onClick={() => onChange({ icon: name, iconSide: side ?? "before" })}
+              className={`flex h-8 items-center justify-center rounded border ${name === icon ? "border-primary bg-accent" : "border-transparent hover:bg-muted"}`}
+            >
+              <Icon className="h-4 w-4" />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
 
 /** Pick a symbol, its size, and whether it sits inside a circle. */
 function IconPicker({
@@ -1149,7 +1201,7 @@ export default function ObjectDesignPage() {
 
 
 
-  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind; iconLabel?: string; iconLabelSide?: "before" | "after" | "above" | "below" }) => {
+  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind; iconLabel?: string; iconLabelSide?: "before" | "after" | "above" | "below"; icon?: string; iconSide?: "before" | "after" | "above" | "below" }) => {
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id || s.type !== "free") return s;
@@ -1466,7 +1518,6 @@ export default function ObjectDesignPage() {
 
   const ADD_ITEMS: { kind: AddKind; label: string; icon: LucideIcon }[] = [
     { kind: "text", label: "Text", icon: AlignLeft },
-    { kind: "icon", label: "Icon", icon: Sparkles },
     { kind: "image", label: "Image", icon: ImageIcon },
     { kind: "video", label: "Video", icon: VideoIcon },
     { kind: "divider", label: "Divider", icon: Minus },
@@ -1985,6 +2036,11 @@ export default function ObjectDesignPage() {
                         value={t.text}
                         placeholder={`${kindLabel}…`}
                         onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
+                      />
+                      <TextIconField
+                        icon={t.icon}
+                        side={t.iconSide}
+                        onChange={(n) => patchImageText(section.id, index, ti, { icon: n.icon, iconSide: n.iconSide })}
                       />
                       <Choice
                         value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
@@ -2639,13 +2695,20 @@ export default function ObjectDesignPage() {
                     </Field>
                   </>
                 ) : (
-                  <Field label={kindLabel}>
-                    <Textarea
-                      rows={kind === "text" ? 4 : 2}
-                      value={t.text}
-                      onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                  <>
+                    <Field label={kindLabel}>
+                      <Textarea
+                        rows={kind === "text" ? 4 : 2}
+                        value={t.text}
+                        onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
+                      />
+                    </Field>
+                    <TextIconField
+                      icon={t.icon}
+                      side={t.iconSide}
+                      onChange={(n) => patchExtra(section.id, i, { icon: n.icon, iconSide: n.iconSide })}
                     />
-                  </Field>
+                  </>
                 )}
                 <TextStyleFields
                   label={`${kindLabel} style`}
