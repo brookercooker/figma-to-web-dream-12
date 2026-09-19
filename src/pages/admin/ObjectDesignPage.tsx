@@ -2707,6 +2707,20 @@ export default function ObjectDesignPage() {
                         onChange={(v) => patchExtra(section.id, i, { iconLabelSide: v })}
                       />
                     </Field>
+                    {(t.iconLabelSide === "above" || t.iconLabelSide === "below") && (
+                      <Field label="Text lines up">
+                        <Choice
+                          value={t.iconLabelAlign ?? "center"}
+                          options={[
+                            { value: "left" as const, label: "Left", icon: AlignLeft },
+                            { value: "center" as const, label: "Center", icon: AlignCenter },
+                            { value: "right" as const, label: "Right", icon: AlignRight },
+                          ]}
+                          hideLabels
+                          onChange={(v) => patchExtra(section.id, i, { iconLabelAlign: v })}
+                        />
+                      </Field>
+                    )}
                   </>
                 ) : (
                   <>
