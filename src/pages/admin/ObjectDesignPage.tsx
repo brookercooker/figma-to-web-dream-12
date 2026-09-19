@@ -375,6 +375,58 @@ function ButtonIconField({
   );
 }
 
+/** Optional symbol shown with a piece of text. */
+function TextIconField({
+  icon, side, onChange,
+}: {
+  icon?: string;
+  side?: "before" | "after" | "above" | "below";
+  onChange: (next: { icon?: string; iconSide?: "before" | "after" | "above" | "below" }) => void;
+}) {
+  return (
+    <div className="rounded-md border p-3 space-y-2">
+      <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Symbol</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={icon ? "outline" : "secondary"}
+          onClick={() => onChange({ icon: undefined, iconSide: side })}
+        >
+          None
+        </Button>
+        {icon ? (
+          <Choice
+            value={side ?? "before"}
+            options={ICON_LABEL_SIDES}
+            hideLabels
+            onChange={(v) => onChange({ icon, iconSide: v })}
+          />
+        ) : null}
+      </div>
+      <div className="grid grid-cols-8 gap-1">
+        {SECTION_ICON_NAMES.map((name) => {
+          const Icon = SECTION_ICONS[name];
+          return (
+            <button
+              key={name}
+              type="button"
+              title={name}
+              aria-label={name}
+              onClick={() => onChange({ icon: name, iconSide: side ?? "before" })}
+              className={`flex h-8 items-center justify-center rounded border ${name === icon ? "border-primary bg-accent" : "border-transparent hover:bg-muted"}`}
+            >
+              <Icon className="h-4 w-4" />
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+
+
 /** Pick a symbol, its size, and whether it sits inside a circle. */
 function IconPicker({
   value, style, onPick, onStyle,
