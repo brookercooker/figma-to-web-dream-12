@@ -3572,11 +3572,6 @@ export default function ObjectDesignPage() {
                       )}
                     </BlockCanvas>
 
-                    {active && (
-                      <div data-inspector-section={s.id} className="border-t bg-muted/20 p-4">
-                        {Inspector({ section: s })}
-                      </div>
-                    )}
 
                   </div>
                 );
