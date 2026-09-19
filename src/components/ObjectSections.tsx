@@ -835,7 +835,7 @@ export function parseSections(value: unknown): Section[] {
 
 /* ------------------------------- rendering ------------------------------- */
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   ChevronLeft, ChevronRight, Pause, Play,
   Calendar, Ruler, Compass, Lightbulb, MapPin, Phone, Mail, Clock, Star, Heart,
@@ -859,6 +859,9 @@ export const SECTION_ICONS: Record<string, LucideIcon> = {
 export const SECTION_ICON_NAMES = Object.keys(SECTION_ICONS);
 
 /** An icon item: the stored text is the icon name. */
+/** True while sections are shown inside the object editor canvas. */
+export const SectionEditing = createContext(false);
+
 export function SectionIcon({
   name, style, fallbackColor, label, labelSide = "after",
 }: {
@@ -884,15 +887,26 @@ export function SectionIcon({
     );
   }
   const text = label?.trim();
-  if (!text) return glyph;
+  const editing = useContext(SectionEditing);
+  if (!text && !editing) return glyph;
   const stack = labelSide === "above" || labelSide === "below";
   const first = labelSide === "before" || labelSide === "above";
-  const wording = (
+  const fontSize = Math.max(12, Math.round(size * 0.55));
+  const wording = text ? (
     <span
+      data-icon-label=""
       className="whitespace-pre-wrap leading-snug"
-      style={{ color, fontSize: Math.max(12, Math.round(size * 0.55)) }}
+      style={{ color, fontSize }}
+      {...richText(text)}
+    />
+  ) : (
+    <span
+      data-icon-label=""
+      data-icon-label-empty=""
+      className="whitespace-pre-wrap leading-snug opacity-40"
+      style={{ color, fontSize }}
     >
-      {text}
+      Add text
     </span>
   );
   return (

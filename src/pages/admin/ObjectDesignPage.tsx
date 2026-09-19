@@ -25,7 +25,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
+  SectionEditing, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type RowVAlign, type ImageHeight,
   type TextColor, type TextFont, type TextSize, type TextStyle,
@@ -762,7 +762,7 @@ function BlockCanvas({
         setDrop(null);
       }}
     >
-      {children}
+      <SectionEditing.Provider value>{children}</SectionEditing.Provider>
       {drop && (
         <div
           className="pointer-events-none absolute z-30 rounded bg-primary"
@@ -912,14 +912,23 @@ export default function ObjectDesignPage() {
       : extraIdx >= 0 ? "extra"
       : imgText ? "imageText"
       : "";
-    if (!field) return;
+    // Icons carry their own wording: edit that span, never the icon's name.
+    const iconLabelEl = el.querySelector<HTMLElement>("[data-icon-label]");
+    if (!field && !iconLabelEl) return;
     e.preventDefault();
     e.stopPropagation();
 
-    const target = field === "buttonLabel"
+    const target = iconLabelEl
+      ? iconLabelEl
+      : field === "buttonLabel"
       ? ((el.querySelector("a, button") as HTMLElement | null) ?? el)
       : el;
     if (target.isContentEditable) return;
+    if (iconLabelEl?.hasAttribute("data-icon-label-empty")) {
+      iconLabelEl.textContent = "";
+      iconLabelEl.classList.remove("opacity-40");
+    }
+
 
     target.contentEditable = "true";
     target.spellcheck = false;
@@ -942,7 +951,11 @@ export default function ObjectDesignPage() {
       target.removeEventListener("blur", commit);
       target.removeEventListener("keydown", onKey);
       target.removeEventListener("click", stop);
-      if (imgText) patchImageText(sectionId, imgText.img, imgText.t, { text: value });
+      if (iconLabelEl) {
+        if (imgText) patchImageText(sectionId, imgText.img, imgText.t, { iconLabel: value });
+        else if (extraIdx >= 0) patchExtra(sectionId, extraIdx, { iconLabel: value });
+      }
+      else if (imgText) patchImageText(sectionId, imgText.img, imgText.t, { text: value });
       else if (captionIdx >= 0) patchImage(sectionId, captionIdx, { caption: value });
       else if (extraIdx >= 0) patchExtra(sectionId, extraIdx, { text: value });
       else patch(sectionId, { [field]: value });
@@ -1921,6 +1934,29 @@ export default function ObjectDesignPage() {
                         onPick={(name) => patchImageText(section.id, index, ti, { text: name })}
                         onStyle={(v) => patchImageText(section.id, index, ti, { style: v })}
                       />
+                      <Field label="Wording">
+                        <Input
+                          value={t.iconLabel ?? ""}
+                          placeholder="Optional text with this icon"
+                          onChange={(e) => patchImageText(section.id, index, ti, { iconLabel: e.target.value })}
+                        />
+                      </Field>
+                      <Field label="Wording sits">
+                        <select
+                          className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                          value={t.iconLabelSide ?? "after"}
+                          onChange={(e) =>
+                            patchImageText(section.id, index, ti, {
+                              iconLabelSide: e.target.value as "before" | "after" | "above" | "below",
+                            })
+                          }
+                        >
+                          <option value="after">After the icon</option>
+                          <option value="before">Before the icon</option>
+                          <option value="above">Above the icon</option>
+                          <option value="below">Below the icon</option>
+                        </select>
+                      </Field>
                       <Choice
                         value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
                         options={[
