@@ -873,13 +873,14 @@ export const SECTION_ICON_NAMES = Object.keys(SECTION_ICONS);
 export const SectionEditing = createContext(false);
 
 export function SectionIcon({
-  name, style, fallbackColor, label, labelSide = "after",
+  name, style, fallbackColor, label, labelSide = "after", labelAlign,
 }: {
   name: string;
   style?: TextStyle;
   fallbackColor?: TextColor;
   label?: string;
   labelSide?: "before" | "after" | "above" | "below";
+  labelAlign?: SectionAlign;
 }) {
   const Icon = SECTION_ICONS[name?.trim()] ?? SECTION_ICONS.sparkles;
   const size = style?.sizePx ?? 28;
