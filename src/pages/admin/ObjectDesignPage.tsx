@@ -20,10 +20,10 @@ import {
 import CreateObjectDialog from "./CreateObjectDialog";
 
 const ICON_LABEL_SIDES: { value: "before" | "after" | "above" | "below"; label: string; icon: LucideIcon }[] = [
-  { value: "before", label: "Before the icon", icon: PanelLeft },
-  { value: "after", label: "After the icon", icon: PanelRight },
-  { value: "above", label: "Above the icon", icon: PanelTop },
-  { value: "below", label: "Below the icon", icon: PanelBottom },
+  { value: "before", label: "Before", icon: PanelLeft },
+  { value: "after", label: "After", icon: PanelRight },
+  { value: "above", label: "Above", icon: PanelTop },
+  { value: "below", label: "Below", icon: PanelBottom },
 ];
 import { objectRegistry } from "@/components/objects/registry";
 import ImagePickerDialog from "./ImagePickerDialog";
@@ -1518,7 +1518,6 @@ export default function ObjectDesignPage() {
 
   const ADD_ITEMS: { kind: AddKind; label: string; icon: LucideIcon }[] = [
     { kind: "text", label: "Text", icon: AlignLeft },
-    { kind: "icon", label: "Icon", icon: Sparkles },
     { kind: "image", label: "Image", icon: ImageIcon },
     { kind: "video", label: "Video", icon: VideoIcon },
     { kind: "divider", label: "Divider", icon: Minus },
