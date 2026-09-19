@@ -1128,7 +1128,7 @@ export default function ObjectDesignPage() {
 
 
 
-  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind }) => {
+  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind; iconLabel?: string; iconLabelSide?: "before" | "after" | "above" | "below" }) => {
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id || s.type !== "free") return s;
@@ -2579,12 +2579,37 @@ export default function ObjectDesignPage() {
                   </select>
                 </Field>
                 {kind === "icon" ? (
-                  <IconPicker
-                    value={t.text}
-                    style={t.style}
-                    onPick={(name) => patchExtra(section.id, i, { text: name })}
-                    onStyle={(v) => patchExtra(section.id, i, { style: v })}
-                  />
+                  <>
+                    <IconPicker
+                      value={t.text}
+                      style={t.style}
+                      onPick={(name) => patchExtra(section.id, i, { text: name })}
+                      onStyle={(v) => patchExtra(section.id, i, { style: v })}
+                    />
+                    <Field label="Wording">
+                      <Input
+                        value={t.iconLabel ?? ""}
+                        placeholder="Optional text with this icon"
+                        onChange={(e) => patchExtra(section.id, i, { iconLabel: e.target.value })}
+                      />
+                    </Field>
+                    <Field label="Wording sits">
+                      <select
+                        className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                        value={t.iconLabelSide ?? "after"}
+                        onChange={(e) =>
+                          patchExtra(section.id, i, {
+                            iconLabelSide: e.target.value as "before" | "after" | "above" | "below",
+                          })
+                        }
+                      >
+                        <option value="after">After the icon</option>
+                        <option value="before">Before the icon</option>
+                        <option value="above">Above the icon</option>
+                        <option value="below">Below the icon</option>
+                      </select>
+                    </Field>
+                  </>
                 ) : (
                   <Field label={kindLabel}>
                     <Textarea

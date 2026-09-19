@@ -213,6 +213,10 @@ export interface ImageText {
   divider?: { color?: TextColor; width?: "full" | "short"; widthPct?: number; thickness?: number };
   /** link settings when kind is "button" */
   button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor; icon?: string; iconSide?: "before" | "after" };
+  /** wording shown with the icon when kind is "icon" */
+  iconLabel?: string;
+  /** where the icon's wording sits */
+  iconLabelSide?: "before" | "after" | "above" | "below";
   /** extra space above/below this item (px, may be negative) */
   padY?: number;
   /** extra space left/right of this item (px, may be negative) */
@@ -626,6 +630,10 @@ export interface FreeParagraph {
   /** what sort of text this is; defaults to a body paragraph */
   kind?: FreeTextKind;
   style?: TextStyle;
+  /** wording shown with the icon when kind is "icon" */
+  iconLabel?: string;
+  /** where the icon's wording sits */
+  iconLabelSide?: "before" | "after" | "above" | "below";
 }
 
 /** A separating bar placed between content. */
@@ -852,23 +860,47 @@ export const SECTION_ICON_NAMES = Object.keys(SECTION_ICONS);
 
 /** An icon item: the stored text is the icon name. */
 export function SectionIcon({
-  name, style, fallbackColor,
-}: { name: string; style?: TextStyle; fallbackColor?: TextColor }) {
+  name, style, fallbackColor, label, labelSide = "after",
+}: {
+  name: string;
+  style?: TextStyle;
+  fallbackColor?: TextColor;
+  label?: string;
+  labelSide?: "before" | "after" | "above" | "below";
+}) {
   const Icon = SECTION_ICONS[name?.trim()] ?? SECTION_ICONS.sparkles;
   const size = style?.sizePx ?? 28;
   const color = textColorCss(style?.color ?? fallbackColor ?? "ink");
+  let glyph = <Icon style={{ width: size, height: size, color }} strokeWidth={1.4} />;
   if (style?.iconRing) {
     const box = size * 2.2;
-    return (
+    glyph = (
       <span
         className="inline-flex items-center justify-center rounded-full border"
         style={{ width: box, height: box, borderColor: color }}
       >
-        <Icon style={{ width: size, height: size, color }} strokeWidth={1.4} />
+        {glyph}
       </span>
     );
   }
-  return <Icon style={{ width: size, height: size, color }} strokeWidth={1.4} />;
+  const text = label?.trim();
+  if (!text) return glyph;
+  const stack = labelSide === "above" || labelSide === "below";
+  const first = labelSide === "before" || labelSide === "above";
+  const wording = (
+    <span
+      className="whitespace-pre-wrap leading-snug"
+      style={{ color, fontSize: Math.max(12, Math.round(size * 0.55)) }}
+    >
+      {text}
+    </span>
+  );
+  return (
+    <span className={`inline-flex ${stack ? "flex-col" : "flex-row"} items-center gap-2 align-middle`}>
+      {first ? wording : glyph}
+      {first ? glyph : wording}
+    </span>
+  );
 }
 
 const alignText: Record<SectionAlign, string> = {
@@ -1124,7 +1156,7 @@ function FreeFigureBody({
         if (t.kind === "icon") {
           return (
             <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
-              <SectionIcon name={t.text} style={t.style} fallbackColor={onDark ? "cream" : "ink"} />
+              <SectionIcon name={t.text} style={t.style} label={t.iconLabel} labelSide={t.iconLabelSide} fallbackColor={onDark ? "cream" : "ink"} />
             </div>
           );
         }
@@ -1506,7 +1538,7 @@ function FreeText({
     if (kind === "icon") {
       items.push({ part, node: (
         <div data-part={part}>
-          <SectionIcon name={t.text} style={t.style} fallbackColor={onDark ? "cream" : "ink"} />
+          <SectionIcon name={t.text} style={t.style} label={t.iconLabel} labelSide={t.iconLabelSide} fallbackColor={onDark ? "cream" : "ink"} />
         </div>
       ) });
       return;
@@ -1682,7 +1714,7 @@ function OverlayImageTexts({
         if (t.kind === "icon") {
           return (
             <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
-              <SectionIcon name={t.text} style={t.style} fallbackColor="cream" />
+              <SectionIcon name={t.text} style={t.style} label={t.iconLabel} labelSide={t.iconLabelSide} fallbackColor="cream" />
             </div>
           );
         }
