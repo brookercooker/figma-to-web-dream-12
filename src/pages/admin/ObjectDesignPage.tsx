@@ -79,8 +79,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function Choice<T extends string | number>({
-  value, options, onChange,
-}: { value: T; options: { value: T; label: string; icon?: LucideIcon }[]; onChange: (v: T) => void }) {
+  value, options, onChange, hideLabels,
+}: { value: T; options: { value: T; label: string; icon?: LucideIcon }[]; onChange: (v: T) => void; hideLabels?: boolean }) {
   return (
     <div className="inline-flex rounded-md border overflow-hidden">
       {options.map((o) => (
