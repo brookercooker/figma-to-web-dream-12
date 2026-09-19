@@ -2040,6 +2040,7 @@ export default function ObjectDesignPage() {
               { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
               { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
             ]}
+            hideLabels
             onChange={(v) => patch(section.id, { flowAligns: { ...(section.flowAligns ?? {}), [part]: v } })}
           />
           </div>
