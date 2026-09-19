@@ -1934,6 +1934,29 @@ export default function ObjectDesignPage() {
                         onPick={(name) => patchImageText(section.id, index, ti, { text: name })}
                         onStyle={(v) => patchImageText(section.id, index, ti, { style: v })}
                       />
+                      <Field label="Wording">
+                        <Input
+                          value={t.iconLabel ?? ""}
+                          placeholder="Optional text with this icon"
+                          onChange={(e) => patchImageText(section.id, index, ti, { iconLabel: e.target.value })}
+                        />
+                      </Field>
+                      <Field label="Wording sits">
+                        <select
+                          className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                          value={t.iconLabelSide ?? "after"}
+                          onChange={(e) =>
+                            patchImageText(section.id, index, ti, {
+                              iconLabelSide: e.target.value as "before" | "after" | "above" | "below",
+                            })
+                          }
+                        >
+                          <option value="after">After the icon</option>
+                          <option value="before">Before the icon</option>
+                          <option value="above">Above the icon</option>
+                          <option value="below">Below the icon</option>
+                        </select>
+                      </Field>
                       <Choice
                         value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
                         options={[
