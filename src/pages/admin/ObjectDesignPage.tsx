@@ -11,6 +11,7 @@ import {
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
   LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
   Video as VideoIcon, Minus, Link as LinkIcon, Copy, PanelLeftClose, PanelLeftOpen,
+  Monitor, Tablet, Smartphone,
   AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, Baseline,
   Sparkles,
   type LucideIcon,
@@ -99,6 +100,14 @@ function Choice<T extends string | number>({
     </div>
   );
 }
+
+/** Screen widths the editor can preview at. */
+type ViewportKey = "desktop" | "tablet" | "mobile";
+const VIEWPORTS: { key: ViewportKey; label: string; width?: number; icon: LucideIcon }[] = [
+  { key: "desktop", label: "Desktop", icon: Monitor },
+  { key: "tablet", label: "Tablet", width: 768, icon: Tablet },
+  { key: "mobile", label: "Mobile", width: 390, icon: Smartphone },
+];
 
 /** Tiny previews so each button style shows what it looks like. */
 const SolidStyleIcon = ((props: { className?: string }) => (
@@ -778,6 +787,8 @@ export default function ObjectDesignPage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [viewport, setViewport] = useState<ViewportKey>("desktop");
+  const viewportWidth = VIEWPORTS.find((v) => v.key === viewport)?.width;
   const [createOpen, setCreateOpen] = useState(false);
   const [q, setQ] = useState("");
   const [libraryOpen, setLibraryOpen] = useState(true);
@@ -3377,6 +3388,21 @@ export default function ObjectDesignPage() {
           {object && (
             <div className="ml-auto flex items-center gap-2">
               <div className="inline-flex rounded-md border overflow-hidden">
+                {VIEWPORTS.map((v) => (
+                  <button
+                    key={v.key}
+                    type="button"
+                    title={`${v.label} width`}
+                    aria-label={`${v.label} width`}
+                    aria-pressed={viewport === v.key}
+                    onClick={() => setViewport(v.key)}
+                    className={`px-2.5 py-1.5 ${viewport === v.key ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  >
+                    <v.icon className="w-3.5 h-3.5" />
+                  </button>
+                ))}
+              </div>
+              <div className="inline-flex rounded-md border overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setPreview(true)}
@@ -3452,7 +3478,10 @@ export default function ObjectDesignPage() {
         </aside>
         )}
 
-        <section className="min-w-0">
+        <section
+          className="min-w-0 w-full mx-auto transition-[max-width]"
+          style={viewportWidth ? { maxWidth: viewportWidth } : undefined}
+        >
           {!object ? (
             <div className="border rounded-lg p-12 text-center text-muted-foreground">
               Pick an object on the left to design it, or create a new one.
