@@ -2008,6 +2008,20 @@ export default function ObjectDesignPage() {
                           onChange={(v) => patchImageText(section.id, index, ti, { iconLabelSide: v })}
                         />
                       </Field>
+                      {(t.iconLabelSide === "above" || t.iconLabelSide === "below") && (
+                        <Field label="Text lines up">
+                          <Choice
+                            value={t.iconLabelAlign ?? "center"}
+                            options={[
+                              { value: "left" as const, label: "Left", icon: AlignLeft },
+                              { value: "center" as const, label: "Center", icon: AlignCenter },
+                              { value: "right" as const, label: "Right", icon: AlignRight },
+                            ]}
+                            hideLabels
+                            onChange={(v) => patchImageText(section.id, index, ti, { iconLabelAlign: v })}
+                          />
+                        </Field>
+                      )}
                       <Choice
                         value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
                         options={[
