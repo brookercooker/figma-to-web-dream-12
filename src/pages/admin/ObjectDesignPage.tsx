@@ -3586,7 +3586,7 @@ export default function ObjectDesignPage() {
                       type="button"
                       title={`Add ${item.label.toLowerCase()}`}
                       onClick={() => addElement(item.kind)}
-                      className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground"
+                      className="flex h-10 items-center gap-2 rounded-full border px-4 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground"
                     >
                       <item.icon className="h-4 w-4" />
                       {item.label}
