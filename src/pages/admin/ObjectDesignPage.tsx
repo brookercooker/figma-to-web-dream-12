@@ -2256,8 +2256,11 @@ export default function ObjectDesignPage() {
   const freeToolbar = (section: FreeSection) => {
     const parts = orderablePartsOf(section);
     return (
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap items-center gap-1 rounded-lg border bg-background p-1.5 shadow-sm">
+        <div className="flex flex-wrap items-start gap-2">
+          <div className="flex flex-wrap items-start gap-4 rounded-lg border bg-background p-2 shadow-sm">
+            <div className="flex flex-col gap-1">
+            <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Placement</span>
+            <div className="flex flex-wrap items-center gap-1">
             {([
               { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
               { value: "center" as SectionAlign, label: "Align center", icon: AlignCenter },
