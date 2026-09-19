@@ -947,6 +947,7 @@ export default function ObjectDesignPage() {
       else if (part.startsWith("caption:")) patchImage(id, n(1), { caption: undefined } as Partial<SectionImage>);
       else if (part.startsWith("image:")) removeImageSlot(id, n(1));
       else if (part.startsWith("video:")) removeVideo(id, n(1));
+      else if (part === "videos") patch(id, { videos: [] } as Partial<Section>);
       else if (part.startsWith("divider:")) removeDivider(id, n(1));
       else if (part.startsWith("text:")) removeExtra(id, n(1));
       else if (part === "eyebrow") patch(id, { eyebrow: undefined } as Partial<Section>);
