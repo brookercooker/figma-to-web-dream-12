@@ -2113,6 +2113,21 @@ export default function ObjectDesignPage() {
     return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
   };
 
+  /** Friendly name of whichever item is being edited, used as the panel title. */
+  const partTypeLabel = (s: Section, part: string) => {
+    if (!part) return SECTION_LABEL[s.type] ?? "Block";
+    if (part.startsWith("imagetext:")) return "Image text";
+    if (part.startsWith("caption:")) return "Caption";
+    if (part.startsWith("image")) return "Image";
+    if (part.startsWith("video")) return "Video";
+    if (part.startsWith("divider")) return "Divider";
+    if (part === "button") return "Button";
+    if (part === "eyebrow") return "Eyebrow";
+    if (part === "heading") return "Title";
+    if (part === "body" || part.startsWith("text:")) return "Text";
+    return "Item";
+  };
+
   /** Map an element's data-part in the preview to the item name used for ordering. */
   const canvasPartKey = (s: FreeSection, raw: string): string | null => {
     if (!raw) return null;
@@ -3601,11 +3616,12 @@ export default function ObjectDesignPage() {
           const s = sections.find((x) => x.id === activeId);
           if (!s) return null;
           const showToolbar = s.type === "free" && optionsFor === s.id && !focusPart;
+          const title = showToolbar ? "Block" : partTypeLabel(s, focusPart);
           return (
-            <aside className="lg:sticky lg:top-4 lg:self-start">
-              <div className="w-full lg:w-[380px] max-h-[82vh] overflow-y-auto rounded-lg border bg-background shadow-sm">
+            <aside className="lg:sticky lg:top-0 lg:self-start lg:-mt-6">
+              <div className="w-full lg:w-[380px] lg:h-[calc(100vh-4rem)] overflow-y-auto border bg-background shadow-sm lg:border-t-0 lg:rounded-b-lg rounded-lg">
                 <p className="border-b bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  {showToolbar ? "Block options" : "Settings"}
+                  {title}
                 </p>
                 {showToolbar && <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s)}</div>}
                 <div data-inspector-section={s.id} className="p-4">{Inspector({ section: s })}</div>
