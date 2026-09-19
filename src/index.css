@@ -224,3 +224,24 @@
 .capture-app .capture-scroll {
   -webkit-overflow-scrolling: touch;
 }
+
+/* The item settings panel sits inside the side panel, so it drops its own card chrome. */
+.inspector-flush > [data-inspector-part] {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.inspector-flush > [data-inspector-part] > div:first-child,
+.inspector-flush > [data-inspector-part] > div:first-child:hover {
+  background: transparent;
+  border-radius: 0;
+  border-bottom: 1px solid hsl(var(--border));
+}
+.inspector-flush > [data-inspector-part] > div:first-child * {
+  color: hsl(var(--foreground));
+}
+.inspector-flush > [data-inspector-part] > div:last-child {
+  padding-left: 0;
+  padding-right: 0;
+}
