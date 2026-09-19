@@ -3624,7 +3624,7 @@ export default function ObjectDesignPage() {
                   {title}
                 </p>
                 {showToolbar && <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s)}</div>}
-                <div data-inspector-section={s.id} className="p-4">{Inspector({ section: s })}</div>
+                <div data-inspector-section={s.id} className="inspector-flush p-4">{Inspector({ section: s })}</div>
               </div>
             </aside>
           );
