@@ -1595,12 +1595,13 @@ function FreeText({
     const kind = t.kind ?? "text";
     if (kind === "title") {
       items.push({ part, node: (
-        <TextWithIcon item={t} align={section.align} fallbackColor={base}>
+        <TextWithIcon item={t} align={section.align} fallbackColor={base} part={part}>
           <h2
             data-part={part}
+            data-text-body=""
             className={`max-w-2xl ${boxSelf(part)} ${headingClasses(t.style, { color: base, size: "xl" })}`}
             style={textInlineStyle(t.style)}
-            {...richText(t.text)}
+            {...richTextOrPlaceholder(t.text, editing)}
           />
         </TextWithIcon>
       ) });
