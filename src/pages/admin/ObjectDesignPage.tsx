@@ -779,7 +779,8 @@ export default function ObjectDesignPage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
-  const [viewport, setViewport] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [viewport, setViewport] = useState<ViewportKey>("desktop");
+  const viewportWidth = VIEWPORTS.find((v) => v.key === viewport)?.width;
   const [createOpen, setCreateOpen] = useState(false);
   const [q, setQ] = useState("");
   const [libraryOpen, setLibraryOpen] = useState(true);
