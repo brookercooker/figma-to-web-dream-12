@@ -18,6 +18,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
+
+const ICON_LABEL_SIDES: { value: "before" | "after" | "above" | "below"; label: string; icon: LucideIcon }[] = [
+  { value: "before", label: "Before the icon", icon: PanelLeft },
+  { value: "after", label: "After the icon", icon: PanelRight },
+  { value: "above", label: "Above the icon", icon: PanelTop },
+  { value: "below", label: "Below the icon", icon: PanelBottom },
+];
 import { objectRegistry } from "@/components/objects/registry";
 import ImagePickerDialog from "./ImagePickerDialog";
 import ImageResizeHandles from "./ImageResizeHandles";
