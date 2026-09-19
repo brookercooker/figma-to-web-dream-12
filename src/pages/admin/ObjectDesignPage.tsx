@@ -79,8 +79,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function Choice<T extends string | number>({
-  value, options, onChange,
-}: { value: T; options: { value: T; label: string; icon?: LucideIcon }[]; onChange: (v: T) => void }) {
+  value, options, onChange, hideLabels,
+}: { value: T; options: { value: T; label: string; icon?: LucideIcon }[]; onChange: (v: T) => void; hideLabels?: boolean }) {
   return (
     <div className="inline-flex rounded-md border overflow-hidden">
       {options.map((o) => (
@@ -94,7 +94,7 @@ function Choice<T extends string | number>({
           }`}
         >
           {o.icon ? <o.icon className="h-3.5 w-3.5" /> : null}
-          {o.label}
+          {hideLabels && o.icon ? <span className="sr-only">{o.label}</span> : o.label}
         </button>
       ))}
     </div>
@@ -2040,6 +2040,7 @@ export default function ObjectDesignPage() {
               { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
               { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
             ]}
+            hideLabels
             onChange={(v) => patch(section.id, { flowAligns: { ...(section.flowAligns ?? {}), [part]: v } })}
           />
           </div>
