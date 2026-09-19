@@ -2073,17 +2073,6 @@ export default function ObjectDesignPage() {
               %
             </label>
           )}
-          {flow === "inline" && (
-            <Choice
-              value={(section.flowAligns?.[part] ?? section.align) as SectionAlign}
-              options={[
-                { value: "left" as SectionAlign, label: "Left", icon: AlignLeft },
-                { value: "center" as SectionAlign, label: "Center", icon: AlignCenter },
-                { value: "right" as SectionAlign, label: "Right", icon: AlignRight },
-              ]}
-              onChange={(v) => patch(section.id, { flowAligns: { ...(section.flowAligns ?? {}), [part]: v } })}
-            />
-          )}
           {([
             { key: "padsY" as const, label: "Space above and below (px)", short: "V" },
             { key: "padsX" as const, label: "Space left and right (px)", short: "H" },
