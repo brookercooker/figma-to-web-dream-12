@@ -1156,7 +1156,7 @@ function FreeFigureBody({
         if (t.kind === "icon") {
           return (
             <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
-              <SectionIcon name={t.text} style={t.style} fallbackColor={onDark ? "cream" : "ink"} />
+              <SectionIcon name={t.text} style={t.style} label={t.iconLabel} labelSide={t.iconLabelSide} fallbackColor={onDark ? "cream" : "ink"} />
             </div>
           );
         }
@@ -1538,7 +1538,7 @@ function FreeText({
     if (kind === "icon") {
       items.push({ part, node: (
         <div data-part={part}>
-          <SectionIcon name={t.text} style={t.style} fallbackColor={onDark ? "cream" : "ink"} />
+          <SectionIcon name={t.text} style={t.style} label={t.iconLabel} labelSide={t.iconLabelSide} fallbackColor={onDark ? "cream" : "ink"} />
         </div>
       ) });
       return;
@@ -1714,7 +1714,7 @@ function OverlayImageTexts({
         if (t.kind === "icon") {
           return (
             <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
-              <SectionIcon name={t.text} style={t.style} fallbackColor="cream" />
+              <SectionIcon name={t.text} style={t.style} label={t.iconLabel} labelSide={t.iconLabelSide} fallbackColor="cream" />
             </div>
           );
         }
