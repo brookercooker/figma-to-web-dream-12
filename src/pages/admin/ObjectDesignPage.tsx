@@ -2341,8 +2341,11 @@ export default function ObjectDesignPage() {
                 %
               </label>
             )}
-            <span className="mx-1 h-5 w-px bg-border" />
-            <span className="ml-1 text-[11px] uppercase tracking-widest text-muted-foreground">Margins</span>
+            </div>
+            </div>
+            <div className="flex flex-col gap-1">
+            <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Margins</span>
+            <div className="flex flex-wrap items-center gap-1">
             {([
               { key: "padY" as const, label: "Space above and below (px)", short: "V" },
               { key: "padX" as const, label: "Space left and right (px)", short: "H" },
