@@ -86,7 +86,7 @@ export function richText(text: string) {
 /** Same as richText, but shows faded wording in the editor when nothing is typed yet. */
 export function richTextOrPlaceholder(text: string, editing: boolean) {
   if (!text?.trim() && editing) {
-    return { children: "Add text", "data-empty-text": "", className: "opacity-40" } as const;
+    return { children: "Add text", "data-empty-text": "" } as const;
   }
   return richText(text);
 }
