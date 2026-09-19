@@ -2029,7 +2029,6 @@ export default function ObjectDesignPage() {
     const flow = (section.flows?.[part] ?? "separate") as SectionFlow;
     return (
       <div className="rounded-md border p-3 space-y-3">
-        <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Placement</p>
         <div className="flex flex-wrap items-start gap-4">
           <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Alignment</span>
@@ -2271,7 +2270,6 @@ export default function ObjectDesignPage() {
         <div className="flex flex-wrap items-start gap-2">
           <div className="flex flex-wrap items-start gap-4 rounded-lg border bg-background p-2 shadow-sm">
             <div className="flex flex-col gap-1">
-            <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Placement</span>
             <div className="flex flex-wrap items-center gap-1">
             {([
               { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
