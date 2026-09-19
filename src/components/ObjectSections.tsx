@@ -924,6 +924,36 @@ export function SectionIcon({
   );
 }
 
+/** Wraps a piece of text with its optional symbol. */
+export function TextWithIcon({
+  item, fallbackColor, align, children,
+}: {
+  item: { icon?: string; iconSide?: "before" | "after" | "above" | "below"; style?: TextStyle };
+  fallbackColor?: TextColor;
+  align?: SectionAlign;
+  children: React.ReactNode;
+}) {
+  const name = item.icon?.trim();
+  if (!name) return <>{children}</>;
+  const Icon = SECTION_ICONS[name] ?? SECTION_ICONS.sparkles;
+  const size = Math.max(14, Math.round((item.style?.sizePx ?? 20) * 1.2));
+  const color = textColorCss(item.style?.color ?? fallbackColor ?? "ink");
+  const glyph = <Icon style={{ width: size, height: size, color, flex: "none" }} strokeWidth={1.4} />;
+  const side = item.iconSide ?? "before";
+  const stack = side === "above" || side === "below";
+  const first = side === "before" || side === "above";
+  const justify = align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
+  return (
+    <span className={`flex gap-2 ${stack ? `flex-col ${align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start"}` : `flex-row items-center ${justify}`}`}>
+      {first ? glyph : null}
+      {children}
+      {first ? null : glyph}
+    </span>
+  );
+}
+
+
+
 const alignText: Record<SectionAlign, string> = {
   left: "text-left items-start",
   center: "text-center items-center",
