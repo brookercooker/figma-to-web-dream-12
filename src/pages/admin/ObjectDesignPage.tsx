@@ -762,7 +762,7 @@ function BlockCanvas({
         setDrop(null);
       }}
     >
-      {children}
+      <SectionEditing.Provider value>{children}</SectionEditing.Provider>
       {drop && (
         <div
           className="pointer-events-none absolute z-30 rounded bg-primary"
