@@ -2030,7 +2030,9 @@ export default function ObjectDesignPage() {
     return (
       <div className="rounded-md border p-3 space-y-3">
         <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Placement</p>
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="flex flex-col gap-1">
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Alignment</span>
           <Choice
             value={(section.flowAligns?.[part] ?? section.align) as SectionAlign}
             options={[
