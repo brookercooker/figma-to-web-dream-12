@@ -94,7 +94,7 @@ function Choice<T extends string | number>({
           }`}
         >
           {o.icon ? <o.icon className="h-3.5 w-3.5" /> : null}
-          {o.label}
+          {hideLabels && o.icon ? <span className="sr-only">{o.label}</span> : o.label}
         </button>
       ))}
     </div>
