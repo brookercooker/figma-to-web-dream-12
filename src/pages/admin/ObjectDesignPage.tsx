@@ -80,7 +80,7 @@ interface ObjectRow {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</span>
+      <span className="block text-[11px] uppercase tracking-widest text-muted-foreground">{label}</span>
       {children}
     </label>
   );
