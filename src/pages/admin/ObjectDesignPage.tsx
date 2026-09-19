@@ -1824,7 +1824,7 @@ export default function ObjectDesignPage() {
                 setDragText(null);
                 setDropText(null);
               }}
-              className={`space-y-2 rounded border bg-muted/30 p-2 ${isDragging ? "opacity-40" : ""}`}
+              className={`space-y-2 ${isDragging ? "opacity-40" : ""}`}
             >
               <div className="flex items-center gap-2">
                 <span
