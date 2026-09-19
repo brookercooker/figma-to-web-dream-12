@@ -1792,13 +1792,14 @@ function OverlayImageTexts({
           );
         }
         return (
-          <p
-            key={t.id}
-            data-part={`imagetext:${index}:${ti}`}
-            className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
-            style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
-            {...richText(t.text)}
-          />
+          <TextWithIcon key={t.id} item={{ ...t, style: ts }} align={t.align ?? image.captionAlign ?? blockAlign} fallbackColor="cream">
+            <p
+              data-part={`imagetext:${index}:${ti}`}
+              className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
+              style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
+              {...richText(t.text)}
+            />
+          </TextWithIcon>
         );
       })}
     </>
