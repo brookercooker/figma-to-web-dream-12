@@ -1201,7 +1201,7 @@ export default function ObjectDesignPage() {
 
 
 
-  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind; iconLabel?: string; iconLabelSide?: "before" | "after" | "above" | "below"; icon?: string; iconSide?: "before" | "after" | "above" | "below" }) => {
+  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind; iconLabel?: string; iconLabelSide?: "before" | "after" | "above" | "below"; iconLabelAlign?: SectionAlign; icon?: string; iconSide?: "before" | "after" | "above" | "below" }) => {
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id || s.type !== "free") return s;
@@ -2008,6 +2008,20 @@ export default function ObjectDesignPage() {
                           onChange={(v) => patchImageText(section.id, index, ti, { iconLabelSide: v })}
                         />
                       </Field>
+                      {(t.iconLabelSide === "above" || t.iconLabelSide === "below") && (
+                        <Field label="Text lines up">
+                          <Choice
+                            value={t.iconLabelAlign ?? "center"}
+                            options={[
+                              { value: "left" as const, label: "Left", icon: AlignLeft },
+                              { value: "center" as const, label: "Center", icon: AlignCenter },
+                              { value: "right" as const, label: "Right", icon: AlignRight },
+                            ]}
+                            hideLabels
+                            onChange={(v) => patchImageText(section.id, index, ti, { iconLabelAlign: v })}
+                          />
+                        </Field>
+                      )}
                       <Choice
                         value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
                         options={[
@@ -2693,6 +2707,20 @@ export default function ObjectDesignPage() {
                         onChange={(v) => patchExtra(section.id, i, { iconLabelSide: v })}
                       />
                     </Field>
+                    {(t.iconLabelSide === "above" || t.iconLabelSide === "below") && (
+                      <Field label="Text lines up">
+                        <Choice
+                          value={t.iconLabelAlign ?? "center"}
+                          options={[
+                            { value: "left" as const, label: "Left", icon: AlignLeft },
+                            { value: "center" as const, label: "Center", icon: AlignCenter },
+                            { value: "right" as const, label: "Right", icon: AlignRight },
+                          ]}
+                          hideLabels
+                          onChange={(v) => patchExtra(section.id, i, { iconLabelAlign: v })}
+                        />
+                      </Field>
+                    )}
                   </>
                 ) : (
                   <>
