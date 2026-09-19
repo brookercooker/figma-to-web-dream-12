@@ -1201,7 +1201,7 @@ export default function ObjectDesignPage() {
 
 
 
-  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind; iconLabel?: string; iconLabelSide?: "before" | "after" | "above" | "below"; icon?: string; iconSide?: "before" | "after" | "above" | "below" }) => {
+  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind; iconLabel?: string; iconLabelSide?: "before" | "after" | "above" | "below"; iconLabelAlign?: SectionAlign; icon?: string; iconSide?: "before" | "after" | "above" | "below" }) => {
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id || s.type !== "free") return s;
