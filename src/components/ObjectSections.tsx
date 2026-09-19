@@ -1619,24 +1619,26 @@ function FreeText({
     if (kind === "eyebrow") {
       const es = withEyebrowDefaults(t.style);
       items.push({ part, node: (
-        <TextWithIcon item={{ ...t, style: es }} align={section.align} fallbackColor={onDark ? "cream" : "stone"}>
+        <TextWithIcon item={{ ...t, style: es }} align={section.align} fallbackColor={onDark ? "cream" : "stone"} part={part}>
           <p
             data-part={part}
+            data-text-body=""
             className={`uppercase tracking-[0.24em] ${bodyClasses(es, { color: onDark ? "cream" : "stone", size: "sm" })}`}
             style={textInlineStyle(es)}
-            {...richText(t.text)}
+            {...richTextOrPlaceholder(t.text, editing)}
           />
         </TextWithIcon>
       ) });
       return;
     }
     items.push({ part, node: (
-      <TextWithIcon item={t} align={section.align} fallbackColor={onDark ? "cream" : "stone"}>
+      <TextWithIcon item={t} align={section.align} fallbackColor={onDark ? "cream" : "stone"} part={part}>
         <p
           data-part={part}
+          data-text-body=""
           className={`max-w-xl ${boxSelf(part)} leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
           style={textInlineStyle(t.style)}
-          {...richText(t.text)}
+          {...richTextOrPlaceholder(t.text, editing)}
         />
       </TextWithIcon>
     ) });
