@@ -912,14 +912,23 @@ export default function ObjectDesignPage() {
       : extraIdx >= 0 ? "extra"
       : imgText ? "imageText"
       : "";
-    if (!field) return;
+    // Icons carry their own wording: edit that span, never the icon's name.
+    const iconLabelEl = el.querySelector<HTMLElement>("[data-icon-label]");
+    if (!field && !iconLabelEl) return;
     e.preventDefault();
     e.stopPropagation();
 
-    const target = field === "buttonLabel"
+    const target = iconLabelEl
+      ? iconLabelEl
+      : field === "buttonLabel"
       ? ((el.querySelector("a, button") as HTMLElement | null) ?? el)
       : el;
     if (target.isContentEditable) return;
+    if (iconLabelEl?.hasAttribute("data-icon-label-empty")) {
+      iconLabelEl.textContent = "";
+      iconLabelEl.classList.remove("opacity-40");
+    }
+
 
     target.contentEditable = "true";
     target.spellcheck = false;
