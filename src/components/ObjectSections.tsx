@@ -213,6 +213,10 @@ export interface ImageText {
   divider?: { color?: TextColor; width?: "full" | "short"; widthPct?: number; thickness?: number };
   /** link settings when kind is "button" */
   button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor; icon?: string; iconSide?: "before" | "after" };
+  /** wording shown with the icon when kind is "icon" */
+  iconLabel?: string;
+  /** where the icon's wording sits */
+  iconLabelSide?: "before" | "after" | "above" | "below";
   /** extra space above/below this item (px, may be negative) */
   padY?: number;
   /** extra space left/right of this item (px, may be negative) */
@@ -626,6 +630,10 @@ export interface FreeParagraph {
   /** what sort of text this is; defaults to a body paragraph */
   kind?: FreeTextKind;
   style?: TextStyle;
+  /** wording shown with the icon when kind is "icon" */
+  iconLabel?: string;
+  /** where the icon's wording sits */
+  iconLabelSide?: "before" | "after" | "above" | "below";
 }
 
 /** A separating bar placed between content. */
