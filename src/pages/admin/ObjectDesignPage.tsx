@@ -3527,9 +3527,6 @@ export default function ObjectDesignPage() {
                       </div>
                     </div>
 
-                    {active && s.type === "free" && optionsFor === s.id && !focusPart && (
-                      <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s)}</div>
-                    )}
 
                     <BlockCanvas
                       section={s}
