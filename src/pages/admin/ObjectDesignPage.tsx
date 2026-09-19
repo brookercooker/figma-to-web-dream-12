@@ -3379,6 +3379,21 @@ export default function ObjectDesignPage() {
           {object && (
             <div className="ml-auto flex items-center gap-2">
               <div className="inline-flex rounded-md border overflow-hidden">
+                {VIEWPORTS.map((v) => (
+                  <button
+                    key={v.key}
+                    type="button"
+                    title={`${v.label} width`}
+                    aria-label={`${v.label} width`}
+                    aria-pressed={viewport === v.key}
+                    onClick={() => setViewport(v.key)}
+                    className={`px-2.5 py-1.5 ${viewport === v.key ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  >
+                    <v.icon className="w-3.5 h-3.5" />
+                  </button>
+                ))}
+              </div>
+              <div className="inline-flex rounded-md border overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setPreview(true)}
