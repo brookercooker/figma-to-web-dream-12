@@ -2113,6 +2113,21 @@ export default function ObjectDesignPage() {
     return orderParts(base.map((p) => ({ part: p })), s.order).map((x) => x.part);
   };
 
+  /** Friendly name of whichever item is being edited, used as the panel title. */
+  const partTypeLabel = (s: Section, part: string) => {
+    if (!part) return SECTION_LABEL[s.type] ?? "Block";
+    if (part.startsWith("imagetext:")) return "Image text";
+    if (part.startsWith("caption:")) return "Caption";
+    if (part.startsWith("image")) return "Image";
+    if (part.startsWith("video")) return "Video";
+    if (part.startsWith("divider")) return "Divider";
+    if (part === "button") return "Button";
+    if (part === "eyebrow") return "Eyebrow";
+    if (part === "heading") return "Title";
+    if (part === "body" || part.startsWith("text:")) return "Text";
+    return "Item";
+  };
+
   /** Map an element's data-part in the preview to the item name used for ordering. */
   const canvasPartKey = (s: FreeSection, raw: string): string | null => {
     if (!raw) return null;
