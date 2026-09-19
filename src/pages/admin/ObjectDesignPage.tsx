@@ -933,6 +933,35 @@ export default function ObjectDesignPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Delete / Backspace removes the element selected in the preview.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT")) return;
+      if (!focusPart || !activeId) return;
+      const part = focusPart;
+      const id = activeId;
+      const n = (i: number) => Number(part.split(":")[i]);
+      if (part.startsWith("imagetext:")) removeImageText(id, n(1), n(2));
+      else if (part.startsWith("caption:")) patchImage(id, n(1), { caption: undefined } as Partial<SectionImage>);
+      else if (part.startsWith("image:")) removeImageSlot(id, n(1));
+      else if (part.startsWith("video:")) removeVideo(id, n(1));
+      else if (part.startsWith("divider:")) removeDivider(id, n(1));
+      else if (part.startsWith("text:")) removeExtra(id, n(1));
+      else if (part === "eyebrow") patch(id, { eyebrow: undefined } as Partial<Section>);
+      else if (part === "heading") patch(id, { heading: undefined } as Partial<Section>);
+      else if (part === "body") patch(id, { body: undefined } as Partial<Section>);
+      else if (part === "button") patch(id, { buttonLabel: undefined } as Partial<Section>);
+      else return;
+      e.preventDefault();
+      setFocusPart("");
+      setToolbar(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
 
 
 
