@@ -1771,6 +1771,7 @@ function FreeText({
 function OverlayImageTexts({
   section, image, index,
 }: { section: FreeSection; image: SectionImage; index: number }) {
+  const ovlTextEditing = useContext(SectionEditing);
   const texts = image.texts ?? [];
   if (!texts.length) return null;
   const blockAlign: SectionAlign = section.align ?? "left";
