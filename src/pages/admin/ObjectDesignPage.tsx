@@ -1934,14 +1934,14 @@ export default function ObjectDesignPage() {
                         onPick={(name) => patchImageText(section.id, index, ti, { text: name })}
                         onStyle={(v) => patchImageText(section.id, index, ti, { style: v })}
                       />
-                      <Field label="Wording">
+                      <Field label="Text">
                         <Input
                           value={t.iconLabel ?? ""}
                           placeholder="Optional text with this icon"
                           onChange={(e) => patchImageText(section.id, index, ti, { iconLabel: e.target.value })}
                         />
                       </Field>
-                      <Field label="Wording sits">
+                      <Field label="Text sits">
                         <select
                           className="h-9 w-full rounded-md border bg-background px-2 text-sm"
                           value={t.iconLabelSide ?? "after"}
@@ -2622,14 +2622,14 @@ export default function ObjectDesignPage() {
                       onPick={(name) => patchExtra(section.id, i, { text: name })}
                       onStyle={(v) => patchExtra(section.id, i, { style: v })}
                     />
-                    <Field label="Wording">
+                    <Field label="Text">
                       <Input
                         value={t.iconLabel ?? ""}
                         placeholder="Optional text with this icon"
                         onChange={(e) => patchExtra(section.id, i, { iconLabel: e.target.value })}
                       />
                     </Field>
-                    <Field label="Wording sits">
+                    <Field label="Text sits">
                       <select
                         className="h-9 w-full rounded-md border bg-background px-2 text-sm"
                         value={t.iconLabelSide ?? "after"}
