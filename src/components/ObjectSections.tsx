@@ -887,15 +887,26 @@ export function SectionIcon({
     );
   }
   const text = label?.trim();
-  if (!text) return glyph;
+  const editing = useContext(SectionEditing);
+  if (!text && !editing) return glyph;
   const stack = labelSide === "above" || labelSide === "below";
   const first = labelSide === "before" || labelSide === "above";
-  const wording = (
+  const fontSize = Math.max(12, Math.round(size * 0.55));
+  const wording = text ? (
     <span
+      data-icon-label=""
       className="whitespace-pre-wrap leading-snug"
-      style={{ color, fontSize: Math.max(12, Math.round(size * 0.55)) }}
+      style={{ color, fontSize }}
+      {...richText(text)}
+    />
+  ) : (
+    <span
+      data-icon-label=""
+      data-icon-label-empty=""
+      className="whitespace-pre-wrap leading-snug opacity-40"
+      style={{ color, fontSize }}
     >
-      {text}
+      Add text
     </span>
   );
   return (
