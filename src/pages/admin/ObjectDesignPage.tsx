@@ -1776,7 +1776,7 @@ export default function ObjectDesignPage() {
         </>
       )}
       {showCaption && imgOpen && (
-        <div className="space-y-2 rounded-md border border-dashed p-2">
+        <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-1">
             {IMAGE_TEXT_KINDS.filter((k) => !["eyebrow", "title", "subheading"].includes(k.value)).map((k) => {
               const Icon = IMAGE_TEXT_ICONS[k.value];
@@ -1824,7 +1824,7 @@ export default function ObjectDesignPage() {
                 setDragText(null);
                 setDropText(null);
               }}
-              className={`space-y-2 rounded border bg-muted/30 p-2 ${isDragging ? "opacity-40" : ""}`}
+              className={`space-y-2 ${isDragging ? "opacity-40" : ""}`}
             >
               <div className="flex items-center gap-2">
                 <span
