@@ -933,12 +933,14 @@ export function SectionIcon({
 
 /** Wraps a piece of text with its optional symbol. */
 export function TextWithIcon({
-  item, fallbackColor, align, children,
+  item, fallbackColor, align, children, part,
 }: {
   item: { icon?: string; iconSide?: "before" | "after" | "above" | "below"; style?: TextStyle };
   fallbackColor?: TextColor;
   align?: SectionAlign;
   children: React.ReactNode;
+  /** lets a click on the symbol select the same item as its wording */
+  part?: string;
 }) {
   const name = item.icon?.trim();
   if (!name) return <>{children}</>;
