@@ -2106,6 +2106,8 @@ export default function ObjectDesignPage() {
               />
             </label>
           ))}
+          </div>
+          </div>
         </div>
       </div>
     );
