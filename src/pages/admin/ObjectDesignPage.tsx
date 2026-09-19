@@ -2030,7 +2030,9 @@ export default function ObjectDesignPage() {
     return (
       <div className="rounded-md border p-3 space-y-3">
         <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Placement</p>
-        <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="flex flex-col gap-1">
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Alignment</span>
           <Choice
             value={(section.flowAligns?.[part] ?? section.align) as SectionAlign}
             options={[
@@ -2040,6 +2042,9 @@ export default function ObjectDesignPage() {
             ]}
             onChange={(v) => patch(section.id, { flowAligns: { ...(section.flowAligns ?? {}), [part]: v } })}
           />
+          </div>
+          <div className="flex flex-col gap-1">
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Stacking</span>
           <Choice
             value={flow}
             options={[
@@ -2073,6 +2078,10 @@ export default function ObjectDesignPage() {
               %
             </label>
           )}
+          </div>
+          <div className="flex flex-col gap-1">
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Margins</span>
+          <div className="flex flex-wrap items-center gap-2">
           {([
             { key: "padsY" as const, label: "Space above and below (px)", short: "V" },
             { key: "padsX" as const, label: "Space left and right (px)", short: "H" },
@@ -2101,6 +2110,8 @@ export default function ObjectDesignPage() {
               />
             </label>
           ))}
+          </div>
+          </div>
         </div>
       </div>
     );
@@ -2256,8 +2267,11 @@ export default function ObjectDesignPage() {
   const freeToolbar = (section: FreeSection) => {
     const parts = orderablePartsOf(section);
     return (
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap items-center gap-1 rounded-lg border bg-background p-1.5 shadow-sm">
+        <div className="flex flex-wrap items-start gap-2">
+          <div className="flex flex-wrap items-start gap-4 rounded-lg border bg-background p-2 shadow-sm">
+            <div className="flex flex-col gap-1">
+            <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Placement</span>
+            <div className="flex flex-wrap items-center gap-1">
             {([
               { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
               { value: "center" as SectionAlign, label: "Align center", icon: AlignCenter },
@@ -2341,8 +2355,11 @@ export default function ObjectDesignPage() {
                 %
               </label>
             )}
-            <span className="mx-1 h-5 w-px bg-border" />
-            <span className="ml-1 text-[11px] uppercase tracking-widest text-muted-foreground">Margins</span>
+            </div>
+            </div>
+            <div className="flex flex-col gap-1">
+            <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Margins</span>
+            <div className="flex flex-wrap items-center gap-1">
             {([
               { key: "padY" as const, label: "Space above and below (px)", short: "V" },
               { key: "padX" as const, label: "Space left and right (px)", short: "H" },
@@ -2370,8 +2387,11 @@ export default function ObjectDesignPage() {
                 />
               </label>
             ))}
-            <span className="mx-1 h-5 w-px bg-border" />
-            <span className="ml-1 text-[11px] uppercase tracking-widest text-muted-foreground">Block styling</span>
+            </div>
+            </div>
+            <div className="flex flex-col gap-1">
+            <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Block styling</span>
+            <div className="flex flex-wrap items-center gap-1">
             <ColorDropdown
               label="Background"
               value={(section as FreeSection).bg ?? ""}
@@ -2399,6 +2419,8 @@ export default function ObjectDesignPage() {
                 Clear image
               </button>
             ) : null}
+            </div>
+            </div>
           </div>
           <div className="ml-auto flex gap-2">
             {parts.length ? (
