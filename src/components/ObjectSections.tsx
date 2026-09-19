@@ -903,11 +903,13 @@ export function SectionIcon({
   const stack = labelSide === "above" || labelSide === "below";
   const first = labelSide === "before" || labelSide === "above";
   const fontSize = Math.max(12, Math.round(size * 0.55));
+  const align = stack ? labelAlign ?? "center" : undefined;
+  const textAlign = align === "left" ? "left" : align === "right" ? "right" : align === "center" ? "center" : undefined;
   const wording = text ? (
     <span
       data-icon-label=""
       className="whitespace-pre-wrap leading-snug"
-      style={{ color, fontSize }}
+      style={{ color, fontSize, textAlign, width: stack ? "100%" : undefined, display: stack ? "block" : undefined }}
       {...richText(text)}
     />
   ) : (
@@ -915,13 +917,14 @@ export function SectionIcon({
       data-icon-label=""
       data-icon-label-empty=""
       className="whitespace-pre-wrap leading-snug opacity-40"
-      style={{ color, fontSize }}
+      style={{ color, fontSize, textAlign, width: stack ? "100%" : undefined, display: stack ? "block" : undefined }}
     >
       Add text
     </span>
   );
+  const stackItems = align === "left" ? "items-start" : align === "right" ? "items-end" : "items-center";
   return (
-    <span className={`inline-flex ${stack ? "flex-col" : "flex-row"} items-center gap-2 align-middle`}>
+    <span className={`inline-flex ${stack ? `flex-col ${stackItems}` : "flex-row items-center"} gap-2 align-middle`}>
       {first ? wording : glyph}
       {first ? glyph : wording}
     </span>
