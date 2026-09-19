@@ -1776,7 +1776,7 @@ export default function ObjectDesignPage() {
         </>
       )}
       {showCaption && imgOpen && (
-        <div className="space-y-2 rounded-md border border-dashed p-2">
+        <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-1">
             {IMAGE_TEXT_KINDS.filter((k) => !["eyebrow", "title", "subheading"].includes(k.value)).map((k) => {
               const Icon = IMAGE_TEXT_ICONS[k.value];
