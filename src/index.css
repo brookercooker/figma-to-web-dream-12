@@ -236,3 +236,7 @@
   padding-left: 0;
   padding-right: 0;
 }
+
+[data-empty-text] {
+  opacity: 0.4;
+}

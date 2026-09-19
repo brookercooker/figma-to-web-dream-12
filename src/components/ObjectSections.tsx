@@ -83,6 +83,14 @@ export function richText(text: string) {
   return { dangerouslySetInnerHTML: { __html: sanitizeInline(text) } };
 }
 
+/** Same as richText, but shows faded wording in the editor when nothing is typed yet. */
+export function richTextOrPlaceholder(text: string, editing: boolean) {
+  if (!text?.trim() && editing) {
+    return { children: "Add text", "data-empty-text": "" } as const;
+  }
+  return richText(text);
+}
+
 export const TEXT_FONTS: { value: TextFont; label: string }[] = [
   { value: "serif", label: "Serif" },
   { value: "sans", label: "Sans" },
@@ -933,12 +941,14 @@ export function SectionIcon({
 
 /** Wraps a piece of text with its optional symbol. */
 export function TextWithIcon({
-  item, fallbackColor, align, children,
+  item, fallbackColor, align, children, part,
 }: {
   item: { icon?: string; iconSide?: "before" | "after" | "above" | "below"; style?: TextStyle };
   fallbackColor?: TextColor;
   align?: SectionAlign;
   children: React.ReactNode;
+  /** lets a click on the symbol select the same item as its wording */
+  part?: string;
 }) {
   const name = item.icon?.trim();
   if (!name) return <>{children}</>;
@@ -951,7 +961,7 @@ export function TextWithIcon({
   const first = side === "before" || side === "above";
   const justify = align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
   return (
-    <span className={`flex gap-2 ${stack ? `flex-col ${align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start"}` : `flex-row items-center ${justify}`}`}>
+    <span data-part={part} className={`flex gap-2 ${stack ? `flex-col ${align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start"}` : `flex-row items-center ${justify}`}`}>
       {first ? glyph : null}
       {children}
       {first ? null : glyph}
@@ -1167,6 +1177,7 @@ function Carousel({ section }: { section: CarouselSection }) {
 function FreeFigureBody({
   section, image, index, onDark,
 }: { section: FreeSection; image: SectionImage; index: number; onDark?: boolean }) {
+  const imgTextEditing = useContext(SectionEditing);
   const blockAlign: SectionAlign = section.captionAlign ?? "left";
   const align = alignTextOnly[image.captionAlign ?? blockAlign];
   const baseColor: TextColor = onDark ? "cream" : "stone";
@@ -1234,12 +1245,13 @@ function FreeFigureBody({
           );
         }
         return (
-          <TextWithIcon key={t.id} item={{ ...t, style: ts }} align={t.align ?? image.captionAlign ?? blockAlign} fallbackColor={onDark ? "cream" : d.color}>
+          <TextWithIcon key={t.id} item={{ ...t, style: ts }} align={t.align ?? image.captionAlign ?? blockAlign} fallbackColor={onDark ? "cream" : d.color} part={`imagetext:${index}:${ti}`}>
             <p
               data-part={`imagetext:${index}:${ti}`}
+              data-text-body=""
               className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
               style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
-              {...richText(t.text)}
+              {...richTextOrPlaceholder(t.text, imgTextEditing)}
             />
           </TextWithIcon>
         );
@@ -1544,6 +1556,7 @@ function FreeText({
   onDark,
   media,
 }: { section: FreeSection; onDark?: boolean; media?: { part: string; node: React.ReactNode }[] }) {
+  const editing = useContext(SectionEditing);
   const hasText =
     section.eyebrow || section.heading || section.body || section.buttonLabel ||
     (section.extras ?? []).length || (section.dividers ?? []).length || (media ?? []).length;
@@ -1585,12 +1598,13 @@ function FreeText({
     const kind = t.kind ?? "text";
     if (kind === "title") {
       items.push({ part, node: (
-        <TextWithIcon item={t} align={section.align} fallbackColor={base}>
+        <TextWithIcon item={t} align={section.align} fallbackColor={base} part={part}>
           <h2
             data-part={part}
+            data-text-body=""
             className={`max-w-2xl ${boxSelf(part)} ${headingClasses(t.style, { color: base, size: "xl" })}`}
             style={textInlineStyle(t.style)}
-            {...richText(t.text)}
+            {...richTextOrPlaceholder(t.text, editing)}
           />
         </TextWithIcon>
       ) });
@@ -1607,24 +1621,26 @@ function FreeText({
     if (kind === "eyebrow") {
       const es = withEyebrowDefaults(t.style);
       items.push({ part, node: (
-        <TextWithIcon item={{ ...t, style: es }} align={section.align} fallbackColor={onDark ? "cream" : "stone"}>
+        <TextWithIcon item={{ ...t, style: es }} align={section.align} fallbackColor={onDark ? "cream" : "stone"} part={part}>
           <p
             data-part={part}
+            data-text-body=""
             className={`uppercase tracking-[0.24em] ${bodyClasses(es, { color: onDark ? "cream" : "stone", size: "sm" })}`}
             style={textInlineStyle(es)}
-            {...richText(t.text)}
+            {...richTextOrPlaceholder(t.text, editing)}
           />
         </TextWithIcon>
       ) });
       return;
     }
     items.push({ part, node: (
-      <TextWithIcon item={t} align={section.align} fallbackColor={onDark ? "cream" : "stone"}>
+      <TextWithIcon item={t} align={section.align} fallbackColor={onDark ? "cream" : "stone"} part={part}>
         <p
           data-part={part}
+          data-text-body=""
           className={`max-w-xl ${boxSelf(part)} leading-relaxed whitespace-pre-wrap ${bodyClasses(t.style, { color: onDark ? "cream" : "stone", size: "md" })}`}
           style={textInlineStyle(t.style)}
-          {...richText(t.text)}
+          {...richTextOrPlaceholder(t.text, editing)}
         />
       </TextWithIcon>
     ) });
@@ -1755,6 +1771,7 @@ function FreeText({
 function OverlayImageTexts({
   section, image, index,
 }: { section: FreeSection; image: SectionImage; index: number }) {
+  const ovlTextEditing = useContext(SectionEditing);
   const texts = image.texts ?? [];
   if (!texts.length) return null;
   const blockAlign: SectionAlign = section.align ?? "left";
@@ -1799,12 +1816,13 @@ function OverlayImageTexts({
           );
         }
         return (
-          <TextWithIcon key={t.id} item={{ ...t, style: ts }} align={t.align ?? image.captionAlign ?? blockAlign} fallbackColor="cream">
+          <TextWithIcon key={t.id} item={{ ...t, style: ts }} align={t.align ?? image.captionAlign ?? blockAlign} fallbackColor="cream" part={`imagetext:${index}:${ti}`}>
             <p
               data-part={`imagetext:${index}:${ti}`}
+              data-text-body=""
               className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
               style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
-              {...richText(t.text)}
+              {...richTextOrPlaceholder(t.text, ovlTextEditing)}
             />
           </TextWithIcon>
         );
