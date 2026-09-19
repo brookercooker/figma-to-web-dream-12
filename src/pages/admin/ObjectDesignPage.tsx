@@ -1466,6 +1466,7 @@ export default function ObjectDesignPage() {
   /** Switching to edit always leaves a block ready to work on. */
   const enterEdit = () => {
     setPreview(false);
+    setLibraryOpen(false);
     setSections((prev) => {
       if (prev.length) {
         setActiveId((cur) => (cur && prev.some((s) => s.id === cur) ? cur : prev[0].id));
