@@ -3601,11 +3601,12 @@ export default function ObjectDesignPage() {
           const s = sections.find((x) => x.id === activeId);
           if (!s) return null;
           const showToolbar = s.type === "free" && optionsFor === s.id && !focusPart;
+          const title = showToolbar ? "Block" : partTypeLabel(s, focusPart);
           return (
-            <aside className="lg:sticky lg:top-4 lg:self-start">
-              <div className="w-full lg:w-[380px] max-h-[82vh] overflow-y-auto rounded-lg border bg-background shadow-sm">
+            <aside className="lg:sticky lg:top-0 lg:self-start lg:-mt-6">
+              <div className="w-full lg:w-[380px] lg:h-[calc(100vh-4rem)] overflow-y-auto border bg-background shadow-sm lg:border-t-0 lg:rounded-b-lg rounded-lg">
                 <p className="border-b bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  {showToolbar ? "Block options" : "Settings"}
+                  {title}
                 </p>
                 {showToolbar && <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s)}</div>}
                 <div data-inspector-section={s.id} className="p-4">{Inspector({ section: s })}</div>
