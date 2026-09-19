@@ -216,6 +216,8 @@ export interface ImageText {
   iconLabel?: string;
   /** where the icon's wording sits */
   iconLabelSide?: "before" | "after" | "above" | "below";
+  /** how the icon's wording lines up when it sits above or below */
+  iconLabelAlign?: SectionAlign;
   /** optional symbol shown with this text */
   icon?: string;
   /** where that symbol sits relative to the text */
