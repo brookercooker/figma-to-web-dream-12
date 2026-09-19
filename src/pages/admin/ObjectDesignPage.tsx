@@ -3478,7 +3478,10 @@ export default function ObjectDesignPage() {
         </aside>
         )}
 
-        <section className="min-w-0">
+        <section
+          className="min-w-0 w-full mx-auto transition-[max-width]"
+          style={viewportWidth ? { maxWidth: viewportWidth } : undefined}
+        >
           {!object ? (
             <div className="border rounded-lg p-12 text-center text-muted-foreground">
               Pick an object on the left to design it, or create a new one.
