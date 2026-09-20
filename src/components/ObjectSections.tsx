@@ -1040,15 +1040,27 @@ function Pic({
   if (!image?.url) return <Placeholder className={className} />;
   const href = image.href?.trim();
   const wash = scrimStyle(scrim, scrimStrength);
+  const auto = /(^|\s)h-auto(\s|$)/.test(className);
+  const zoom = imageZoom(image.zoom);
+  const picture = (
+    <img
+      src={image.url}
+      alt={image.alt || ""}
+      loading="lazy"
+      style={image.focus ? { objectPosition: image.focus } : undefined}
+      className={`block w-full ${auto ? "h-auto" : "h-full"} object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]`}
+    />
+  );
   const inner = (
     <>
-      <img
-        src={image.url}
-        alt={image.alt || ""}
-        loading="lazy"
-        style={image.focus ? { objectPosition: image.focus } : undefined}
-        className={`block w-full ${/(^|\s)h-auto(\s|$)/.test(className) ? "h-auto" : "h-full"} object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]`}
-      />
+      {zoom > 100 ? (
+        <span
+          className={`block w-full ${auto ? "h-auto" : "h-full"}`}
+          style={{ transform: `scale(${zoom / 100})`, transformOrigin: image.focus || "center" }}
+        >
+          {picture}
+        </span>
+      ) : picture}
       {wash ? <span aria-hidden className="pointer-events-none absolute inset-0" style={wash} /> : null}
     </>
   );
