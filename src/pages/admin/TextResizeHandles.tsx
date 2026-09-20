@@ -103,11 +103,15 @@ export default function TextResizeHandles({
       if (hy) size.height = Math.max(16, startH + hy * ey);
       onResize(r.part, size);
       // keep the outline and handles glued to the box while it is being dragged
-      setRect((prev) =>
-        prev && prev.part === r.part
-          ? { ...prev, width: size.width ?? prev.width, height: size.height ?? prev.height }
-          : prev,
-      );
+      if (rotation) {
+        requestAnimationFrame(measure);
+      } else {
+        setRect((prev) =>
+          prev && prev.part === r.part
+            ? { ...prev, width: size.width ?? prev.width, height: size.height ?? prev.height }
+            : prev,
+        );
+      }
     };
     const up = () => {
       dragging.current = false;
