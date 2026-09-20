@@ -736,6 +736,8 @@ function BlockCanvas({
   onResize: (groupKey: number, size: { imageHeightPx?: number; imageWidthPx?: number }) => void;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick: (e: React.MouseEvent) => void;
+  onMouseDown: (e: React.MouseEvent) => void;
+
   /** Item names that can be reordered in this block. */
   draggableParts: string[];
   /** Map a rendered element's data-part to the item name that can be reordered. */
