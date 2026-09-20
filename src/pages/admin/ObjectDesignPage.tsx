@@ -983,12 +983,12 @@ export default function ObjectDesignPage() {
     return () => window.clearTimeout(t);
   }, [focusPart, activeId]);
 
-  // Double-clicking a cropped picture lets you drag it to choose what shows.
+  // Holding down on a selected cropped picture lets you drag it to choose what shows.
   const startFocusDrag = (
     sectionId: string,
     index: number,
     el: HTMLElement,
-    e: React.MouseEvent,
+    e: { clientX: number; clientY: number; preventDefault: () => void; stopPropagation: () => void },
   ) => {
     const img = el.querySelector("img");
     if (!img) return;
