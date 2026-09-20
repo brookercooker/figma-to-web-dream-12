@@ -2353,7 +2353,7 @@ export default function ObjectDesignPage() {
             onChange={(v) => patch(section.id, { flowAligns: { ...(section.flowAligns ?? {}), [part]: v } })}
           />
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 self-end">
           <Choice
             value={(section.flowVAligns?.[part] ?? "top") as PartVAlign}
             options={[
