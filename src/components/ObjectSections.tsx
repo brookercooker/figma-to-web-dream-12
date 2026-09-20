@@ -533,6 +533,18 @@ export function partSizeStyle(
   return style;
 }
 
+/**
+ * When a text box has been dragged to a set width, its wording must fill that
+ * width and re-wrap inside it rather than shrink to its natural line length.
+ */
+export function sizedPartClass(
+  section: { sizesW?: Record<string, number>; sizesH?: Record<string, number> },
+  part: string,
+): string {
+  const sized = section.sizesW?.[part];
+  return sized ? "[&>*]:w-full [&>*]:max-w-none" : "";
+}
+
 /** Degrees a part is turned by, kept within a half turn. */
 export function partRotation(
   section: { rotations?: Record<string, number> },
