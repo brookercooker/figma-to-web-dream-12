@@ -1862,7 +1862,7 @@ function FreeText({
                   {columns[0].items.map((ci) => (
                     <div
                       key={ci.part}
-                      className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}
+                      className={`flex w-full flex-col ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))}`}
                       style={{ ...partPadStyle(section, ci.part), ...partSizeStyle(section, ci.part) }}
                     >
                       <RotatedPart deg={partRotation(section, ci.part)}>{ci.node}</RotatedPart>
