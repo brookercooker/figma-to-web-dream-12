@@ -3823,6 +3823,7 @@ export default function ObjectDesignPage() {
                       onResize={(groupKey, size) => resizeImageGroup(s.id, groupKey, size)}
                       onClick={(e) => pickPart(s.id, e)}
                       onDoubleClick={(e) => editInline(s.id, e)}
+                      onMouseDown={(e) => holdImageDrag(s.id, e)}
                       draggableParts={active && s.type === "free" ? orderablePartsOf(s) : []}
                       partKeyOf={(raw) => (s.type === "free" ? canvasPartKey(s, raw) : null)}
                       onMovePart={(fromPart, toPart, before, side) => {
