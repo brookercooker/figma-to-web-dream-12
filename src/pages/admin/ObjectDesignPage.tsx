@@ -2039,7 +2039,7 @@ export default function ObjectDesignPage() {
                 <>
                   <IconSelect
                     value={t.kind}
-                    options={IMAGE_TEXT_KINDS.map((k) => ({ value: k.value, label: k.label }))}
+                    options={IMAGE_TEXT_KINDS.filter((k) => k.value !== "subheading" || t.kind === "subheading").map((k) => ({ value: k.value, label: k.label }))}
                     onChange={(v) => patchImageText(section.id, index, ti, { kind: v, style: undefined })}
                   />
                   {t.kind === "divider" ? (
