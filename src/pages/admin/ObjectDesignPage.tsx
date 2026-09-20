@@ -842,7 +842,7 @@ function BlockCanvas({
         <ImageResizeHandles section={section} containerRef={ref} activePart={activePart} onResize={onResize} />
       )}
       {showHandles && section.type === "free" && isTextPart(activePart) && onResizeText && (
-        <TextResizeHandles section={section} containerRef={ref} activePart={activePart} onResize={onResizeText} />
+        <TextResizeHandles section={section} containerRef={ref} activePart={activePart} rotation={partRotation(section, activePart)} onResize={onResizeText} />
       )}
     </div>
   );
