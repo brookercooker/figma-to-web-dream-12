@@ -1704,7 +1704,7 @@ export function DividerBar({
   const pct = divider.widthPct;
   const sized = typeof pct === "number"
     ? `${dividerSelf[align]}`
-    : divider.width === "short" ? `w-24 ${dividerSelf[align]}` : "w-full";
+    : divider.width === "full" ? "w-full" : `w-24 ${dividerSelf[align]}`;
   return (
     <div
       className={`${cls} ${sized} my-2 rounded-full`}
