@@ -2376,6 +2376,34 @@ export default function ObjectDesignPage() {
           )}
           </div>
           <div className="flex flex-col gap-1">
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Rotation</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              type="number"
+              min={-180}
+              max={180}
+              step={1}
+              className="h-8 w-20"
+              placeholder="0"
+              aria-label="Rotation in degrees"
+              value={section.rotations?.[part] ?? ""}
+              onChange={(e) => {
+                const raw = e.target.value;
+                const next = { ...(section.rotations ?? {}) };
+                if (raw === "") delete next[part];
+                else {
+                  const n = Number(raw);
+                  if (Number.isNaN(n)) return;
+                  next[part] = Math.min(180, Math.max(-180, n));
+                }
+                patch(section.id, { rotations: next } as Partial<Section>);
+              }}
+            />
+            <span className="text-xs text-muted-foreground">degrees</span>
+          </div>
+          </div>
+          <div className="flex flex-col gap-1">
+
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Margins</span>
           <div className="flex flex-wrap items-center gap-2">
           {([

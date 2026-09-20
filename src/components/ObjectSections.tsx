@@ -520,6 +520,18 @@ export function partPadStyle(
   return style;
 }
 
+/** Turn one item by a number of degrees, keeping its place in the layout. */
+export function partRotateStyle(
+  section: { rotations?: Record<string, number> },
+  part: string,
+): React.CSSProperties {
+  const deg = section.rotations?.[part];
+  if (!deg) return {};
+  const d = Math.min(180, Math.max(-180, deg));
+  return { transform: `rotate(${d}deg)`, transformOrigin: "center" };
+}
+
+
 /** Inline spacing for one text/divider/button attached to an image. */
 export function imageTextPadStyle(t: { padY?: number; padX?: number }): React.CSSProperties {
   let style: React.CSSProperties = {};
@@ -711,6 +723,8 @@ export interface FreeSection {
   padsY?: Record<string, number>;
   /** per-element horizontal padding in pixels, keyed by the same parts */
   padsX?: Record<string, number>;
+  /** per-element rotation in degrees, keyed by the same parts */
+  rotations?: Record<string, number>;
   /** vertical alignment of items sharing a row */
   rowVAlign?: RowVAlign;
   /** groups of items drawn together inside a box */
@@ -1733,7 +1747,7 @@ function FreeText({
                     <div
                       key={ci.part}
                       className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}
-                      style={partPadStyle(section, ci.part)}
+                      style={{ ...partPadStyle(section, ci.part), ...partRotateStyle(section, ci.part) }}
                     >
                       {ci.node}
                     </div>
@@ -1760,7 +1774,7 @@ function FreeText({
                     <div
                       key={ci.part}
                       className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}
-                      style={partPadStyle(section, ci.part)}
+                      style={{ ...partPadStyle(section, ci.part), ...partRotateStyle(section, ci.part) }}
                     >
                       {ci.node}
                     </div>
