@@ -36,7 +36,10 @@ export default function TextResizeHandles({
     const host = containerRef.current;
     if (!host || !activePart || !isTextPart(activePart)) { setRect(null); return; }
     const base = host.getBoundingClientRect();
-    const el = host.querySelector<HTMLElement>(`[data-part="${activePart}"]`);
+    // the wrapper carries the dragged width/height, so measure it when present
+    const el =
+      host.querySelector<HTMLElement>(`[data-part-box="${activePart}"]`) ??
+      host.querySelector<HTMLElement>(`[data-part="${activePart}"]`);
     if (!el) { setRect(null); return; }
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4) { setRect(null); return; }
