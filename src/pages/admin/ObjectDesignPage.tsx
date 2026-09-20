@@ -723,7 +723,7 @@ function BlockCanvas({
   onResize,
   onClick,
   onDoubleClick,
-  onMouseDown,
+  onPointerDown,
 
   draggableParts,
   partKeyOf,
@@ -736,7 +736,7 @@ function BlockCanvas({
   onResize: (groupKey: number, size: { imageHeightPx?: number; imageWidthPx?: number }) => void;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick: (e: React.MouseEvent) => void;
-  onMouseDown: (e: React.MouseEvent) => void;
+  onPointerDown: (e: React.PointerEvent) => void;
 
   /** Item names that can be reordered in this block. */
   draggableParts: string[];
@@ -791,7 +791,7 @@ function BlockCanvas({
       className="relative px-4 cursor-pointer [&_img]:!scale-100 [&_img]:!transition-none [&_[data-part]]:cursor-pointer [&_[data-part]]:rounded-sm [&_[data-part]]:transition-shadow [&_[data-part]:hover]:ring-2 [&_[data-part]:hover]:ring-primary/50 [&_[data-part]:hover]:ring-offset-2"
       onClick={onClick}
       onDoubleClick={onDoubleClick}
-      onMouseDown={onMouseDown}
+      onPointerDown={onPointerDown}
 
       onDragStart={(e) => {
         const t = targetOf(e);
@@ -3837,7 +3837,7 @@ export default function ObjectDesignPage() {
                       onResize={(groupKey, size) => resizeImageGroup(s.id, groupKey, size)}
                       onClick={(e) => pickPart(s.id, e)}
                       onDoubleClick={(e) => editInline(s.id, e)}
-                      onMouseDown={(e) => holdImageDrag(s.id, e)}
+                      onPointerDown={(e) => holdImageDrag(s.id, e)}
                       draggableParts={active && s.type === "free" ? orderablePartsOf(s) : []}
                       partKeyOf={(raw) => (s.type === "free" ? canvasPartKey(s, raw) : null)}
                       onMovePart={(fromPart, toPart, before, side) => {
