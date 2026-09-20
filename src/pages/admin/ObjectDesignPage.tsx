@@ -988,8 +988,8 @@ export default function ObjectDesignPage() {
         `[data-inspector-section="${activeId}"] [data-inspector-part="${focusPart}"]`,
       );
       if (!group) return;
+      // Scroll the controls into view but never steal focus into a field.
       group.scrollIntoView({ behavior: "smooth", block: "center" });
-      group.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea")?.focus();
     }, 60);
 
     return () => window.clearTimeout(t);
