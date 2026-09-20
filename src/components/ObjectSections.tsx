@@ -799,6 +799,8 @@ export interface FreeSection {
   flowWidths?: Record<string, number>;
   /** per-element alignment within its inline column, keyed by the same parts */
   flowAligns?: Record<string, SectionAlign>;
+  /** per-element vertical position inside its own box height, keyed by the same parts */
+  flowVAligns?: Record<string, PartVAlign>;
   /** items sharing a stack id are stacked vertically inside one column of a side-by-side row */
   stacks?: Record<string, string>;
   /** per-element vertical padding in pixels, keyed by the same parts */
