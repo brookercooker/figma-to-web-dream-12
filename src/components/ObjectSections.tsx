@@ -546,6 +546,23 @@ export function sizedPartClass(
   return sized ? "[&>*]:w-full [&>*]:max-w-none" : "";
 }
 
+/** Where wording sits inside the height of its own box. */
+export type PartVAlign = "top" | "middle" | "bottom";
+
+const PART_VALIGN_CLASS: Record<PartVAlign, string> = {
+  top: "justify-start",
+  middle: "justify-center",
+  bottom: "justify-end",
+};
+
+/** Vertical placement class for one item inside its own box. */
+export function partVAlignClass(
+  section: { flowVAligns?: Record<string, PartVAlign> },
+  part: string,
+): string {
+  return PART_VALIGN_CLASS[section.flowVAligns?.[part] ?? "top"];
+}
+
 /** Degrees a part is turned by, kept within a half turn. */
 export function partRotation(
   section: { rotations?: Record<string, number> },
@@ -563,11 +580,14 @@ export function partRotation(
 export function RotatedPart({
   deg,
   size,
+  vAlignClass,
   children,
 }: {
   deg: number;
   /** Width/height the item was dragged to, measured along its own turned axis. */
   size?: React.CSSProperties;
+  /** Where the wording sits down the box's own axis. */
+  vAlignClass?: string;
   children: React.ReactNode;
 }) {
   const inner = useRef<HTMLDivElement | null>(null);
@@ -605,7 +625,7 @@ export function RotatedPart({
       <div
         ref={inner}
         data-rot-inner=""
-        className={`${box ? "absolute" : ""} ${sized ? "flex flex-col [&>*]:w-full [&>*]:max-w-none" : ""}`}
+        className={`${box ? "absolute" : ""} ${sized ? `flex flex-col ${vAlignClass ?? ""} [&>*]:w-full [&>*]:max-w-none` : ""}`}
         style={{ ...turnedSize, maxWidth: "none", transform: `rotate(${deg}deg)`, transformOrigin: "center" }}
       >
         {children}
@@ -799,6 +819,8 @@ export interface FreeSection {
   flowWidths?: Record<string, number>;
   /** per-element alignment within its inline column, keyed by the same parts */
   flowAligns?: Record<string, SectionAlign>;
+  /** per-element vertical position inside its own box height, keyed by the same parts */
+  flowVAligns?: Record<string, PartVAlign>;
   /** items sharing a stack id are stacked vertically inside one column of a side-by-side row */
   stacks?: Record<string, string>;
   /** per-element vertical padding in pixels, keyed by the same parts */
@@ -1857,10 +1879,10 @@ function FreeText({
                     <div
                       key={ci.part}
                       data-part-box={ci.part}
-                      className={`flex w-full flex-col ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
+                      className={`flex w-full flex-col ${partVAlignClass(section, ci.part)} ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
                       style={{ ...partPadStyle(section, ci.part), ...(partRotation(section, ci.part) ? {} : partSizeStyle(section, ci.part)) }}
                     >
-                      <RotatedPart deg={partRotation(section, ci.part)} size={partSizeStyle(section, ci.part)}>{ci.node}</RotatedPart>
+                      <RotatedPart deg={partRotation(section, ci.part)} size={partSizeStyle(section, ci.part)} vAlignClass={partVAlignClass(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
                   ))}
                 </div>
@@ -1885,10 +1907,10 @@ function FreeText({
                     <div
                       key={ci.part}
                       data-part-box={ci.part}
-                      className={`flex w-full flex-col ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
+                      className={`flex w-full flex-col ${partVAlignClass(section, ci.part)} ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
                       style={{ ...partPadStyle(section, ci.part), ...(partRotation(section, ci.part) ? {} : partSizeStyle(section, ci.part)) }}
                     >
-                      <RotatedPart deg={partRotation(section, ci.part)} size={partSizeStyle(section, ci.part)}>{ci.node}</RotatedPart>
+                      <RotatedPart deg={partRotation(section, ci.part)} size={partSizeStyle(section, ci.part)} vAlignClass={partVAlignClass(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
                   ))}
                 </div>
