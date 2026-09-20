@@ -2037,6 +2037,16 @@ export default function ObjectDesignPage() {
               </div>
               {tOpen && (
                 <>
+                  <Choice
+                    value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
+                    options={[
+                      { value: "left" as const, label: "Left", icon: AlignLeft },
+                      { value: "center" as const, label: "Center", icon: AlignCenter },
+                      { value: "right" as const, label: "Right", icon: AlignRight },
+                    ]}
+                    hideLabels
+                    onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
+                  />
                   <IconSelect
                     value={t.kind}
                     options={IMAGE_TEXT_KINDS.filter((k) => k.value !== "subheading" || t.kind === "subheading").map((k) => ({ value: k.value, label: k.label }))}
