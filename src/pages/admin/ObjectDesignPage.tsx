@@ -3907,7 +3907,7 @@ export default function ObjectDesignPage() {
 
                     <BlockCanvas
                       section={s}
-                      showHandles={active && s.type === "free" && !!s.images.length}
+                      showHandles={active && s.type === "free" && (!!s.images.length || isTextPart(focusPart))}
                       activePart={active ? focusPart : ""}
                       onResize={(groupKey, size) => resizeImageGroup(s.id, groupKey, size)}
                       onResizeText={(part, size) => resizeTextPart(s.id, part, size)}
