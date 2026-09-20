@@ -1853,9 +1853,9 @@ function FreeText({
                       key={ci.part}
                       data-part-box={ci.part}
                       className={`flex w-full flex-col ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
-                      style={{ ...partPadStyle(section, ci.part), ...partSizeStyle(section, ci.part) }}
+                      style={{ ...partPadStyle(section, ci.part), ...(partRotation(section, ci.part) ? {} : partSizeStyle(section, ci.part)) }}
                     >
-                      <RotatedPart deg={partRotation(section, ci.part)}>{ci.node}</RotatedPart>
+                      <RotatedPart deg={partRotation(section, ci.part)} size={partSizeStyle(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
                   ))}
                 </div>
@@ -1881,9 +1881,9 @@ function FreeText({
                       key={ci.part}
                       data-part-box={ci.part}
                       className={`flex w-full flex-col ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
-                      style={{ ...partPadStyle(section, ci.part), ...partSizeStyle(section, ci.part) }}
+                      style={{ ...partPadStyle(section, ci.part), ...(partRotation(section, ci.part) ? {} : partSizeStyle(section, ci.part)) }}
                     >
-                      <RotatedPart deg={partRotation(section, ci.part)}>{ci.node}</RotatedPart>
+                      <RotatedPart deg={partRotation(section, ci.part)} size={partSizeStyle(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
                   ))}
                 </div>
