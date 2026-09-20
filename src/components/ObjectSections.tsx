@@ -580,11 +580,14 @@ export function partRotation(
 export function RotatedPart({
   deg,
   size,
+  vAlignClass,
   children,
 }: {
   deg: number;
   /** Width/height the item was dragged to, measured along its own turned axis. */
   size?: React.CSSProperties;
+  /** Where the wording sits down the box's own axis. */
+  vAlignClass?: string;
   children: React.ReactNode;
 }) {
   const inner = useRef<HTMLDivElement | null>(null);
