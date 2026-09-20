@@ -723,6 +723,8 @@ function BlockCanvas({
   onResize,
   onClick,
   onDoubleClick,
+  onMouseDown,
+
   draggableParts,
   partKeyOf,
   onMovePart,
