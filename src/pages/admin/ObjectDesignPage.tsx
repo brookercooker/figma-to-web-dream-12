@@ -1039,6 +1039,49 @@ export default function ObjectDesignPage() {
     window.addEventListener("mouseup", onUp);
   };
 
+  /** Click and hold on an already selected picture to start repositioning it. */
+  const holdImageDrag = (sectionId: string, e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
+    if (!el) return;
+    const part = el.getAttribute("data-part") ?? "";
+    if (!part.startsWith("image:") || part !== focusPart) return;
+    const index = Number(part.split(":")[1]);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const wasDraggable = el.draggable;
+    let done = false;
+
+    const cancel = () => {
+      if (done) return;
+      done = true;
+      window.clearTimeout(timer);
+      el.draggable = wasDraggable;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", cancel);
+    };
+    const onMove = (ev: MouseEvent) => {
+      if (Math.abs(ev.clientX - startX) > 4 || Math.abs(ev.clientY - startY) > 4) cancel();
+    };
+    const timer = window.setTimeout(() => {
+      if (done) return;
+      done = true;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", cancel);
+      el.draggable = false;
+      startFocusDrag(sectionId, index, el, {
+        clientX: startX,
+        clientY: startY,
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      });
+      window.addEventListener("mouseup", () => { el.draggable = wasDraggable; }, { once: true });
+    }, 180);
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", cancel);
+  };
+
   // Double-clicking a text element in the preview turns it into an inline editor.
   const editInline = (sectionId: string, e: React.MouseEvent) => {
     const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
