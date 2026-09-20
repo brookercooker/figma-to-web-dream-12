@@ -1045,7 +1045,9 @@ export default function ObjectDesignPage() {
       const nx = overflowX > 1 ? clamp(x - ((ev.clientX - startX) / overflowX) * 100) : x;
       const ny = overflowY > 1 ? clamp(y - ((ev.clientY - startY) / overflowY) * 100) : y;
       next = `${Math.round(nx)}% ${Math.round(ny)}%`;
-      img.style.objectPosition = next;
+      if (wrapper) wrapper.style.transformOrigin = next;
+      else img.style.objectPosition = next;
+
     };
     const onUp = (ev: PointerEvent) => {
       if (e.pointerId !== undefined && ev.pointerId !== e.pointerId) return;
