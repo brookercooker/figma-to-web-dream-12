@@ -14,7 +14,7 @@ import {
   PanelTop, PanelBottom,
   Monitor, Tablet, Smartphone,
   AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, Baseline,
-  Sparkles, ArrowUpToLine, ArrowDownToLine, FoldVertical,
+  Sparkles, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
