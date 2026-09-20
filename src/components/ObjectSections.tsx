@@ -263,6 +263,14 @@ export interface SectionImage {
   group?: number;
   /** which part of the picture stays in view when it is cropped (CSS object-position) */
   focus?: string;
+  /** how far the picture is zoomed inside its crop window, in percent (100 = no zoom) */
+  zoom?: number;
+}
+
+/** Zoom kept within sane limits. */
+export function imageZoom(zoom: number | undefined): number {
+  if (!Number.isFinite(zoom ?? NaN)) return 100;
+  return Math.min(400, Math.max(100, Math.round(zoom as number)));
 }
 
 /** Where a picture is anchored when it gets cropped. */
