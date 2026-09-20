@@ -21,12 +21,15 @@ export function isTextPart(part: string): boolean {
 export default function TextResizeHandles({
   containerRef,
   activePart,
+  rotation = 0,
   onResize,
 }: {
   section: FreeSection;
   containerRef: React.RefObject<HTMLDivElement>;
   /** Part name of the item being edited — handles show only on that text box. */
   activePart: string;
+  /** Degrees the item is turned by, so a handle grows it along its own axis. */
+  rotation?: number;
   onResize: (part: string, size: { width?: number; height?: number }) => void;
 }) {
   const [rect, setRect] = useState<Rect | null>(null);
@@ -78,19 +81,37 @@ export default function TextResizeHandles({
     dragging.current = true;
     const startX = e.clientX;
     const startY = e.clientY;
-    const startW = Math.round(r.width);
-    const startH = Math.round(r.height);
+    // A turned box is measured and grown along its own axis, not the screen's.
+    const rad = (rotation * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const inner = containerRef.current?.querySelector<HTMLElement>(
+      `[data-part-box="${r.part}"] [data-rot-inner]`,
+    );
+    const startW = Math.round(rotation && inner ? inner.offsetWidth : r.width);
+    const startH = Math.round(rotation && inner ? inner.offsetHeight : r.height);
+    // Handle direction expressed in the box's own axis.
+    const hx = Math.round(dx * cos + dy * sin);
+    const hy = Math.round(-dx * sin + dy * cos);
     const move = (ev: PointerEvent) => {
+      const mx = ev.clientX - startX;
+      const my = ev.clientY - startY;
+      const ex = mx * cos + my * sin;
+      const ey = -mx * sin + my * cos;
       const size: { width?: number; height?: number } = {};
-      if (dx) size.width = Math.max(32, startW + dx * (ev.clientX - startX));
-      if (dy) size.height = Math.max(16, startH + dy * (ev.clientY - startY));
+      if (hx) size.width = Math.max(32, startW + hx * ex);
+      if (hy) size.height = Math.max(16, startH + hy * ey);
       onResize(r.part, size);
       // keep the outline and handles glued to the box while it is being dragged
-      setRect((prev) =>
-        prev && prev.part === r.part
-          ? { ...prev, width: size.width ?? prev.width, height: size.height ?? prev.height }
-          : prev,
-      );
+      if (rotation) {
+        requestAnimationFrame(measure);
+      } else {
+        setRect((prev) =>
+          prev && prev.part === r.part
+            ? { ...prev, width: size.width ?? prev.width, height: size.height ?? prev.height }
+            : prev,
+        );
+      }
     };
     const up = () => {
       dragging.current = false;

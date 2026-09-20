@@ -538,9 +538,10 @@ export function partSizeStyle(
  * width and re-wrap inside it rather than shrink to its natural line length.
  */
 export function sizedPartClass(
-  section: { sizesW?: Record<string, number>; sizesH?: Record<string, number> },
+  section: { sizesW?: Record<string, number>; sizesH?: Record<string, number>; rotations?: Record<string, number> },
   part: string,
 ): string {
+  if (section.rotations?.[part]) return ""; // turned items are sized inside the turn wrapper
   const sized = section.sizesW?.[part];
   return sized ? "[&>*]:w-full [&>*]:max-w-none" : "";
 }
@@ -561,9 +562,12 @@ export function partRotation(
  */
 export function RotatedPart({
   deg,
+  size,
   children,
 }: {
   deg: number;
+  /** Width/height the item was dragged to, measured along its own turned axis. */
+  size?: React.CSSProperties;
   children: React.ReactNode;
 }) {
   const inner = useRef<HTMLDivElement | null>(null);
@@ -589,6 +593,7 @@ export function RotatedPart({
   }, [deg]);
 
   if (!deg) return <>{children}</>;
+  const sized = !!(size && (size.width || size.height));
   return (
     <div
       className="relative flex items-center justify-center"
@@ -596,8 +601,9 @@ export function RotatedPart({
     >
       <div
         ref={inner}
-        className={box ? "absolute" : undefined}
-        style={{ transform: `rotate(${deg}deg)`, transformOrigin: "center" }}
+        data-rot-inner=""
+        className={`${box ? "absolute" : ""} ${sized ? "flex flex-col [&>*]:w-full [&>*]:max-w-none" : ""}`}
+        style={{ ...size, transform: `rotate(${deg}deg)`, transformOrigin: "center" }}
       >
         {children}
       </div>
@@ -1849,9 +1855,9 @@ function FreeText({
                       key={ci.part}
                       data-part-box={ci.part}
                       className={`flex w-full flex-col ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
-                      style={{ ...partPadStyle(section, ci.part), ...partSizeStyle(section, ci.part) }}
+                      style={{ ...partPadStyle(section, ci.part), ...(partRotation(section, ci.part) ? {} : partSizeStyle(section, ci.part)) }}
                     >
-                      <RotatedPart deg={partRotation(section, ci.part)}>{ci.node}</RotatedPart>
+                      <RotatedPart deg={partRotation(section, ci.part)} size={partSizeStyle(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
                   ))}
                 </div>
@@ -1877,9 +1883,9 @@ function FreeText({
                       key={ci.part}
                       data-part-box={ci.part}
                       className={`flex w-full flex-col ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
-                      style={{ ...partPadStyle(section, ci.part), ...partSizeStyle(section, ci.part) }}
+                      style={{ ...partPadStyle(section, ci.part), ...(partRotation(section, ci.part) ? {} : partSizeStyle(section, ci.part)) }}
                     >
-                      <RotatedPart deg={partRotation(section, ci.part)}>{ci.node}</RotatedPart>
+                      <RotatedPart deg={partRotation(section, ci.part)} size={partSizeStyle(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
                   ))}
                 </div>
