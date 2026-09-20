@@ -520,6 +520,18 @@ export function partPadStyle(
   return style;
 }
 
+/** Turn one item by a number of degrees, keeping its place in the layout. */
+export function partRotateStyle(
+  section: { rotations?: Record<string, number> },
+  part: string,
+): React.CSSProperties {
+  const deg = section.rotations?.[part];
+  if (!deg) return {};
+  const d = Math.min(180, Math.max(-180, deg));
+  return { transform: `rotate(${d}deg)`, transformOrigin: "center" };
+}
+
+
 /** Inline spacing for one text/divider/button attached to an image. */
 export function imageTextPadStyle(t: { padY?: number; padX?: number }): React.CSSProperties {
   let style: React.CSSProperties = {};
