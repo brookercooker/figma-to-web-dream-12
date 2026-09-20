@@ -529,7 +529,7 @@ export function partSizeStyle(
   const h = section.sizesH?.[part];
   const style: React.CSSProperties = {};
   if (w) { style.width = `${w}px`; style.maxWidth = "100%"; }
-  if (h) { style.minHeight = `${h}px`; }
+  if (h) { style.height = `${h}px`; }
   return style;
 }
 
