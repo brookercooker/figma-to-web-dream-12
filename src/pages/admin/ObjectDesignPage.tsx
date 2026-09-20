@@ -2354,7 +2354,6 @@ export default function ObjectDesignPage() {
           />
           </div>
           <div className="flex flex-col gap-1">
-          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Sits</span>
           <Choice
             value={(section.flowVAligns?.[part] ?? "top") as PartVAlign}
             options={[
