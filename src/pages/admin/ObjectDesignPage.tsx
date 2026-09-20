@@ -558,6 +558,7 @@ function IconSelect<T extends string>({
         <DropdownMenuTrigger className="flex h-8 items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs hover:bg-muted">
           {Current ? <Current className="h-3.5 w-3.5" /> : null}
           {current?.label}
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[10rem]">
           {options.map((o) => {
