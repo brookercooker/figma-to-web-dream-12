@@ -55,10 +55,14 @@ export default function TextResizeHandles({
     if (!host) return;
     const ro = new ResizeObserver(() => { if (!dragging.current) measure(); });
     ro.observe(host);
+    // follow the box while wording is typed into it
+    const mo = new MutationObserver(() => { if (!dragging.current) measure(); });
+    mo.observe(host, { characterData: true, childList: true, subtree: true });
     window.addEventListener("resize", measure);
     const t = window.setTimeout(measure, 300);
     return () => {
       ro.disconnect();
+      mo.disconnect();
       window.removeEventListener("resize", measure);
       window.clearTimeout(t);
     };
