@@ -520,6 +520,19 @@ export function partPadStyle(
   return style;
 }
 
+/** Width/height a text box was dragged to, if any. */
+export function partSizeStyle(
+  section: { sizesW?: Record<string, number>; sizesH?: Record<string, number> },
+  part: string,
+): React.CSSProperties {
+  const w = section.sizesW?.[part];
+  const h = section.sizesH?.[part];
+  const style: React.CSSProperties = {};
+  if (w) { style.width = `${w}px`; style.maxWidth = "100%"; }
+  if (h) { style.minHeight = `${h}px`; }
+  return style;
+}
+
 /** Degrees a part is turned by, kept within a half turn. */
 export function partRotation(
   section: { rotations?: Record<string, number> },
@@ -773,6 +786,10 @@ export interface FreeSection {
   padsX?: Record<string, number>;
   /** per-element rotation in degrees, keyed by the same parts */
   rotations?: Record<string, number>;
+  /** per-element width in pixels, keyed by the same parts */
+  sizesW?: Record<string, number>;
+  /** per-element height in pixels, keyed by the same parts */
+  sizesH?: Record<string, number>;
   /** vertical alignment of items sharing a row */
   rowVAlign?: RowVAlign;
   /** groups of items drawn together inside a box */
@@ -1795,7 +1812,7 @@ function FreeText({
                     <div
                       key={ci.part}
                       className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}
-                      style={partPadStyle(section, ci.part)}
+                      style={{ ...partPadStyle(section, ci.part), ...partSizeStyle(section, ci.part) }}
                     >
                       <RotatedPart deg={partRotation(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
@@ -1822,7 +1839,7 @@ function FreeText({
                     <div
                       key={ci.part}
                       className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}
-                      style={partPadStyle(section, ci.part)}
+                      style={{ ...partPadStyle(section, ci.part), ...partSizeStyle(section, ci.part) }}
                     >
                       <RotatedPart deg={partRotation(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
