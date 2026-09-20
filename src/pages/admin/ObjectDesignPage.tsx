@@ -994,7 +994,7 @@ export default function ObjectDesignPage() {
     sectionId: string,
     index: number,
     el: HTMLElement,
-    e: { clientX: number; clientY: number; preventDefault: () => void; stopPropagation: () => void },
+    e: { clientX: number; clientY: number; pointerId?: number },
   ) => {
     const img = el.querySelector("img");
     if (!img) return;
@@ -1008,9 +1008,6 @@ export default function ObjectDesignPage() {
     // Nothing is hidden, so there is nothing to reposition.
     if (overflowX < 1 && overflowY < 1) return;
 
-    e.preventDefault();
-    e.stopPropagation();
-
     const parts = (img.style.objectPosition || "50% 50%").split(/\s+/);
     let x = parseFloat(parts[0]);
     let y = parseFloat(parts[1] ?? parts[0]);
@@ -1020,34 +1017,48 @@ export default function ObjectDesignPage() {
     const startY = e.clientY;
     const prevCursor = img.style.cursor;
     const prevOutline = el.style.outline;
+    const prevTouch = el.style.touchAction;
     img.style.cursor = "grabbing";
     el.style.outline = "2px solid hsl(var(--primary))";
     el.style.outlineOffset = "2px";
+    // Stop the page from scrolling while the finger drags the picture.
+    el.style.touchAction = "none";
+    if (e.pointerId !== undefined) {
+      try { el.setPointerCapture(e.pointerId); } catch { /* capture is best effort */ }
+    }
     let next = `${x}% ${y}%`;
 
     const clamp = (n: number) => Math.min(100, Math.max(0, n));
-    const onMove = (ev: MouseEvent) => {
-      ev.preventDefault();
+    const onMove = (ev: PointerEvent) => {
+      if (e.pointerId !== undefined && ev.pointerId !== e.pointerId) return;
+      if (ev.cancelable) ev.preventDefault();
       const nx = overflowX > 1 ? clamp(x - ((ev.clientX - startX) / overflowX) * 100) : x;
       const ny = overflowY > 1 ? clamp(y - ((ev.clientY - startY) / overflowY) * 100) : y;
       next = `${Math.round(nx)}% ${Math.round(ny)}%`;
       img.style.objectPosition = next;
     };
-    const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+    const onUp = (ev: PointerEvent) => {
+      if (e.pointerId !== undefined && ev.pointerId !== e.pointerId) return;
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      if (e.pointerId !== undefined) {
+        try { el.releasePointerCapture(e.pointerId); } catch { /* already released */ }
+      }
       img.style.cursor = prevCursor;
       el.style.outline = prevOutline;
       el.style.outlineOffset = "";
+      el.style.touchAction = prevTouch;
       patchImage(sectionId, index, { focus: next });
     };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
   };
 
-  /** Click and hold on an already selected picture to start repositioning it. */
-  const holdImageDrag = (sectionId: string, e: React.MouseEvent) => {
-    if (e.button !== 0) return;
+  /** Press and hold (mouse or finger) on an already selected picture to start repositioning it. */
+  const holdImageDrag = (sectionId: string, e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
     const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
     if (!el) return;
     const part = el.getAttribute("data-part") ?? "";
@@ -1055,38 +1066,41 @@ export default function ObjectDesignPage() {
     const index = Number(part.split(":")[1]);
     const startX = e.clientX;
     const startY = e.clientY;
+    const pointerId = e.pointerId;
     const wasDraggable = el.draggable;
     let done = false;
 
+    const cleanup = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", cancel);
+      window.removeEventListener("pointercancel", cancel);
+    };
     const cancel = () => {
       if (done) return;
       done = true;
       window.clearTimeout(timer);
       el.draggable = wasDraggable;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", cancel);
+      cleanup();
     };
-    const onMove = (ev: MouseEvent) => {
-      if (Math.abs(ev.clientX - startX) > 4 || Math.abs(ev.clientY - startY) > 4) cancel();
+    const onMove = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointerId) return;
+      if (Math.abs(ev.clientX - startX) > 8 || Math.abs(ev.clientY - startY) > 8) cancel();
     };
     const timer = window.setTimeout(() => {
       if (done) return;
       done = true;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", cancel);
+      cleanup();
       el.draggable = false;
-      startFocusDrag(sectionId, index, el, {
-        clientX: startX,
-        clientY: startY,
-        preventDefault: () => {},
-        stopPropagation: () => {},
-      });
-      window.addEventListener("mouseup", () => { el.draggable = wasDraggable; }, { once: true });
+      startFocusDrag(sectionId, index, el, { clientX: startX, clientY: startY, pointerId });
+      window.addEventListener("pointerup", () => { el.draggable = wasDraggable; }, { once: true });
+      window.addEventListener("pointercancel", () => { el.draggable = wasDraggable; }, { once: true });
     }, 180);
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", cancel);
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerup", cancel);
+    window.addEventListener("pointercancel", cancel);
   };
+
 
   // Double-clicking a text element in the preview turns it into an inline editor.
   const editInline = (sectionId: string, e: React.MouseEvent) => {
