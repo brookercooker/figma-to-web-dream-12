@@ -57,10 +57,14 @@ export default function ImageResizeHandles({
     const ro = new ResizeObserver(() => { if (!dragging.current) measure(); });
     ro.observe(host);
     host.querySelectorAll("img").forEach((im) => im.addEventListener("load", measure));
+    // follow the picture while wording around it is typed
+    const mo = new MutationObserver(() => { if (!dragging.current) measure(); });
+    mo.observe(host, { characterData: true, childList: true, subtree: true });
     window.addEventListener("resize", measure);
     const t = window.setTimeout(measure, 400);
     return () => {
       ro.disconnect();
+      mo.disconnect();
       host.querySelectorAll("img").forEach((im) => im.removeEventListener("load", measure));
       window.removeEventListener("resize", measure);
       window.clearTimeout(t);
