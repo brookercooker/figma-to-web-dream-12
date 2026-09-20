@@ -541,10 +541,10 @@ export function RotatedPart({
   deg: number;
   children: React.ReactNode;
 }) {
-  const inner = React.useRef<HTMLDivElement | null>(null);
-  const [box, setBox] = React.useState<{ w: number; h: number } | null>(null);
+  const inner = useRef<HTMLDivElement | null>(null);
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const el = inner.current;
     if (!el || !deg) return;
     const measure = () => {
