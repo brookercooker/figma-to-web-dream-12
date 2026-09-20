@@ -14,7 +14,7 @@ import {
   PanelTop, PanelBottom,
   Monitor, Tablet, Smartphone,
   AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, Baseline,
-  Sparkles,
+  Sparkles, ArrowUpToLine, ArrowDownToLine, FoldVertical,
   type LucideIcon,
 } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
@@ -2358,9 +2358,9 @@ export default function ObjectDesignPage() {
           <Choice
             value={(section.flowVAligns?.[part] ?? "top") as PartVAlign}
             options={[
-              { value: "top" as PartVAlign, label: "Top", icon: AlignVerticalJustifyStart },
-              { value: "middle" as PartVAlign, label: "Middle", icon: AlignVerticalJustifyCenter },
-              { value: "bottom" as PartVAlign, label: "Bottom", icon: AlignVerticalJustifyEnd },
+              { value: "top" as PartVAlign, label: "Top", icon: ArrowUpToLine },
+              { value: "middle" as PartVAlign, label: "Middle", icon: FoldVertical },
+              { value: "bottom" as PartVAlign, label: "Bottom", icon: ArrowDownToLine },
             ]}
             hideLabels
             onChange={(v) => patch(section.id, { flowVAligns: { ...(section.flowVAligns ?? {}), [part]: v } })}
