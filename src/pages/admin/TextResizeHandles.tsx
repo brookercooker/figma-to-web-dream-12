@@ -85,8 +85,6 @@ export default function TextResizeHandles({
     const rad = (rotation * Math.PI) / 180;
     const cos = Math.cos(rad);
     const sin = Math.sin(rad);
-    const turned = host => host; // no-op keeps the reader's eye on the maths below
-    void turned;
     const inner = containerRef.current?.querySelector<HTMLElement>(
       `[data-part-box="${r.part}"] [data-rot-inner]`,
     );
