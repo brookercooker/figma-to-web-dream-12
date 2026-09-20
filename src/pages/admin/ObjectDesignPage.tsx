@@ -2504,7 +2504,7 @@ export default function ObjectDesignPage() {
     const at = next.indexOf(to);
     if (at === -1) next.push(from);
     else next.splice(before ? at : at + 1, 0, from);
-    // Dropped beside an item: sit the two side by side, half the width each.
+    // Dropped beside an item: sit the two side by side, each keeping its own width.
     const flows = { ...(s.flows ?? {}) };
     const flowWidths = { ...(s.flowWidths ?? {}) };
     const stacks = { ...(s.stacks ?? {}) };
@@ -2512,22 +2512,7 @@ export default function ObjectDesignPage() {
       flows[from] = "inline";
       flows[to] = "inline";
       delete stacks[from];
-      // Share the row evenly between however many columns it now holds.
-      const anchor = next.indexOf(to);
-      let start = anchor;
-      while (start > 0 && flows[next[start - 1]] === "inline") start--;
-      let end = anchor;
-      while (end < next.length - 1 && flows[next[end + 1]] === "inline") end++;
-      const row = next.slice(start, end + 1);
-      const columns: string[][] = [];
-      row.forEach((p) => {
-        const sid = stacks[p];
-        const last = columns[columns.length - 1];
-        if (sid && last && stacks[last[0]] === sid) last.push(p);
-        else columns.push([p]);
-      });
-      const width = Math.round(100 / columns.length);
-      row.forEach((p) => { flowWidths[p] = width; });
+      delete flowWidths[from];
     } else if (flows[to] === "inline") {
       // Dropped above/below an item that shares a row: stack the two inside that column.
       const sid = stacks[to] ?? `stack-${to}`;
