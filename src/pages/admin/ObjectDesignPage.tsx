@@ -722,6 +722,7 @@ function BlockCanvas({
   showHandles,
   activePart,
   onResize,
+  onResizeText,
   onClick,
   onDoubleClick,
   onPointerDown,
@@ -735,6 +736,7 @@ function BlockCanvas({
   showHandles: boolean;
   activePart: string;
   onResize: (groupKey: number, size: { imageHeightPx?: number; imageWidthPx?: number }) => void;
+  onResizeText?: (part: string, size: { width?: number; height?: number }) => void;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick: (e: React.MouseEvent) => void;
   onPointerDown: (e: React.PointerEvent) => void;
@@ -1325,6 +1327,26 @@ export default function ObjectDesignPage() {
   };
 
   /** Set an image grid's exact height/width from a canvas drag handle. */
+  /** Store the width/height a text box was dragged to. */
+  const resizeTextPart = (
+    id: string,
+    part: string,
+    size: { width?: number; height?: number },
+  ) => {
+    setSections((prev) =>
+      prev.map((s) => {
+        if (s.id !== id || s.type !== "free") return s;
+        const key = canvasPartKey(s, part) ?? part;
+        const sizesW = { ...(s.sizesW ?? {}) };
+        const sizesH = { ...(s.sizesH ?? {}) };
+        if (size.width !== undefined) sizesW[key] = Math.round(size.width);
+        if (size.height !== undefined) sizesH[key] = Math.round(size.height);
+        return { ...s, sizesW, sizesH };
+      }),
+    );
+    setDirty(true);
+  };
+
   const resizeImageGroup = (
     id: string,
     groupKey: number,
@@ -3900,6 +3922,7 @@ export default function ObjectDesignPage() {
                       showHandles={active && s.type === "free" && !!s.images.length}
                       activePart={active ? focusPart : ""}
                       onResize={(groupKey, size) => resizeImageGroup(s.id, groupKey, size)}
+                      onResizeText={(part, size) => resizeTextPart(s.id, part, size)}
                       onClick={(e) => pickPart(s.id, e)}
                       onDoubleClick={(e) => editInline(s.id, e)}
                       onPointerDown={(e) => holdImageDrag(s.id, e)}
