@@ -33,7 +33,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  SectionEditing, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
+  SectionEditing, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, imageZoom, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type RowVAlign, type ImageHeight,
   type TextColor, type TextFont, type TextSize, type TextStyle,
@@ -998,11 +998,14 @@ export default function ObjectDesignPage() {
   ) => {
     const img = el.querySelector("img");
     if (!img) return;
-    const box = img.getBoundingClientRect();
+    // The crop window is the picture's box; the picture itself may be zoomed inside it.
+    const box = el.getBoundingClientRect();
     const nw = img.naturalWidth || box.width;
     const nh = img.naturalHeight || box.height;
     if (!nw || !nh || !box.width || !box.height) return;
-    const scale = Math.max(box.width / nw, box.height / nh);
+    const section = sections.find((s) => s.id === sectionId);
+    const zoom = imageZoom(section?.type === "free" ? section.images[index]?.zoom : undefined) / 100;
+    const scale = Math.max(box.width / nw, box.height / nh) * zoom;
     const overflowX = Math.max(0, nw * scale - box.width);
     const overflowY = Math.max(0, nh * scale - box.height);
     // Nothing is hidden, so there is nothing to reposition.
@@ -1883,6 +1886,27 @@ export default function ObjectDesignPage() {
               onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
             />
           )}
+          <Field label="Zoom in (%)">
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min={100}
+                max={400}
+                step={5}
+                className="h-9 flex-1 accent-primary"
+                value={imageZoom(image.zoom)}
+                onChange={(e) => patchImage(section.id, index, { zoom: Number(e.target.value) })}
+              />
+              <Input
+                type="number"
+                min={100}
+                max={400}
+                className="h-9 w-20"
+                value={imageZoom(image.zoom)}
+                onChange={(e) => patchImage(section.id, index, { zoom: imageZoom(Number(e.target.value)) })}
+              />
+            </div>
+          </Field>
           <Field label="Keep in view when cropped">
             <select
               className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
