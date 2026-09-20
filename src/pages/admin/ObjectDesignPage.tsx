@@ -998,11 +998,14 @@ export default function ObjectDesignPage() {
   ) => {
     const img = el.querySelector("img");
     if (!img) return;
-    const box = img.getBoundingClientRect();
+    // The crop window is the picture's box; the picture itself may be zoomed inside it.
+    const box = el.getBoundingClientRect();
     const nw = img.naturalWidth || box.width;
     const nh = img.naturalHeight || box.height;
     if (!nw || !nh || !box.width || !box.height) return;
-    const scale = Math.max(box.width / nw, box.height / nh);
+    const section = sections.find((s) => s.id === sectionId);
+    const zoom = imageZoom(section?.type === "free" ? section.images[index]?.zoom : undefined) / 100;
+    const scale = Math.max(box.width / nw, box.height / nh) * zoom;
     const overflowX = Math.max(0, nw * scale - box.width);
     const overflowY = Math.max(0, nh * scale - box.height);
     // Nothing is hidden, so there is nothing to reposition.
