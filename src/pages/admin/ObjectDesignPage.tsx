@@ -1886,6 +1886,27 @@ export default function ObjectDesignPage() {
               onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
             />
           )}
+          <Field label="Zoom in (%)">
+            <div className="flex items-center gap-2">
+              <input
+                type="range"
+                min={100}
+                max={400}
+                step={5}
+                className="h-9 flex-1 accent-primary"
+                value={imageZoom(image.zoom)}
+                onChange={(e) => patchImage(section.id, index, { zoom: Number(e.target.value) })}
+              />
+              <Input
+                type="number"
+                min={100}
+                max={400}
+                className="h-9 w-20"
+                value={imageZoom(image.zoom)}
+                onChange={(e) => patchImage(section.id, index, { zoom: imageZoom(Number(e.target.value)) })}
+              />
+            </div>
+          </Field>
           <Field label="Keep in view when cropped">
             <select
               className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
