@@ -538,9 +538,10 @@ export function partSizeStyle(
  * width and re-wrap inside it rather than shrink to its natural line length.
  */
 export function sizedPartClass(
-  section: { sizesW?: Record<string, number>; sizesH?: Record<string, number> },
+  section: { sizesW?: Record<string, number>; sizesH?: Record<string, number>; rotations?: Record<string, number> },
   part: string,
 ): string {
+  if (section.rotations?.[part]) return ""; // turned items are sized inside the turn wrapper
   const sized = section.sizesW?.[part];
   return sized ? "[&>*]:w-full [&>*]:max-w-none" : "";
 }
