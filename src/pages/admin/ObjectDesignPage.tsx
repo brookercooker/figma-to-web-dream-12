@@ -1227,20 +1227,8 @@ export default function ObjectDesignPage() {
       : part,
     );
 
-    // Text elements get a floating font / size / color toolbar.
-    const field = part.startsWith("text:")
-      ? (`extra:${Number(part.split(":")[1]) || 0}` as keyof FreeSection)
-      : part.startsWith("imagetext:")
-      ? (part as unknown as keyof FreeSection)
-      : STYLE_FIELD[part.startsWith("caption:") ? "caption" : part];
-    const r = el.getBoundingClientRect();
-    if (field) {
-      setToolbar({ sectionId, field, top: r.top, left: r.left, width: r.width });
-    } else if (part.startsWith("image:")) {
-      setToolbar({ sectionId, imageIndex: Number(part.split(":")[1]) || 0, top: r.top, left: r.left, width: r.width });
-    } else {
-      setToolbar(null);
-    }
+    // Settings live in the side panel only — no floating toolbar on click.
+    setToolbar(null);
   };
 
 
