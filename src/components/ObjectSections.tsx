@@ -561,9 +561,12 @@ export function partRotation(
  */
 export function RotatedPart({
   deg,
+  size,
   children,
 }: {
   deg: number;
+  /** Width/height the item was dragged to, measured along its own turned axis. */
+  size?: React.CSSProperties;
   children: React.ReactNode;
 }) {
   const inner = useRef<HTMLDivElement | null>(null);
