@@ -2342,7 +2342,8 @@ export default function ObjectDesignPage() {
           />
           </div>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col items-start gap-1">
+
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Stacking</span>
           <Choice
             value={flow}
