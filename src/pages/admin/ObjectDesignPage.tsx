@@ -988,6 +988,10 @@ export default function ObjectDesignPage() {
     const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
     if (!el) return;
     const part = el.getAttribute("data-part") ?? "";
+    if (part.startsWith("image:")) {
+      startFocusDrag(sectionId, Number(part.split(":")[1]), el, e);
+      return;
+    }
     const captionIdx = part.startsWith("caption:") ? Number(part.split(":")[1]) : -1;
     const extraIdx = part.startsWith("text:") ? Number(part.split(":")[1]) : -1;
     const imgText = part.startsWith("imagetext:")
