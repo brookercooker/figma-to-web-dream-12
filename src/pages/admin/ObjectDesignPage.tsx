@@ -2107,16 +2107,8 @@ export default function ObjectDesignPage() {
                           }
                         />
                       </Field>
-                      <Choice
-                        value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
-                        options={[
-                          { value: "left" as const, label: "Left", icon: AlignLeft },
-                          { value: "center" as const, label: "Center", icon: AlignCenter },
-                          { value: "right" as const, label: "Right", icon: AlignRight },
-                        ]}
-                        onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
-                      />
                     </>
+
                   ) : t.kind === "button" ? (
                     <>
                       <Field label="Label">
