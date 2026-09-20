@@ -546,6 +546,23 @@ export function sizedPartClass(
   return sized ? "[&>*]:w-full [&>*]:max-w-none" : "";
 }
 
+/** Where wording sits inside the height of its own box. */
+export type PartVAlign = "top" | "middle" | "bottom";
+
+const PART_VALIGN_CLASS: Record<PartVAlign, string> = {
+  top: "justify-start",
+  middle: "justify-center",
+  bottom: "justify-end",
+};
+
+/** Vertical placement class for one item inside its own box. */
+export function partVAlignClass(
+  section: { flowVAligns?: Record<string, PartVAlign> },
+  part: string,
+): string {
+  return PART_VALIGN_CLASS[section.flowVAligns?.[part] ?? "top"];
+}
+
 /** Degrees a part is turned by, kept within a half turn. */
 export function partRotation(
   section: { rotations?: Record<string, number> },
