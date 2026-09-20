@@ -2366,7 +2366,8 @@ export default function ObjectDesignPage() {
             onChange={(v) => patch(section.id, { flowVAligns: { ...(section.flowVAligns ?? {}), [part]: v } })}
           />
           </div>
-          <div className="flex flex-col gap-1">
+        </div>
+        <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Stacking</span>
           <Choice
             value={flow}
@@ -2402,6 +2403,7 @@ export default function ObjectDesignPage() {
             </label>
           )}
           </div>
+        <div className="flex flex-wrap items-start gap-4">
           <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Rotation</span>
           <div className="flex flex-wrap items-center gap-2">
