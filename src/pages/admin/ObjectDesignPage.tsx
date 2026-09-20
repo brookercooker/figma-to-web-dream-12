@@ -2487,8 +2487,35 @@ export default function ObjectDesignPage() {
   };
 
 
+  /** Names of the items attached to pictures, so they can be dragged in the preview too. */
+  const imageTextPartsOf = (s: FreeSection) => {
+    const parts: string[] = [];
+    s.images.forEach((im, i) => (im.texts ?? []).forEach((_, ti) => parts.push(`imagetext:${i}:${ti}`)));
+    return parts;
+  };
+
+  /** Move an item attached to a picture, either within that picture or onto another one. */
+  const moveImageTextIn = (s: FreeSection, from: string, to: string, before: boolean) => {
+    const f = /^imagetext:(\d+):(\d+)$/.exec(from);
+    const t = /^imagetext:(\d+):(\d+)$/.exec(to);
+    if (!f || !t || from === to) return;
+    const [si, sti, di, dti] = [Number(f[1]), Number(f[2]), Number(t[1]), Number(t[2])];
+    const images = s.images.map((im) => ({ ...im, texts: [...(im.texts ?? [])] }));
+    const item = images[si]?.texts?.[sti];
+    if (!item) return;
+    images[si].texts.splice(sti, 1);
+    let at = dti + (before ? 0 : 1);
+    if (si === di && sti < at) at -= 1;
+    images[di].texts.splice(at, 0, item);
+    patch(s.id, { images });
+  };
+
   const movePartIn = (s: FreeSection, from: string, to: string, before = true, side = false) => {
     if (from === to) return;
+    if (from.startsWith("imagetext:") || to.startsWith("imagetext:")) {
+      moveImageTextIn(s, from, to, before);
+      return;
+    }
     const parts = orderablePartsOf(s);
     const next = parts.filter((p) => p !== from);
     const at = next.indexOf(to);
@@ -3889,8 +3916,8 @@ export default function ObjectDesignPage() {
                       onClick={(e) => pickPart(s.id, e)}
                       onDoubleClick={(e) => editInline(s.id, e)}
                       onPointerDown={(e) => holdImageDrag(s.id, e)}
-                      draggableParts={active && s.type === "free" ? orderablePartsOf(s) : []}
-                      partKeyOf={(raw) => (s.type === "free" ? canvasPartKey(s, raw) : null)}
+                      draggableParts={active && s.type === "free" ? [...orderablePartsOf(s), ...imageTextPartsOf(s)] : []}
+                      partKeyOf={(raw) => (s.type === "free" ? (raw.startsWith("imagetext:") ? raw : canvasPartKey(s, raw)) : null)}
                       onMovePart={(fromPart, toPart, before, side) => {
                         if (s.type === "free") movePartIn(s, fromPart, toPart, before, side);
                       }}
