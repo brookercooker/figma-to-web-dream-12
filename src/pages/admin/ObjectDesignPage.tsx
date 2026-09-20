@@ -2354,6 +2354,19 @@ export default function ObjectDesignPage() {
           />
           </div>
           <div className="flex flex-col gap-1">
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Sits</span>
+          <Choice
+            value={(section.flowVAligns?.[part] ?? "top") as PartVAlign}
+            options={[
+              { value: "top" as PartVAlign, label: "Top", icon: AlignVerticalJustifyStart },
+              { value: "middle" as PartVAlign, label: "Middle", icon: AlignVerticalJustifyCenter },
+              { value: "bottom" as PartVAlign, label: "Bottom", icon: AlignVerticalJustifyEnd },
+            ]}
+            hideLabels
+            onChange={(v) => patch(section.id, { flowVAligns: { ...(section.flowVAligns ?? {}), [part]: v } })}
+          />
+          </div>
+          <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Stacking</span>
           <Choice
             value={flow}
