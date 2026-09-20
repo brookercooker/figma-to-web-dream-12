@@ -1011,11 +1011,18 @@ export default function ObjectDesignPage() {
     // Nothing is hidden, so there is nothing to reposition.
     if (overflowX < 1 && overflowY < 1) return;
 
-    const parts = (img.style.objectPosition || "50% 50%").split(/\s+/);
+    // When zoomed, the picture is scaled by its wrapper, so we steer the wrapper's origin.
+    const wrapper =
+      zoom > 1 && img.parentElement && img.parentElement !== el && img.parentElement.style.transform
+        ? (img.parentElement as HTMLElement)
+        : null;
+    const current = wrapper ? wrapper.style.transformOrigin : img.style.objectPosition;
+    const parts = (current || "50% 50%").split(/\s+/);
     let x = parseFloat(parts[0]);
     let y = parseFloat(parts[1] ?? parts[0]);
     if (!Number.isFinite(x)) x = 50;
     if (!Number.isFinite(y)) y = 50;
+
     const startX = e.clientX;
     const startY = e.clientY;
     const prevCursor = img.style.cursor;
@@ -1038,7 +1045,9 @@ export default function ObjectDesignPage() {
       const nx = overflowX > 1 ? clamp(x - ((ev.clientX - startX) / overflowX) * 100) : x;
       const ny = overflowY > 1 ? clamp(y - ((ev.clientY - startY) / overflowY) * 100) : y;
       next = `${Math.round(nx)}% ${Math.round(ny)}%`;
-      img.style.objectPosition = next;
+      if (wrapper) wrapper.style.transformOrigin = next;
+      else img.style.objectPosition = next;
+
     };
     const onUp = (ev: PointerEvent) => {
       if (e.pointerId !== undefined && ev.pointerId !== e.pointerId) return;
