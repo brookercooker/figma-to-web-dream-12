@@ -594,6 +594,9 @@ export function RotatedPart({
 
   if (!deg) return <>{children}</>;
   const sized = !!(size && (size.width || size.height));
+  // A turned box measures its width along its own axis, so the wrapper's width
+  // (the turned outline) must not clamp it.
+  const { maxWidth: _ignoredMaxWidth, ...turnedSize } = size ?? {};
   return (
     <div
       className="relative flex items-center justify-center"
@@ -603,7 +606,7 @@ export function RotatedPart({
         ref={inner}
         data-rot-inner=""
         className={`${box ? "absolute" : ""} ${sized ? "flex flex-col [&>*]:w-full [&>*]:max-w-none" : ""}`}
-        style={{ ...size, transform: `rotate(${deg}deg)`, transformOrigin: "center" }}
+        style={{ ...turnedSize, maxWidth: "none", transform: `rotate(${deg}deg)`, transformOrigin: "center" }}
       >
         {children}
       </div>
