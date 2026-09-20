@@ -1076,6 +1076,30 @@ const alignTextOnly: Record<SectionAlign, string> = {
   right: "text-right",
 };
 
+/**
+ * Alignment for one item, measured along the direction it is turned to face.
+ * A sideways item aligned "left" lines up with the start of its own reading
+ * direction (top or bottom of the block), not the left of the screen.
+ */
+export function partAlignClass(align: SectionAlign, deg: number): string {
+  const text = alignTextOnly[align];
+  const d = ((deg % 360) + 360) % 360;
+  const quarter = Math.round(d / 90) % 4; // 0 = upright, 1 = quarter turn clockwise
+  if (quarter === 0) return alignText[align];
+  if (quarter === 2) {
+    const flipped: Record<SectionAlign, string> = { left: "items-end", center: "items-center", right: "items-start" };
+    return `${text} ${flipped[align]}`;
+  }
+  // Sideways: the reading direction runs down the block for a clockwise turn.
+  const down = quarter === 1;
+  const place: Record<SectionAlign, string> = {
+    left: down ? "justify-end" : "justify-start",
+    center: "justify-center",
+    right: down ? "justify-start" : "justify-end",
+  };
+  return `${text} items-center ${place[align]}`;
+}
+
 const colClass: Record<number, string> = {
   1: "grid-cols-1",
   2: "grid-cols-1 sm:grid-cols-2",
@@ -1811,7 +1835,7 @@ function FreeText({
                   {col.items.map((ci) => (
                     <div
                       key={ci.part}
-                      className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}
+                      className={`flex w-full flex-col ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))}`}
                       style={{ ...partPadStyle(section, ci.part), ...partSizeStyle(section, ci.part) }}
                     >
                       <RotatedPart deg={partRotation(section, ci.part)}>{ci.node}</RotatedPart>
@@ -1838,7 +1862,7 @@ function FreeText({
                   {columns[0].items.map((ci) => (
                     <div
                       key={ci.part}
-                      className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}
+                      className={`flex w-full flex-col ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))}`}
                       style={{ ...partPadStyle(section, ci.part), ...partSizeStyle(section, ci.part) }}
                     >
                       <RotatedPart deg={partRotation(section, ci.part)}>{ci.node}</RotatedPart>
