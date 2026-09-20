@@ -1847,6 +1847,7 @@ function FreeText({
                   {col.items.map((ci) => (
                     <div
                       key={ci.part}
+                      data-part-box={ci.part}
                       className={`flex w-full flex-col ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
                       style={{ ...partPadStyle(section, ci.part), ...partSizeStyle(section, ci.part) }}
                     >
@@ -1874,6 +1875,7 @@ function FreeText({
                   {columns[0].items.map((ci) => (
                     <div
                       key={ci.part}
+                      data-part-box={ci.part}
                       className={`flex w-full flex-col ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
                       style={{ ...partPadStyle(section, ci.part), ...partSizeStyle(section, ci.part) }}
                     >
