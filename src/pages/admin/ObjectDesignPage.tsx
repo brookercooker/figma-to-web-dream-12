@@ -2348,8 +2348,8 @@ export default function ObjectDesignPage() {
           <Choice
             value={flow}
             options={[
-              { value: "separate" as SectionFlow, label: "Vertical stack", icon: Rows2 },
-              { value: "inline" as SectionFlow, label: "Horizontal stack", icon: Columns2 },
+              { value: "separate" as SectionFlow, label: "Vertical", icon: Rows2 },
+              { value: "inline" as SectionFlow, label: "Horizontal", icon: Columns2 },
             ]}
             onChange={(v) => patch(section.id, { flows: { ...(section.flows ?? {}), [part]: v } })}
           />
@@ -2656,8 +2656,8 @@ export default function ObjectDesignPage() {
             )}
             <span className="mx-1 h-5 w-px bg-border" />
             {([
-              { value: "separate" as SectionFlow, label: "Vertical stack", icon: Rows2 },
-              { value: "inline" as SectionFlow, label: "Horizontal stack", icon: Columns2 },
+              { value: "separate" as SectionFlow, label: "Vertical", icon: Rows2 },
+              { value: "inline" as SectionFlow, label: "Horizontal", icon: Columns2 },
             ]).map((o) => (
               <Button
                 key={o.value}
