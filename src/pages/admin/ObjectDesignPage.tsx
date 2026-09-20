@@ -983,6 +983,62 @@ export default function ObjectDesignPage() {
     return () => window.clearTimeout(t);
   }, [focusPart, activeId]);
 
+  // Double-clicking a cropped picture lets you drag it to choose what shows.
+  const startFocusDrag = (
+    sectionId: string,
+    index: number,
+    el: HTMLElement,
+    e: React.MouseEvent,
+  ) => {
+    const img = el.querySelector("img");
+    if (!img) return;
+    const box = img.getBoundingClientRect();
+    const nw = img.naturalWidth || box.width;
+    const nh = img.naturalHeight || box.height;
+    if (!nw || !nh || !box.width || !box.height) return;
+    const scale = Math.max(box.width / nw, box.height / nh);
+    const overflowX = Math.max(0, nw * scale - box.width);
+    const overflowY = Math.max(0, nh * scale - box.height);
+    // Nothing is hidden, so there is nothing to reposition.
+    if (overflowX < 1 && overflowY < 1) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const parts = (img.style.objectPosition || "50% 50%").split(/\s+/);
+    let x = parseFloat(parts[0]);
+    let y = parseFloat(parts[1] ?? parts[0]);
+    if (!Number.isFinite(x)) x = 50;
+    if (!Number.isFinite(y)) y = 50;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const prevCursor = img.style.cursor;
+    const prevOutline = el.style.outline;
+    img.style.cursor = "grabbing";
+    el.style.outline = "2px solid hsl(var(--primary))";
+    el.style.outlineOffset = "2px";
+    let next = `${x}% ${y}%`;
+
+    const clamp = (n: number) => Math.min(100, Math.max(0, n));
+    const onMove = (ev: MouseEvent) => {
+      ev.preventDefault();
+      const nx = overflowX > 1 ? clamp(x - ((ev.clientX - startX) / overflowX) * 100) : x;
+      const ny = overflowY > 1 ? clamp(y - ((ev.clientY - startY) / overflowY) * 100) : y;
+      next = `${Math.round(nx)}% ${Math.round(ny)}%`;
+      img.style.objectPosition = next;
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      img.style.cursor = prevCursor;
+      el.style.outline = prevOutline;
+      el.style.outlineOffset = "";
+      patchImage(sectionId, index, { focus: next });
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
   // Double-clicking a text element in the preview turns it into an inline editor.
   const editInline = (sectionId: string, e: React.MouseEvent) => {
     const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
