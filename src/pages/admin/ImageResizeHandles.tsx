@@ -87,6 +87,14 @@ export default function ImageResizeHandles({
       }
       if (dy) size.imageHeightPx = Math.max(24, startH + dy * (ev.clientY - startY));
       onResize(rect.groupKey, size, { part: rect.part, widthPct });
+      // keep the handles glued to the picture while it is being dragged
+      setRects((prev) =>
+        prev.map((p) =>
+          p.part === rect.part
+            ? { ...p, width: size.imageWidthPx ?? p.width, height: size.imageHeightPx ?? p.height }
+            : p,
+        ),
+      );
     };
     const up = () => {
       dragging.current = false;
