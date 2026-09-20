@@ -21,12 +21,15 @@ export function isTextPart(part: string): boolean {
 export default function TextResizeHandles({
   containerRef,
   activePart,
+  rotation = 0,
   onResize,
 }: {
   section: FreeSection;
   containerRef: React.RefObject<HTMLDivElement>;
   /** Part name of the item being edited — handles show only on that text box. */
   activePart: string;
+  /** Degrees the item is turned by, so a handle grows it along its own axis. */
+  rotation?: number;
   onResize: (part: string, size: { width?: number; height?: number }) => void;
 }) {
   const [rect, setRect] = useState<Rect | null>(null);
