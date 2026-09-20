@@ -2261,15 +2261,6 @@ export default function ObjectDesignPage() {
                         side={t.iconSide}
                         onChange={(n) => patchImageText(section.id, index, ti, { icon: n.icon, iconSide: n.iconSide })}
                       />
-                      <Choice
-                        value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
-                        options={[
-                          { value: "left" as const, label: "Left", icon: AlignLeft },
-                          { value: "center" as const, label: "Center", icon: AlignCenter },
-                          { value: "right" as const, label: "Right", icon: AlignRight },
-                        ]}
-                        onChange={(v) => patchImageText(section.id, index, ti, { align: v })}
-                      />
                       <TextStyleFields
                         label="Style"
                         value={t.style}
