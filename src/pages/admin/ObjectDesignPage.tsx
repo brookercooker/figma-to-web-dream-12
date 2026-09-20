@@ -3007,7 +3007,7 @@ export default function ObjectDesignPage() {
                 <Field label="Width">
                   <div>
                     <Choice
-                      value={typeof d.widthPct === "number" ? "percent" : (d.width ?? "full")}
+                      value={typeof d.widthPct === "number" ? "percent" : (d.width ?? "short")}
                       options={[
                         { value: "full" as const, label: "Full width", icon: Minus },
                         { value: "short" as const, label: "Short", icon: Minus },
