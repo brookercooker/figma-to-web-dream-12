@@ -28,6 +28,7 @@ const ICON_LABEL_SIDES: { value: "before" | "after" | "above" | "below"; label: 
 import { objectRegistry } from "@/components/objects/registry";
 import ImagePickerDialog from "./ImagePickerDialog";
 import ImageResizeHandles from "./ImageResizeHandles";
+import TextResizeHandles, { isTextPart } from "./TextResizeHandles";
 import VideoPickerDialog from "./VideoPickerDialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -837,6 +838,9 @@ function BlockCanvas({
       )}
       {showHandles && section.type === "free" && (
         <ImageResizeHandles section={section} containerRef={ref} activePart={activePart} onResize={onResize} />
+      )}
+      {showHandles && section.type === "free" && isTextPart(activePart) && onResizeText && (
+        <TextResizeHandles section={section} containerRef={ref} activePart={activePart} onResize={onResizeText} />
       )}
     </div>
   );
