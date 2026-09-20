@@ -520,17 +520,65 @@ export function partPadStyle(
   return style;
 }
 
-/** Turn one item by a number of degrees, keeping its place in the layout. */
-export function partRotateStyle(
+/** Degrees a part is turned by, kept within a half turn. */
+export function partRotation(
   section: { rotations?: Record<string, number> },
   part: string,
-): React.CSSProperties {
+): number {
   const deg = section.rotations?.[part];
-  if (!deg) return {};
-  const d = Math.min(180, Math.max(-180, deg));
-  return { transform: `rotate(${d}deg)`, transformOrigin: "center" };
+  if (!deg) return 0;
+  return Math.min(180, Math.max(-180, deg));
 }
 
+/**
+ * Turns its content and reserves the space the turned content actually takes,
+ * so a sideways item still sits inside its block instead of spilling over it.
+ */
+export function RotatedPart({
+  deg,
+  children,
+}: {
+  deg: number;
+  children: React.ReactNode;
+}) {
+  const inner = React.useRef<HTMLDivElement | null>(null);
+  const [box, setBox] = React.useState<{ w: number; h: number } | null>(null);
+
+  React.useEffect(() => {
+    const el = inner.current;
+    if (!el || !deg) return;
+    const measure = () => {
+      const rad = (Math.abs(deg) * Math.PI) / 180;
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      if (!w && !h) return;
+      setBox({
+        w: Math.abs(w * Math.cos(rad)) + Math.abs(h * Math.sin(rad)),
+        h: Math.abs(w * Math.sin(rad)) + Math.abs(h * Math.cos(rad)),
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [deg]);
+
+  if (!deg) return <>{children}</>;
+  return (
+    <div
+      className="relative flex items-center justify-center"
+      style={box ? { width: box.w, height: box.h } : undefined}
+    >
+      <div
+        ref={inner}
+        className={box ? "absolute" : undefined}
+        style={{ transform: `rotate(${deg}deg)`, transformOrigin: "center" }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 /** Inline spacing for one text/divider/button attached to an image. */
 export function imageTextPadStyle(t: { padY?: number; padX?: number }): React.CSSProperties {
@@ -1747,9 +1795,9 @@ function FreeText({
                     <div
                       key={ci.part}
                       className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}
-                      style={{ ...partPadStyle(section, ci.part), ...partRotateStyle(section, ci.part) }}
+                      style={partPadStyle(section, ci.part)}
                     >
-                      {ci.node}
+                      <RotatedPart deg={partRotation(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
                   ))}
                 </div>
@@ -1774,9 +1822,9 @@ function FreeText({
                     <div
                       key={ci.part}
                       className={`flex w-full flex-col ${alignText[section.flowAligns?.[ci.part] ?? a]}`}
-                      style={{ ...partPadStyle(section, ci.part), ...partRotateStyle(section, ci.part) }}
+                      style={partPadStyle(section, ci.part)}
                     >
-                      {ci.node}
+                      <RotatedPart deg={partRotation(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
                   ))}
                 </div>
