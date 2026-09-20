@@ -592,6 +592,7 @@ export function RotatedPart({
   }, [deg]);
 
   if (!deg) return <>{children}</>;
+  const sized = !!(size && (size.width || size.height));
   return (
     <div
       className="relative flex items-center justify-center"
@@ -599,8 +600,8 @@ export function RotatedPart({
     >
       <div
         ref={inner}
-        className={box ? "absolute" : undefined}
-        style={{ transform: `rotate(${deg}deg)`, transformOrigin: "center" }}
+        className={`${box ? "absolute" : ""} ${sized ? "flex flex-col [&>*]:w-full [&>*]:max-w-none" : ""}`}
+        style={{ ...size, transform: `rotate(${deg}deg)`, transformOrigin: "center" }}
       >
         {children}
       </div>
