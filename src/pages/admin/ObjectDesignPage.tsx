@@ -723,6 +723,8 @@ function BlockCanvas({
   onResize,
   onClick,
   onDoubleClick,
+  onMouseDown,
+
   draggableParts,
   partKeyOf,
   onMovePart,
@@ -734,6 +736,8 @@ function BlockCanvas({
   onResize: (groupKey: number, size: { imageHeightPx?: number; imageWidthPx?: number }) => void;
   onClick: (e: React.MouseEvent) => void;
   onDoubleClick: (e: React.MouseEvent) => void;
+  onMouseDown: (e: React.MouseEvent) => void;
+
   /** Item names that can be reordered in this block. */
   draggableParts: string[];
   /** Map a rendered element's data-part to the item name that can be reordered. */
@@ -787,6 +791,8 @@ function BlockCanvas({
       className="relative px-4 cursor-pointer [&_img]:!scale-100 [&_img]:!transition-none [&_[data-part]]:cursor-pointer [&_[data-part]]:rounded-sm [&_[data-part]]:transition-shadow [&_[data-part]:hover]:ring-2 [&_[data-part]:hover]:ring-primary/50 [&_[data-part]:hover]:ring-offset-2"
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onMouseDown={onMouseDown}
+
       onDragStart={(e) => {
         const t = targetOf(e);
         if (!t) return;
@@ -983,12 +989,12 @@ export default function ObjectDesignPage() {
     return () => window.clearTimeout(t);
   }, [focusPart, activeId]);
 
-  // Double-clicking a cropped picture lets you drag it to choose what shows.
+  // Holding down on a selected cropped picture lets you drag it to choose what shows.
   const startFocusDrag = (
     sectionId: string,
     index: number,
     el: HTMLElement,
-    e: React.MouseEvent,
+    e: { clientX: number; clientY: number; preventDefault: () => void; stopPropagation: () => void },
   ) => {
     const img = el.querySelector("img");
     if (!img) return;
@@ -1039,15 +1045,56 @@ export default function ObjectDesignPage() {
     window.addEventListener("mouseup", onUp);
   };
 
+  /** Click and hold on an already selected picture to start repositioning it. */
+  const holdImageDrag = (sectionId: string, e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
+    if (!el) return;
+    const part = el.getAttribute("data-part") ?? "";
+    if (!part.startsWith("image:") || part !== focusPart) return;
+    const index = Number(part.split(":")[1]);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const wasDraggable = el.draggable;
+    let done = false;
+
+    const cancel = () => {
+      if (done) return;
+      done = true;
+      window.clearTimeout(timer);
+      el.draggable = wasDraggable;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", cancel);
+    };
+    const onMove = (ev: MouseEvent) => {
+      if (Math.abs(ev.clientX - startX) > 4 || Math.abs(ev.clientY - startY) > 4) cancel();
+    };
+    const timer = window.setTimeout(() => {
+      if (done) return;
+      done = true;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", cancel);
+      el.draggable = false;
+      startFocusDrag(sectionId, index, el, {
+        clientX: startX,
+        clientY: startY,
+        preventDefault: () => {},
+        stopPropagation: () => {},
+      });
+      window.addEventListener("mouseup", () => { el.draggable = wasDraggable; }, { once: true });
+    }, 180);
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", cancel);
+  };
+
   // Double-clicking a text element in the preview turns it into an inline editor.
   const editInline = (sectionId: string, e: React.MouseEvent) => {
     const el = (e.target as HTMLElement).closest?.("[data-part]") as HTMLElement | null;
     if (!el) return;
     const part = el.getAttribute("data-part") ?? "";
-    if (part.startsWith("image:")) {
-      startFocusDrag(sectionId, Number(part.split(":")[1]), el, e);
-      return;
-    }
+    if (part.startsWith("image:")) return;
+
     const captionIdx = part.startsWith("caption:") ? Number(part.split(":")[1]) : -1;
     const extraIdx = part.startsWith("text:") ? Number(part.split(":")[1]) : -1;
     const imgText = part.startsWith("imagetext:")
@@ -3776,6 +3823,7 @@ export default function ObjectDesignPage() {
                       onResize={(groupKey, size) => resizeImageGroup(s.id, groupKey, size)}
                       onClick={(e) => pickPart(s.id, e)}
                       onDoubleClick={(e) => editInline(s.id, e)}
+                      onMouseDown={(e) => holdImageDrag(s.id, e)}
                       draggableParts={active && s.type === "free" ? orderablePartsOf(s) : []}
                       partKeyOf={(raw) => (s.type === "free" ? canvasPartKey(s, raw) : null)}
                       onMovePart={(fromPart, toPart, before, side) => {
