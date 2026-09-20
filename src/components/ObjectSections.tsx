@@ -625,7 +625,7 @@ export function RotatedPart({
       <div
         ref={inner}
         data-rot-inner=""
-        className={`${box ? "absolute" : ""} ${sized ? "flex flex-col [&>*]:w-full [&>*]:max-w-none" : ""}`}
+        className={`${box ? "absolute" : ""} ${sized ? `flex flex-col ${vAlignClass ?? ""} [&>*]:w-full [&>*]:max-w-none` : ""}`}
         style={{ ...turnedSize, maxWidth: "none", transform: `rotate(${deg}deg)`, transformOrigin: "center" }}
       >
         {children}
