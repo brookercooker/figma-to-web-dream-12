@@ -140,7 +140,7 @@ export default function VideoPickerDialog({
               key={it.url + it.name}
               onClick={() => { onPick(it); onOpenChange(false); }}
               className="group rounded-lg overflow-hidden border text-left hover:border-primary transition-colors"
-              title={it.name}
+              title={it.labels.length ? `${it.name} — ${it.labels.join(", ")}` : it.name}
             >
               {it.poster ? (
                 <img src={it.poster} alt={it.name} className="w-full aspect-video object-cover" loading="lazy" />
