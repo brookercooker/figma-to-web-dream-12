@@ -306,8 +306,9 @@ export default function DesignTab() {
             {labelsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
           {labelsOpen && (
-            <div className="border-t px-2 py-2 [&>aside]:static [&>aside]:w-full [&>aside]:max-h-[40vh]">
+            <div className="border-t py-2">
               <TagsPanel
+                bare
                 scope="static"
                 usageCounts={usageCounts}
                 activeFilters={tagFilters}
