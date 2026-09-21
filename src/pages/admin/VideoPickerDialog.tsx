@@ -17,34 +17,56 @@ export default function VideoPickerDialog({
   onOpenChange: (v: boolean) => void;
   onPick: (choice: Choice) => void;
 }) {
-  const [items, setItems] = useState<Choice[]>([]);
+  const [items, setItems] = useState<LibraryVideo[]>([]);
   const [q, setQ] = useState("");
   const [url, setUrl] = useState("");
+  const [label, setLabel] = useState("");
 
   useEffect(() => {
     if (!open) return;
-    setQ(""); setUrl("");
+    setQ(""); setUrl(""); setLabel("");
     (async () => {
       const { data } = await (supabase as any)
         .from("videos")
-        .select("name,storage_url,external_url,poster_url")
+        .select("name,storage_url,external_url,poster_url,tags")
         .is("archived_at", null)
-        .limit(60);
-      const mapped: Choice[] = (data ?? [])
+        .limit(120);
+      const mapped: LibraryVideo[] = (data ?? [])
         .map((row: any) => ({
           url: row.external_url || row.storage_url || "",
           poster: row.poster_url || undefined,
           name: row.name || "",
+          labels: Array.isArray(row.tags) ? row.tags.filter(Boolean) : [],
         }))
-        .filter((c: Choice) => !!c.url);
+        .filter((c: LibraryVideo) => !!c.url);
       setItems(mapped);
     })();
   }, [open]);
 
+  // Labels come from the same per-tool label registry the Videos page uses.
+  const { data: labelRows = [], refetch: refetchLabels } = useLabelsForScope("videos");
+  useEffect(() => { if (open) refetchLabels(); }, [open, refetchLabels]);
+  const allLabels = useMemo(
+    () => labelRows.map((r) => r.path).sort((a, b) => a.localeCompare(b)),
+    [labelRows],
+  );
+
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return term ? items.filter((i) => i.name.toLowerCase().includes(term)) : items;
-  }, [items, q]);
+    const list = items.filter((i) => {
+      if (label && !matchesLabelFilter(i.labels, label)) return false;
+      if (!term) return true;
+      return (
+        i.name.toLowerCase().includes(term) ||
+        i.labels.some((l) => l.toLowerCase().includes(term) || leafOf(l).toLowerCase().includes(term))
+      );
+    });
+    return list.sort((a, b) => {
+      const la = (a.labels[0] ?? "\uffff").toLowerCase();
+      const lb = (b.labels[0] ?? "\uffff").toLowerCase();
+      return la === lb ? a.name.localeCompare(b.name) : la.localeCompare(lb);
+    });
+  }, [items, q, label]);
 
   const upload = async (file: File) => {
     const path = `design/${Date.now()}-${file.name}`;
