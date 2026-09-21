@@ -12,6 +12,8 @@ import {
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
+import TagsPanel from "./TagsPanel";
+import { matchesLabelFilter } from "./labelPath";
 import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock } from "@/components/PageBlocks";
 
 import Header from "@/components/Header";
@@ -116,6 +118,7 @@ export default function DesignTab() {
   // block id waiting for an object choice, or "new" when adding one
   const [objectFor, setObjectFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [showLive, setShowLive] = useState(true);
   // Pages built in code have no editable blocks yet: show them as one locked section.
   const [hasExisting, setHasExisting] = useState(false);
@@ -153,12 +156,28 @@ export default function DesignTab() {
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return term
-      ? pages.filter((p) =>
-          `${p.name} ${p.path} ${(p.tags ?? []).join(" ")}`.toLowerCase().includes(term),
-        )
-      : pages;
-  }, [pages, q]);
+    return pages.filter((p) => {
+      if (tagFilters.length && !tagFilters.every((t) => matchesLabelFilter(p.tags ?? [], t))) return false;
+      if (!term) return true;
+      return `${p.name} ${p.path} ${(p.tags ?? []).join(" ")}`.toLowerCase().includes(term);
+    });
+  }, [pages, q, tagFilters]);
+
+  const usageCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    pages.forEach((p) => (p.tags ?? []).forEach((t) => { c[t] = (c[t] ?? 0) + 1; }));
+    return c;
+  }, [pages]);
+
+  const applyTag = async (ids: string[], path: string) => {
+    for (const id of ids) {
+      const p = pages.find((x) => x.id === id);
+      if (!p || (p.tags ?? []).includes(path)) continue;
+      const nextTags = [...(p.tags ?? []), path];
+      await (supabase as any).from("pages").update({ tags: nextTags }).eq("id", id);
+      setPages((cur) => cur.map((x) => (x.id === id ? { ...x, tags: nextTags } : x)));
+    }
+  };
 
   const select = (id: string) => {
     const next = new URLSearchParams(params);
@@ -268,7 +287,19 @@ export default function DesignTab() {
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-[auto_280px_1fr] gap-6">
+      <TagsPanel
+        scope="static"
+        usageCounts={usageCounts}
+        activeFilters={tagFilters}
+        onToggleFilter={(t) => setTagFilters((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]))}
+        onClearFilters={() => setTagFilters([])}
+        selectedCount={0}
+        selectedIds={[]}
+        onApplyTag={applyTag}
+        itemLabel="pages"
+        filteredCount={filtered.length}
+      />
       {/* Page list */}
       <aside className="space-y-3">
         <Button className="w-full gap-2" onClick={() => setCreateOpen(true)}>
