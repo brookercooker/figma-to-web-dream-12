@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +102,7 @@ function ToolButton({
 }
 
 export default function DesignTab() {
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const selectedId = params.get("page") ?? "";
 
