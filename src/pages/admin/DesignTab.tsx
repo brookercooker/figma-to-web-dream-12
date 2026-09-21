@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
   AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
-  ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight, GripVertical,
 } from "lucide-react";
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
