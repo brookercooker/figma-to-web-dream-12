@@ -12,7 +12,7 @@ import {
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
-import { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock } from "@/components/PageBlocks";
+import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock } from "@/components/PageBlocks";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -92,6 +92,8 @@ export default function DesignTab() {
   useEffect(() => { load(); }, []);
 
   const page = useMemo(() => pages.find((p) => p.id === selectedId) ?? null, [pages, selectedId]);
+  // What the page shows once saved — re-read from the row so saving refreshes it.
+  const savedBlocks = useMemo(() => parseBlocks(page?.content), [page?.content]);
 
   useEffect(() => {
     const parsed = parseBlocks(page?.content);
@@ -294,12 +296,26 @@ export default function DesignTab() {
                     <Pencil className="w-4 h-4" /> Edit
                   </Button>
                 </div>
-                <iframe
-                  key={`${page.id}-${page.updated_at}`}
-                  src={page.path}
-                  title={`${page.name} preview`}
-                  className="w-full h-[70vh] bg-background"
-                />
+                {savedBlocks.length ? (
+                  <div className="h-[70vh] overflow-y-auto bg-background">
+                    <div className="pointer-events-none select-none [&_header]:!static [&_header]:!z-auto">
+                      <Header />
+                    </div>
+                    <div className="mx-auto max-w-3xl px-6 py-10">
+                      <PageBlocks blocks={savedBlocks} />
+                    </div>
+                    <div className="pointer-events-none select-none">
+                      <Footer />
+                    </div>
+                  </div>
+                ) : (
+                  <iframe
+                    key={`${page.id}-${page.updated_at}`}
+                    src={page.path}
+                    title={`${page.name} preview`}
+                    className="w-full h-[70vh] bg-background"
+                  />
+                )}
               </div>
             ) : (
             <div className="border rounded-lg bg-background p-6 sm:p-10 min-h-[50vh]">
