@@ -309,9 +309,12 @@ export default function DesignTab() {
                 </p>
               )}
 
-              <ChromePreview label="Site header">
-                <Header />
-              </ChromePreview>
+              {!hasExisting && (
+                <ChromePreview label="Site header">
+                  <Header />
+                </ChromePreview>
+              )}
+
 
               <div className="max-w-3xl mx-auto">
                 {hasExisting && currentFirst && existingCard}
@@ -427,9 +430,12 @@ export default function DesignTab() {
                 {hasExisting && !currentFirst && existingCard}
               </div>
 
-              <ChromePreview label="Site footer">
-                <Footer />
-              </ChromePreview>
+              {!hasExisting && (
+                <ChromePreview label="Site footer">
+                  <Footer />
+                </ChromePreview>
+              )}
+
             </div>
             )}
           </>
