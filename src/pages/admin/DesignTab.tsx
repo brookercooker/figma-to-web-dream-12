@@ -246,12 +246,18 @@ export default function DesignTab() {
             {currentFirst ? <ArrowDown className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
           </Button>
         </div>
-        <iframe
-          key={`${page.id}-${page.updated_at}-inline`}
-          src={page.path}
-          title={`${page.name} current content`}
-          className="h-[46vh] w-full bg-background"
-        />
+        {canIframe(page.path) ? (
+          <iframe
+            key={`${page.id}-${page.updated_at}-inline`}
+            src={previewSrc(page.path)}
+            title={`${page.name} current content`}
+            className="h-[46vh] w-full bg-background"
+          />
+        ) : (
+          <div className="h-[46vh] overflow-y-auto">
+            <InlinePagePreview name={page.name} blocks={savedBlocks} />
+          </div>
+        )}
       </div>
       {addRow(blocks.length, "Add a section below")}
     </div>
