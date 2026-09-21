@@ -662,13 +662,13 @@ export default function DesignTab() {
                 })}
                 {hasExisting && !currentFirst && existingCard}
               </div>
+              </div>
 
               {!hasExisting && (
                 <ChromePreview label="Site footer">
                   <Footer />
                 </ChromePreview>
               )}
-
             </div>
             )}
           </>
