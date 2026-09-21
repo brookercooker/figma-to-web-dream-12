@@ -123,6 +123,7 @@ export default function DesignTab() {
   const [labelsOpen, setLabelsOpen] = useState(false);
   const [dragId, setDragId] = useState<string>("");
   const [dropAt, setDropAt] = useState<{ id: string; before: boolean } | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [showLive, setShowLive] = useState(true);
   // Pages built in code have no editable blocks yet: show them as one locked section.
   const [hasExisting, setHasExisting] = useState(false);
