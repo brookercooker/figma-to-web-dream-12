@@ -27,14 +27,22 @@ interface PageRow { id: string; name: string; path: string; content: unknown; up
  * page is designed in context. Not interactive and not part of the blocks.
  */
 function ChromePreview({ label, children }: { label: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(true);
   return (
-    <div className="relative my-4 rounded-lg border border-dashed bg-background">
-      <span className="absolute -top-2 left-3 z-10 rounded bg-background px-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+    <div className="bg-background">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-1.5 px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground"
+      >
+        {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
         {label}
-      </span>
-      <div className="pointer-events-none select-none overflow-hidden rounded-lg [&_header]:!static [&_header]:!z-auto">
-        {children}
-      </div>
+      </button>
+      {open && (
+        <div className="pointer-events-none select-none [&_header]:!static [&_header]:!z-auto">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
