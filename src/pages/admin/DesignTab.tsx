@@ -584,8 +584,12 @@ export default function DesignTab() {
                             </>
                           )}
                           <span className="mx-1 h-5 w-px bg-border" />
-                          <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
-                          <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                          {(i > 0 || (hasExisting && currentFirst)) && (
+                            <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
+                          )}
+                          {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
+                            <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                          )}
                           <ToolButton title="Delete block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
                         </div>
                       )}
