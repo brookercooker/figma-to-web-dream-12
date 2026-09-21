@@ -12,6 +12,8 @@ import {
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
+import TagsPanel from "./TagsPanel";
+import { matchesLabelFilter } from "./labelPath";
 import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock } from "@/components/PageBlocks";
 
 import Header from "@/components/Header";
@@ -116,6 +118,7 @@ export default function DesignTab() {
   // block id waiting for an object choice, or "new" when adding one
   const [objectFor, setObjectFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [showLive, setShowLive] = useState(true);
   // Pages built in code have no editable blocks yet: show them as one locked section.
   const [hasExisting, setHasExisting] = useState(false);
