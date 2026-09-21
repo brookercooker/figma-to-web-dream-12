@@ -588,6 +588,18 @@ export default function DesignTab() {
                             </>
                           ) : (
                             <>
+                              <button
+                                type="button"
+                                title={collapsed[b.id] ? "Expand" : "Collapse"}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
+                                }}
+                                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+                              >
+                                {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                <span>{b.type === "video" ? "Video" : "Picture"}</span>
+                              </button>
                               {b.type === "video" ? (
                                 <ToolButton title="Replace video" onClick={() => setVideoFor(b.id)}>
                                   <Film className="w-4 h-4" />
@@ -650,41 +662,43 @@ export default function DesignTab() {
                             </div>
                           )}
                         </div>
-                      ) : b.type === "image" ? (
+                      ) : b.type === "image" || b.type === "video" ? (
                         <div className="py-2">
-                          {b.url ? (
-                            <BlockView block={b} />
-                          ) : (
+                          {!active && (
                             <button
-                              onClick={() => setPickerFor(b.id)}
-                              className="w-full border border-dashed rounded-lg py-12 text-sm text-muted-foreground hover:bg-muted/40"
+                              type="button"
+                              title={collapsed[b.id] ? "Expand" : "Collapse"}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
+                              }}
+                              className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
                             >
-                              Choose an image
+                              {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              <span>{b.type === "video" ? "Video" : "Picture"}</span>
                             </button>
                           )}
-                          {active && (
-                            <div className="grid sm:grid-cols-2 gap-2 mt-2">
-                              <Input value={b.alt} placeholder="Describe the image" onChange={(e) => update(b.id, { alt: e.target.value } as Partial<Block>)} />
-                              <Input value={b.caption ?? ""} placeholder="Caption (optional)" onChange={(e) => update(b.id, { caption: e.target.value } as Partial<Block>)} />
-                            </div>
-                          )}
-                        </div>
-                      ) : b.type === "video" ? (
-                        <div className="py-2">
-                          {b.url ? (
-                            <BlockView block={b} />
-                          ) : (
-                            <button
-                              onClick={() => setVideoFor(b.id)}
-                              className="w-full border border-dashed rounded-lg py-12 text-sm text-muted-foreground hover:bg-muted/40"
-                            >
-                              Choose a video
-                            </button>
-                          )}
-                          {active && (
-                            <div className="mt-2">
-                              <Input value={b.caption ?? ""} placeholder="Caption (optional)" onChange={(e) => update(b.id, { caption: e.target.value } as Partial<Block>)} />
-                            </div>
+                          {!collapsed[b.id] && (
+                            <>
+                              {b.url ? (
+                                <BlockView block={b} />
+                              ) : (
+                                <button
+                                  onClick={() => (b.type === "video" ? setVideoFor(b.id) : setPickerFor(b.id))}
+                                  className="w-full border border-dashed rounded-lg py-12 text-sm text-muted-foreground hover:bg-muted/40"
+                                >
+                                  {b.type === "video" ? "Choose a video" : "Choose an image"}
+                                </button>
+                              )}
+                              {active && (
+                                <div className="grid sm:grid-cols-2 gap-2 mt-2">
+                                  {b.type === "image" && (
+                                    <Input value={b.alt} placeholder="Describe the image" onChange={(e) => update(b.id, { alt: e.target.value } as Partial<Block>)} />
+                                  )}
+                                  <Input value={b.caption ?? ""} placeholder="Caption (optional)" onChange={(e) => update(b.id, { caption: e.target.value } as Partial<Block>)} />
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       ) : active ? (
