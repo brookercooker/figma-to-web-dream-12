@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
   AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
+  ChevronDown, ChevronRight,
 } from "lucide-react";
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
@@ -119,6 +120,7 @@ export default function DesignTab() {
   const [objectFor, setObjectFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const [labelsOpen, setLabelsOpen] = useState(false);
   const [showLive, setShowLive] = useState(true);
   // Pages built in code have no editable blocks yet: show them as one locked section.
   const [hasExisting, setHasExisting] = useState(false);
