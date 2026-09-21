@@ -214,10 +214,19 @@ export default function DesignTab() {
   };
 
   const move = (id: string, dir: -1 | 1) => {
+    const i = blocks.findIndex((b) => b.id === id);
+    if (i < 0) return;
+    const j = i + dir;
+    // At the ends, step past the locked "Current page" section instead of doing nothing.
+    if (j < 0 || j >= blocks.length) {
+      if (!hasExisting) return;
+      if (j < 0 && currentFirst) setCurrentFirst(false);
+      else if (j >= blocks.length && !currentFirst) setCurrentFirst(true);
+      else return;
+      setDirty(true);
+      return;
+    }
     setBlocks((prev) => {
-      const i = prev.findIndex((b) => b.id === id);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= prev.length) return prev;
       const copy = [...prev];
       [copy[i], copy[j]] = [copy[j], copy[i]];
       return copy;
@@ -575,8 +584,12 @@ export default function DesignTab() {
                             </>
                           )}
                           <span className="mx-1 h-5 w-px bg-border" />
-                          <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
-                          <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                          {(i > 0 || (hasExisting && currentFirst)) && (
+                            <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
+                          )}
+                          {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
+                            <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                          )}
                           <ToolButton title="Delete block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
                         </div>
                       )}
