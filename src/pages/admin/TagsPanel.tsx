@@ -33,6 +33,8 @@ interface Props {
   itemLabel: string;
   filteredCount?: number;
   onSelectAllFiltered?: () => void;
+  /** Render without the outer "Labels" card and header, for embedding. */
+  bare?: boolean;
 }
 
 interface TreeNode {
@@ -77,7 +79,7 @@ function subtreeCount(node: TreeNode, counts: Record<string, number>): number {
 export default function TagsPanel({
   scope, usageCounts, activeFilters, onToggleFilter, onClearFilters,
   selectedCount, selectedIds, onApplyTag, itemLabel,
-  filteredCount, onSelectAllFiltered,
+  filteredCount, onSelectAllFiltered, bare,
 }: Props) {
   const { data: rows = [] } = useLabelsForScope(scope);
   const invalidate = useInvalidateLabels(scope);
