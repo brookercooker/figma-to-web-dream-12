@@ -598,7 +598,7 @@ export default function DesignTab() {
                                 className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
                               >
                                 {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                <span>{b.type === "video" ? "Video" : "Picture"}</span>
+                                <span>{b.type === "video" ? "Video" : "Image"}</span>
                               </button>
                               {b.type === "video" ? (
                                 <ToolButton title="Replace video" onClick={() => setVideoFor(b.id)}>
@@ -675,7 +675,7 @@ export default function DesignTab() {
                               className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
                             >
                               {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              <span>{b.type === "video" ? "Video" : "Picture"}</span>
+                              <span>{b.type === "video" ? "Video" : "Image"}</span>
                             </button>
                           )}
                           {!collapsed[b.id] && (
