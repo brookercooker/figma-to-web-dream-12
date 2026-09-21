@@ -295,7 +295,7 @@ export default function DesignTab() {
         <Boxes className="w-4 h-4" /> Object
       </Button>
       <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image", at)}>
-        <ImageIcon className="w-4 h-4" /> Picture
+        <ImageIcon className="w-4 h-4" /> Image
       </Button>
       <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video", at)}>
         <Film className="w-4 h-4" /> Video
@@ -438,7 +438,7 @@ export default function DesignTab() {
                 <Boxes className="w-4 h-4" /> Object
               </Button>
               <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image")}>
-                <ImageIcon className="w-4 h-4" /> Picture
+                <ImageIcon className="w-4 h-4" /> Image
               </Button>
               <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video")}>
                 <Film className="w-4 h-4" /> Video
