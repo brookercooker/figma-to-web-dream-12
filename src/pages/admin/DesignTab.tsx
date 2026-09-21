@@ -287,7 +287,19 @@ export default function DesignTab() {
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-[auto_280px_1fr] gap-6">
+      <TagsPanel
+        scope="static"
+        usageCounts={usageCounts}
+        activeFilters={tagFilters}
+        onToggleFilter={(t) => setTagFilters((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]))}
+        onClearFilters={() => setTagFilters([])}
+        selectedCount={0}
+        selectedIds={[]}
+        onApplyTag={applyTag}
+        itemLabel="pages"
+        filteredCount={filtered.length}
+      />
       {/* Page list */}
       <aside className="space-y-3">
         <Button className="w-full gap-2" onClick={() => setCreateOpen(true)}>
