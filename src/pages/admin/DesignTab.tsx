@@ -395,6 +395,12 @@ export default function DesignTab() {
                               <ToolButton title="Swap object" onClick={() => setObjectFor(b.id)}>
                                 <Boxes className="w-4 h-4" />
                               </ToolButton>
+                              <ToolButton
+                                title="Edit this object"
+                                onClick={() => navigate(`/manage/objects/design?object=${b.objectId}`)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </ToolButton>
                             </>
                           ) : b.type !== "image" ? (
                             <>
