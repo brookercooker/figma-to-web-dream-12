@@ -568,9 +568,25 @@ export default function DesignTab() {
 
                       {b.type === "object" ? (
                         <div className="py-2">
-                          <div className="pointer-events-none">
-                            <BlockView block={b} />
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              title={collapsed[b.id] ? "Expand object" : "Collapse object"}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
+                              }}
+                              className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+                            >
+                              {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              <span>{b.name ?? "Saved object"}</span>
+                            </button>
                           </div>
+                          {!collapsed[b.id] && (
+                            <div className="pointer-events-none">
+                              <BlockView block={b} />
+                            </div>
+                          )}
                         </div>
                       ) : b.type === "image" ? (
                         <div className="py-2">
