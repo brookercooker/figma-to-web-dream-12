@@ -36,6 +36,49 @@ function ChromePreview({ label, children }: { label: string; children: React.Rea
   );
 }
 
+/**
+ * Paths that a real page component answers. Anything else is a prototype page
+ * stored in memory, which an iframe cannot see (each frame reseeds its own
+ * data), so those preview inline instead of through an iframe.
+ */
+const CODED_PATHS = new Set([
+  "/home", "/locations", "/full-vendor-list", "/new-and-now", "/outdoor-oasis",
+  "/team", "/inspiration-gallery", "/lighting-tips", "/about", "/contact",
+  "/contact-us-trade-account", "/shipping-policy", "/return-policy",
+  "/privacy-policy", "/terms-conditions", "/objects-flyer", "/coming-soon",
+  "/brands", "/catalog", "/ceiling-lighting", "/wall-lighting", "/lamps",
+  "/outdoor", "/fans", "/architectural", "/home-decor", "/room",
+]);
+
+const previewSrc = (path: string) => (path === "/" ? "/home" : path);
+const canIframe = (path: string) => CODED_PATHS.has(previewSrc(path));
+
+/** Renders a prototype page the way visitors see it, without an iframe. */
+function InlinePagePreview({ name, blocks }: { name: string; blocks: Block[] }) {
+  return (
+    <div className="bg-background">
+      <div className="pointer-events-none select-none [&_header]:!static [&_header]:!z-auto">
+        <Header />
+      </div>
+      <div className="mx-auto max-w-3xl px-6 py-10">
+        {blocks.length ? (
+          <PageBlocks blocks={blocks} />
+        ) : (
+          <>
+            <h1 className="font-serif text-3xl">{name}</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              This page has no content yet. Add a section to design it.
+            </p>
+          </>
+        )}
+      </div>
+      <div className="pointer-events-none select-none">
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
 const SIZES: TextBlock["size"][] = ["sm", "md", "lg", "xl"];
 const SIZE_LABEL: Record<TextBlock["size"], string> = { sm: "S", md: "M", lg: "L", xl: "XL" };
 
