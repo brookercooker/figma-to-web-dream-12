@@ -294,12 +294,26 @@ export default function DesignTab() {
                     <Pencil className="w-4 h-4" /> Edit
                   </Button>
                 </div>
-                <iframe
-                  key={`${page.id}-${page.updated_at}`}
-                  src={page.path}
-                  title={`${page.name} preview`}
-                  className="w-full h-[70vh] bg-background"
-                />
+                {savedBlocks.length ? (
+                  <div className="h-[70vh] overflow-y-auto bg-background">
+                    <div className="pointer-events-none select-none [&_header]:!static [&_header]:!z-auto">
+                      <Header />
+                    </div>
+                    <div className="mx-auto max-w-3xl px-6 py-10">
+                      <PageBlocks blocks={savedBlocks} />
+                    </div>
+                    <div className="pointer-events-none select-none">
+                      <Footer />
+                    </div>
+                  </div>
+                ) : (
+                  <iframe
+                    key={`${page.id}-${page.updated_at}`}
+                    src={page.path}
+                    title={`${page.name} preview`}
+                    className="w-full h-[70vh] bg-background"
+                  />
+                )}
               </div>
             ) : (
             <div className="border rounded-lg bg-background p-6 sm:p-10 min-h-[50vh]">
