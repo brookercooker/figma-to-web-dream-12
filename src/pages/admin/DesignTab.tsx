@@ -460,10 +460,46 @@ export default function DesignTab() {
                     <div
                       key={b.id}
                       onClick={() => setActiveId(b.id)}
-                      className={`relative rounded-lg px-3 transition-colors cursor-text ${
+                      draggable={dragId === b.id}
+                      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", b.id); }}
+                      onDragEnd={() => { setDragId(""); setDropAt(null); }}
+                      onDragOver={(e) => {
+                        if (!dragId || dragId === b.id) return;
+                        e.preventDefault();
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setDropAt({ id: b.id, before: e.clientY < r.top + r.height / 2 });
+                      }}
+                      onDragLeave={() => setDropAt((d) => (d?.id === b.id ? null : d))}
+                      onDrop={(e) => {
+                        if (!dragId) return;
+                        e.preventDefault();
+                        const r = e.currentTarget.getBoundingClientRect();
+                        moveTo(dragId, b.id, e.clientY < r.top + r.height / 2);
+                        setDragId("");
+                        setDropAt(null);
+                      }}
+                      className={`group relative rounded-lg px-3 transition-colors cursor-text ${
                         active ? "ring-2 ring-primary/40 bg-muted/30" : "hover:bg-muted/20"
+                      } ${dragId === b.id ? "opacity-50" : ""} ${
+                        dropAt?.id === b.id
+                          ? dropAt.before
+                            ? "border-t-2 border-primary"
+                            : "border-b-2 border-primary"
+                          : ""
                       }`}
                     >
+                      <button
+                        type="button"
+                        title="Drag to move"
+                        aria-label="Drag to move"
+                        onMouseDown={() => setDragId(b.id)}
+                        onMouseUp={() => setDragId("")}
+                        className={`absolute -left-7 top-2 z-20 cursor-grab rounded p-1 text-muted-foreground transition-opacity hover:bg-muted active:cursor-grabbing ${
+                          active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                        }`}
+                      >
+                        <GripVertical className="h-4 w-4" />
+                      </button>
                       {active && (
                         <div className="sticky top-16 z-10 -mx-3 mb-2 flex flex-wrap items-center gap-1 border-b bg-background/95 px-3 py-2 backdrop-blur">
                           {b.type === "object" ? (
