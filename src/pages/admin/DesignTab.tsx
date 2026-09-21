@@ -12,7 +12,7 @@ import {
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
-import { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock } from "@/components/PageBlocks";
+import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock } from "@/components/PageBlocks";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -92,6 +92,8 @@ export default function DesignTab() {
   useEffect(() => { load(); }, []);
 
   const page = useMemo(() => pages.find((p) => p.id === selectedId) ?? null, [pages, selectedId]);
+  // What the page shows once saved — re-read from the row so saving refreshes it.
+  const savedBlocks = useMemo(() => parseBlocks(page?.content), [page?.content]);
 
   useEffect(() => {
     const parsed = parseBlocks(page?.content);
