@@ -154,7 +154,9 @@ export default function DesignTab() {
     setDirty(false);
     // Pages that already have a design open showing exactly how they look today.
     setShowLive(!parsed.length);
-    setHasExisting(!parsed.length && !!page);
+    // Only pages that really exist in code get the locked "Current page" section.
+    // Newly created pages start empty, with the site header and footer around them.
+    setHasExisting(!parsed.length && !!page && canIframe(page.path));
     setCurrentFirst(true);
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
