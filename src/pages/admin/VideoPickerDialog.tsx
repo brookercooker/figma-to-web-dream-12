@@ -3,8 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/prototype/client";
+import { leafOf, matchesLabelFilter } from "./labelPath";
+import { useLabelsForScope } from "./useAllLabels";
 
 interface Choice { url: string; poster?: string; name: string }
+interface LibraryVideo extends Choice { labels: string[] }
 
 /** Pick a video from the library, paste a YouTube / Vimeo link, or upload a file. */
 export default function VideoPickerDialog({
