@@ -8,14 +8,15 @@ import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
   AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
-  ChevronDown, ChevronRight, GripVertical,
+  ChevronDown, ChevronRight, GripVertical, Film,
 } from "lucide-react";
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
+import VideoPickerDialog from "./VideoPickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
 import TagsPanel from "./TagsPanel";
 import { matchesLabelFilter } from "./labelPath";
-import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock } from "@/components/PageBlocks";
+import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock } from "@/components/PageBlocks";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -124,6 +125,7 @@ export default function DesignTab() {
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [videoFor, setVideoFor] = useState<string | null>(null);
   // block id waiting for an object choice, or "new" when adding one
   const [objectFor, setObjectFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
