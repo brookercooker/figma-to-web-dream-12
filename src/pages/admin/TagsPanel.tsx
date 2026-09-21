@@ -33,6 +33,8 @@ interface Props {
   itemLabel: string;
   filteredCount?: number;
   onSelectAllFiltered?: () => void;
+  /** Render without the outer "Labels" card and header, for embedding. */
+  bare?: boolean;
 }
 
 interface TreeNode {
@@ -77,7 +79,7 @@ function subtreeCount(node: TreeNode, counts: Record<string, number>): number {
 export default function TagsPanel({
   scope, usageCounts, activeFilters, onToggleFilter, onClearFilters,
   selectedCount, selectedIds, onApplyTag, itemLabel,
-  filteredCount, onSelectAllFiltered,
+  filteredCount, onSelectAllFiltered, bare,
 }: Props) {
   const { data: rows = [] } = useLabelsForScope(scope);
   const invalidate = useInvalidateLabels(scope);
@@ -234,13 +236,16 @@ export default function TagsPanel({
   };
 
   return (
-    <aside className="w-40 xl:w-56 shrink-0 sticky top-16 self-start max-h-[calc(100vh-5rem)]">
-      <div className="border rounded-lg bg-muted/20 flex flex-col max-h-[calc(100vh-5rem)]">
-        <div className="px-3 pt-3 pb-2 flex items-center gap-2">
-          <Tag className="w-4 h-4 text-[hsl(38_31%_45%)]" />
-          <div className="text-sm font-medium">Labels</div>
-          <span className="text-xs text-muted-foreground ml-auto">{totalCount}</span>
-        </div>
+    <aside className={bare ? "w-full" : "w-40 xl:w-56 shrink-0 sticky top-16 self-start max-h-[calc(100vh-5rem)]"}>
+      <div className={bare ? "flex flex-col max-h-[45vh]" : "border rounded-lg bg-muted/20 flex flex-col max-h-[calc(100vh-5rem)]"}>
+        {!bare && (
+          <div className="px-3 pt-3 pb-2 flex items-center gap-2">
+            <Tag className="w-4 h-4 text-[hsl(38_31%_45%)]" />
+            <div className="text-sm font-medium">Labels</div>
+            <span className="text-xs text-muted-foreground ml-auto">{totalCount}</span>
+          </div>
+        )}
+
 
         <div className="px-3 pb-2">
           <div className="relative">
