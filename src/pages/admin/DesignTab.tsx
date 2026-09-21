@@ -564,12 +564,16 @@ export default function DesignTab() {
                               ))}
                             </>
                           )}
-                          <span className="mx-1 h-5 w-px bg-border" />
-                          {(["left", "center", "right"] as BlockAlign[]).map((a) => (
-                            <ToolButton key={a} title={`Align ${a}`} active={b.align === a} onClick={() => update(b.id, { align: a } as Partial<Block>)}>
-                              {a === "left" ? <AlignLeft className="w-4 h-4" /> : a === "center" ? <AlignCenter className="w-4 h-4" /> : <AlignRight className="w-4 h-4" />}
-                            </ToolButton>
-                          ))}
+                          {b.type !== "object" && (
+                            <>
+                              <span className="mx-1 h-5 w-px bg-border" />
+                              {(["left", "center", "right"] as BlockAlign[]).map((a) => (
+                                <ToolButton key={a} title={`Align ${a}`} active={b.align === a} onClick={() => update(b.id, { align: a } as Partial<Block>)}>
+                                  {a === "left" ? <AlignLeft className="w-4 h-4" /> : a === "center" ? <AlignCenter className="w-4 h-4" /> : <AlignRight className="w-4 h-4" />}
+                                </ToolButton>
+                              ))}
+                            </>
+                          )}
                           <span className="mx-1 h-5 w-px bg-border" />
                           <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
                           <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
