@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +102,7 @@ function ToolButton({
 }
 
 export default function DesignTab() {
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const selectedId = params.get("page") ?? "";
 
@@ -394,6 +395,12 @@ export default function DesignTab() {
                               </span>
                               <ToolButton title="Swap object" onClick={() => setObjectFor(b.id)}>
                                 <Boxes className="w-4 h-4" />
+                              </ToolButton>
+                              <ToolButton
+                                title="Edit this object"
+                                onClick={() => navigate(`/manage/objects/design?object=${b.objectId}`)}
+                              >
+                                <Pencil className="w-4 h-4" />
                               </ToolButton>
                             </>
                           ) : b.type !== "image" ? (
