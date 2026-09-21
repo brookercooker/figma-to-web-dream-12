@@ -345,22 +345,14 @@ export default function DesignTab() {
                     <Pencil className="w-4 h-4" /> Edit
                   </Button>
                 </div>
-                {savedBlocks.length ? (
+                {savedBlocks.length || !canIframe(page.path) ? (
                   <div className="h-[70vh] overflow-y-auto bg-background">
-                    <div className="pointer-events-none select-none [&_header]:!static [&_header]:!z-auto">
-                      <Header />
-                    </div>
-                    <div className="mx-auto max-w-3xl px-6 py-10">
-                      <PageBlocks blocks={savedBlocks} />
-                    </div>
-                    <div className="pointer-events-none select-none">
-                      <Footer />
-                    </div>
+                    <InlinePagePreview name={page.name} blocks={savedBlocks} />
                   </div>
                 ) : (
                   <iframe
                     key={`${page.id}-${page.updated_at}`}
-                    src={page.path}
+                    src={previewSrc(page.path)}
                     title={`${page.name} preview`}
                     className="w-full h-[70vh] bg-background"
                   />
