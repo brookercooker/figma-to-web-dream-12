@@ -153,12 +153,28 @@ export default function DesignTab() {
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return term
-      ? pages.filter((p) =>
-          `${p.name} ${p.path} ${(p.tags ?? []).join(" ")}`.toLowerCase().includes(term),
-        )
-      : pages;
-  }, [pages, q]);
+    return pages.filter((p) => {
+      if (tagFilters.length && !tagFilters.every((t) => matchesLabelFilter(p.tags ?? [], t))) return false;
+      if (!term) return true;
+      return `${p.name} ${p.path} ${(p.tags ?? []).join(" ")}`.toLowerCase().includes(term);
+    });
+  }, [pages, q, tagFilters]);
+
+  const usageCounts = useMemo(() => {
+    const c: Record<string, number> = {};
+    pages.forEach((p) => (p.tags ?? []).forEach((t) => { c[t] = (c[t] ?? 0) + 1; }));
+    return c;
+  }, [pages]);
+
+  const applyTag = async (ids: string[], path: string) => {
+    for (const id of ids) {
+      const p = pages.find((x) => x.id === id);
+      if (!p || (p.tags ?? []).includes(path)) continue;
+      const nextTags = [...(p.tags ?? []), path];
+      await (supabase as any).from("pages").update({ tags: nextTags }).eq("id", id);
+      setPages((cur) => cur.map((x) => (x.id === id ? { ...x, tags: nextTags } : x)));
+    }
+  };
 
   const select = (id: string) => {
     const next = new URLSearchParams(params);
