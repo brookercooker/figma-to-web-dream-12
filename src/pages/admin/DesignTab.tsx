@@ -583,7 +583,7 @@ export default function DesignTab() {
                               )}
                               <span className="mx-1 h-5 w-px bg-border" />
                               {([50, 75, 100] as const).map((w) => (
-                                <ToolButton key={w} title={`Width ${w}%`} active={b.width === w} onClick={() => update(b.id, { width: w } as Partial<Block>)}>
+                                <ToolButton key={w} title={`Width ${w}%`} active={(b as ImageBlock).width === w} onClick={() => update(b.id, { width: w } as Partial<Block>)}>
                                   {w}%
                                 </ToolButton>
                               ))}
@@ -651,9 +651,27 @@ export default function DesignTab() {
                             </div>
                           )}
                         </div>
+                      ) : b.type === "video" ? (
+                        <div className="py-2">
+                          {b.url ? (
+                            <BlockView block={b} />
+                          ) : (
+                            <button
+                              onClick={() => setVideoFor(b.id)}
+                              className="w-full border border-dashed rounded-lg py-12 text-sm text-muted-foreground hover:bg-muted/40"
+                            >
+                              Choose a video
+                            </button>
+                          )}
+                          {active && (
+                            <div className="mt-2">
+                              <Input value={b.caption ?? ""} placeholder="Caption (optional)" onChange={(e) => update(b.id, { caption: e.target.value } as Partial<Block>)} />
+                            </div>
+                          )}
+                        </div>
                       ) : active ? (
                         <Textarea
-                          value={b.text}
+                          value={(b as TextBlock).text}
                           autoFocus
                           rows={b.type === "heading" ? 2 : 4}
                           onChange={(e) => update(b.id, { text: e.target.value } as Partial<Block>)}
