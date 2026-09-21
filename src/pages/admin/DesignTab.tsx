@@ -17,7 +17,7 @@ import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign,
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string }
+interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null }
 
 /**
  * Shows the real site header / footer around the editable page content so the
@@ -126,7 +126,7 @@ export default function DesignTab() {
   const load = async () => {
     const { data } = await (supabase as any)
       .from("pages")
-      .select("id,name,path,content,updated_at")
+      .select("id,name,path,content,updated_at,tags")
       .is("archived_at", null)
       .order("name", { ascending: true });
     setPages(data ?? []);
@@ -154,7 +154,9 @@ export default function DesignTab() {
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     return term
-      ? pages.filter((p) => `${p.name} ${p.path}`.toLowerCase().includes(term))
+      ? pages.filter((p) =>
+          `${p.name} ${p.path} ${(p.tags ?? []).join(" ")}`.toLowerCase().includes(term),
+        )
       : pages;
   }, [pages, q]);
 
@@ -272,7 +274,7 @@ export default function DesignTab() {
         <Button className="w-full gap-2" onClick={() => setCreateOpen(true)}>
           <Plus className="w-4 h-4" /> New page
         </Button>
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search pages" />
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search pages or labels" />
         <div className="border rounded-lg divide-y max-h-[65vh] overflow-y-auto">
           {filtered.map((p) => (
             <button
