@@ -147,7 +147,12 @@ export default function VideoPickerDialog({
               ) : (
                 <div className="w-full aspect-video bg-muted" />
               )}
-              <span className="block truncate px-2 py-1.5 text-xs">{it.name}</span>
+              <span className="block truncate px-2 pt-1.5 text-xs">{it.name}</span>
+              {it.labels.length > 0 && (
+                <span className="block truncate px-2 pb-1.5 text-[10px] text-muted-foreground">
+                  {it.labels.join(" · ")}
+                </span>
+              )}
             </button>
           ))}
           {!filtered.length && (
