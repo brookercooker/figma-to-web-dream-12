@@ -212,6 +212,8 @@ export default function DesignTab() {
     const block: Block =
       type === "image"
         ? { ...base, type: "image", url: "", alt: "", width: 100 } as ImageBlock
+        : type === "video"
+        ? { ...base, type: "video", url: "", width: 100 } as VideoBlock
         : type === "heading"
           ? { ...base, type: "heading", text: "New heading", size: "lg" } as TextBlock
           : { ...base, type: "text", text: "Write something here.", size: "md" } as TextBlock;
@@ -223,6 +225,7 @@ export default function DesignTab() {
     setShowLive(false);
     setDirty(true);
     if (type === "image") setPickerFor(block.id);
+    if (type === "video") setVideoFor(block.id);
   };
 
   const move = (id: string, dir: -1 | 1) => {
@@ -291,7 +294,12 @@ export default function DesignTab() {
       <Button variant="outline" size="sm" className="gap-2" onClick={() => { setObjectAt(at); setObjectFor("new"); }}>
         <Boxes className="w-4 h-4" /> Object
       </Button>
-
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image", at)}>
+        <ImageIcon className="w-4 h-4" /> Picture
+      </Button>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video", at)}>
+        <Film className="w-4 h-4" /> Video
+      </Button>
     </div>
   );
 
