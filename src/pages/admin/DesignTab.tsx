@@ -214,10 +214,19 @@ export default function DesignTab() {
   };
 
   const move = (id: string, dir: -1 | 1) => {
+    const i = blocks.findIndex((b) => b.id === id);
+    if (i < 0) return;
+    const j = i + dir;
+    // At the ends, step past the locked "Current page" section instead of doing nothing.
+    if (j < 0 || j >= blocks.length) {
+      if (!hasExisting) return;
+      if (j < 0 && currentFirst) setCurrentFirst(false);
+      else if (j >= blocks.length && !currentFirst) setCurrentFirst(true);
+      else return;
+      setDirty(true);
+      return;
+    }
     setBlocks((prev) => {
-      const i = prev.findIndex((b) => b.id === id);
-      const j = i + dir;
-      if (i < 0 || j < 0 || j >= prev.length) return prev;
       const copy = [...prev];
       [copy[i], copy[j]] = [copy[j], copy[i]];
       return copy;
