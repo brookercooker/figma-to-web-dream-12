@@ -548,7 +548,7 @@ export default function DesignTab() {
                                 <span className="ml-1 text-xs">Edit</span>
                               </ToolButton>
                             </>
-                          ) : b.type !== "image" ? (
+                          ) : b.type === "heading" || b.type === "text" ? (
                             <>
                               <ToolButton
                                 title={b.type === "heading" ? "Turn into text" : "Turn into heading"}
@@ -572,9 +572,15 @@ export default function DesignTab() {
                             </>
                           ) : (
                             <>
-                              <ToolButton title="Replace image" onClick={() => setPickerFor(b.id)}>
-                                <ImageIcon className="w-4 h-4" />
-                              </ToolButton>
+                              {b.type === "video" ? (
+                                <ToolButton title="Replace video" onClick={() => setVideoFor(b.id)}>
+                                  <Film className="w-4 h-4" />
+                                </ToolButton>
+                              ) : (
+                                <ToolButton title="Replace image" onClick={() => setPickerFor(b.id)}>
+                                  <ImageIcon className="w-4 h-4" />
+                                </ToolButton>
+                              )}
                               <span className="mx-1 h-5 w-px bg-border" />
                               {([50, 75, 100] as const).map((w) => (
                                 <ToolButton key={w} title={`Width ${w}%`} active={b.width === w} onClick={() => update(b.id, { width: w } as Partial<Block>)}>
