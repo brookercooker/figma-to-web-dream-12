@@ -740,6 +740,14 @@ export default function DesignTab() {
           setObjectAt(null);
         }}
       />
+      <VideoPickerDialog
+        open={!!videoFor}
+        onOpenChange={(v) => { if (!v) setVideoFor(null); }}
+        onPick={({ url, poster }) => {
+          if (videoFor) update(videoFor, { url, poster: poster ?? undefined } as Partial<Block>);
+          setVideoFor(null);
+        }}
+      />
       <ImagePickerDialog
         open={!!pickerFor}
         onOpenChange={(v) => { if (!v) setPickerFor(null); }}
