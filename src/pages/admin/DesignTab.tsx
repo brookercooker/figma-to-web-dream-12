@@ -437,6 +437,12 @@ export default function DesignTab() {
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
                 <Boxes className="w-4 h-4" /> Object
               </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image")}>
+                <ImageIcon className="w-4 h-4" /> Picture
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video")}>
+                <Film className="w-4 h-4" /> Video
+              </Button>
               <Button size="sm" className="gap-2" onClick={save} disabled={saving || !dirty}>
                 <Save className="w-4 h-4" /> {saving ? "Saving…" : dirty ? "Save" : "Saved"}
               </Button>
