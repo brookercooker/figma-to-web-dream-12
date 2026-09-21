@@ -36,7 +36,26 @@ export interface ObjectBlock {
   align: BlockAlign;
 }
 
-export type Block = TextBlock | ImageBlock | ObjectBlock;
+export interface VideoBlock {
+  id: string;
+  type: "video";
+  url: string;
+  poster?: string;
+  caption?: string;
+  align: BlockAlign;
+  width: 50 | 75 | 100;
+}
+
+export type Block = TextBlock | ImageBlock | ObjectBlock | VideoBlock;
+
+/** YouTube / Vimeo links play through their own player; everything else is a file. */
+export function embedSrc(url: string): string | null {
+  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([\w-]{6,})/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  const vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+  return null;
+}
 
 export const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? `b-${Math.random().toString(36).slice(2)}`;
@@ -89,6 +108,36 @@ const widthClass: Record<ImageBlock["width"], string> = {
 export function BlockView({ block }: { block: Block }) {
   if (block.type === "object") {
     return <ObjectBlockView objectId={block.objectId} name={block.name} />;
+  }
+
+  if (block.type === "video") {
+    if (!block.url) return null;
+    const embed = embedSrc(block.url);
+    return (
+      <figure className={`${selfClass[block.align]} ${widthClass[block.width]} my-6`}>
+        {embed ? (
+          <iframe
+            src={embed}
+            title={block.caption || "Video"}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+            allowFullScreen
+            className="w-full aspect-video rounded-lg border-0"
+          />
+        ) : (
+          <video
+            src={block.url}
+            poster={block.poster || undefined}
+            controls
+            playsInline
+            preload="metadata"
+            className="w-full h-auto rounded-lg"
+          />
+        )}
+        {block.caption ? (
+          <figcaption className="mt-2 text-xs text-muted-foreground">{block.caption}</figcaption>
+        ) : null}
+      </figure>
+    );
   }
 
   if (block.type === "image") {

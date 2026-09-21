@@ -8,14 +8,15 @@ import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
   AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
-  ChevronDown, ChevronRight, GripVertical,
+  ChevronDown, ChevronRight, GripVertical, Film,
 } from "lucide-react";
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
+import VideoPickerDialog from "./VideoPickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
 import TagsPanel from "./TagsPanel";
 import { matchesLabelFilter } from "./labelPath";
-import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock } from "@/components/PageBlocks";
+import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock } from "@/components/PageBlocks";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -124,6 +125,7 @@ export default function DesignTab() {
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [videoFor, setVideoFor] = useState<string | null>(null);
   // block id waiting for an object choice, or "new" when adding one
   const [objectFor, setObjectFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -210,6 +212,8 @@ export default function DesignTab() {
     const block: Block =
       type === "image"
         ? { ...base, type: "image", url: "", alt: "", width: 100 } as ImageBlock
+        : type === "video"
+        ? { ...base, type: "video", url: "", width: 100 } as VideoBlock
         : type === "heading"
           ? { ...base, type: "heading", text: "New heading", size: "lg" } as TextBlock
           : { ...base, type: "text", text: "Write something here.", size: "md" } as TextBlock;
@@ -221,6 +225,7 @@ export default function DesignTab() {
     setShowLive(false);
     setDirty(true);
     if (type === "image") setPickerFor(block.id);
+    if (type === "video") setVideoFor(block.id);
   };
 
   const move = (id: string, dir: -1 | 1) => {
@@ -289,7 +294,12 @@ export default function DesignTab() {
       <Button variant="outline" size="sm" className="gap-2" onClick={() => { setObjectAt(at); setObjectFor("new"); }}>
         <Boxes className="w-4 h-4" /> Object
       </Button>
-
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image", at)}>
+        <ImageIcon className="w-4 h-4" /> Picture
+      </Button>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video", at)}>
+        <Film className="w-4 h-4" /> Video
+      </Button>
     </div>
   );
 
@@ -427,6 +437,12 @@ export default function DesignTab() {
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
                 <Boxes className="w-4 h-4" /> Object
               </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image")}>
+                <ImageIcon className="w-4 h-4" /> Picture
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video")}>
+                <Film className="w-4 h-4" /> Video
+              </Button>
               <Button size="sm" className="gap-2" onClick={save} disabled={saving || !dirty}>
                 <Save className="w-4 h-4" /> {saving ? "Saving…" : dirty ? "Save" : "Saved"}
               </Button>
@@ -548,7 +564,7 @@ export default function DesignTab() {
                                 <span className="ml-1 text-xs">Edit</span>
                               </ToolButton>
                             </>
-                          ) : b.type !== "image" ? (
+                          ) : b.type === "heading" || b.type === "text" ? (
                             <>
                               <ToolButton
                                 title={b.type === "heading" ? "Turn into text" : "Turn into heading"}
@@ -572,12 +588,18 @@ export default function DesignTab() {
                             </>
                           ) : (
                             <>
-                              <ToolButton title="Replace image" onClick={() => setPickerFor(b.id)}>
-                                <ImageIcon className="w-4 h-4" />
-                              </ToolButton>
+                              {b.type === "video" ? (
+                                <ToolButton title="Replace video" onClick={() => setVideoFor(b.id)}>
+                                  <Film className="w-4 h-4" />
+                                </ToolButton>
+                              ) : (
+                                <ToolButton title="Replace image" onClick={() => setPickerFor(b.id)}>
+                                  <ImageIcon className="w-4 h-4" />
+                                </ToolButton>
+                              )}
                               <span className="mx-1 h-5 w-px bg-border" />
                               {([50, 75, 100] as const).map((w) => (
-                                <ToolButton key={w} title={`Width ${w}%`} active={b.width === w} onClick={() => update(b.id, { width: w } as Partial<Block>)}>
+                                <ToolButton key={w} title={`Width ${w}%`} active={(b as ImageBlock).width === w} onClick={() => update(b.id, { width: w } as Partial<Block>)}>
                                   {w}%
                                 </ToolButton>
                               ))}
@@ -645,9 +667,27 @@ export default function DesignTab() {
                             </div>
                           )}
                         </div>
+                      ) : b.type === "video" ? (
+                        <div className="py-2">
+                          {b.url ? (
+                            <BlockView block={b} />
+                          ) : (
+                            <button
+                              onClick={() => setVideoFor(b.id)}
+                              className="w-full border border-dashed rounded-lg py-12 text-sm text-muted-foreground hover:bg-muted/40"
+                            >
+                              Choose a video
+                            </button>
+                          )}
+                          {active && (
+                            <div className="mt-2">
+                              <Input value={b.caption ?? ""} placeholder="Caption (optional)" onChange={(e) => update(b.id, { caption: e.target.value } as Partial<Block>)} />
+                            </div>
+                          )}
+                        </div>
                       ) : active ? (
                         <Textarea
-                          value={b.text}
+                          value={(b as TextBlock).text}
                           autoFocus
                           rows={b.type === "heading" ? 2 : 4}
                           onChange={(e) => update(b.id, { text: e.target.value } as Partial<Block>)}
@@ -698,6 +738,14 @@ export default function DesignTab() {
           setDirty(true);
           setObjectFor(null);
           setObjectAt(null);
+        }}
+      />
+      <VideoPickerDialog
+        open={!!videoFor}
+        onOpenChange={(v) => { if (!v) setVideoFor(null); }}
+        onPick={({ url, poster }) => {
+          if (videoFor) update(videoFor, { url, poster: poster ?? undefined } as Partial<Block>);
+          setVideoFor(null);
         }}
       />
       <ImagePickerDialog
