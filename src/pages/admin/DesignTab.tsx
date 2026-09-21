@@ -458,19 +458,19 @@ export default function DesignTab() {
                 )}
               </div>
             ) : (
-            <div className="border rounded-lg bg-background p-6 sm:p-10 min-h-[50vh]">
-              {!blocks.length && !hasExisting && (
-                <p className="text-sm text-muted-foreground text-center py-16">
-                  This page is empty. Add a heading, some text, or an image to begin.
-                </p>
-              )}
-
+            <div className="rounded-lg border bg-background overflow-hidden">
               {!hasExisting && (
                 <ChromePreview label="Site header">
                   <Header />
                 </ChromePreview>
               )}
 
+              <div className="p-6 sm:p-10 min-h-[50vh]">
+              {!blocks.length && !hasExisting && (
+                <p className="text-sm text-muted-foreground text-center py-16">
+                  This page is empty. Add a heading, some text, or an image to begin.
+                </p>
+              )}
 
               <div className="max-w-3xl mx-auto">
                 {hasExisting && currentFirst && existingCard}
