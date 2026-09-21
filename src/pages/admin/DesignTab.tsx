@@ -505,9 +505,18 @@ export default function DesignTab() {
                         <div className="sticky top-16 z-10 -mx-3 mb-2 flex flex-wrap items-center gap-1 border-b bg-background/95 px-3 py-2 backdrop-blur">
                           {b.type === "object" ? (
                             <>
-                              <span className="px-1 text-xs text-muted-foreground">
-                                Object: {b.name ?? "Saved object"} — edits made in Objects show up here
-                              </span>
+                              <button
+                                type="button"
+                                title={collapsed[b.id] ? "Expand object" : "Collapse object"}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
+                                }}
+                                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+                              >
+                                {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                <span>Object: {b.name ?? "Saved object"}</span>
+                              </button>
                               <ToolButton title="Swap object" onClick={() => setObjectFor(b.id)}>
                                 <Boxes className="w-4 h-4" />
                               </ToolButton>
@@ -568,7 +577,7 @@ export default function DesignTab() {
 
                       {b.type === "object" ? (
                         <div className="py-2">
-                          <div className="flex items-center gap-2">
+                          {!active && (
                             <button
                               type="button"
                               title={collapsed[b.id] ? "Expand object" : "Collapse object"}
@@ -579,9 +588,9 @@ export default function DesignTab() {
                               className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
                             >
                               {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              <span>{b.name ?? "Saved object"}</span>
+                              <span>Object: {b.name ?? "Saved object"}</span>
                             </button>
-                          </div>
+                          )}
                           {!collapsed[b.id] && (
                             <div className="pointer-events-none">
                               <BlockView block={b} />
