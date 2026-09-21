@@ -591,10 +591,12 @@ export default function DesignTab() {
                               {b.type === "video" ? (
                                 <ToolButton title="Replace video" onClick={() => setVideoFor(b.id)}>
                                   <Film className="w-4 h-4" />
+                                  <span className="ml-1 text-xs">Replace</span>
                                 </ToolButton>
                               ) : (
                                 <ToolButton title="Replace image" onClick={() => setPickerFor(b.id)}>
                                   <ImageIcon className="w-4 h-4" />
+                                  <span className="ml-1 text-xs">Replace</span>
                                 </ToolButton>
                               )}
                               <span className="mx-1 h-5 w-px bg-border" />
