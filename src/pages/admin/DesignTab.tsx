@@ -287,25 +287,39 @@ export default function DesignTab() {
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[auto_280px_1fr] gap-6">
-      <TagsPanel
-        scope="static"
-        usageCounts={usageCounts}
-        activeFilters={tagFilters}
-        onToggleFilter={(t) => setTagFilters((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]))}
-        onClearFilters={() => setTagFilters([])}
-        selectedCount={0}
-        selectedIds={[]}
-        onApplyTag={applyTag}
-        itemLabel="pages"
-        filteredCount={filtered.length}
-      />
+    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
       {/* Page list */}
       <aside className="space-y-3">
         <Button className="w-full gap-2" onClick={() => setCreateOpen(true)}>
           <Plus className="w-4 h-4" /> New page
         </Button>
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search pages or labels" />
+        <div className="rounded-lg border">
+          <button
+            type="button"
+            onClick={() => setLabelsOpen((v) => !v)}
+            className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium"
+          >
+            <span>Sort by Label{tagFilters.length ? ` (${tagFilters.length})` : ""}</span>
+            {labelsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </button>
+          {labelsOpen && (
+            <div className="border-t px-2 py-2 [&>aside]:static [&>aside]:w-full [&>aside]:max-h-[40vh]">
+              <TagsPanel
+                scope="static"
+                usageCounts={usageCounts}
+                activeFilters={tagFilters}
+                onToggleFilter={(t) => setTagFilters((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]))}
+                onClearFilters={() => setTagFilters([])}
+                selectedCount={0}
+                selectedIds={[]}
+                onApplyTag={applyTag}
+                itemLabel="pages"
+                filteredCount={filtered.length}
+              />
+            </div>
+          )}
+        </div>
         <div className="border rounded-lg divide-y max-h-[65vh] overflow-y-auto">
           {filtered.map((p) => (
             <button
