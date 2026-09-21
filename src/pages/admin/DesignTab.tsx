@@ -588,6 +588,18 @@ export default function DesignTab() {
                             </>
                           ) : (
                             <>
+                              <button
+                                type="button"
+                                title={collapsed[b.id] ? "Expand" : "Collapse"}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
+                                }}
+                                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+                              >
+                                {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                <span>{b.type === "video" ? "Video" : "Picture"}</span>
+                              </button>
                               {b.type === "video" ? (
                                 <ToolButton title="Replace video" onClick={() => setVideoFor(b.id)}>
                                   <Film className="w-4 h-4" />
