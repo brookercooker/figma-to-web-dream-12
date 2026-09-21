@@ -108,6 +108,32 @@ export default function VideoPickerDialog({
           </label>
         </div>
 
+        {allLabels.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+            <span className="text-xs text-muted-foreground mr-0.5">Labels</span>
+            <button
+              onClick={() => setLabel("")}
+              className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                label === "" ? "bg-foreground text-background border-foreground" : "hover:bg-muted text-muted-foreground"
+              }`}
+            >
+              All
+            </button>
+            {allLabels.map((l) => (
+              <button
+                key={l}
+                title={l}
+                onClick={() => setLabel(label === l ? "" : l)}
+                className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                  label === l ? "bg-foreground text-background border-foreground" : "hover:bg-muted text-muted-foreground"
+                }`}
+              >
+                {leafOf(l)}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[50vh] overflow-y-auto">
           {filtered.map((it) => (
             <button
