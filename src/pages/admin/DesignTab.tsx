@@ -286,6 +286,15 @@ export default function DesignTab() {
             >
               <div className="text-sm font-medium truncate">{p.name}</div>
               <div className="text-xs text-muted-foreground font-mono truncate">{p.path}</div>
+              {!!(p.tags ?? []).length && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {(p.tags ?? []).map((t) => (
+                    <span key={t} className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
             </button>
           ))}
           {!filtered.length && <p className="p-3 text-sm text-muted-foreground">No pages found.</p>}
