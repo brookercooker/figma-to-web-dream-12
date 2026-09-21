@@ -222,6 +222,23 @@ export default function DesignTab() {
     setDirty(true);
   };
 
+  /** Drag a block to a new position in the page. */
+  const moveTo = (id: string, targetId: string, before: boolean) => {
+    if (id === targetId) return;
+    setBlocks((prev) => {
+      const from = prev.findIndex((b) => b.id === id);
+      if (from < 0) return prev;
+      const copy = [...prev];
+      const [item] = copy.splice(from, 1);
+      let to = copy.findIndex((b) => b.id === targetId);
+      if (to < 0) return prev;
+      if (!before) to += 1;
+      copy.splice(to, 0, item);
+      return copy;
+    });
+    setDirty(true);
+  };
+
   const remove = (id: string) => {
     setBlocks((prev) => prev.filter((b) => b.id !== id));
     setDirty(true);
