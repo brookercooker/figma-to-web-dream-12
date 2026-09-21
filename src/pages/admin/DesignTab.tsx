@@ -517,14 +517,16 @@ export default function DesignTab() {
                                 {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                                 <span>Object: {b.name ?? "Saved object"}</span>
                               </button>
-                              <ToolButton title="Swap object" onClick={() => setObjectFor(b.id)}>
+                              <ToolButton title="Replace" onClick={() => setObjectFor(b.id)}>
                                 <Boxes className="w-4 h-4" />
+                                <span className="ml-1 text-xs">Replace</span>
                               </ToolButton>
                               <ToolButton
-                                title="Edit this object"
+                                title="Edit"
                                 onClick={() => navigate(`/manage/objects/design?object=${b.objectId}`)}
                               >
                                 <Pencil className="w-4 h-4" />
+                                <span className="ml-1 text-xs">Edit</span>
                               </ToolButton>
                             </>
                           ) : b.type !== "image" ? (
