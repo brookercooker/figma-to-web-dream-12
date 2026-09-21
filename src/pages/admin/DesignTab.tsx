@@ -14,7 +14,27 @@ import ImagePickerDialog from "./ImagePickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
 import { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock } from "@/components/PageBlocks";
 
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string }
+
+/**
+ * Shows the real site header / footer around the editable page content so the
+ * page is designed in context. Not interactive and not part of the blocks.
+ */
+function ChromePreview({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="relative my-4 rounded-lg border border-dashed bg-background">
+      <span className="absolute -top-2 left-3 z-10 rounded bg-background px-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        {label}
+      </span>
+      <div className="pointer-events-none select-none overflow-hidden rounded-lg [&_header]:!static [&_header]:!z-auto">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 const SIZES: TextBlock["size"][] = ["sm", "md", "lg", "xl"];
 const SIZE_LABEL: Record<TextBlock["size"], string> = { sm: "S", md: "M", lg: "L", xl: "XL" };
@@ -289,6 +309,10 @@ export default function DesignTab() {
                 </p>
               )}
 
+              <ChromePreview label="Site header">
+                <Header />
+              </ChromePreview>
+
               <div className="max-w-3xl mx-auto">
                 {hasExisting && currentFirst && existingCard}
                 {blocks.map((b, i) => {
@@ -402,6 +426,10 @@ export default function DesignTab() {
                 })}
                 {hasExisting && !currentFirst && existingCard}
               </div>
+
+              <ChromePreview label="Site footer">
+                <Footer />
+              </ChromePreview>
             </div>
             )}
           </>
