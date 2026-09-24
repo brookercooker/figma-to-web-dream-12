@@ -56,3 +56,28 @@ export default function ObjectMiniPreview({
     </div>
   );
 }
+
+/** Generic scaled-down, lazy, non-interactive preview frame. */
+export function MiniFrame({ render, width = 96, height = 60 }: { render: () => React.ReactNode; width?: number; height?: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || visible) return;
+    const io = new IntersectionObserver((es) => {
+      if (es.some((e) => e.isIntersecting)) { setVisible(true); io.disconnect(); }
+    }, { rootMargin: "100px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visible]);
+  return (
+    <div ref={ref} className="shrink-0 overflow-hidden rounded border bg-muted/30" style={{ width, height }}>
+      {visible && (
+        <div aria-hidden className="mini-preview pointer-events-none origin-top-left bg-background"
+          style={{ width: BASE_W, height: BASE_H, overflow: "hidden", transform: `scale(${width / BASE_W})` }}>
+          <Suspense fallback={null}>{render()}</Suspense>
+        </div>
+      )}
+    </div>
+  );
+}

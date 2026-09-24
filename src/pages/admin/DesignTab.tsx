@@ -16,6 +16,7 @@ import VideoPickerDialog from "./VideoPickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
 import TagsPanel from "./TagsPanel";
 import { matchesLabelFilter } from "./labelPath";
+import { MiniFrame } from "./ObjectMiniPreview";
 import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock } from "@/components/PageBlocks";
 
 import Header from "@/components/Header";
@@ -381,6 +382,16 @@ export default function DesignTab() {
                 p.id === selectedId ? "bg-muted" : "hover:bg-muted/60"
               }`}
             >
+              <div className="flex items-start gap-3">
+              <MiniFrame render={() => {
+                const bl = parseBlocks(p.content);
+                return !bl.length && canIframe(p.path) ? (
+                  <iframe src={previewSrc(p.path)} title="" tabIndex={-1} loading="lazy" className="border-0" style={{ width: 1280, height: 800 }} />
+                ) : (
+                  <InlinePagePreview name={p.name} blocks={bl} />
+                );
+              }} />
+              <div className="min-w-0 flex-1">
               <div className="text-sm font-medium truncate">{p.name}</div>
               <div className="text-xs text-muted-foreground font-mono truncate">{p.path}</div>
               {!!(p.tags ?? []).length && (
@@ -392,6 +403,8 @@ export default function DesignTab() {
                   ))}
                 </div>
               )}
+              </div>
+              </div>
             </button>
           ))}
           {!filtered.length && <p className="p-3 text-sm text-muted-foreground">No pages found.</p>}
