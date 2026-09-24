@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 type Props = {
   label: string; // e.g. "Object" — rendered as "+ Add {label}"
   onClick: () => void;
+  children?: React.ReactNode;
 };
 
 /**
@@ -11,9 +12,9 @@ type Props = {
  * a subtle shine sweep on hover. Consistent across manager tools (Pages,
  * Landing Pages, Objects).
  */
-export default function AddButtonRow({ label, onClick }: Props) {
+export default function AddButtonRow({ label, onClick, children }: Props) {
   return (
-    <div className="flex justify-start py-2">
+    <div className="flex justify-start items-center gap-3 py-2">
       <button
         type="button"
         onClick={onClick}
@@ -43,6 +44,7 @@ export default function AddButtonRow({ label, onClick }: Props) {
         </span>
         <span aria-hidden className="absolute inset-0 rounded-full border border-white/5 pointer-events-none" />
       </button>
+      {children}
     </div>
   );
 }
