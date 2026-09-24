@@ -172,14 +172,19 @@ export default function DesignTab() {
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
+  const [sortBy, setSortBy] = useState<"name" | "recent">("name");
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    return pages.filter((p) => {
+    const list = pages.filter((p) => {
       if (tagFilters.length && !tagFilters.every((t) => matchesLabelFilter(p.tags ?? [], t))) return false;
       if (!term) return true;
       return `${p.name} ${p.path} ${(p.tags ?? []).join(" ")}`.toLowerCase().includes(term);
     });
-  }, [pages, q, tagFilters]);
+    if (sortBy === "recent") {
+      list.sort((a, b) => String((b as any).updated_at ?? "").localeCompare(String((a as any).updated_at ?? "")));
+    }
+    return list;
+  }, [pages, q, tagFilters, sortBy]);
 
   const usageCounts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -346,6 +351,17 @@ export default function DesignTab() {
           <Plus className="w-4 h-4" /> New page
         </Button>
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search pages or labels" />
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span>Sort by</span>
+          <div className="inline-flex rounded-md border p-0.5">
+            {([["name", "Name"], ["recent", "Recently edited"]] as const).map(([k, l]) => (
+              <button key={k} type="button" onClick={() => setSortBy(k)}
+                className={`rounded px-2 py-1 ${sortBy === k ? "bg-muted text-foreground font-medium" : "hover:text-foreground"}`}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="rounded-lg border">
           <button
             type="button"
