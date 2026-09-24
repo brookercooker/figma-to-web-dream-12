@@ -633,7 +633,7 @@ export default function DesignTab() {
                               </ToolButton>
                               <ToolButton
                                 title="Edit"
-                                onClick={() => navigate(`/manage/objects/design?object=${b.objectId}`)}
+                                onClick={() => navigate(`/manage/objects/design?object=${b.objectId}&returnPage=${selectedId}`)}
                               >
                                 <Pencil className="w-4 h-4" />
                                 <span className="ml-1 text-xs">Edit</span>
