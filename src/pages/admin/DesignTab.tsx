@@ -11,6 +11,7 @@ import {
   ChevronDown, ChevronRight, GripVertical, Film,
 PanelLeftOpen, PanelLeftClose } from "lucide-react";
 import CreatePageDialog from "./CreatePageDialog";
+import ConfirmDialog from "./ConfirmDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import VideoPickerDialog from "./VideoPickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
@@ -201,6 +202,18 @@ export default function DesignTab() {
       await (supabase as any).from("pages").update({ tags: nextTags }).eq("id", id);
       setPages((cur) => cur.map((x) => (x.id === id ? { ...x, tags: nextTags } : x)));
     }
+  };
+
+  const [deleting, setDeleting] = useState<PageRow | null>(null);
+  const deletePage = async (pg: PageRow) => {
+    await (supabase as any).from("pages").delete().eq("id", pg.id);
+    setPages((cur) => cur.filter((x) => x.id !== pg.id));
+    if (pg.id === selectedId) {
+      const next = new URLSearchParams(params);
+      next.delete("page");
+      setParams(next, { replace: true });
+    }
+    setDeleting(null);
   };
 
   const select = (id: string) => {
@@ -402,7 +415,7 @@ export default function DesignTab() {
             <button
               key={p.id}
               onClick={() => select(p.id)}
-              className={`w-full text-left px-3 py-2 transition-colors ${
+              className={`group relative w-full text-left px-3 py-2 transition-colors ${
                 p.id === selectedId ? "bg-muted" : "hover:bg-muted/60"
               }`}
             >
@@ -428,6 +441,12 @@ export default function DesignTab() {
                 </div>
               )}
               </div>
+              <span role="button" tabIndex={0} title="Delete page"
+                onClick={(e) => { e.stopPropagation(); setDeleting(p); }}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setDeleting(p); } }}
+                className="shrink-0 rounded p-1 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive focus:opacity-100">
+                <Trash2 className="w-4 h-4" />
+              </span>
               </div>
             </button>
           ))}
@@ -436,6 +455,14 @@ export default function DesignTab() {
         </>)}
       </aside>
       )}
+      <ConfirmDialog
+        open={!!deleting}
+        onOpenChange={(o) => !o && setDeleting(null)}
+        title="Delete this page?"
+        description={<>"{deleting?.name}" ({deleting?.path}) will be removed. This can't be undone.</>}
+        confirmLabel="Delete page"
+        onConfirm={() => deleting && deletePage(deleting)}
+      />
 
       {/* Editor */}
       <section className="min-w-0">
