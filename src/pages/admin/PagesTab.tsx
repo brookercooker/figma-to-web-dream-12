@@ -449,9 +449,9 @@ export default function PagesTab() {
         archivedCount={archivedCount}
       />
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 py-2">
         <button type="button" onClick={() => navigate("/manage/design")}
-          className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] border border-[hsl(var(--nova-brass))] shadow-md ring-2 ring-[hsl(var(--nova-brass))] ring-offset-2 ring-offset-background transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
+          className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] shadow-md transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
           <Pencil className="w-[18px] h-[18px] opacity-80" />
           <span className="text-[15px] font-medium tracking-wide uppercase">Edit Pages</span>
         </button>
