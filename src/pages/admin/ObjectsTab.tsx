@@ -327,7 +327,6 @@ export default function ObjectsTab() {
 
   return (
     <div className="flex gap-4 items-start">
-      <div className="shrink-0">
       <TagsPanel
         scope="objects"
         usageCounts={usageCounts}
@@ -339,17 +338,6 @@ export default function ObjectsTab() {
         onApplyTag={applyTagToObjects}
         itemLabel="objects"
       />
-      <div className="mt-3 flex items-center gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground" htmlFor="objects-sort">Sort by</label>
-        <select id="objects-sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}
-          className="flex-1 text-sm border rounded px-2 py-1 h-9 bg-background">
-          <option value="newest">Recently modified</option>
-          <option value="oldest">Oldest modified</option>
-          <option value="name">Name (A–Z)</option>
-          <option value="name_desc">Name (Z–A)</option>
-        </select>
-      </div>
-      </div>
       <div className="flex-1 min-w-0 space-y-3">
         <div className="flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
           <div className="flex items-center pl-4 pr-2 text-muted-foreground">
@@ -374,7 +362,6 @@ export default function ObjectsTab() {
         </div>
 
         <FilterBar
-          hideSort
           sort={sort}
           onSortChange={(v) => setSort(v as SortKey)}
           sortOptions={[

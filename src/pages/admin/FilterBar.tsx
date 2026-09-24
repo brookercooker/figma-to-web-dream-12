@@ -26,7 +26,6 @@ export default function FilterBar({
   showArchived, onShowArchivedChange, archivedCount,
   extra,
   action,
-  hideSort,
 }: {
   sort: string;
   onSortChange: (v: string) => void;
@@ -46,7 +45,6 @@ export default function FilterBar({
   archivedCount?: number;
   extra?: ReactNode;
   action?: ReactNode;
-  hideSort?: boolean;
 }) {
   const [customOpen, setCustomOpen] = useState(false);
   const hasCustom = !!(dateFrom || dateTo);
@@ -56,7 +54,7 @@ export default function FilterBar({
 
   return (
     <div className="flex flex-wrap gap-2 items-center">
-      {!hideSort && <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5">
         <label className="text-xs font-medium text-muted-foreground" htmlFor="filterbar-sort">
           Sort by
         </label>
@@ -68,7 +66,7 @@ export default function FilterBar({
         >
           {sortOptions.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
         </select>
-      </div>}
+      </div>
 
       <div className="h-6 w-px bg-border mx-1" aria-hidden="true" />
 
