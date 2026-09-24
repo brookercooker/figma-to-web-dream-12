@@ -1,3 +1,4 @@
+import { ThumbnailContext } from "@/lib/thumbnail";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { objectRegistry } from "@/components/objects/registry";
 import ObjectSections, { parseSections } from "@/components/ObjectSections";
@@ -37,9 +38,9 @@ export default function ObjectMiniPreview({
         className="mini-preview pointer-events-none origin-top-left bg-background"
         style={{ width: BASE_W, minHeight: BASE_H, transform: `scale(${scale})` }}
       >
-        <Suspense fallback={null}>
+        <ThumbnailContext.Provider value={true}><Suspense fallback={null}>
           {sections.length ? <ObjectSections sections={sections} /> : C ? <C /> : null}
-        </Suspense>
+        </Suspense></ThumbnailContext.Provider>
       </div>
     );
   } else if (!sections.length && !C) {
@@ -75,7 +76,7 @@ export function MiniFrame({ render, width = 96, height = 60 }: { render: () => R
       {visible && (
         <div aria-hidden className="mini-preview pointer-events-none origin-top-left bg-background"
           style={{ width: BASE_W, height: BASE_H, overflow: "hidden", transform: `scale(${width / BASE_W})` }}>
-          <Suspense fallback={null}>{render()}</Suspense>
+          <ThumbnailContext.Provider value={true}><Suspense fallback={null}>{render()}</Suspense></ThumbnailContext.Provider>
         </div>
       )}
     </div>

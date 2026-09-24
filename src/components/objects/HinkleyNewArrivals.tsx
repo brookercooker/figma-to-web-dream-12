@@ -1,3 +1,4 @@
+import { useIsThumbnail } from "@/lib/thumbnail";
 import { useEffect, useState } from "react";
 import { Pause, Play } from "lucide-react";
 import {
@@ -196,11 +197,12 @@ const HinkleyNewArrivals = ({ hideHeader = false }: { hideHeader?: boolean }) =>
     };
   }, [api]);
 
+  const isThumb = useIsThumbnail();
   useEffect(() => {
-    if (!api || !isPlaying) return;
+    if (!api || !isPlaying || isThumb) return;
     const id = window.setInterval(() => api.scrollNext(), 4000);
     return () => window.clearInterval(id);
-  }, [api, isPlaying]);
+  }, [api, isPlaying, isThumb]);
 
   return (
     <section className="mx-auto max-w-6xl px-6 sm:px-10 py-16">

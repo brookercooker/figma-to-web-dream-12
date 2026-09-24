@@ -1,3 +1,4 @@
+import { useIsThumbnail } from "@/lib/thumbnail";
 /**
  * Shared section model + renderer for Objects built in the Object Design page.
  * Sections are stored as JSON on `object_registry.content`.
@@ -1278,11 +1279,12 @@ function Carousel({ section }: { section: CarouselSection }) {
   const [i, setI] = useState(0);
   const n = images.length;
 
+  const isThumb = useIsThumbnail();
   useEffect(() => {
-    if (n < 2) return;
+    if (n < 2 || isThumb) return;
     const t = setInterval(() => setI((v) => (v + 1) % n), 5000);
     return () => clearInterval(t);
-  }, [n]);
+  }, [n, isThumb]);
 
   useEffect(() => { setI((v) => (v < n ? v : 0)); }, [n]);
 
@@ -1469,11 +1471,12 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
 
   const [playing, setPlaying] = useState(true);
 
+  const isThumb = useIsThumbnail();
   useEffect(() => {
-    if (steps < 2 || !playing) return;
+    if (steps < 2 || !playing || isThumb) return;
     const t = setInterval(() => { nextRef.current(); }, 5000);
     return () => clearInterval(t);
-  }, [steps, playing]);
+  }, [steps, playing, isThumb]);
 
   const nextRef = useRef(next);
   nextRef.current = next;

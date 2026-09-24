@@ -1,3 +1,4 @@
+import { useIsThumbnail } from "@/lib/thumbnail";
 import { useEffect, useState } from "react";
 import { Pause, Play } from "lucide-react";
 
@@ -10,13 +11,14 @@ const CarouselControl = ({ total = 4, intervalMs = 3500 }: CarouselControlProps)
   const [current, setCurrent] = useState(1);
   const [playing, setPlaying] = useState(true);
 
+  const isThumb = useIsThumbnail();
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || isThumb) return;
     const id = window.setInterval(() => {
       setCurrent((c) => (c % total) + 1);
     }, intervalMs);
     return () => window.clearInterval(id);
-  }, [playing, total, intervalMs]);
+  }, [playing, total, intervalMs, isThumb]);
 
   return (
     <div className="inline-flex items-center gap-4 bg-cream border border-sand rounded-full px-5 py-2 shadow-[0_2px_12px_-6px_hsl(var(--brass)/0.4)]">

@@ -1,3 +1,4 @@
+import { useIsThumbnail } from "@/lib/thumbnail";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -20,10 +21,12 @@ export default function SteveObject() {
   const [i, setI] = useState(0);
   const n = slides.length;
 
+  const isThumb = useIsThumbnail();
   useEffect(() => {
+    if (isThumb) return;
     const t = setInterval(() => setI((v) => (v + 1) % n), 5000);
     return () => clearInterval(t);
-  }, [n]);
+  }, [n, isThumb]);
 
   const go = (d: number) => setI((v) => (v + d + n) % n);
 
