@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/prototype/client";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -126,6 +127,7 @@ export default function LandingPagesView() {
   const lastIdx = useRef<number | null>(null);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Landing | null>(null);
+  const navigate = useNavigate();
   const [renaming, setRenaming] = useState<Landing | null>(null);
   const [preview, setPreview] = useState<Landing | null>(null);
   const [promoteConfirm, setPromoteConfirm] = useState<{
@@ -482,6 +484,7 @@ export default function LandingPagesView() {
                 <th className="px-3 py-2 text-center">Copy</th>
                 <th className="px-3 py-2 text-left">Labels</th>
                 <th className="px-3 py-2 text-left">Last Mod</th>
+                <th className="px-2 py-2 text-center">Edit</th>
                 <th className="px-2 py-2 text-center"><span className="sr-only">Open</span></th>
                 <th className="px-2 py-2 text-center"><span className="sr-only">More</span></th>
               </tr>
@@ -585,6 +588,12 @@ export default function LandingPagesView() {
                       {fmtDateTime(r.updated_at) || "—"}
                     </td>
                     <td className="px-1 py-3 text-center">
+                      <button className="p-1.5 rounded border hover:bg-muted inline-flex" aria-label="Edit design" title="Edit design"
+                        onClick={() => navigate(`/manage/design?page=${r.id}`)}>
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    </td>
+                    <td className="px-1 py-3 text-center">
                       <button className="p-1.5 rounded border hover:bg-muted inline-flex"
                         aria-label="Open in new tab"
                         title="Open in new tab"
@@ -609,7 +618,7 @@ export default function LandingPagesView() {
                           </DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onSelect={() => setEditing(r)}>
-                            <Pencil className="w-4 h-4 mr-2" /> Edit
+                            <Pencil className="w-4 h-4 mr-2" /> Settings…
                           </DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => setRenaming(r)}>
                             <Type className="w-4 h-4 mr-2" /> Rename…
