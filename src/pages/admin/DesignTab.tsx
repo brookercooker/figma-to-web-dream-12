@@ -172,7 +172,7 @@ export default function DesignTab() {
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
-  const [sortBy, setSortBy] = useState<"name" | "recent">("name");
+  const [sortBy, setSortBy] = useState<"name" | "recent" | "label">("name");
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     const list = pages.filter((p) => {
@@ -354,25 +354,18 @@ export default function DesignTab() {
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Sort by</span>
           <div className="inline-flex rounded-md border p-0.5">
-            {([["name", "Name"], ["recent", "Recently edited"]] as const).map(([k, l]) => (
-              <button key={k} type="button" onClick={() => setSortBy(k)}
+            {([["name", "Name"], ["recent", "Recently edited"], ["label", "Label"]] as const).map(([k, l]) => (
+              <button key={k} type="button" onClick={() => { setSortBy(k); if (k !== "label") setTagFilters([]); }}
                 className={`rounded px-2 py-1 ${sortBy === k ? "bg-muted text-foreground font-medium" : "hover:text-foreground"}`}>
                 {l}
               </button>
             ))}
           </div>
         </div>
+        {sortBy === "label" && (
         <div className="rounded-lg border">
-          <button
-            type="button"
-            onClick={() => setLabelsOpen((v) => !v)}
-            className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium"
-          >
-            <span>Sort by Label{tagFilters.length ? ` (${tagFilters.length})` : ""}</span>
-            {labelsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-          </button>
-          {labelsOpen && (
-            <div className="border-t py-2">
+          {true && (
+            <div className="py-2">
               <TagsPanel
                 bare
                 scope="static"
@@ -389,6 +382,7 @@ export default function DesignTab() {
             </div>
           )}
         </div>
+        )}
         <div className="border rounded-lg divide-y max-h-[65vh] overflow-y-auto">
           {filtered.map((p) => (
             <button
