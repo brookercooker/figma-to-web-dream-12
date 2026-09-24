@@ -75,7 +75,7 @@ export default function CreateObjectDialog({
       qc.invalidateQueries({ queryKey: ["admin", "object_registry"] });
       onOpenChange(false);
       onCreated?.(data);
-      if (navigateOnCreate) navigate(`/objects/${data.slug_id}`);
+      if (navigateOnCreate) navigate(`/manage/objects/design?object=${data.id}`);
     } catch (e: any) {
       toast.error(e?.message ?? "Failed to create object");
     } finally { setSaving(false); }
