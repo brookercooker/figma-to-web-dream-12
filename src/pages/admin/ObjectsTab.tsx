@@ -390,7 +390,14 @@ export default function ObjectsTab() {
         />
 
         <div className="flex flex-wrap items-center gap-3">
-          <AddButtonRow label="Object" onClick={() => setCreating(true)} />
+          <div className="flex items-center gap-3 py-2">
+            <button type="button" onClick={() => navigate("/manage/objects/design")}
+              className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] border border-transparent shadow-md transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
+              <Pencil className="w-[18px] h-[18px] opacity-80" />
+              <span className="text-[15px] font-medium tracking-wide uppercase">Edit Objects</span>
+            </button>
+            <AddButtonRow subtle text="Add new object" label="Object" onClick={() => setCreating(true)} />
+          </div>
           <Button asChild variant="outline" size="sm" className="gap-2">
             <Link to="/manage/objects/design">
               <Palette className="w-4 h-4" /> Design an object
