@@ -21,6 +21,7 @@ import FilterBar, { type TimeRange } from "./FilterBar";
 import AddButtonRow from "./AddButtonRow";
 import ConfirmDialog from "./ConfirmDialog";
 import Thumbnail from "./Thumbnail";
+import PageMiniPreview from "./PageMiniPreview";
 import PagePreviewDialog from "./PagePreviewDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
 import CreateLandingPageDialog from "./CreateLandingPageDialog";
@@ -528,7 +529,7 @@ export default function LandingPagesView() {
                         className="block rounded hover:ring-2 hover:ring-primary/40 focus:outline-none focus:ring-2 focus:ring-primary"
                         title="Open larger preview"
                       >
-                        <Thumbnail kind="page" src={r.path} name={r.name} route={r.path} cacheKey={`${r.slug_id}:${r.updated_at}`} width={96} height={60} storedUrl={r.build_status === "ready" ? r.thumbnail_url : null} placeholderLabel={r.name} placeholderSubtext={r.build_status === "ready" ? "Preview generating…" : "Preview available after publish"} />
+                        <PageMiniPreview name={r.name} path={r.path} content={(r as any).content} />
                       </button>
                     </td>
                     <td className="px-3 py-3 min-w-0" title={r.name}>

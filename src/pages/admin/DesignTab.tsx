@@ -64,11 +64,11 @@ const CODED_PATHS = new Set([
   "/outdoor", "/fans", "/architectural", "/home-decor", "/room",
 ]);
 
-const previewSrc = (path: string) => (path === "/" ? "/home" : path);
-const canIframe = (path: string) => CODED_PATHS.has(previewSrc(path));
+export const previewSrc = (path: string) => (path === "/" ? "/home" : path);
+export const canIframe = (path: string) => CODED_PATHS.has(previewSrc(path));
 
 /** Renders a prototype page the way visitors see it, without an iframe. */
-function InlinePagePreview({ name, blocks }: { name: string; blocks: Block[] }) {
+export function InlinePagePreview({ name, blocks }: { name: string; blocks: Block[] }) {
   return (
     <div className="bg-background">
       <div className="pointer-events-none select-none [&_header]:!static [&_header]:!z-auto">

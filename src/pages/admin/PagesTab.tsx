@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import Thumbnail from "./Thumbnail";
+import PageMiniPreview from "./PageMiniPreview";
 import TagsPanel from "./TagsPanel";
 import InlineEdit from "./InlineEdit";
 import ConfirmDialog from "./ConfirmDialog";
@@ -552,7 +553,7 @@ export default function PagesTab() {
                     className="block rounded hover:ring-2 hover:ring-primary/40 focus:outline-none focus:ring-2 focus:ring-primary"
                     title="Open larger preview"
                   >
-                    <Thumbnail kind="page" src={p.path} name={p.name} route={p.path} cacheKey={`${p.slug_id}:${p.updated_at}`} width={96} height={60} storedUrl={p.thumbnail_url} />
+                    <PageMiniPreview name={p.name} path={p.path} content={(p as any).content} />
                   </button>
                 </td>
                 <td className="px-3 py-3 min-w-0" title={p.name}>
