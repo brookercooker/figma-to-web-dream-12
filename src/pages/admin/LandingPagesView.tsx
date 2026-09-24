@@ -491,7 +491,7 @@ export default function LandingPagesView() {
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={9} className="px-3 py-10 text-center text-muted-foreground">
+                <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">
                   {timeRange === "hour" ? "No landing pages modified in the last hour."
                   : timeRange === "day" ? "No landing pages modified in the last 24 hours."
                   : timeRange === "week" ? "No landing pages modified in the last 7 days."
