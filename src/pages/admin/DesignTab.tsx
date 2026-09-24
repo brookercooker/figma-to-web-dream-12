@@ -308,6 +308,25 @@ export default function DesignTab() {
     } finally { setSaving(false); }
   };
 
+  // Auto-save: quietly store changes shortly after the user stops editing.
+  useEffect(() => {
+    if (!dirty || !page) return;
+    const pageId = page.id;
+    const snapshot = blocks;
+    const t = setTimeout(async () => {
+      setSaving(true);
+      const { error } = await (supabase as any)
+        .from("pages")
+        .update({ content: snapshot, build_status: "ready" })
+        .eq("id", pageId);
+      setSaving(false);
+      if (error) { toast.error(error.message ?? "Could not save the page"); return; }
+      setPages((cur) => cur.map((x) => (x.id === pageId ? { ...x, content: snapshot, updated_at: new Date().toISOString() } as any : x)));
+      setBlocks((cur) => { if (cur === snapshot) setDirty(false); return cur; });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [blocks, dirty, page?.id]);
+
   const addRow = (at: number, label: string) => (
     <div className="my-3 flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2">
       <span className="mr-1 text-xs text-muted-foreground">{label}</span>
@@ -509,9 +528,9 @@ export default function DesignTab() {
               <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video")}>
                 <Film className="w-4 h-4" /> Video
               </Button>
-              <Button size="sm" className="gap-2" onClick={save} disabled={saving || !dirty}>
-                <Save className="w-4 h-4" /> {saving ? "Saving…" : dirty ? "Save" : "Saved"}
-              </Button>
+              <span className="inline-flex items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
+                <Save className="w-4 h-4" /> {saving || dirty ? "Saving…" : "All changes saved"}
+              </span>
             </div>
 
             {showLive ? (
