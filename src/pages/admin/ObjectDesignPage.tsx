@@ -3767,7 +3767,7 @@ export default function ObjectDesignPage() {
       {params.get("returnPage") && (
         <div className="px-4 pt-4">
           <Link
-            to={`/manage/design?page=${params.get("returnPage")}`}
+            to={`/manage/design?page=${params.get("returnPage")}&mode=edit`}
             className="inline-flex items-center gap-2 rounded-md bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary/80"
           >
             <ArrowLeft className="w-4 h-4" /> Back to page editor
