@@ -166,7 +166,7 @@ export default function DesignTab() {
     setActiveId("");
     setDirty(false);
     // Pages that already have a design open showing exactly how they look today.
-    setShowLive(!parsed.length);
+    setShowLive(new URLSearchParams(window.location.search).get("mode") === "edit" ? false : !parsed.length);
     // Only pages that really exist in code get the locked "Current page" section.
     // Newly created pages start empty, with the site header and footer around them.
     setHasExisting(!parsed.length && !!page && canIframe(page.path));
