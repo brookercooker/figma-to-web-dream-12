@@ -95,7 +95,8 @@ export default function AdminIndex() {
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  <span className="hidden lg:inline">{label}
+                  <span className="hidden lg:inline">{label}</span>
+                </button>
               );
             })}
           </nav>
