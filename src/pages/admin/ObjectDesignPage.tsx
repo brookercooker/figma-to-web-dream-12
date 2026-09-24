@@ -30,6 +30,7 @@ import ImagePickerDialog from "./ImagePickerDialog";
 import ImageResizeHandles from "./ImageResizeHandles";
 import TextResizeHandles, { isTextPart } from "./TextResizeHandles";
 import VideoPickerDialog from "./VideoPickerDialog";
+import ObjectMiniPreview from "./ObjectMiniPreview";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -3799,6 +3800,9 @@ export default function ObjectDesignPage() {
                   o.id === selectedId ? "bg-muted" : "hover:bg-muted/60"
                 }`}
               >
+                <div className="flex items-center gap-3">
+                <ObjectMiniPreview componentKey={o.component_key} content={o.content} thumbnailUrl={(o as any).thumbnail_url} />
+                <div className="min-w-0">
                 <div className="text-sm font-medium truncate">{o.name}</div>
                 <div className="text-xs text-muted-foreground truncate">
                   {parseSections(o.content).length
@@ -3806,6 +3810,8 @@ export default function ObjectDesignPage() {
                     : o.component_key
                       ? "Built in code"
                       : "Empty"}
+                </div>
+                </div>
                 </div>
               </button>
             ))}
