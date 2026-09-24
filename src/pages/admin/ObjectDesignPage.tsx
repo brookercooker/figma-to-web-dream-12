@@ -3764,6 +3764,17 @@ export default function ObjectDesignPage() {
         </div>
       </header>
 
+      {params.get("returnPage") && (
+        <div className="px-4 pt-4">
+          <Link
+            to={`/manage/design?page=${params.get("returnPage")}`}
+            className="inline-flex items-center gap-2 rounded-md bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary/80"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to page editor
+          </Link>
+        </div>
+      )}
+
       <main
         className={`grid grid-cols-1 gap-6 px-4 py-6 ${
           libraryOpen ? "lg:grid-cols-[260px_1fr_auto]" : "lg:grid-cols-[44px_1fr_auto]"
