@@ -48,6 +48,27 @@ export default function AdminIndex() {
   const [email, setEmail] = useState<string>("");
   const [pwOpen, setPwOpen] = useState(false);
   const checkedFor = useRef<string | null>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const neededRef = useRef(0);
+  const [compact, setCompact] = useState(false);
+
+  useEffect(() => {
+    const row = rowRef.current, nav = navRef.current;
+    if (!row || !nav) return;
+    const measure = () => {
+      if (!compact) {
+        const over = nav.scrollWidth - nav.clientWidth;
+        if (over > 1) { neededRef.current = row.clientWidth + over; setCompact(true); }
+      } else if (row.clientWidth >= neededRef.current) {
+        setCompact(false);
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(row);
+    return () => ro.disconnect();
+  }, [compact, isAdmin]);
 
 
   useEffect(() => {
@@ -74,12 +95,12 @@ export default function AdminIndex() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="w-full px-6 py-3 flex items-center gap-6">
+        <div ref={rowRef} className="w-full px-6 py-3 flex items-center gap-6">
           <h1 className="whitespace-nowrap">
             <SiteManagerLogo />
           </h1>
           <div aria-hidden className="h-9 w-px bg-border shrink-0" />
-          <nav className="flex-1 min-w-0 flex flex-nowrap items-center gap-1">
+          <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden">
             {TABS.map(({ key, label, Icon }) => {
               const active = tab === key;
               return (
@@ -88,14 +109,14 @@ export default function AdminIndex() {
                   onClick={() => navigate(`/manage/${key}`)}
                   title={label}
                   aria-label={label}
-                  className={`inline-flex items-center gap-2 whitespace-nowrap px-3 xl:px-4 py-2 rounded-md text-sm font-medium transition-colors border ${
+                  className={`inline-flex items-center gap-2 whitespace-nowrap ${compact ? "px-3" : "px-4"} py-2 rounded-md text-sm font-medium transition-colors border ${
                     active
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "bg-transparent text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  <span className="hidden xl:inline">{label}</span>
+                  {!compact && <span>{label}</span>}
                 </button>
               );
             })}
@@ -104,14 +125,14 @@ export default function AdminIndex() {
           <Button asChild variant="outline" size="sm" className="shrink-0 gap-2">
             <Link to="/manage/capture">
               <Camera className="w-4 h-4" />
-              <span className="hidden xl:inline">Capture</span>
+              {!compact && <span>Capture</span>}
             </Link>
           </Button>
           {isAdmin && (
             <Button asChild variant="outline" size="sm" className="shrink-0 gap-2">
               <Link to="/admin/users">
                 <Shield className="w-4 h-4" />
-                <span className="hidden xl:inline">Admin</span>
+                {!compact && <span>Admin</span>}
               </Link>
             </Button>
           )}
