@@ -132,6 +132,7 @@ export default function DesignTab() {
   const [q, setQ] = useState("");
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [labelsOpen, setLabelsOpen] = useState(false);
+  const [listOpen, setListOpen] = useState(() => !new URLSearchParams(window.location.search).get("page"));
   const [dragId, setDragId] = useState<string>("");
   const [dropAt, setDropAt] = useState<{ id: string; before: boolean } | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -344,9 +345,13 @@ export default function DesignTab() {
 
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+    <div className={`grid grid-cols-1 gap-6 ${listOpen ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[auto_1fr]"}`}>
       {/* Page list */}
       <aside className="space-y-3">
+        <button type="button" onClick={() => setListOpen((v) => !v)} className="flex w-full items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
+          {listOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />} Pages
+        </button>
+        {listOpen && (<>
         <Button className="w-full gap-2" onClick={() => setCreateOpen(true)}>
           <Plus className="w-4 h-4" /> New page
         </Button>
@@ -419,6 +424,7 @@ export default function DesignTab() {
           ))}
           {!filtered.length && <p className="p-3 text-sm text-muted-foreground">No pages found.</p>}
         </div>
+        </>)}
       </aside>
 
       {/* Editor */}
