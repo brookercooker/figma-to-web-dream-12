@@ -455,7 +455,7 @@ export default function PagesTab() {
           <Pencil className="w-[18px] h-[18px] opacity-80" />
           <span className="text-[15px] font-medium tracking-wide uppercase">Edit Pages</span>
         </button>
-        <AddButtonRow subtle label="Static Page" onClick={() => setCreating(true)} />
+        <AddButtonRow subtle text="Add new page" label="Page" onClick={() => setCreating(true)} />
       </div>
 
 
