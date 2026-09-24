@@ -88,14 +88,14 @@ export default function AdminIndex() {
                   onClick={() => navigate(`/manage/${key}`)}
                   title={label}
                   aria-label={label}
-                  className={`inline-flex items-center gap-2 whitespace-nowrap px-3 lg:px-4 py-2 rounded-md text-sm font-medium transition-colors border ${
+                  className={`inline-flex items-center gap-2 whitespace-nowrap px-3 xl:px-4 py-2 rounded-md text-sm font-medium transition-colors border ${
                     active
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "bg-transparent text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   <Icon className="w-4 h-4" />
-                  <span className="hidden lg:inline">{label}</span>
+                  <span className="hidden xl:inline">{label}</span>
                 </button>
               );
             })}
@@ -104,7 +104,7 @@ export default function AdminIndex() {
           <Button asChild variant="outline" size="sm" className="shrink-0 gap-2">
             <Link to="/manage/capture">
               <Camera className="w-4 h-4" />
-              <span className="hidden sm:inline">Capture</span>
+              <span className="hidden xl:inline">Capture</span>
             </Link>
           </Button>
           {isAdmin && (
@@ -119,7 +119,7 @@ export default function AdminIndex() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="shrink-0 gap-2" aria-label="Account menu">
                 <UserCircle2 className="w-5 h-5" />
-                <span className="hidden md:inline text-sm text-muted-foreground max-w-[180px] truncate">{email}</span>
+                <span className="hidden 2xl:inline text-sm text-muted-foreground max-w-[180px] truncate">{email}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
