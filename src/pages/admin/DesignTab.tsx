@@ -9,7 +9,7 @@ import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
   AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
   ChevronDown, ChevronRight, GripVertical, Film,
-, PanelLeftOpen, PanelLeftClose } from "lucide-react";
+PanelLeftOpen, PanelLeftClose } from "lucide-react";
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import VideoPickerDialog from "./VideoPickerDialog";
