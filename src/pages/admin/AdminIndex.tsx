@@ -79,14 +79,14 @@ export default function AdminIndex() {
             <SiteManagerLogo />
           </h1>
           <div aria-hidden className="h-9 w-px bg-border shrink-0" />
-          <nav className="flex-1 flex items-center gap-1 overflow-x-auto">
+          <nav className="flex-1 min-w-0 flex flex-wrap items-center gap-1">
             {TABS.map(({ key, label, Icon }) => {
               const active = tab === key;
               return (
                 <button
                   key={key}
                   onClick={() => navigate(`/manage/${key}`)}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors border ${
+                  className={`inline-flex items-center gap-2 whitespace-nowrap px-4 py-2 rounded-md text-sm font-medium transition-colors border ${
                     active
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "bg-transparent text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
