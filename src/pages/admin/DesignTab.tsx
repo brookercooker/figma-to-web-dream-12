@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -327,6 +327,16 @@ export default function DesignTab() {
     return () => clearTimeout(t);
   }, [blocks, dirty, page?.id]);
 
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const [toolbarHidden, setToolbarHidden] = useState(false);
+  useEffect(() => {
+    const el = toolbarRef.current;
+    if (!el) { setToolbarHidden(false); return; }
+    const io = new IntersectionObserver(([e]) => setToolbarHidden(!e.isIntersecting && e.boundingClientRect.top < 0), { rootMargin: "-64px 0px 0px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  });
+
   const addRow = (at: number, label: string) => (
     <div className="my-3 flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2">
       <span className="mr-1 text-xs text-muted-foreground">{label}</span>
@@ -519,6 +529,7 @@ export default function DesignTab() {
                   Edit
                 </button>
               </div>
+              <span ref={toolbarRef} className="inline-flex" />
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
                 <Boxes className="w-4 h-4" /> Object
               </Button>
@@ -824,6 +835,21 @@ export default function DesignTab() {
           </>
         )}
       </section>
+
+      {page && toolbarHidden && (
+        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 flex items-center gap-2 rounded-full border bg-background/95 px-3 py-2 shadow-lg backdrop-blur animate-in fade-in slide-in-from-bottom-2">
+          <span className="px-1 text-xs text-muted-foreground">Add</span>
+          <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={() => setObjectFor("new")}>
+            <Boxes className="w-4 h-4" /> Object
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={() => addBlock("image")}>
+            <ImageIcon className="w-4 h-4" /> Image
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={() => addBlock("video")}>
+            <Film className="w-4 h-4" /> Video
+          </Button>
+        </div>
+      )}
 
       <CreatePageDialog
         open={createOpen}
