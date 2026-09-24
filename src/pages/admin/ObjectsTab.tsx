@@ -327,7 +327,7 @@ export default function ObjectsTab() {
 
   return (
     <div className="flex gap-4 items-start">
-      <div className="shrink-0">
+      <div className="shrink-0 w-40 xl:w-56 sticky top-16 self-start space-y-3">
       <TagsPanel
         scope="objects"
         usageCounts={usageCounts}
@@ -340,7 +340,7 @@ export default function ObjectsTab() {
         itemLabel="objects"
       />
       <div className="mt-3 flex items-center gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground" htmlFor="objects-sort">Sort by</label>
+        <label className="w-12 text-xs font-medium text-muted-foreground" htmlFor="objects-sort">Sort by</label>
         <select id="objects-sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}
           className="flex-1 text-sm border rounded px-2 py-1 h-9 bg-background">
           <option value="newest">Recently modified</option>
@@ -349,32 +349,9 @@ export default function ObjectsTab() {
           <option value="name_desc">Name (Z–A)</option>
         </select>
       </div>
-      </div>
-      <div className="flex-1 min-w-0 space-y-3">
-        <div className="flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
-          <div className="flex items-center pl-4 pr-2 text-muted-foreground">
-            <Search className="w-5 h-5" />
-          </div>
-          <Input
-            placeholder="Search objects…"
-            aria-label="Search objects"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            className="flex-1 border-0 rounded-none h-14 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2"
-          />
-          <select
-            value={searchField}
-            onChange={(e) => setSearchField(e.target.value as Field)}
-            className="text-sm px-3 border-l bg-muted/40 h-14"
-            title="Search field"
-            aria-label="Search field"
-          >
-            {FIELDS.map((f) => <option key={f.v} value={f.v}>in {f.label}</option>)}
-          </select>
-        </div>
-
         <FilterBar
           hideSort
+          stacked
           sort={sort}
           onSortChange={(v) => setSort(v as SortKey)}
           sortOptions={[
@@ -401,6 +378,30 @@ export default function ObjectsTab() {
           onShowArchivedChange={setShowArchived}
           archivedCount={archived.length}
         />
+      </div>
+      <div className="flex-1 min-w-0 space-y-3">
+        <div className="flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
+          <div className="flex items-center pl-4 pr-2 text-muted-foreground">
+            <Search className="w-5 h-5" />
+          </div>
+          <Input
+            placeholder="Search objects…"
+            aria-label="Search objects"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="flex-1 border-0 rounded-none h-14 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2"
+          />
+          <select
+            value={searchField}
+            onChange={(e) => setSearchField(e.target.value as Field)}
+            className="text-sm px-3 border-l bg-muted/40 h-14"
+            title="Search field"
+            aria-label="Search field"
+          >
+            {FIELDS.map((f) => <option key={f.v} value={f.v}>in {f.label}</option>)}
+          </select>
+        </div>
+
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-3 py-2">
