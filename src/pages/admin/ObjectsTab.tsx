@@ -398,11 +398,6 @@ export default function ObjectsTab() {
             </button>
             <AddButtonRow subtle text="Add new object" label="Object" onClick={() => setCreating(true)} />
           </div>
-          <Button asChild variant="outline" size="sm" className="gap-2">
-            <Link to="/manage/objects/design">
-              <Palette className="w-4 h-4" /> Design an object
-            </Link>
-          </Button>
         </div>
 
 
