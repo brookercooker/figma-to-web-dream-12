@@ -50,7 +50,7 @@ const HeroMedia = ({ alt }: { alt: string }) => {
       ref={videoRef}
       className="h-full w-full object-cover"
       poster={posterUrl}
-      autoPlay
+      autoPlay={!isThumb}
       muted
       loop
       playsInline
