@@ -1572,6 +1572,7 @@ function FreeGallery({ section, onDark, items }: { section: FreeSection; onDark?
 
 export function VideoPlayer({ video, className = "" }: { video: SectionVideo; className?: string }) {
   const embed = videoEmbedUrl(video.url);
+  const isThumbVideo = useIsThumbnail();
   const box = `w-full overflow-hidden rounded-lg bg-muted aspect-video ${className}`;
   if (!video.url?.trim()) {
     return (
@@ -1580,7 +1581,7 @@ export function VideoPlayer({ video, className = "" }: { video: SectionVideo; cl
   }
   if (embed) {
     const params = new URLSearchParams();
-    if (video.autoplay) { params.set("autoplay", "1"); params.set("muted", "1"); params.set("mute", "1"); }
+    if (video.autoplay && !isThumbVideo) { params.set("autoplay", "1"); params.set("muted", "1"); params.set("mute", "1"); }
     if (video.loop) params.set("loop", "1");
     const q = params.toString();
     return (
@@ -1603,7 +1604,7 @@ export function VideoPlayer({ video, className = "" }: { video: SectionVideo; cl
         poster={video.poster || undefined}
         className="h-full w-full object-cover"
         controls={video.controls !== false}
-        autoPlay={!!video.autoplay}
+        autoPlay={!!video.autoplay && !isThumbVideo}
         loop={!!video.loop}
         muted={video.muted ?? !!video.autoplay}
         playsInline
