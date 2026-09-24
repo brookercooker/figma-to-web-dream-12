@@ -376,9 +376,6 @@ export default function PagesTab() {
           <ListChecks className="w-3.5 h-3.5" /> Link Audit
         </button>
       </div>
-      <Button variant="outline" size="sm" className="gap-2 ml-3 align-top mt-1" onClick={() => navigate("/manage/design")}>
-        <Pencil className="w-4 h-4" /> Edit pages
-      </Button>
 
     {view === "audit" ? (
       <LinkAuditView pages={pages as any} />
@@ -452,7 +449,11 @@ export default function PagesTab() {
         archivedCount={archivedCount}
       />
 
-      <AddButtonRow label="Static Page" onClick={() => setCreating(true)} />
+      <AddButtonRow label="Static Page" onClick={() => setCreating(true)}>
+        <Button variant="outline" className="gap-2 rounded-full h-auto px-6 py-3" onClick={() => navigate("/manage/design")}>
+          <Pencil className="w-4 h-4" /> Edit pages
+        </Button>
+      </AddButtonRow>
 
 
 
