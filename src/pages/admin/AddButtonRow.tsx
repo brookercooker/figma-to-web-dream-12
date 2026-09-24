@@ -5,6 +5,7 @@ type Props = {
   onClick: () => void;
   children?: React.ReactNode;
   subtle?: boolean;
+  text?: string;
 };
 
 /**
@@ -13,7 +14,7 @@ type Props = {
  * a subtle shine sweep on hover. Consistent across manager tools (Pages,
  * Landing Pages, Objects).
  */
-export default function AddButtonRow({ label, onClick, children, subtle }: Props) {
+export default function AddButtonRow({ label, onClick, children, subtle, text }: Props) {
   return (
     <div className="flex justify-start items-center gap-3 py-2">
       <button
@@ -40,7 +41,7 @@ export default function AddButtonRow({ label, onClick, children, subtle }: Props
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           <span className={`${"text-[15px]"} font-medium tracking-wide uppercase`}>
-            Add New {label}
+            {text ?? `Add New ${label}`}
           </span>
         </span>
         {!subtle && <span aria-hidden className="absolute inset-0 rounded-full border border-white/5 pointer-events-none" />}
