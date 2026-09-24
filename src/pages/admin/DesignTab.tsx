@@ -550,7 +550,16 @@ export default function DesignTab() {
                         <GripVertical className="h-4 w-4" />
                       </button>
                       {active && (
-                        <div className="sticky top-16 z-10 -mx-3 mb-2 flex flex-wrap items-center gap-1 border-b bg-background/95 px-3 py-2 backdrop-blur">
+                        <div
+                          title="Drag to move"
+                          onMouseDown={(e) => {
+                            const t = e.target as HTMLElement;
+                            if (t.closest("input,textarea,select,[contenteditable=true]")) return;
+                            setDragId(b.id);
+                          }}
+                          onMouseUp={() => setDragId("")}
+                          className="sticky top-16 z-10 -mx-3 mb-2 flex flex-wrap items-center gap-1 border-b bg-background/95 px-3 py-2 backdrop-blur cursor-grab active:cursor-grabbing"
+                        >
                           {b.type === "object" ? (
                             <>
                               <button
