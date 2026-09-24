@@ -452,7 +452,7 @@ export default function DesignTab() {
               <MiniFrame render={() => {
                 const bl = parseBlocks(p.content);
                 return !bl.length && canIframe(p.path) ? (
-                  <iframe src={`${previewSrc(p.path)}?thumb=1`} title="" tabIndex={-1} loading="lazy" className="border-0" style={{ width: 1280, height: 800 }} />
+                  <iframe src={previewSrc(p.path)} title="" tabIndex={-1} loading="lazy" className="border-0" style={{ width: 1280, height: 800 }} />
                 ) : (
                   <InlinePagePreview name={p.name} blocks={bl} />
                 );

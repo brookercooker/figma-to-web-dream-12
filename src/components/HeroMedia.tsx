@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { useIsThumbnail } from "@/lib/thumbnail";
 
 import heroAsset from "@/assets/hero-living-room.jpg.asset.json";
 import heroPoster from "@/assets/hero-video-poster.jpg.asset.json";
@@ -17,9 +16,7 @@ const posterUrl = heroPoster.url;
  * Mobile or reduced-motion  → the hero still image only (no video bytes fetched)
  */
 const HeroMedia = ({ alt }: { alt: string }) => {
-  const isThumb = useIsThumbnail();
-  const [useVideoState, setUseVideo] = useState(false);
-  const useVideo = useVideoState && !isThumb;
+  const [useVideo, setUseVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -53,7 +50,7 @@ const HeroMedia = ({ alt }: { alt: string }) => {
       ref={videoRef}
       className="h-full w-full object-cover"
       poster={posterUrl}
-      autoPlay={!isThumb}
+      autoPlay
       muted
       loop
       playsInline

@@ -1,4 +1,3 @@
-import { ThumbnailContext } from "@/lib/thumbnail";
 import { Suspense, useEffect } from "react";
 import { lazyRetry } from "@/lib/lazyRetry";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -198,10 +197,7 @@ const App = () => {
       </QueryClientProvider>
     );
   }
-  const isThumb = new URLSearchParams(window.location.search).has("thumb");
-  if (isThumb) document.documentElement.classList.add("mini-preview");
   return (
-    <ThumbnailContext.Provider value={isThumb}>
     <QueryClientProvider client={queryClient}>
       <CartProvider>
         <TooltipProvider>
@@ -217,7 +213,6 @@ const App = () => {
         </TooltipProvider>
       </CartProvider>
     </QueryClientProvider>
-    </ThumbnailContext.Provider>
   );
 };
 

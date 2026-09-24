@@ -8,7 +8,7 @@ export default function PageMiniPreview({ name, path, content }: { name: string;
     <MiniFrame render={() => {
       const bl = parseBlocks(content);
       return !bl.length && canIframe(path) ? (
-        <iframe src={`${previewSrc(path)}?thumb=1`} title="" tabIndex={-1} loading="lazy" className="border-0" style={{ width: 1280, height: 800 }} />
+        <iframe src={previewSrc(path)} title="" tabIndex={-1} loading="lazy" className="border-0" style={{ width: 1280, height: 800 }} />
       ) : (
         <InlinePagePreview name={name} blocks={bl} />
       );
