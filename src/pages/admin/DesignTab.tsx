@@ -9,7 +9,7 @@ import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
   AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
   ChevronDown, ChevronRight, GripVertical, Film,
-} from "lucide-react";
+, PanelLeftOpen, PanelLeftClose } from "lucide-react";
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import VideoPickerDialog from "./VideoPickerDialog";
@@ -347,14 +347,23 @@ export default function DesignTab() {
   return (
     <div className={`grid grid-cols-1 gap-6 ${listOpen ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[auto_1fr]"}`}>
       {/* Page list */}
+      {!listOpen ? (
+        <aside className="lg:sticky lg:top-4 lg:self-start">
+          <Button variant="outline" size="icon" title="Show pages" onClick={() => setListOpen(true)}>
+            <PanelLeftOpen className="w-4 h-4" />
+          </Button>
+        </aside>
+      ) : (
       <aside className="space-y-3">
-        <button type="button" onClick={() => setListOpen((v) => !v)} className="flex w-full items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-          {listOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />} Pages
-        </button>
-        {listOpen && (<>
-        <Button className="w-full gap-2" onClick={() => setCreateOpen(true)}>
-          <Plus className="w-4 h-4" /> New page
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button className="flex-1 gap-2" onClick={() => setCreateOpen(true)}>
+            <Plus className="w-4 h-4" /> New page
+          </Button>
+          <Button variant="outline" size="icon" title="Hide pages" onClick={() => setListOpen(false)}>
+            <PanelLeftClose className="w-4 h-4" />
+          </Button>
+        </div>
+        {(<>
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search pages or labels" />
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Sort by</span>
@@ -426,6 +435,7 @@ export default function DesignTab() {
         </div>
         </>)}
       </aside>
+      )}
 
       {/* Editor */}
       <section className="min-w-0">
