@@ -1603,7 +1603,7 @@ export function VideoPlayer({ video, className = "" }: { video: SectionVideo; cl
         poster={video.poster || undefined}
         className="h-full w-full object-cover"
         controls={video.controls !== false}
-        autoPlay={!!video.autoplay}
+        autoPlay={!!video.autoplay && !isThumbVideo}
         loop={!!video.loop}
         muted={video.muted ?? !!video.autoplay}
         playsInline
