@@ -240,3 +240,10 @@
 [data-empty-text] {
   opacity: 0.4;
 }
+
+/* Object list thumbnails: skip scroll-reveal effects so the scaled preview is visible */
+.mini-preview *, .mini-preview *::before, .mini-preview *::after {
+  opacity: 1 !important;
+  animation: none !important;
+  transition: none !important;
+}

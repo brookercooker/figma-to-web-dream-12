@@ -34,7 +34,7 @@ export default function ObjectMiniPreview({
     body = (
       <div
         aria-hidden
-        className="pointer-events-none origin-top-left bg-background"
+        className="mini-preview pointer-events-none origin-top-left bg-background"
         style={{ width: BASE_W, minHeight: BASE_H, transform: `scale(${scale})` }}
       >
         <Suspense fallback={null}>
