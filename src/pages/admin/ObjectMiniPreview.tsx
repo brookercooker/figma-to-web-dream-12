@@ -33,7 +33,6 @@ export default function ObjectMiniPreview({
   } else if (visible && (sections.length || C)) {
     body = (
       <div
-        inert
         aria-hidden
         className="pointer-events-none origin-top-left bg-background"
         style={{ width: BASE_W, minHeight: BASE_H, transform: `scale(${scale})` }}
