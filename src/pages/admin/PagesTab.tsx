@@ -449,11 +449,14 @@ export default function PagesTab() {
         archivedCount={archivedCount}
       />
 
-      <AddButtonRow label="Static Page" onClick={() => setCreating(true)}>
-        <Button variant="outline" className="gap-2 rounded-full h-auto px-6 py-3" onClick={() => navigate("/manage/design")}>
-          <Pencil className="w-4 h-4" /> Edit pages
-        </Button>
-      </AddButtonRow>
+      <div className="flex items-center gap-3">
+        <button type="button" onClick={() => navigate("/manage/design")}
+          className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] border border-[hsl(var(--nova-brass))] shadow-md ring-2 ring-[hsl(var(--nova-brass))] ring-offset-2 ring-offset-background transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
+          <Pencil className="w-[18px] h-[18px] opacity-80" />
+          <span className="text-[15px] font-medium tracking-wide uppercase">Edit Pages</span>
+        </button>
+        <AddButtonRow subtle label="Static Page" onClick={() => setCreating(true)} />
+      </div>
 
 
 
