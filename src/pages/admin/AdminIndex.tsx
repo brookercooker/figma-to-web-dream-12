@@ -111,7 +111,7 @@ export default function AdminIndex() {
             <Button asChild variant="outline" size="sm" className="shrink-0 gap-2">
               <Link to="/admin/users">
                 <Shield className="w-4 h-4" />
-                Admin
+                <span className="hidden xl:inline">Admin</span>
               </Link>
             </Button>
           )}
