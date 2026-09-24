@@ -27,6 +27,7 @@ export default function FilterBar({
   extra,
   action,
   hideSort,
+  stacked,
 }: {
   sort: string;
   onSortChange: (v: string) => void;
@@ -47,6 +48,7 @@ export default function FilterBar({
   extra?: ReactNode;
   action?: ReactNode;
   hideSort?: boolean;
+  stacked?: boolean;
 }) {
   const [customOpen, setCustomOpen] = useState(false);
   const hasCustom = !!(dateFrom || dateTo);
@@ -55,7 +57,7 @@ export default function FilterBar({
     : "Custom";
 
   return (
-    <div className="flex flex-wrap gap-2 items-center">
+    <div className={stacked ? "flex flex-col gap-3 items-stretch [&>[aria-hidden=true]]:hidden" : "flex flex-wrap gap-2 items-center"}>
       {!hideSort && <div className="flex items-center gap-1.5">
         <label className="text-xs font-medium text-muted-foreground" htmlFor="filterbar-sort">
           Sort by
@@ -72,8 +74,8 @@ export default function FilterBar({
 
       <div className="h-6 w-px bg-border mx-1" aria-hidden="true" />
 
-      <div className="flex items-center gap-1.5" role="group" aria-label={`${dateFieldLabel} range`}>
-        <span className="text-xs font-medium text-muted-foreground">Show</span>
+      <div className={stacked ? "flex flex-wrap items-center gap-1.5" : "flex items-center gap-1.5"} role="group" aria-label={`${dateFieldLabel} range`}>
+        <span className={`text-xs font-medium text-muted-foreground ${stacked ? "w-full" : ""}`}>Show</span>
 
         {RANGE_CHIPS.map((c) => {
           const active =
@@ -159,14 +161,14 @@ export default function FilterBar({
         <>
           <div className="h-6 w-px bg-border mx-1" aria-hidden="true" />
           <div className="flex items-center gap-1.5">
-            <label className="text-xs font-medium text-muted-foreground" htmlFor="filterbar-status">
+            <label className={`text-xs font-medium text-muted-foreground ${stacked ? "w-12" : ""}`} htmlFor="filterbar-status">
               Status
             </label>
             <select
               id="filterbar-status"
               value={status ?? "all"}
               onChange={(e) => onStatusChange(e.target.value)}
-              className="text-sm border rounded px-2 py-1 h-9"
+              className={`text-sm border rounded px-2 py-1 h-9 bg-background ${stacked ? "flex-1" : ""}`}
             >
               {statusOptions.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
             </select>

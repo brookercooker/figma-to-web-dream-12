@@ -340,7 +340,7 @@ export default function ObjectsTab() {
         itemLabel="objects"
       />
       <div className="mt-3 flex items-center gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground" htmlFor="objects-sort">Sort by</label>
+        <label className="w-12 text-xs font-medium text-muted-foreground" htmlFor="objects-sort">Sort by</label>
         <select id="objects-sort" value={sort} onChange={(e) => setSort(e.target.value as SortKey)}
           className="flex-1 text-sm border rounded px-2 py-1 h-9 bg-background">
           <option value="newest">Recently modified</option>
@@ -351,6 +351,7 @@ export default function ObjectsTab() {
       </div>
         <FilterBar
           hideSort
+          stacked
           sort={sort}
           onSortChange={(v) => setSort(v as SortKey)}
           sortOptions={[
