@@ -439,9 +439,9 @@ export default function LandingPagesView() {
           <button type="button" onClick={() => navigate("/manage/design")}
             className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] border border-transparent shadow-md transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
             <Pencil className="w-[18px] h-[18px] opacity-80" />
-            <span className="text-[15px] font-medium tracking-wide uppercase">Edit</span>
+            <span className="text-[15px] font-medium tracking-wide uppercase">Edit Pages</span>
           </button>
-          <AddButtonRow subtle text="Add new" label="Landing Page" onClick={() => setCreating(true)} />
+          <AddButtonRow subtle text="Add new pages" label="Landing Page" onClick={() => setCreating(true)} />
         </div>
 
 
