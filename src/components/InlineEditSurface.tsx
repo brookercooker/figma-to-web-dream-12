@@ -9,7 +9,8 @@
  * While editing, the page is shown divided into sections with a heading bar
  * each; bars fold a section away and can be dragged to reorder sections.
  */
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
 import DOMPurify from "dompurify";
 import { findObjectRoots, loadObjectComponents, objectComponentsNow, type ObjectRoot } from "@/lib/objectScopes";
 import { pageChunks, chunkName } from "@/pages/admin/codedPages";
@@ -17,7 +18,7 @@ import { pageChunks, chunkName } from "@/pages/admin/codedPages";
 export type InlineEdits = Record<string, string>;
 /** "page" or the registry key of a shared object. */
 export type InlineScope = string;
-export interface InlineSelection { key: string; kind: "text" | "image"; el: HTMLElement; scope: InlineScope }
+export interface InlineSelection { key: string; kind: "text" | "image" | "divider"; el: HTMLElement; scope: InlineScope }
 export const styleKey = (key: string) => `style:${key}`;
 export const readStyle = (edits: InlineEdits, key: string): Record<string, string> => {
   try { return JSON.parse(edits[styleKey(key)] ?? "{}"); } catch { return {}; }
@@ -50,7 +51,21 @@ function byPath(root: Element, path: string): Element | null {
 }
 
 const clean = (html: string) =>
-  DOMPurify.sanitize(html, { ALLOWED_TAGS: ["b", "strong", "i", "em", "br", "span", "u"], ALLOWED_ATTR: [] });
+  DOMPurify.sanitize(html, { ALLOWED_TAGS: ["b", "strong", "i", "em", "br", "span", "u", "font"], ALLOWED_ATTR: ["style", "color"] });
+
+/** Thin, empty lines used as decorative rules. */
+function isDivider(el: HTMLElement): boolean {
+  if (el.children.length || (el.textContent ?? "").trim()) return false;
+  if (/^(IMG|VIDEO|IFRAME|INPUT|SVG|BR|TEXTAREA|SELECT|BUTTON)$/.test(el.tagName)) return false;
+  if (el.tagName === "HR") return true;
+  const r = el.getBoundingClientRect();
+  if (!r.width || !r.height) return false;
+  const thin = (r.height <= 4 && r.width >= 12) || (r.width <= 4 && r.height >= 12);
+  if (!thin) return false;
+  const cs = getComputedStyle(el);
+  const bg = cs.backgroundColor;
+  return (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") || parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderLeftWidth) > 0;
+}
 
 function editableTexts(root: Element): HTMLElement[] {
   return ([...root.querySelectorAll(TEXT_TAGS)] as HTMLElement[]).filter((el) => {
@@ -95,8 +110,10 @@ export interface InlineChunk { key: string; parent: string; el: HTMLElement }
 
 export default function InlineEditSurface({
   children, edits, objectEdits = {}, editing = false, onChange, onPickImage, onSelect, selectedKey,
-  collapsed, onToggleCollapse, onReorder,
+  collapsed, onToggleCollapse, onReorder, onOpenObject,
 }: {
+  /** Open a shared object in the object editor. */
+  onOpenObject?: (key: string) => void;
   children: ReactNode;
   edits: InlineEdits;
   objectEdits?: Record<string, InlineEdits>;
@@ -121,6 +138,9 @@ export default function InlineEditSurface({
   const collapsedRef = useRef(collapsed);
   collapsedRef.current = collapsed;
 
+  const outer = useRef<HTMLDivElement>(null);
+  const [bars, setBars] = useState<{ key: string; top: number; left: number; width: number; collapsed: boolean; object?: string }[]>([]);
+  const barsSig = useRef("");
   const scopeOf = (el: Element): { scope: InlineScope; root: Element } => {
     const hit = objectsRef.current.find((o) => o.el === el || o.el.contains(el));
     return hit ? { scope: hit.key, root: hit.el } : { scope: "page", root: ref.current! };
@@ -143,6 +163,10 @@ export default function InlineEditSurface({
     root.querySelectorAll("img").forEach((img) => {
       if (!img.closest("header,footer,nav")) img.dataset.inlineImage = "1";
     });
+    root.querySelectorAll<HTMLElement>("div,span,hr,i").forEach((el) => {
+      if (el.dataset.inlineDivider || el.closest("header,footer,nav")) return;
+      if (isDivider(el)) el.dataset.inlineDivider = "1";
+    });
     // Sections, each with a heading bar drawn by CSS.
     const first = root.firstElementChild as HTMLElement | null;
     if (!first) return;
@@ -156,6 +180,16 @@ export default function InlineEditSurface({
       if (collapsedRef.current?.has(key)) el.setAttribute("data-inline-collapsed", "");
       else el.removeAttribute("data-inline-collapsed");
     });
+    // Real buttons (fold, open object) laid over each section's bar.
+    const o = outer.current?.getBoundingClientRect();
+    if (o) {
+      const next = chunksRef.current.map((c) => {
+        const r = c.el.getBoundingClientRect();
+        return { key: c.key, top: r.top - o.top, left: r.left - o.left, width: r.width, collapsed: c.el.hasAttribute("data-inline-collapsed"), object: c.el.dataset.inlineObject };
+      });
+      const sig = JSON.stringify(next);
+      if (sig !== barsSig.current) { barsSig.current = sig; setBars(next); }
+    }
   };
 
   useEffect(() => {
@@ -176,6 +210,8 @@ export default function InlineEditSurface({
         delete el.dataset.inlineEditable;
       });
       root.querySelectorAll<HTMLElement>("[data-inline-image]").forEach((el) => delete el.dataset.inlineImage);
+      root.querySelectorAll<HTMLElement>("[data-inline-divider]").forEach((el) => delete el.dataset.inlineDivider);
+      barsSig.current = ""; setBars([]);
       root.querySelectorAll<HTMLElement>("[data-inline-chunk]").forEach((el) => {
         delete el.dataset.inlineChunk; delete el.dataset.inlineObject; el.removeAttribute("data-inline-collapsed");
       });
@@ -276,8 +312,17 @@ export default function InlineEditSurface({
       onSelect?.({ key: pathOf(base, img), kind: "image", el: img, scope });
       return;
     }
+    // Dividers are thin, so a click within a few pixels counts.
+    const div = t.closest<HTMLElement>("[data-inline-divider]") ?? ([...root.querySelectorAll<HTMLElement>("[data-inline-divider]")].find((d) => {
+      const r = d.getBoundingClientRect();
+      return e.clientX >= r.left - 6 && e.clientX <= r.right + 6 && e.clientY >= r.top - 6 && e.clientY <= r.bottom + 6;
+    }) ?? null);
     const txt = t.closest<HTMLElement>("[data-inline-editable]");
-    if (txt) {
+    if (div && !txt) {
+      e.preventDefault();
+      const { scope, root: base } = scopeOf(div);
+      onSelect?.({ key: pathOf(base, div), kind: "divider", el: div, scope });
+    } else if (txt) {
       const { scope, root: base } = scopeOf(txt);
       onSelect?.({ key: pathOf(base, txt), kind: "text", el: txt, scope });
     } else onSelect?.(null);
@@ -291,6 +336,7 @@ export default function InlineEditSurface({
   };
 
   return (
+    <div ref={outer} className="relative">
     <div
       ref={ref}
       className={editing ? "inline-edit-surface" : undefined}
@@ -300,6 +346,31 @@ export default function InlineEditSurface({
       onKeyDown={onKeyDown}
     >
       {children}
+    </div>
+    {editing && bars.map((b) => (
+      <div key={b.key}>
+        <button
+          type="button"
+          aria-label={b.collapsed ? "Open section" : "Fold section"}
+          title={b.collapsed ? "Open section" : "Fold section"}
+          onClick={() => onToggleCollapse?.(b.key)}
+          className="absolute z-[70] flex h-10 w-10 items-center justify-center text-foreground hover:bg-background/60 rounded"
+          style={{ top: b.top, left: b.left + 18 }}
+        >
+          {b.collapsed ? <ChevronRight className="h-6 w-6" /> : <ChevronDown className="h-6 w-6" />}
+        </button>
+        {b.object && onOpenObject && (
+          <button
+            type="button"
+            onClick={() => onOpenObject(b.object!)}
+            className="absolute z-[70] my-1.5 inline-flex h-7 items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted"
+            style={{ top: b.top, left: b.left + b.width - 190, width: 180 }}
+          >
+            <ExternalLink className="h-3.5 w-3.5" /> Open in object editor
+          </button>
+        )}
+      </div>
+    ))}
     </div>
   );
 }

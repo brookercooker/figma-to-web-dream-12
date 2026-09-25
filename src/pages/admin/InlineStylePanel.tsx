@@ -1,12 +1,33 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw, Underline, Eraser } from "lucide-react";
 import { readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
 
 const COLOURS = [
   ["Ink", "ink"], ["Stone", "stone"], ["Garnet", "garnet"], ["Tan", "brass"], ["White", "cream"],
 ] as const;
 const WEIGHTS = [["Light", "300"], ["Regular", "400"], ["Medium", "500"], ["Bold", "700"]] as const;
+
+const FONTS = [["Serif · Cormorant Garamond", "'Cormorant Garamond', Georgia, serif"], ["Sans · site body", "Inter, system-ui, sans-serif"], ["Georgia", "Georgia, serif"], ["Monospace", "ui-monospace, monospace"]] as const;
+
+/** Resolve a brand colour token to a plain colour the browser's editing commands accept. */
+const resolveColour = (token: string) => {
+  const probe = document.createElement("span");
+  probe.style.color = `hsl(var(--nova-${token}))`;
+  document.body.appendChild(probe);
+  const c = getComputedStyle(probe).color;
+  probe.remove();
+  return c;
+};
+
+/** Style only the highlighted words inside the text being edited. */
+function styleSelection(el: HTMLElement, cmd: string, value?: string) {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !sel.rangeCount || !el.contains(sel.getRangeAt(0).commonAncestorContainer)) return false;
+  document.execCommand("styleWithCSS", false, "true");
+  document.execCommand(cmd, false, value);
+  return true;
+}
 
 const px = (v: string) => (v ? `${v}px` : "");
 const num = (v?: string) => (v ? String(parseFloat(v)) : "");
@@ -43,6 +64,50 @@ export default function InlineStylePanel({
     onChange(out);
   };
   const label = "text-[11px] font-medium uppercase tracking-wide text-muted-foreground";
+
+  if (sel.kind === "divider") {
+    const r = sel.el.getBoundingClientRect();
+    const vertical = r.height > r.width;
+    return (
+      <div className="space-y-4">
+        <p className="text-sm font-medium">Divider line</p>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="space-y-1"><span className={label}>{vertical ? "Height" : "Length"} (px)</span>
+            <Input type="number" min={4} placeholder={String(Math.round(vertical ? r.height : r.width))}
+              value={num(style[vertical ? "height" : "width"])} onChange={(e) => set(vertical ? "height" : "width", px(e.target.value))} />
+          </label>
+          <label className="space-y-1"><span className={label}>Thickness (px)</span>
+            <Input type="number" min={1} max={12} placeholder={String(Math.max(1, Math.round(vertical ? r.width : r.height)))}
+              value={num(style[vertical ? "width" : "height"])} onChange={(e) => set(vertical ? "width" : "height", px(e.target.value))} />
+          </label>
+        </div>
+        <div className="space-y-1">
+          <span className={label}>Colour</span>
+          <div className="flex gap-2">
+            {COLOURS.map(([l, c]) => {
+              const v = `hsl(var(--nova-${c}))`;
+              return (
+                <button key={c} type="button" title={l} aria-label={l} aria-pressed={style["background-color"] === v}
+                  onClick={() => set("background-color", style["background-color"] === v ? "" : v)}
+                  className={`h-7 w-7 rounded-full border ${style["background-color"] === v ? "ring-2 ring-ring ring-offset-2" : ""}`}
+                  style={{ background: v }} />
+              );
+            })}
+          </div>
+        </div>
+        <label className="space-y-1 block"><span className={label}>Space above and below (px)</span>
+          <Input type="number" min={0} placeholder="As designed" value={num(style["margin-top"])}
+            onChange={(e) => { const v = px(e.target.value); const next = { ...style }; if (v) { next["margin-top"] = v; next["margin-bottom"] = v; } else { delete next["margin-top"]; delete next["margin-bottom"]; } const out = { ...edits }; if (Object.keys(next).length) out[styleKey(sel.key)] = JSON.stringify(next); else delete out[styleKey(sel.key)]; onChange(out); }} />
+        </label>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => set("visibility", style.visibility ? "" : "hidden")}>
+            {style.visibility ? "Show line" : "Hide line"}
+          </Button>
+          <Button variant="ghost" size="sm" className="gap-2" onClick={reset}><RotateCcw className="w-4 h-4" /> Reset</Button>
+        </div>
+      </div>
+    );
+  }
 
   if (sel.kind === "image") {
     return (
@@ -95,6 +160,12 @@ export default function InlineStylePanel({
           <Button key={a} size="icon" variant={align === a ? "default" : "outline"} title={`Align ${a}`} onClick={() => set("text-align", a)}><Icon className="w-4 h-4" /></Button>
         ))}
       </div>
+      <label className="space-y-1 block"><span className={label}>Font</span>
+        <select className="h-10 w-full rounded-md border bg-background px-2 text-sm" value={style["font-family"] ?? ""} onChange={(e) => set("font-family", e.target.value)}>
+          <option value="">As designed</option>
+          {FONTS.map(([l, v]) => <option key={l} value={v}>{l}</option>)}
+        </select>
+      </label>
       <div className="grid grid-cols-2 gap-2">
         <label className="space-y-1"><span className={label}>Size (px)</span>
           <Input type="number" min={8} placeholder={num(computed.fontSize)} value={num(style["font-size"])} onChange={(e) => set("font-size", px(e.target.value))} />
@@ -124,6 +195,24 @@ export default function InlineStylePanel({
                 style={{ background: v }} />
             );
           })}
+        </div>
+      </div>
+      <div className="space-y-2 border-t pt-4">
+        <p className="text-sm font-medium">Selected words</p>
+        <p className="text-xs text-muted-foreground">Highlight some words in the text, then choose a style or colour for just those words.</p>
+        {/* onMouseDown keeps the highlighted words selected while clicking. */}
+        <div className="flex gap-1" onMouseDown={(e) => e.preventDefault()}>
+          <Button size="icon" variant="outline" title="Bold words" onClick={() => styleSelection(sel.el, "bold")}><Bold className="w-4 h-4" /></Button>
+          <Button size="icon" variant="outline" title="Italic words" onClick={() => styleSelection(sel.el, "italic")}><Italic className="w-4 h-4" /></Button>
+          <Button size="icon" variant="outline" title="Underline words" onClick={() => styleSelection(sel.el, "underline")}><Underline className="w-4 h-4" /></Button>
+          <Button size="icon" variant="outline" title="Clear word styles" onClick={() => styleSelection(sel.el, "removeFormat")}><Eraser className="w-4 h-4" /></Button>
+        </div>
+        <div className="flex gap-2" onMouseDown={(e) => e.preventDefault()}>
+          {COLOURS.map(([l, c]) => (
+            <button key={c} type="button" title={`${l} words`} aria-label={`${l} words`}
+              onClick={() => styleSelection(sel.el, "foreColor", resolveColour(c))}
+              className="h-7 w-7 rounded-full border" style={{ background: `hsl(var(--nova-${c}))` }} />
+          ))}
         </div>
       </div>
       <Button variant="ghost" size="sm" className="gap-2" onClick={reset}><RotateCcw className="w-4 h-4" /> Reset text style</Button>
