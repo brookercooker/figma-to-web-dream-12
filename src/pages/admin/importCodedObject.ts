@@ -733,7 +733,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     // Text laid over a picture brings the links and border lines laid over it too,
     // so everything on the photo stays on the photo, in reading order.
     if (overlaid && texts.some((t) => t.kind !== "divider") && picked.some((p) => centerInside(boxOf(p), box))) {
-      const items = texts.map((t, i) => ({ t, top: boxOf(picked[i]).top }));
+      const items = texts.map((t, i) => ({ t, top: boxOf(picked[i]).top, bx: boxOf(picked[i]) as Box | null }));
       for (const x of parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")])) {
         if (x === el || !isVisible(x) || consumed.has(x) || picked.includes(x) || x.closest("[data-import-skip],form")) continue;
         const xb = boxOf(x);
@@ -747,7 +747,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
           const variant = buttonKindOf(x) ?? "link";
           const s = styleOf(x, false);
           if (getComputedStyle(x).textDecorationLine.includes("underline")) s.underline = true;
-          items.push({ top: xb.top, t: {
+          items.push({ top: xb.top, bx: xb, t: {
             id: id(), kind: "button", text: label, style: s, align: visualAlign(x, el),
             button: { href: x.getAttribute("href") ?? "#", variant, ...(icon && svg ? { icon, iconSide: iconSideOf(svg, x) === "after" ? "after" : "before" } : {}) },
           } });
@@ -761,14 +761,20 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
           const pct = Math.round((xb.width / (box.width || 1)) * 100);
           const color = (b.color === "sand" ? "hsl(var(--nova-sand))" : b.color) as TextColor;
           const mk = (): ImageText => ({ id: id(), kind: "divider", text: "", divider: { color, thickness: b.width, ...(pct >= 97 ? { width: "full" as const } : { widthPct: Math.max(2, pct) }) } });
-          if (b.top) items.push({ top: xb.top - 0.5, t: mk() });
-          if (b.bottom) items.push({ top: xb.bottom, t: mk() });
+          if (b.top) items.push({ top: xb.top - 0.5, bx: null, t: mk() });
+          if (b.bottom) items.push({ top: xb.bottom, bx: null, t: mk() });
           if (b.top || b.bottom) consumedRules.add(x);
           void cs;
         }
       }
-      items.sort((a, b) => a.top - b.top);
-      texts.splice(0, texts.length, ...items.map((i) => i.t));
+      items.sort((a, b) => (a.bx && b.bx && vOverlap(a.bx, b.bx) > 0.3 ? a.bx.left - b.bx.left : a.top - b.top));
+      // Items sharing a line with the one before them stay on that line.
+      const byRow = [...items];
+      for (let i = 1; i < byRow.length; i++) {
+        const a = byRow[i - 1].bx, b = byRow[i].bx;
+        if (a && b && vOverlap(a, b) > 0.3 && b.left >= a.right - 2) byRow[i].t.inline = true;
+      }
+      texts.splice(0, texts.length, ...byRow.map((i) => i.t));
     }
     // A line on its own is not a caption; leave it for the block.
     if (texts.some((t) => t.kind !== "divider")) {

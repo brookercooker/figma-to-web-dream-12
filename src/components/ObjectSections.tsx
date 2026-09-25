@@ -277,6 +277,26 @@ export interface ImageText {
   padY?: number;
   /** extra space left/right of this item (px, may be negative) */
   padX?: number;
+  /** sits on the same line as the item before it (spread across the row) */
+  inline?: boolean;
+}
+
+/** Renders picture wording, putting items marked inline on one row with the item before them. */
+function groupInline(texts: ImageText[], render: (t: ImageText, ti: number) => React.ReactNode): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let row: { key: string; nodes: React.ReactNode[] } | null = null;
+  texts.forEach((t, ti) => {
+    const node = render(t, ti);
+    const nextInline = !!texts[ti + 1]?.inline;
+    if (t.inline && row) { row.nodes.push(node); }
+    else if (nextInline) { row = { key: t.id, nodes: [node] }; }
+    else { out.push(node); row = null; return; }
+    if (!nextInline && row) {
+      out.push(<div key={`row-${row.key}`} className="mt-3 flex w-full flex-wrap items-end justify-between gap-x-6 gap-y-2 [&>*]:!mt-0">{row.nodes}</div>);
+      row = null;
+    }
+  });
+  return out;
 }
 
 export const IMAGE_TEXT_DEFAULTS: Record<
@@ -1539,7 +1559,7 @@ function FreeFigureBody({
           {...richText(image.caption)}
         />
       ) : null}
-      {texts.map((t, ti) => {
+      {groupInline(texts, (t, ti) => {
         const d = IMAGE_TEXT_DEFAULTS[t.kind];
         const ts = t.kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style;
         const fallback = { color: onDark ? ("cream" as TextColor) : d.color, size: d.size };
@@ -2126,7 +2146,7 @@ function OverlayImageTexts({
   const blockAlign: SectionAlign = section.align ?? "left";
   return (
     <>
-      {texts.map((t, ti) => {
+      {groupInline(texts, (t, ti) => {
         const d = IMAGE_TEXT_DEFAULTS[t.kind];
         const ts = t.kind === "eyebrow" ? withEyebrowDefaults(t.style) : t.style;
         const fallback = { color: "cream" as TextColor, size: d.size };
