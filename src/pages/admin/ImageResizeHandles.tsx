@@ -84,12 +84,11 @@ export default function ImageResizeHandles({
     const move = (ev: PointerEvent) => {
       const size: { imageHeightPx?: number; imageWidthPx?: number } = {};
       let widthPct: number | undefined;
-      if (dx) {
-        const w = Math.max(24, startW + dx * (ev.clientX - startX));
-        size.imageWidthPx = w;
-        if (hostWidth > 0) widthPct = (w / hostWidth) * 100;
-      }
-      if (dy) size.imageHeightPx = Math.max(24, startH + dy * (ev.clientY - startY));
+      // The side not being dragged stays exactly as it was.
+      const w = dx ? Math.max(24, startW + dx * (ev.clientX - startX)) : startW;
+      size.imageWidthPx = w;
+      if (dx && hostWidth > 0) widthPct = (w / hostWidth) * 100;
+      size.imageHeightPx = dy ? Math.max(24, startH + dy * (ev.clientY - startY)) : startH;
       onResize(rect.groupKey, size, { part: rect.part, widthPct });
       // keep the handles glued to the picture while it is being dragged
       setRects((prev) =>
