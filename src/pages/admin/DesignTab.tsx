@@ -271,6 +271,8 @@ export default function DesignTab() {
   const savedBlocks = useMemo(() => parseBlocks(page?.content), [page?.content]);
 
   useEffect(() => {
+    // Wait for the page to load so a "mode=edit" link isn't used up early.
+    if (!page) return;
     const parsed = parseBlocks(page?.content);
     setBlocks(parsed);
     setActiveId("");
