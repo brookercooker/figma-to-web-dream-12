@@ -1015,6 +1015,16 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const v = near((b) => b.top) ? "top" : near((b) => b.bottom) ? "bottom" : near((b) => (b.top + b.bottom) / 2) ? "middle" : "top";
     for (const c of cols) for (const part of c.parts) vAligns[part] = v;
   }
+  // A short rule beside wording (a line before an eyebrow) gets a column sized
+  // to the rule itself, and fills that column.
+  dividers.forEach((d, i) => {
+    const part = `divider:${i}`;
+    if (!laid.flows[part]) return;
+    const box = textBoxes.find((t) => t.part === part)?.box;
+    const px = box?.width ?? 0;
+    dividers[i] = { ...d, width: "full", widthPct: undefined };
+    if (px && nodeWidth) widths[part] = Math.max(3, Math.round(((px + 24) / nodeWidth) * 100));
+  });
   if (Object.keys(widths).length) base.flowWidths = widths; else delete base.flowWidths;
   if (Object.keys(vAligns).length) {
     base.flowVAligns = vAligns;
