@@ -1078,6 +1078,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         const acs = getComputedStyle(anc);
         const l = r.left + (parseFloat(acs.paddingLeft) || 0), rr = r.right - (parseFloat(acs.paddingRight) || 0);
         if (first.box.left - l < 8 && rr - last.box.right < 8 && used < (rr - l) * 0.8) inner = new DOMRect(l, r.top, rr - l, r.height);
+        else if (nodeWidth && rr - l < nodeWidth * 0.9 && rr - l > 0) {
+          // A row inside a narrower column is drawn inside that column, so its
+          // widths are measured against the column, not the whole block.
+          const k = nodeWidth / (rr - l);
+          for (const c of cols) for (const part of c.parts) if (widths[part]) widths[part] = Math.min(100, Math.round(widths[part] * k));
+        }
       }
     }
     if (inner && nodeWidth) {
