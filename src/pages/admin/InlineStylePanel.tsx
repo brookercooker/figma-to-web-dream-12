@@ -142,7 +142,7 @@ export default function InlineStylePanel({
           </div>
         </div>
         <label className="space-y-1 block"><span className={label}>Space above and below (px)</span>
-          <Input type="number" min={0} placeholder="As designed" value={num(style["margin-top"])}
+          <Input type="number" min={0} placeholder="Default" value={num(style["margin-top"])}
             onChange={(e) => { const v = px(e.target.value); const next = { ...style }; if (v) { next["margin-top"] = v; next["margin-bottom"] = v; } else { delete next["margin-top"]; delete next["margin-bottom"]; } const out = { ...edits }; if (Object.keys(next).length) out[styleKey(sel.key)] = JSON.stringify(next); else delete out[styleKey(sel.key)]; onChange(out); }} />
         </label>
         <div className="flex gap-2">
@@ -242,7 +242,7 @@ export default function InlineStylePanel({
       </div>
       <label className="space-y-1 block"><span className={label}>Font</span>
         <select className="h-10 w-full rounded-md border bg-background px-2 text-sm" value={style["font-family"] ?? ""} onChange={(e) => apply("font-family", e.target.value)}>
-          <option value="">As designed</option>
+          <option value="">Default</option>
           {FONTS.map(([l, v]) => <option key={l} value={v}>{l}</option>)}
         </select>
       </label>
@@ -258,7 +258,7 @@ export default function InlineStylePanel({
         </label>
         <label className="space-y-1"><span className={label}>Weight</span>
           <select className="h-10 w-full rounded-md border bg-background px-2 text-sm" value={style["font-weight"] ?? ""} onChange={(e) => apply("font-weight", e.target.value)}>
-            <option value="">As designed</option>
+            <option value="">Default</option>
             {WEIGHTS.map(([l, v]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </label>
