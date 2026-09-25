@@ -292,7 +292,7 @@ export default function DesignTab() {
     // Newly created pages start empty, with the site header and footer around them.
     setHasExisting(!parsed.length && !!page && canIframe(page.path));
     setCurrentFirst(true);
-    setQuick(wantEdit && inPlace);
+    setQuick(wantEdit && inPlace); console.log("DBG", wantEdit, inPlace, parsed.length);
     setInlineSel(null);
     setFoldedChunks(new Set());
     setInlineEdits(page?.inline_edits ?? {});
