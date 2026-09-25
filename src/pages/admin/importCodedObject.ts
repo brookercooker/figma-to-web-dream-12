@@ -870,7 +870,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       }
       order.push("button");
       keepFlow("button", el);
-      partAligns.button = alignOf(el.parentElement ?? el);
+      { const jc = el.parentElement ? getComputedStyle(el.parentElement).justifyContent : ""; partAligns.button = /end|right/.test(jc) ? "right" : jc === "center" ? "center" : alignOf(el.parentElement ?? el); }
       continue;
     }
 
@@ -1228,7 +1228,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     }
   }
 
-  const empty = !base.heading && !base.eyebrow && !base.body && !images.length && !extras.length;
+  const empty = !base.heading && !base.eyebrow && !base.body && !base.buttonLabel && !images.length && !extras.length;
   return empty ? null : base;
 }
 
