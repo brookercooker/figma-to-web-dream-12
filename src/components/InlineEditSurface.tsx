@@ -7,6 +7,12 @@ import { useEffect, useRef, type ReactNode } from "react";
 import DOMPurify from "dompurify";
 
 export type InlineEdits = Record<string, string>;
+export interface InlineSelection { key: string; kind: "text" | "image"; el: HTMLElement }
+/** Style overrides live under "style:<path>" as a JSON object of CSS properties. */
+export const styleKey = (key: string) => `style:${key}`;
+export const readStyle = (edits: InlineEdits, key: string): Record<string, string> => {
+  try { return JSON.parse(edits[styleKey(key)] ?? "{}"); } catch { return {}; }
+};
 
 const TEXT_TAGS = "h1,h2,h3,h4,h5,h6,p,li,a,button,span,blockquote,figcaption,dt,dd,label,small,em,strong";
 const BLOCKISH = /^(DIV|SECTION|ARTICLE|UL|OL|IMG|VIDEO|IFRAME|SVG|FORM|INPUT|TEXTAREA|SELECT|H[1-6]|P|LI|FIGURE|TABLE|NAV|HEADER|FOOTER|BUTTON)$/;
@@ -52,7 +58,20 @@ function editableTexts(root: Element): HTMLElement[] {
 /** Re-apply saved overrides whenever the page (re)renders. */
 function applyEdits(root: Element, edits: InlineEdits) {
   for (const [key, value] of Object.entries(edits)) {
-    if (key.startsWith("img:")) {
+    if (key.startsWith("style:")) {
+      const el = byPath(root, key.slice(6)) as HTMLElement | null;
+      if (!el) continue;
+      let obj: Record<string, string> = {};
+      try { obj = JSON.parse(value); } catch { /* ignore */ }
+      // Remove properties that were set before but have since been cleared.
+      (el.dataset.inlineStyled ?? "").split(",").filter(Boolean).forEach((prop) => {
+        if (!(prop in obj)) el.style.removeProperty(prop);
+      });
+      for (const [prop, v] of Object.entries(obj)) {
+        if (el.style.getPropertyValue(prop) !== v) el.style.setProperty(prop, v, "important");
+      }
+      el.dataset.inlineStyled = Object.keys(obj).join(",");
+    } else if (key.startsWith("img:")) {
       const el = byPath(root, key.slice(4));
       if (el instanceof HTMLImageElement && el.getAttribute("src") !== value) {
         el.src = value;
@@ -66,8 +85,10 @@ function applyEdits(root: Element, edits: InlineEdits) {
 }
 
 export default function InlineEditSurface({
-  children, edits, editing = false, onChange, onPickImage,
+  children, edits, editing = false, onChange, onPickImage, onSelect, selectedKey,
 }: {
+  onSelect?: (sel: InlineSelection | null) => void;
+  selectedKey?: string | null;
   children: ReactNode;
   edits: InlineEdits;
   editing?: boolean;
@@ -120,6 +141,13 @@ export default function InlineEditSurface({
   // Apply new overrides straight away (e.g. once loaded on the live site).
   useEffect(() => { if (ref.current) applyEdits(ref.current, edits); }, [edits]);
 
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    root.querySelectorAll("[data-inline-selected]").forEach((el) => el.removeAttribute("data-inline-selected"));
+    if (editing && selectedKey) byPath(root, selectedKey)?.setAttribute("data-inline-selected", "1");
+  });
+
   const onInput = (e: React.FormEvent) => {
     const root = ref.current;
     const el = (e.target as HTMLElement).closest<HTMLElement>("[data-inline-editable]");
@@ -132,13 +160,21 @@ export default function InlineEditSurface({
     const t = e.target as HTMLElement;
     // Links and buttons shouldn't navigate while editing.
     if (t.closest("a,button")) e.preventDefault();
+    const root = ref.current;
+    if (!root) return;
     const img = t.closest("img[data-inline-image]") as HTMLImageElement | null;
-    if (img && onPickImage && onChange && ref.current) {
+    if (img) {
       e.preventDefault();
       e.stopPropagation();
-      const url = await onPickImage(img.currentSrc || img.src);
-      if (url) onChange({ ...editsRef.current, [`img:${pathOf(ref.current, img)}`]: url });
+      if (onSelect) onSelect({ key: pathOf(root, img), kind: "image", el: img });
+      else if (onPickImage && onChange) {
+        const url = await onPickImage(img.currentSrc || img.src);
+        if (url) onChange({ ...editsRef.current, [`img:${pathOf(root, img)}`]: url });
+      }
+      return;
     }
+    const txt = t.closest<HTMLElement>("[data-inline-editable]");
+    onSelect?.(txt ? { key: pathOf(root, txt), kind: "text", el: txt } : null);
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
