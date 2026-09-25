@@ -229,9 +229,7 @@ export default function InlineStylePanel({
           <span>Changes apply to the highlighted words only.</span>
           <button type="button" className="underline" onMouseDown={(e) => e.preventDefault()} onClick={clearWords} title="Remove styles from these words"><Eraser className="inline h-3.5 w-3.5" /> Clear</button>
         </div>
-      ) : (
-        <p className="text-xs text-muted-foreground">Highlight words to style just those words.</p>
-      )}
+      ) : null}
       <div className="flex gap-1" onMouseDown={(e) => e.preventDefault()}>
         <Button size="icon" variant={bold ? "default" : "outline"} title="Bold" onClick={() => apply("font-weight", bold ? "400" : "700")}><Bold className="w-4 h-4" /></Button>
         <Button size="icon" variant={italic ? "default" : "outline"} title="Italic" onClick={() => (highlighted ? apply("font-style", italic ? "normal" : "italic") : toggle("font-style", "italic", italic))}><Italic className="w-4 h-4" /></Button>
