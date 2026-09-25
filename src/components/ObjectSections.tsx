@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import { useIsThumbnail } from "@/lib/thumbnail";
 /**
  * Shared section model + renderer for Objects built in the Object Design page.
@@ -1385,7 +1386,8 @@ function Pic({
   image: SectionImage; className: string;
   scrim?: ImageScrim; scrimStrength?: number; shadow?: ImageShadow;
 }) {
-  if (!image?.url) return <Placeholder className={className} />;
+  const [broken, setBroken] = useState<string | null>(null);
+  if (!image?.url || broken === image.url) return <Placeholder className={className} />;
   const href = image.href?.trim();
   const wash = scrimStyle(scrim, scrimStrength);
   const auto = /(^|\s)h-auto(\s|$)/.test(className);
@@ -1395,6 +1397,7 @@ function Pic({
       src={image.url}
       alt={image.alt || ""}
       loading="lazy"
+      onError={() => setBroken(image.url)}
       style={image.focus ? { objectPosition: image.focus } : undefined}
       className={`block w-full ${auto ? "h-auto" : "h-full"} object-cover transition-transform duration-700 ease-out will-change-transform group-hover/pic:scale-[1.04]`}
     />
@@ -2348,7 +2351,7 @@ export function SectionView({ section }: { section: Section }) {
         <div
           {...({ inert: "" } as object)}
           className="pointer-events-none select-none [&_*]:!opacity-100"
-          dangerouslySetInnerHTML={{ __html: section.html }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(section.html ?? "", { FORBID_TAGS: ["script"], FORBID_ATTR: ["srcdoc"] }) }}
         />
       );
 

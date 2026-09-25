@@ -1,6 +1,18 @@
 import ConfirmDialog from "./ConfirmDialog";
 import { Fragment, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+
+/** Wording without inline formatting tags, for plain text boxes. */
+function plainText(text?: string | null): string {
+  if (!text) return "";
+  return text
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -1413,7 +1425,19 @@ export default function ObjectDesignPage() {
     return (data ?? []) as ObjectRow[];
   };
 
-  useEffect(() => { load(); }, []);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { load().then(() => setLoaded(true)); }, []);
+
+  // A link to an object that no longer exists: say so and show the list.
+  useEffect(() => {
+    if (!loaded || !selectedId) return;
+    if (objects.some((o) => o.id === selectedId)) return;
+    toast.error("That object couldn't be found. Pick one from the list.");
+    const next = new URLSearchParams(params);
+    next.delete("object");
+    setParams(next, { replace: true });
+    setLibraryOpen(true);
+  }, [loaded, selectedId, objects]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const object = useMemo(
     () => objects.find((o) => o.id === selectedId) ?? null,
@@ -1466,6 +1490,11 @@ export default function ObjectDesignPage() {
     const next = new URLSearchParams(params);
     next.set("object", id);
     setParams(next, { replace: true });
+    // On small screens the list covers the editor: fold it away after picking.
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      setLibraryOpen(false);
+      window.scrollTo({ top: 0 });
+    }
   };
 
   // keep an editing panel expanded while its content is being changed
@@ -2448,7 +2477,7 @@ export default function ObjectDesignPage() {
                     <>
                       <Field label="Label">
                         <Input
-                          value={t.text}
+                          value={plainText(t.text)}
                           placeholder="Button label"
                           onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
                         />
@@ -2561,7 +2590,7 @@ export default function ObjectDesignPage() {
                     <>
                       <Textarea
                         rows={2}
-                        value={t.text}
+                        value={plainText(t.text)}
                         placeholder={`${kindLabel}…`}
                         onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
                       />
@@ -3166,7 +3195,7 @@ export default function ObjectDesignPage() {
 
 
             <Field label="Text">
-              <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
+              <Textarea rows={4} value={plainText(section.body)} onChange={(e) => patch(section.id, { body: e.target.value })} />
             </Field>
             <TextStyleFields
               label="Text style"
@@ -3304,7 +3333,7 @@ export default function ObjectDesignPage() {
                     <Field label={kindLabel}>
                       <Textarea
                         rows={kind === "text" ? 4 : 2}
-                        value={t.text}
+                        value={plainText(t.text)}
                         onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
                       />
                     </Field>
@@ -3893,7 +3922,7 @@ export default function ObjectDesignPage() {
 
         {parts.length ? null : (
           <p className="rounded-lg border border-dashed py-6 text-center text-xs text-muted-foreground">
-            Click anything above to change it, or add something new from the right.
+            Click anything above to change it, or add something new from the options below.
           </p>
         )}
 
@@ -3981,7 +4010,7 @@ export default function ObjectDesignPage() {
               <Input value={section.heading} onChange={(e) => patch(section.id, { heading: e.target.value })} />
             </Field>
             <Field label="Text (optional)">
-              <Textarea rows={3} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
+              <Textarea rows={3} value={plainText(section.body)} onChange={(e) => patch(section.id, { body: e.target.value })} />
             </Field>
             <TextStyleFields
               label="Heading style"
@@ -4069,7 +4098,7 @@ export default function ObjectDesignPage() {
               <Input value={section.heading} onChange={(e) => patch(section.id, { heading: e.target.value })} />
             </Field>
             <Field label="Text (optional)">
-              <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
+              <Textarea rows={4} value={plainText(section.body)} onChange={(e) => patch(section.id, { body: e.target.value })} />
             </Field>
             <TextStyleFields
               label="Heading style"
@@ -4881,8 +4910,8 @@ function CodedImportProbe({
       const root = ref.current;
       const loading = !root || root.querySelector(".animate-pulse") ||
         [...root.querySelectorAll("img")].some((i) => !i.complete);
-      if (loading && Date.now() - start < 4000) {
-        setTimeout(tick, 150);
+      if (loading && Date.now() - start < 1500) {
+        setTimeout(tick, 100);
         return;
       }
       await new Promise((r) => setTimeout(r, 200));
