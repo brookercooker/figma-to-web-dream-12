@@ -1077,7 +1077,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       }
     }
     if (inner && nodeWidth) {
-      const share = Math.max(5, Math.floor((inner.width / nodeWidth) * 100 / cols.length));
+      const share = Math.max(5, Math.floor(100 / cols.length) - 1);
       cols.forEach((c, ci) => {
         const a: SectionAlign = ci === 0 ? "left" : ci === cols.length - 1 ? "right" : "center";
         for (const part of c.parts) { widths[part] = share; partAligns[part] = a; }
