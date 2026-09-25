@@ -1082,8 +1082,16 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         else if (nodeWidth && rr - l < nodeWidth * 0.9 && rr - l > 0) {
           // A row inside a narrower column is drawn inside that column, so its
           // widths are measured against the column, not the whole block.
-          // Letting them share the column evenly keeps buttons from overlapping.
-          for (const c of cols) for (const part of c.parts) delete widths[part];
+          // Each piece keeps its own measured width within that column (the last
+          // one takes what is left), so buttons never overlap their neighbours.
+          const cw = rr - l + 24;
+          let used2 = 0;
+          cols.forEach((c, ci) => {
+            const last = ci === cols.length - 1;
+            const pct = last ? Math.max(10, 99 - used2) : Math.min(90, Math.ceil(((c.box.width + 24) / cw) * 100));
+            used2 += pct;
+            for (const part of c.parts) widths[part] = pct;
+          });
         }
       }
     }
