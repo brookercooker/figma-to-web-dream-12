@@ -35,6 +35,7 @@ const ObjectPreview = lazyRetry(() => import("./pages/admin/ObjectPreview.tsx"))
 const ObjectWorkspace = lazyRetry(() => import("./pages/admin/ObjectWorkspace.tsx"));
 const PageDesignPage = lazyRetry(() => import("./pages/admin/PageDesignPage.tsx"));
 const ObjectDesignPage = lazyRetry(() => import("./pages/admin/ObjectDesignPage.tsx"));
+const ObjectInPlaceEditor = lazyRetry(() => import("./pages/admin/ObjectInPlaceEditor.tsx"));
 const CapturePage = lazyRetry(() => import("./pages/admin/CapturePage.tsx"));
 
 const ComingSoonPage = lazyRetry(() => import("./pages/ComingSoonPage.tsx"));
@@ -56,6 +57,12 @@ const TermsConditionsPage = lazyRetry(() => import("./pages/TermsConditionsPage.
 const queryClient = new QueryClient();
 
 const RouteFallback = () => <div className="min-h-[60vh]" aria-hidden="true" />;
+
+/** Objects opened from a page section edit in place, looking exactly like the page. */
+function ObjectDesignRoute() {
+  const inplace = new URLSearchParams(useLocation().search).get("inplace") === "1";
+  return inplace ? <ObjectInPlaceEditor /> : <ObjectDesignPage />;
+}
 
 const AppShell = () => {
   const location = useLocation();
