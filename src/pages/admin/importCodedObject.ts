@@ -882,9 +882,9 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   if (Object.keys(laid.stacks).length) base.stacks = laid.stacks;
 
   // Rows keep their spread (title far left, button far right) and vertical alignment.
-  const nb = node.getBoundingClientRect();
-  const cLeft = nb.left + (parseFloat(ncs.paddingLeft) || 0);
-  const cRight = nb.right - (parseFloat(ncs.paddingRight) || 0);
+  const rowNb = node.getBoundingClientRect();
+  const cLeft = rowNb.left + (parseFloat(ncs.paddingLeft) || 0);
+  const cRight = rowNb.right - (parseFloat(ncs.paddingRight) || 0);
   const vAligns: Record<string, "top" | "middle" | "bottom"> = {};
   for (const cols of laid.rows) {
     const first = cols[0], last = cols[cols.length - 1];
