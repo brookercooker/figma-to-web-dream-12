@@ -724,7 +724,7 @@ export default function DesignTab() {
                     </div>
                   ) : (
                     <div className="bg-muted/40 py-4">
-                      <DeviceFrame title={`${page.name} preview`} className="block h-[70vh] border bg-background shadow-sm" >
+                      <DeviceFrame title={`${page.name} preview`} className="block h-[70vh] border bg-background shadow-sm" style={deviceStyle}>
                         <InlinePagePreview name={page.name} blocks={savedBlocks} />
                       </DeviceFrame>
                     </div>

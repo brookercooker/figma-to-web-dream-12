@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 export type Device = "desktop" | "tablet" | "phone";
@@ -8,7 +8,7 @@ export const DEVICE_WIDTH: Record<Device, number | null> = { desktop: null, tabl
  * Renders children inside a same-origin iframe so the site's screen-size
  * rules respond to the frame width (true tablet / phone layout).
  */
-export function DeviceFrame({ children, className, title }: { children: ReactNode; className?: string; title: string }) {
+export function DeviceFrame({ children, className, title, style }: { children: ReactNode; className?: string; title: string; style?: React.CSSProperties }) {
   const [frame, setFrame] = useState<HTMLIFrameElement | null>(null);
   const [body, setBody] = useState<HTMLElement | null>(null);
 
@@ -35,7 +35,7 @@ export function DeviceFrame({ children, className, title }: { children: ReactNod
   }, [frame]);
 
   return (
-    <iframe ref={setFrame} title={title} className={className}>
+    <iframe ref={setFrame} title={title} className={className} style={style}>
       {body && createPortal(children, body)}
     </iframe>
   );
