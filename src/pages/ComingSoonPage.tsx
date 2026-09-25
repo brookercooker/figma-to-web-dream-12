@@ -1,3 +1,4 @@
+import { inEditorPreview } from "@/lib/editorPreview";
 import { useEffect } from "react";
 
 const BLOG_URL =
@@ -54,7 +55,7 @@ export const PENDING_SUPERNOVA_ROUTES: { group: string; routes: string[] }[] = [
 
 const ComingSoonPage = () => {
   useEffect(() => {
-    window.location.replace(BLOG_URL);
+    if (!inEditorPreview()) window.location.replace(BLOG_URL);
   }, []);
 
   return (
