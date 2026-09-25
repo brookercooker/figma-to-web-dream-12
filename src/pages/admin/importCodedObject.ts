@@ -701,6 +701,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       if (!cardAlign) cardAlign = visualAlign(leaves[0].el, card);
       const texts = leaves.map((l) => {
         consumed.add(l.el);
+        if (ruleEls.has(l.el)) return { ...ruleTextOf(l.el, card), align: cardAlign as SectionAlign };
         return { ...imageTextOf(l.el, clean(l.el.innerText || l.el.textContent)), align: cardAlign as SectionAlign };
       });
       attached.set(img, texts);
@@ -711,10 +712,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (attached.has(el)) continue;
     const box = boxOf(el);
     const texts: ImageText[] = [];
+    const picked: HTMLElement[] = [];
     for (const leaf of textLeaves) {
       if (consumed.has(leaf.el) || leaf.el === el) continue;
-      const text = clean(leaf.el.innerText || leaf.el.textContent);
-      if (!text) continue;
+      const rule = ruleEls.has(leaf.el);
+      const text = rule ? "" : clean(leaf.el.innerText || leaf.el.textContent);
+      if (!text && !rule) continue;
       const over = centerInside(leaf.box, box);
       const below = leaf.box.top >= box.bottom - 4 && leaf.box.top < box.bottom + 96;
       const above = leaf.box.bottom <= box.top + 4 && leaf.box.bottom > box.top - 96;
@@ -723,11 +726,17 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         hOverlap(leaf.box, box) > 0.6 &&
         (leaf.el.parentElement === el.parentElement || !!el.parentElement?.contains(leaf.el));
       if (!over && !near) continue;
-      if (over) overlaid = overlaid ?? leaf.el;
-      texts.push(imageTextOf(leaf.el, text));
-      consumed.add(leaf.el);
+      if (over && !rule) overlaid = overlaid ?? leaf.el;
+      texts.push(rule ? ruleTextOf(leaf.el, el) : imageTextOf(leaf.el, text));
+      picked.push(leaf.el);
     }
-    if (texts.length) attached.set(el, texts);
+    // A line on its own is not a caption; leave it for the block.
+    if (texts.some((t) => t.kind !== "divider")) {
+      for (const p of picked) consumed.add(p);
+      attached.set(el, texts);
+    } else {
+      for (const p of picked) consumedRules.delete(p);
+    }
   }
 
   // A short label living in the same card as a single picture is that picture's
@@ -740,7 +749,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       const label = clean(card.innerText || card.textContent);
       if (!label || label.length > 120) continue;
       const leaves = textLeaves.filter(
-        (leaf) => card?.contains(leaf.el) && !consumed.has(leaf.el) && !el.contains(leaf.el),
+        (leaf) => card?.contains(leaf.el) && !consumed.has(leaf.el) && !el.contains(leaf.el) && !ruleEls.has(leaf.el),
       );
       if (!leaves.length || leaves.length > 2) continue;
       const texts = leaves.map((leaf) => {
