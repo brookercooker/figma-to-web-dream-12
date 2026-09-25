@@ -2025,7 +2025,7 @@ function FreeText({
                   style={{ ...(flowWidthStyle(w) ?? {}) }}
                 >
                   <div
-                    className={`flex h-full w-full flex-col gap-4 ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]}`}
+                    className={`flex h-full flex-col gap-4 ${col.items.some((ci) => ci.part.startsWith("divider:")) ? "w-full" : ""} ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]}`}
                     style={cardStyle(section.cards?.[cardKeyOf(section, it.part)])}
                 >
                   {col.items.map((ci) => (
