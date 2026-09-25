@@ -993,7 +993,11 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const nw = nr.width || 1;
     const addRule = (color: string | undefined, thickness: number, box: Box) => {
       if (dividers.some((d, i) => { const b = textBoxes.find((t) => t.part === `divider:${i}`)?.box; return b && Math.abs(b.top - box.top) < 3 && hOverlap(b, box) > 0.8; })) return;
-      const pct = Math.round((box.width / nw) * 100);
+      // Measured against the column it sits in (text starting at the same left edge),
+      // since a line inside a side column is drawn inside that column.
+      const colRight = Math.max(box.right, ...textBoxes.filter((t) => Math.abs(t.box.left - box.left) < 6).map((t) => t.box.right));
+      const colW = Math.abs(box.left - (nr.left + (parseFloat(getComputedStyle(node).paddingLeft) || 0))) > 24 ? Math.min(nw, colRight - box.left) : nw;
+      const pct = Math.round((box.width / (colW || nw)) * 100);
       if (color === "sand") color = "hsl(var(--nova-sand))";
       dividers.push({ id: id(), color: color as TextColor | undefined, thickness: Math.max(1, Math.round(thickness)), ...(pct >= 97 ? { width: "full" as const } : { widthPct: Math.max(2, pct) }) });
       const part = `divider:${dividers.length - 1}`;
