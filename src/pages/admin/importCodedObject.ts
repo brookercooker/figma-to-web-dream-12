@@ -371,6 +371,16 @@ function layoutRows(
   return { flows, widths, stacks, order, rows: rowsOut };
 }
 
+/** Short wording drawn with only a bottom rule under it — reads as a link. */
+function isUnderlinedLink(el: HTMLElement): boolean {
+  const label = (el.textContent ?? "").replace(/\s+/g, " ").trim();
+  if (!label || label.length > 40 || el.querySelector("p,h1,h2,h3,h4,h5,h6,img")) return false;
+  const cs = getComputedStyle(el);
+  const bottom = parseFloat(cs.borderBottomWidth) > 0 && cs.borderBottomStyle !== "none";
+  const top = parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== "none";
+  return bottom && !top && cs.display !== "block";
+}
+
 /** Solid, outlined or plain-link look of a link or button — null when it's just text. */
 function buttonKindOf(el: HTMLElement): "solid" | "outline" | "link" | null {
   const cs = getComputedStyle(el);
@@ -704,6 +714,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   const iconTaken = new Set<Element>();
   for (const svg of all.filter((e) => e.tagName.toLowerCase() === "svg")) {
     if (svg.closest("a,button")) continue;
+    // Icons inside an underlined link travel with that link.
+    { let p = svg.parentElement; let hit = false; while (p && p !== node) { if (p.tagName === "SPAN" && isUnderlinedLink(p)) { hit = true; break; } p = p.parentElement; } if (hit) continue; }
     const name = iconNameOf(svg);
     const parent = svg.parentElement;
     if (!name || !parent) continue;
@@ -811,10 +823,37 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
 
     // Spans inside a paragraph or heading belong to that text, not their own.
     if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6")) continue;
+    // Spans inside an underlined link belong to that link.
+    if (tag === "span" && el.parentElement?.closest("span") && (() => { let p = el.parentElement; while (p && p !== node) { if (p.tagName === "SPAN" && isUnderlinedLink(p)) return true; p = p.parentElement; } return false; })()) continue;
     // Skip wrappers that hold other text so copy is not duplicated.
     if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) continue;
     const plain = clean(el.innerText || el.textContent);
     if (!plain || seenText.has(plain)) continue;
+
+    // An underlined call-to-action ("Watch the film →") inside a clickable card
+    // stays a link-style button with its icon and underline.
+    if (tag === "span" && isUnderlinedLink(el)) {
+      seenText.add(plain);
+      const svg = el.querySelector("svg");
+      const icon = svg ? iconNameOf(svg) ?? "arrowRight" : undefined;
+      const href = el.closest("a")?.getAttribute("href") ?? "#";
+      if (!base.buttonLabel) {
+        base.buttonLabel = plain;
+        base.buttonHref = href;
+        base.buttonVariant = "link";
+        base.labelStyle = { ...styleOf(el, false), underline: true };
+        if (icon && svg) { base.buttonIcon = icon; base.buttonIconSide = iconSideOf(svg, el); }
+        order.push("button");
+        keepFlow("button", el);
+        partAligns.button = alignOf(el.parentElement ?? el);
+      } else {
+        extras.push({ id: id(), text: plain, kind: "text", style: { ...styleOf(el, false), underline: true }, ...(icon && svg ? { icon, iconSide: iconSideOf(svg, el) } : {}) });
+        const part = `text:${extras.length - 1}`;
+        order.push(part);
+        keepFlow(part, el);
+      }
+      continue;
+    }
     // A carousel's own counter ("2 / 14") beside its play button is replaced by the editor's controls.
     if (repeatingCards.length >= 3 && (/^\d+\s*(\/|of|—|–|-)\s*\d+$/i.test(plain) || (/^(\d{1,3}|\/|of)$/i.test(plain) && !!el.closest("div")?.parentElement?.querySelector("button")))) continue;
     seenText.add(plain);
@@ -896,9 +935,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       order.push(part);
       textBoxes.push({ part, box });
     };
-    const els = parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]);
+    // Scan the whole object, not just the text pieces, so short accent rules
+    // beside an eyebrow and border lines on wrappers are found too.
+    const els = [...new Set([...parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]), ...node.querySelectorAll<HTMLElement>("*")])];
     for (const el of els) {
       if (el.closest("[data-import-skip],button,a,svg,form")) continue;
+      if (el.tagName === "SPAN" && isUnderlinedLink(el)) continue;
       const r = el.getBoundingClientRect();
       if (r.width < 16) continue;
       const cs = getComputedStyle(el);
