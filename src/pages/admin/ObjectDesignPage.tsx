@@ -11,7 +11,7 @@ import {
   ArrowLeft, MoreHorizontal, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
-  LayoutGrid, GalleryHorizontal, MoveHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
+  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
   Video as VideoIcon, Minus, Link as LinkIcon, Copy, PanelLeftClose, PanelLeftOpen,
   PanelTop, PanelBottom,
   Monitor, Tablet, Smartphone,
@@ -33,7 +33,6 @@ import ImageResizeHandles from "./ImageResizeHandles";
 import TextResizeHandles, { isTextPart } from "./TextResizeHandles";
 import VideoPickerDialog from "./VideoPickerDialog";
 import ObjectMiniPreview from "./ObjectMiniPreview";
-import { vendorNames } from "@/data/vendors";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -3432,9 +3431,6 @@ export default function ObjectDesignPage() {
         imageScrimStrength: own.imageScrimStrength ?? section.imageScrimStrength,
         imageShadow: own.imageShadow ?? section.imageShadow,
         carouselControls: own.carouselControls ?? section.carouselControls,
-        marqueeDir: own.marqueeDir ?? section.marqueeDir,
-        marqueeSpeed: own.marqueeSpeed ?? section.marqueeSpeed,
-        marqueePause: own.marqueePause ?? section.marqueePause,
       };
       const patchGroup = (v: Partial<typeof eff>) =>
         patch(section.id, {
@@ -3670,43 +3666,11 @@ export default function ObjectDesignPage() {
                         options={[
                           { value: "grid" as const, label: "Grid", icon: LayoutGrid },
                           { value: "carousel" as const, label: "Carousel", icon: GalleryHorizontal },
-                          { value: "marquee" as const, label: "Scrolling strip", icon: MoveHorizontal },
                         ]}
                         onChange={(v) => patchGroup({ gallery: v })}
                       />
                     </div>
                   </Field>
-                  {eff.gallery === "marquee" && (
-                    <>
-                      <Field label="Direction">
-                        <div>
-                          <Choice
-                            value={eff.marqueeDir ?? "left"}
-                            options={[{ value: "left" as const, label: "Left" }, { value: "right" as const, label: "Right" }]}
-                            onChange={(v) => patchGroup({ marqueeDir: v })}
-                          />
-                        </div>
-                      </Field>
-                      <Field label="Speed">
-                        <div>
-                          <Choice
-                            value={eff.marqueeSpeed ?? "medium"}
-                            options={[{ value: "slow" as const, label: "Slow" }, { value: "medium" as const, label: "Medium" }, { value: "fast" as const, label: "Fast" }]}
-                            onChange={(v) => patchGroup({ marqueeSpeed: v })}
-                          />
-                        </div>
-                      </Field>
-                      <Field label="Pause on hover">
-                        <div>
-                          <Choice
-                            value={eff.marqueePause === false ? "off" : "on"}
-                            options={[{ value: "on" as const, label: "On" }, { value: "off" as const, label: "Off" }]}
-                            onChange={(v) => patchGroup({ marqueePause: v === "on" })}
-                          />
-                        </div>
-                      </Field>
-                    </>
-                  )}
                   {eff.gallery === "carousel" && (
                     <Field label="Show at once">
                       <div>
@@ -3726,20 +3690,6 @@ export default function ObjectDesignPage() {
             </div>
             </div>
             <div className="grid gap-3 grid-cols-1">
-              {eff.gallery === "marquee" && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const have = new Set(section.images.map((im) => (im.caption ?? "").toLowerCase()));
-                    const add = vendorNames.filter((n) => !have.has(n.toLowerCase())).map((n) => ({ url: "", alt: n, caption: n, group: groupKey || undefined }));
-                    patch(section.id, { images: [...section.images, ...add] });
-                  }}
-                >
-                  Add store brand names
-                </Button>
-              )}
               {group.items.map(({ image: img, index: i }) => (
                 <div key={i} data-inspector-part={`image:${i}`} className="scroll-mt-24">
                   {ImageEditor({ section, index: i, image: img, showCaption: true })}

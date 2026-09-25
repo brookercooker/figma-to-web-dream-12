@@ -372,11 +372,8 @@ export function imageGroupPart(key: number): string {
 
 /** Display settings that each image grid inside a block can set on its own. */
 export interface FreeImageGroupSettings {
-  gallery?: "grid" | "carousel" | "marquee";
+  gallery?: "grid" | "carousel";
   perView?: number;
-  marqueeDir?: "left" | "right";
-  marqueeSpeed?: "slow" | "medium" | "fast";
-  marqueePause?: boolean;
   imageHeight?: ImageHeight;
   imageHeightPx?: number;
   imageWidthPx?: number;
@@ -1040,10 +1037,7 @@ export interface FreeSection {
   /** how images sit relative to the text */
   layout: "stacked" | "beside" | "behind";
   imageSide: "left" | "right";
-  gallery: "grid" | "carousel" | "marquee";
-  marqueeDir?: "left" | "right";
-  marqueeSpeed?: "slow" | "medium" | "fast";
-  marqueePause?: boolean;
+  gallery: "grid" | "carousel";
   columns: 1 | 2 | 3 | 4;
   /** how many images show at once in carousel mode */
   perView?: number;
@@ -1764,58 +1758,11 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
   );
 }
 
-const MARQUEE_SECONDS = { slow: 6, medium: 3.5, fast: 1.8 } as const;
-
-function FreeMarquee({ section, onDark, items }: { section: FreeSection; onDark?: boolean; items: { image: SectionImage; index: number }[] }) {
-  const isThumb = useIsThumbnail();
-  const [hover, setHover] = useState(false);
-  const secs = Math.max(20, items.length * MARQUEE_SECONDS[section.marqueeSpeed ?? "medium"]);
-  const anim = section.marqueeDir === "right" ? "scroll-reverse" : "scroll";
-  const paused = isThumb || (hover && section.marqueePause !== false);
-  const h = section.imageHeightPx ?? 64;
-  return (
-    <div
-      className="relative overflow-hidden"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-    >
-      <div
-        className="flex w-max items-center gap-12 sm:gap-16"
-        style={{ animation: `${anim} ${secs}s linear infinite`, animationPlayState: paused ? "paused" : "running" }}
-      >
-        {[...items, ...items].map((e, i) => {
-          const body = e.image.url ? (
-            <img src={e.image.url} alt={e.image.alt || e.image.caption || ""} style={{ height: h }} className="w-auto object-contain" />
-          ) : (
-            <span className={`whitespace-nowrap font-serif text-lg font-semibold sm:text-xl ${onDark ? "text-cream/85" : "text-foreground/80"}`}>
-              {e.image.caption || e.image.alt || "Brand"}
-            </span>
-          );
-          return (
-            <div key={i} aria-hidden={i >= items.length || undefined} className="shrink-0 transition-opacity duration-300 hover:opacity-60">
-              {e.image.href && !isThumb ? <a href={e.image.href}>{body}</a> : body}
-            </div>
-          );
-        })}
-      </div>
-      {!onDark && (
-        <>
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-background to-transparent" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-background to-transparent" />
-        </>
-      )}
-    </div>
-  );
-}
-
 function FreeGallery({ section, onDark, items }: { section: FreeSection; onDark?: boolean; items?: { image: SectionImage; index: number }[] }) {
   const entries = items ?? section.images.map((image, index) => ({ image, index }));
   if (!entries.length) return null;
   if (section.gallery === "carousel") {
     return <FreeCarousel section={section} onDark={onDark} items={entries} />;
-  }
-  if (section.gallery === "marquee") {
-    return <FreeMarquee section={section} onDark={onDark} items={entries} />;
   }
 
   return (
