@@ -921,7 +921,7 @@ export interface ButtonSection {
 }
 
 /** Freeform block: a blank space you add text and images to. */
-export type FreeTextKind = "eyebrow" | "title" | "text" | "icon";
+export type FreeTextKind = "eyebrow" | "title" | "text" | "icon" | "button";
 
 export const FREE_TEXT_KINDS: { value: FreeTextKind; label: string }[] = [
   { value: "eyebrow", label: "Eyebrow" },
@@ -935,6 +935,8 @@ export interface FreeParagraph {
   /** what sort of text this is; defaults to a body paragraph */
   kind?: FreeTextKind;
   style?: TextStyle;
+  /** link settings when kind is "button" */
+  button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor };
   /** wording shown with the icon when kind is "icon" */
   iconLabel?: string;
   /** where the icon's wording sits */
@@ -1989,6 +1991,22 @@ function FreeText({
             {...richTextOrPlaceholder(t.text, editing)}
           />
         </TextWithIcon>
+      ) });
+      return;
+    }
+    if (kind === "button") {
+      items.push({ part, node: (
+        <div data-part={part} className="mt-2">
+          <SectionButton
+            label={t.text || "Button"}
+            href={t.button?.href || "#"}
+            variant={t.button?.variant ?? (onDark ? "outline" : "solid")}
+            style={t.style}
+            bg={t.button?.bg}
+            icon={t.icon}
+            iconSide={t.iconSide === "after" ? "after" : "before"}
+          />
+        </div>
       ) });
       return;
     }

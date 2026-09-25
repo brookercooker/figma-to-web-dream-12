@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   SectionEditing, partRotation, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, imageZoom, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, groupByFlow, flowWidthStyle, fitRowWidths, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
-  type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
+  type FreeDivider, type FreeParagraph, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type RowVAlign, type ImageHeight, type PartVAlign,
   type TextColor, type TextFont, type TextSize, type TextStyle,
   ContainedBgContext,
@@ -1598,7 +1598,7 @@ export default function ObjectDesignPage() {
 
 
 
-  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind; iconLabel?: string; iconLabelSide?: "before" | "after" | "above" | "below"; iconLabelAlign?: SectionAlign; icon?: string; iconSide?: "before" | "after" | "above" | "below" }) => {
+  const patchExtra = (id: string, index: number, changes: { text?: string; style?: TextStyle; kind?: FreeTextKind; iconLabel?: string; iconLabelSide?: "before" | "after" | "above" | "below"; iconLabelAlign?: SectionAlign; icon?: string; iconSide?: "before" | "after" | "above" | "below"; button?: FreeParagraph["button"] }) => {
     setSections((prev) =>
       prev.map((s) => {
         if (s.id !== id || s.type !== "free") return s;
@@ -1872,12 +1872,18 @@ export default function ObjectDesignPage() {
       openBlock(id, `divider:${at}`);
       return;
     }
+    const nextExtra = (s.extras ?? []).length;
     if (kind === "button") {
-      if (s.buttonLabel === undefined) patch(s.id, { buttonLabel: "Explore", buttonHref: "/" });
-      openBlock("button", "button");
+      if (s.buttonLabel === undefined) {
+        patch(s.id, { buttonLabel: "Explore", buttonHref: "/" });
+        openBlock("button", "button");
+      } else {
+        const id = newSectionId();
+        patch(s.id, { extras: [...(s.extras ?? []), { id, text: "Learn more", kind: "button" as const, button: { href: "/", variant: "outline" as const } }] });
+        openBlock(id, `text:${nextExtra}`);
+      }
       return;
     }
-    const nextExtra = (s.extras ?? []).length;
     if (kind === "eyebrow") {
       if (s.eyebrow === undefined) {
         patch(s.id, { eyebrow: "Since 1951" });
@@ -3255,8 +3261,8 @@ export default function ObjectDesignPage() {
         if (!t) return null;
         
           const kind = t.kind ?? "text";
-          const kindLabel = FREE_TEXT_KINDS.find((k) => k.value === kind)?.label ?? "Text";
-          const kindIcon = kind === "title" ? Heading : kind === "eyebrow" ? Tag : AlignLeft;
+          const kindLabel = kind === "button" ? "Button" : FREE_TEXT_KINDS.find((k) => k.value === kind)?.label ?? "Text";
+          const kindIcon = kind === "button" ? MousePointerClick : kind === "title" ? Heading : kind === "eyebrow" ? Tag : AlignLeft;
           const kindDefaults =
             kind === "title"
               ? { font: "serif" as const, color: "ink" as const, size: "xl" as const }
@@ -3273,6 +3279,7 @@ export default function ObjectDesignPage() {
             onDuplicate: () => duplicateExtra(section.id, i),
             children: (
               <>
+                {kind !== "button" && (
                 <Field label="Style preset">
                   <select
                     className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
@@ -3290,7 +3297,33 @@ export default function ObjectDesignPage() {
                     ))}
                   </select>
                 </Field>
-                {kind === "icon" ? (
+                )}
+                {kind === "button" ? (
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Button label">
+                        <Input value={t.text} onChange={(e) => patchExtra(section.id, i, { text: e.target.value })} />
+                      </Field>
+                      <Field label="Button link">
+                        <Input value={t.button?.href ?? ""} placeholder="/collections" onChange={(e) => patchExtra(section.id, i, { button: { ...t.button, href: e.target.value } })} />
+                      </Field>
+                    </div>
+                    <Field label="Button style">
+                      <div>
+                        <Choice
+                          value={t.button?.variant ?? "solid"}
+                          options={BUTTON_STYLE_OPTIONS}
+                          onChange={(v) => patchExtra(section.id, i, { button: { ...t.button, variant: v } })}
+                        />
+                      </div>
+                    </Field>
+                    <ButtonIconField
+                      icon={t.icon}
+                      side={t.iconSide === "after" ? "after" : "before"}
+                      onChange={(n) => patchExtra(section.id, i, { icon: n.icon, iconSide: n.iconSide })}
+                    />
+                  </>
+                ) : kind === "icon" ? (
                   <>
                     <IconPicker
                       value={t.text}
