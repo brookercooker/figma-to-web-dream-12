@@ -265,7 +265,7 @@
 /* Section bars while editing in place */
 .inline-edit-surface [data-inline-chunk] { position: relative; margin-top: 8px !important; padding-top: 40px !important; box-sizing: border-box; outline: 1px dashed hsl(var(--border)); outline-offset: 0; }
 .inline-edit-surface [data-inline-chunk]::before {
-  content: "\2807\00a0\00a0\25BE\00a0\00a0" attr(data-inline-chunk);
+  content: "\2807" "\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0" attr(data-inline-chunk);
   position: absolute; left: 0; right: 0; top: 0; height: 40px; z-index: 60;
   display: flex; align-items: center; padding: 0 14px;
   background: hsl(var(--muted)); color: hsl(var(--foreground));
@@ -274,12 +274,16 @@
   cursor: grab; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .inline-edit-surface [data-inline-chunk][data-inline-object]::before {
-  content: "\2807\00a0\00a0\25BE\00a0\00a0" attr(data-inline-chunk) "\00a0\00a0\00b7\00a0\00a0Shared object: " attr(data-inline-object) " \2014 changes apply everywhere it's used";
+  content: "\2807" "\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0" attr(data-inline-chunk) "\00a0\00a0\00b7\00a0\00a0Shared object: " attr(data-inline-object);
 }
-.inline-edit-surface [data-inline-chunk][data-inline-collapsed]::before { content: "\2807\00a0\00a0\25B8\00a0\00a0" attr(data-inline-chunk); border-bottom: 1px solid hsl(var(--border)); border-radius: 6px; }
-.inline-edit-surface [data-inline-chunk][data-inline-object][data-inline-collapsed]::before { content: "\2807\00a0\00a0\25B8\00a0\00a0" attr(data-inline-chunk) "\00a0\00a0\00b7\00a0\00a0Shared object: " attr(data-inline-object); }
+.inline-edit-surface [data-inline-chunk][data-inline-collapsed]::before { content: "\2807" "\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0" attr(data-inline-chunk); border-bottom: 1px solid hsl(var(--border)); border-radius: 6px; }
+.inline-edit-surface [data-inline-chunk][data-inline-object][data-inline-collapsed]::before { content: "\2807" "\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0\00a0" attr(data-inline-chunk) "\00a0\00a0\00b7\00a0\00a0Shared object: " attr(data-inline-object); }
 .inline-edit-surface [data-inline-collapsed] { height: 40px !important; min-height: 0 !important; padding-bottom: 0 !important; outline: none; overflow: visible !important; }
 .inline-edit-surface [data-inline-collapsed] > * { display: none !important; }
 .inline-edit-surface [data-inline-dragging] { opacity: .45; }
 .inline-edit-surface [data-inline-drop="before"] { box-shadow: 0 -3px 0 hsl(var(--ring)); }
 .inline-edit-surface [data-inline-drop="after"] { box-shadow: 0 3px 0 hsl(var(--ring)); }
+
+.inline-edit-surface [data-inline-chunk][data-inline-object]::before { padding-right: 200px; }
+.inline-edit-surface [data-inline-divider] { cursor: pointer; }
+.inline-edit-surface [data-inline-divider]:hover { outline: 2px solid hsl(var(--ring) / .6); outline-offset: 3px; }
