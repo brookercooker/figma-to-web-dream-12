@@ -4270,11 +4270,11 @@ export default function ObjectDesignPage() {
                 });
                 if (grp.length < 2) return cards[0];
                 return (
-                  <div key={`row-${grp[0][0].id}`} className="flex items-stretch gap-4">
+                  <div key={`row-${grp[0][0].id}`} className="-mx-2 flex items-stretch">
                     {cards.map((card, ci) => {
                       const s = grp[ci][0];
                       return (
-                        <div key={s.id} className={`min-w-0 [&>div]:h-full ${s.flowWidth ? "" : "flex-1 basis-0"}`} style={flowWidthStyle(s.flowWidth)}>
+                        <div key={s.id} className={`min-w-0 px-2 [&>div]:h-full ${s.flowWidth ? "" : "flex-1 basis-0"}`} style={flowWidthStyle(s.flowWidth)}>
                           {card}
                         </div>
                       );
