@@ -93,10 +93,11 @@ export function sanitizeInline(input: string): string {
     .replace(/&lt;(\/?)([a-zA-Z]+)\s*\/?&gt;/g, (m, slash: string, tag: string) =>
       ALLOWED_INLINE.test(tag) ? `<${slash}${tag.toLowerCase()}>` : m,
     )
-    .replace(/&lt;span((?:\s+data-(?:color|font)="[^"&<>]*")+)\s*&gt;/g, (_m, attrs: string) => {
+    .replace(/&lt;span((?:\s+data-(?:color|font|size)="[^"&<>]*")+)\s*&gt;/g, (_m, attrs: string) => {
       const color = /data-color="([^"]*)"/.exec(attrs)?.[1];
       const font = /data-font="([^"]*)"/.exec(attrs)?.[1];
-      return segmentSpanOpen(color, font);
+      const size = /data-size="([^"]*)"/.exec(attrs)?.[1];
+      return segmentSpanOpen(color, font, size);
     })
     .replace(/&lt;\/span&gt;/g, "</span>");
 }
@@ -109,14 +110,16 @@ export function segmentColorCss(color?: string): string | undefined {
 }
 
 /** Opening tag for a text segment with its own colour and/or font. */
-export function segmentSpanOpen(color?: string, font?: string): string {
+export function segmentSpanOpen(color?: string, font?: string, size?: string): string {
   const css = segmentColorCss(color);
   const f = font === "serif" || font === "sans" ? font : undefined;
+  const em = size && /^\d+(\.\d+)?$/.test(size) ? size : undefined;
   const attrs = [
     css ? `data-color="${color}"` : "",
     f ? `data-font="${f}"` : "",
     f ? `class="${f === "serif" ? "font-serif font-light" : "font-sans"}"` : "",
-    css ? `style="color:${css}"` : "",
+    em ? `data-size="${em}"` : "",
+    css || em ? `style="${[css ? `color:${css}` : "", em ? `font-size:${em}em` : ""].filter(Boolean).join(";")}"` : "",
   ].filter(Boolean).join(" ");
   return attrs ? `<span ${attrs}>` : "<span>";
 }
@@ -1182,7 +1185,7 @@ export const SECTION_ICONS: Record<string, LucideIcon> = {
   sparkles: Sparkles, truck: Truck, shield: ShieldCheck, award: Award, home: Home,
   sofa: Sofa, pen: PenTool, palette: Palette, camera: Camera, quote: Quote,
   check: Check, leaf: Leaf, droplets: Droplets, sun: Sun, moon: Moon, wrench: Wrench, flame: Flame, zap: Zap,
-  gift: Gift, users: Users, tag: Tag, globe: Globe, package: Package, settings: Settings, eye: Eye, info: Info,
+  gift: Gift, users: Users, tag: Tag, globe: Globe, package: Package, settings: Settings, eye: Eye, info: Info, plus: Plus, minus: Minus,
   arrowRight: ArrowRight, arrowLeft: ArrowLeft, arrowUp: ArrowUp, arrowDown: ArrowDown,
   arrowUpRight: ArrowUpRight, chevronRight: ChevronRight, chevronLeft: ChevronLeft, longArrow: MoveRight,
 };
@@ -2465,8 +2468,9 @@ export function cleanEditedHtml(html: string): string {
     let out = inner;
     const color = el.getAttribute("data-color");
     const font = el.getAttribute("data-font");
-    if (tag === "span" && (color || font) && inner) {
-      const a = [color ? ` data-color="${esc(color)}"` : "", font ? ` data-font="${esc(font)}"` : ""].join("");
+    const size = el.getAttribute("data-size");
+    if (tag === "span" && (color || font || size) && inner) {
+      const a = [color ? ` data-color="${esc(color)}"` : "", font ? ` data-font="${esc(font)}"` : "", size ? ` data-size="${esc(size)}"` : ""].join("");
       out = `<span${a}>${out}</span>`;
     }
     if (tag === "u" || /underline/.test(style)) out = `<u>${out}</u>`;

@@ -121,10 +121,12 @@ function richOf(el: HTMLElement): string | null {
     const underline = cs.textDecorationLine.includes("underline") && !base.textDecorationLine.includes("underline");
     const colorDiff = cs.color !== base.color;
     const fontDiff = serifOf(cs.fontFamily) !== serifOf(base.fontFamily);
-    if (colorDiff || fontDiff) {
+    const ratio = parseFloat(cs.fontSize) / (parseFloat(base.fontSize) || 1);
+    const sizeDiff = Math.abs(ratio - 1) > 0.12;
+    if (colorDiff || fontDiff || sizeDiff) {
       const color = colorDiff ? colorOf(cs.color) : undefined;
       const font = fontDiff ? (serifOf(cs.fontFamily) ? "serif" : "sans") : undefined;
-      const attrs = [color ? `data-color="${color}"` : "", font ? `data-font="${font}"` : ""].filter(Boolean).join(" ");
+      const attrs = [color ? `data-color="${color}"` : "", font ? `data-font="${font}"` : "", sizeDiff ? `data-size="${ratio.toFixed(2)}"` : ""].filter(Boolean).join(" ");
       if (attrs) { open += `<span ${attrs}>`; close = "</span>" + close; }
     }
     if (bold) { open += "<b>"; close = "</b>" + close; }
