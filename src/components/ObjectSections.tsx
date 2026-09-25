@@ -37,6 +37,8 @@ export interface TextStyle {
   trackingEm?: number;
   /** line height, as a multiple of the font size */
   lineHeight?: number;
+  /** vertical text: "down" reads top-to-bottom, "up" reads bottom-to-top */
+  vertical?: "up" | "down";
 }
 
 export const MIN_TEXT_PX = 10;
@@ -54,6 +56,10 @@ export function textInlineStyle(style: TextStyle | undefined): React.CSSProperti
   if (style?.uppercase) css.textTransform = "uppercase";
   if (style?.trackingEm) css.letterSpacing = `${style.trackingEm}em`;
   if (style?.lineHeight) css.lineHeight = style.lineHeight;
+  if (style?.vertical) {
+    css.writingMode = "vertical-rl";
+    if (style.vertical === "up") css.transform = "rotate(180deg)";
+  }
   if (style?.lines && style.lines > 0) {
     css.display = "-webkit-box";
     (css as Record<string, unknown>).WebkitLineClamp = style.lines;

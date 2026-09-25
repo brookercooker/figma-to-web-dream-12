@@ -198,6 +198,29 @@ function colorOf(value: string): TextColor | undefined {
   return hex(r, g, b);
 }
 
+/** Whether text (or a close wrapper) is turned sideways, and which way it reads. */
+function verticalOf(el: HTMLElement): "up" | "down" | undefined {
+  let turn = 0;
+  let wm: string | null = null;
+  for (let cur: HTMLElement | null = el, i = 0; cur && i < 4; cur = cur.parentElement, i += 1) {
+    const cs = getComputedStyle(cur);
+    if (!wm && cs.writingMode.startsWith("vertical") || cs.writingMode.startsWith("sideways")) wm = cs.writingMode;
+    const m = cs.transform.match(/^matrix\(([^)]+)\)/);
+    if (m) {
+      const [a, b] = m[1].split(",").map(Number);
+      turn += Math.round((Math.atan2(b, a) * 180) / Math.PI);
+    }
+  }
+  turn = ((turn % 360) + 360) % 360;
+  if (wm) {
+    const up = wm === "sideways-lr" ? turn !== 180 : turn === 180;
+    return up ? "up" : "down";
+  }
+  if (Math.abs(turn - 90) < 10) return "down";
+  if (Math.abs(turn - 270) < 10) return "up";
+  return undefined;
+}
+
 /** Font, exact size, color and bold/italic/underline, read from the rendered text. */
 function styleOf(el: HTMLElement, heading: boolean): TextStyle {
   const cs = getComputedStyle(el);
@@ -218,6 +241,7 @@ function styleOf(el: HTMLElement, heading: boolean): TextStyle {
       const fs = parseFloat(cs.fontSize) || 16;
       return Number.isFinite(ls) && Math.abs(ls) > 0.2 ? Math.round((ls / fs) * 1000) / 1000 : undefined;
     })(),
+    vertical: verticalOf(el),
     lineHeight: (() => {
       const lh = parseFloat(cs.lineHeight);
       const fs = parseFloat(cs.fontSize) || 16;
