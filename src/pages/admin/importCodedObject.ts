@@ -1387,6 +1387,10 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   } else if (images.length > 1 && imageBoxes.length) {
     const h = imageBoxes[0].bottom - imageBoxes[0].top;
     if (h > 24) base.imageHeightPx = Math.round(h);
+    // Pictures laid out over several rows keep the same number per row.
+    const top0 = imageBoxes[0].top;
+    const perRow = imageBoxes.filter((b) => Math.abs(b.top - top0) < Math.max(8, h / 2)).length;
+    if (perRow >= 1 && perRow < imageBoxes.length) base.imagesPerRow = perRow;
   } else if (images.length === 1 && imageBoxes[0] && nodeWidth) {
     // A single picture keeps its original size.
     const b = imageBoxes[0];

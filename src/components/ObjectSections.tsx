@@ -1041,6 +1041,8 @@ export interface FreeSection {
   layout: "stacked" | "beside" | "behind";
   imageSide: "left" | "right";
   gallery: "grid" | "carousel";
+  /** Pictures per row in a grid; extra pictures wrap onto new rows. */
+  imagesPerRow?: number;
   columns: 1 | 2 | 3 | 4;
   /** how many images show at once in carousel mode */
   perView?: number;
@@ -1770,17 +1772,23 @@ function FreeGallery({ section, onDark, items }: { section: FreeSection; onDark?
     return <FreeCarousel section={section} onDark={onDark} items={entries} />;
   }
 
-  return (
+  const per = section.imagesPerRow && section.imagesPerRow > 0 ? section.imagesPerRow : entries.length;
+  const rows: (typeof entries)[] = [];
+  for (let i = 0; i < entries.length; i += per) rows.push(entries.slice(i, i + per));
+  const row = (list: typeof entries, key: number) => (
     <div
+      key={key}
       className={`flex flex-nowrap items-start gap-6 ${alignRow[section.imageAlign ?? "left"]}`}
     >
-      {entries.map((e) => (
-        <figure key={e.index} className="basis-0 grow min-w-0">
+      {list.map((e) => (
+        <figure key={e.index} className="basis-0 grow min-w-0" style={per < entries.length ? { maxWidth: `calc((100% - ${(per - 1) * 1.5}rem) / ${per})` } : undefined}>
           <FreeFigureBody section={section} image={e.image} index={e.index} onDark={onDark} />
         </figure>
       ))}
     </div>
   );
+  if (rows.length === 1) return row(rows[0], 0);
+  return <div className="space-y-6">{rows.map((r, i) => row(r, i))}</div>;
 
 }
 
