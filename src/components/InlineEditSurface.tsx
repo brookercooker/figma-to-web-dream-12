@@ -70,7 +70,7 @@ function applyIcon(el: HTMLElement, value: string) {
   if (!Icon) return;
   const cls = old?.getAttribute("class") ?? "inline-block h-4 w-4 ml-2 align-[-2px]";
   const holder = document.createElement("span");
-  holder.innerHTML = renderToStaticMarkup(createElement(Icon, { className: cls, "aria-hidden": true }));
+  holder.innerHTML = renderToStaticMarkup(createElement(Icon as React.ComponentType<Record<string, unknown>>, { className: cls, "aria-hidden": true }));
   const svg = holder.firstElementChild as SVGElement;
   svg.setAttribute("data-inline-icon", value);
   if (old) old.replaceWith(svg); else el.appendChild(svg);
