@@ -300,6 +300,11 @@ export default function DesignTab() {
     if (type === "video") setVideoFor(block.id);
   };
 
+  const insertAt = (type: InsertType, at: number) => {
+    if (type === "object") { setObjectAt(at); setObjectFor("new"); return; }
+    addBlock(type, at);
+  };
+
   const move = (id: string, dir: -1 | 1) => {
     const i = blocks.findIndex((b) => b.id === id);
     if (i < 0) return;
@@ -783,6 +788,9 @@ export default function DesignTab() {
                           : ""
                       }`}
                     >
+                      {!dragId && <InsertGap edge="top" onAdd={(t) => insertAt(t, i)} />}
+                      {!dragId && i === blocks.length - 1 && <InsertGap edge="bottom" onAdd={(t) => insertAt(t, i + 1)} />}
+
                       <button
                         type="button"
                         title="Drag to move"
