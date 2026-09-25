@@ -4198,9 +4198,6 @@ export default function ObjectDesignPage() {
               >
                 <Trash2 className="w-4 h-4" /> Delete
               </Button>
-              <span className="inline-flex items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
-                <Save className="w-4 h-4" /> {saving || dirty ? "Saving…" : "All changes saved"}
-              </span>
             </div>
           )}
         </div>
