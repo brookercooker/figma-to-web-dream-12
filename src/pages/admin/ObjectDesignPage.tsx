@@ -4273,8 +4273,9 @@ export default function ObjectDesignPage() {
                   <div key={`row-${grp[0][0].id}`} className="-mx-2 flex items-stretch">
                     {cards.map((card, ci) => {
                       const s = grp[ci][0];
+                      const fitted = fitRowWidths(grp.map(([g]) => g.flowWidth));
                       return (
-                        <div key={s.id} className={`min-w-0 px-2 [&>div]:h-full ${s.flowWidth ? "" : "flex-1 basis-0"}`} style={flowWidthStyle(s.flowWidth)}>
+                        <div key={s.id} className={`min-w-0 px-2 [&>div]:h-full ${s.flowWidth ? "" : "flex-1 basis-0"}`} style={flowWidthStyle(fitted[ci])}>
                           {card}
                         </div>
                       );
