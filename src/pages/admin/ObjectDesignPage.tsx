@@ -861,6 +861,7 @@ export default function ObjectDesignPage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [viewport, setViewport] = useState<ViewportKey>("desktop");
   const viewportWidth = VIEWPORTS.find((v) => v.key === viewport)?.width;
   const [createOpen, setCreateOpen] = useState(false);
@@ -1735,6 +1736,10 @@ export default function ObjectDesignPage() {
   const enterEdit = () => {
     setPreview(false);
     setLibraryOpen(false);
+    if (!sections.length && codedKey) {
+      setImporting(true);
+      return;
+    }
     setSections((prev) => {
       if (prev.length) {
         setActiveId((cur) => (cur && prev.some((s) => s.id === cur) ? cur : prev[0].id));
@@ -1747,6 +1752,14 @@ export default function ObjectDesignPage() {
     });
   };
 
+
+  const finishImport = (imported: Section[]) => {
+    setImporting(false);
+    const list = imported.length ? imported : [makeSection("free")];
+    setSections(list);
+    setActiveId(list[0].id);
+    setDirty(true);
+  };
 
   const add = (type: SectionType) => {
     const s = makeSection(type);
@@ -3846,6 +3859,15 @@ export default function ObjectDesignPage() {
             <div className="border rounded-lg p-12 text-center text-muted-foreground">
               Pick an object on the left to design it, or create a new one.
             </div>
+          ) : importing && codedKey ? (
+            <div className="border rounded-lg p-12 text-center text-sm text-muted-foreground">
+              Turning this object into editable blocks…
+              <CodedImportProbe
+                codedKey={codedKey}
+                width={viewportWidth || 1200}
+                onDone={finishImport}
+              />
+            </div>
           ) : preview ? (
             <div className="border rounded-lg bg-background overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
@@ -4334,5 +4356,54 @@ export default function ObjectDesignPage() {
         }}
       />
     </div>
+  );
+}
+
+
+/** Renders a coded object off-screen, waits for it to settle, then reads it into blocks. */
+function CodedImportProbe({
+  codedKey,
+  width,
+  onDone,
+}: {
+  codedKey: string;
+  width: number;
+  onDone: (sections: Section[]) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const done = useRef(false);
+  useEffect(() => {
+    let cancelled = false;
+    const start = Date.now();
+    const tick = async () => {
+      if (cancelled || done.current) return;
+      const root = ref.current;
+      const loading = !root || root.querySelector(".animate-pulse") ||
+        [...root.querySelectorAll("img")].some((i) => !i.complete);
+      if (loading && Date.now() - start < 4000) {
+        setTimeout(tick, 150);
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 200));
+      if (cancelled || !root) return;
+      const { sectionsFromDom } = await import("./importCodedObject");
+      done.current = true;
+      onDone(sectionsFromDom(root));
+    };
+    setTimeout(tick, 300);
+    return () => { cancelled = true; };
+  }, [codedKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const C = objectRegistry[codedKey].component as React.ComponentType;
+  return createPortal(
+    <div
+      ref={ref}
+      className="import-probe bg-background"
+      style={{ position: "fixed", left: -20000, top: 0, width, pointerEvents: "none" }}
+    >
+      <Suspense fallback={<div className="animate-pulse h-10" />}>
+        <C />
+      </Suspense>
+    </div>,
+    document.body,
   );
 }
