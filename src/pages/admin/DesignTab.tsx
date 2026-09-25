@@ -21,7 +21,7 @@ import VideoPickerDialog from "./VideoPickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
 import TagsPanel from "./TagsPanel";
 import { matchesLabelFilter } from "./labelPath";
-import { MiniFrame } from "./ObjectMiniPreview";
+import PageMiniPreview from "./PageMiniPreview";
 import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, hasWideBlocks } from "@/components/PageBlocks";
 
 import Header from "@/components/Header";
@@ -603,14 +603,7 @@ export default function DesignTab() {
               }`}
             >
               <div className="flex items-start gap-3">
-              <MiniFrame render={() => {
-                const bl = parseBlocks(p.content);
-                return !bl.length && canIframe(p.path) ? (
-                  <iframe src={previewSrc(p.path)} title="" tabIndex={-1} loading="lazy" className="border-0" style={{ width: 1280, height: 800 }} />
-                ) : (
-                  <InlinePagePreview name={p.name} blocks={bl} />
-                );
-              }} />
+              <PageMiniPreview name={p.name} path={p.path} content={p.content} />
               <div className="min-w-0 flex-1">
               <div className="text-sm font-medium truncate">{p.name}</div>
               <div className="text-xs text-muted-foreground font-mono truncate">{p.path}</div>
