@@ -261,4 +261,3 @@
 .inline-edit-surface [data-inline-editable]:focus { outline: 2px solid hsl(var(--ring)); }
 .inline-edit-surface img[data-inline-image] { cursor: pointer; }
 .inline-edit-surface img[data-inline-image]:hover { outline: 2px solid hsl(var(--ring)); outline-offset: -2px; }
-.inline-edit-surface [data-inline-selected] { outline: 2px solid hsl(var(--ring)) !important; outline-offset: 3px; }

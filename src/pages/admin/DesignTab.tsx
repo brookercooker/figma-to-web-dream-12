@@ -27,8 +27,7 @@ import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign,
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import InsertGap, { type InsertType } from "./InsertGap";
-import InlineEditSurface, { type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
-import InlineStylePanel from "./InlineStylePanel";
+import InlineEditSurface, { type InlineEdits } from "@/components/InlineEditSurface";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null }
 
@@ -187,7 +186,6 @@ export default function DesignTab() {
   const [quick, setQuick] = useState(false);
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
   const [resetKey, setResetKey] = useState(0);
-  const [inlineSel, setInlineSel] = useState<InlineSelection | null>(null);
   const [imgAsk, setImgAsk] = useState<((url: string | null) => void) | null>(null);
   const pickImage = () => new Promise<string | null>((resolve) => setImgAsk(() => resolve));
   const inlineTimer = useRef<number>();
@@ -244,11 +242,7 @@ export default function DesignTab() {
     // Newly created pages start empty, with the site header and footer around them.
     setHasExisting(!parsed.length && !!page && canIframe(page.path));
     setCurrentFirst(true);
-    const coded = !parsed.length && !!page && !!codedPages[previewSrc(page.path)];
-    const wantEdit = qs.get("mode") === "edit";
-    setQuick(coded && wantEdit);
-    if (coded && wantEdit) setShowLive(true);
-    setInlineSel(null);
+    setQuick(false);
     setInlineEdits(page?.inline_edits ?? {});
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -706,13 +700,19 @@ export default function DesignTab() {
                 >
                   <Eye className="w-3.5 h-3.5" /> Preview
                 </button>
+                {hasExisting && codedPages[previewSrc(page.path)] && (
+                  <button
+                    type="button"
+                    onClick={() => { setShowLive(true); setQuick(true); }}
+                    className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  >
+                    <Type className="w-3.5 h-3.5" /> Edit in place
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => {
-                    if (hasExisting && codedPages[previewSrc(page.path)]) { setShowLive(true); setQuick(true); }
-                    else { setShowLive(false); setQuick(false); }
-                  }}
-                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${!showLive || quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  onClick={() => { setShowLive(false); setQuick(false); }}
+                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${!showLive ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
                 >
                   <Pencil className="w-3.5 h-3.5" /> Edit
                 </button>
@@ -749,21 +749,20 @@ export default function DesignTab() {
                 <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
                   <p className="text-xs text-muted-foreground">
                     {quick
-                      ? "Click any wording to type over it or change its style. Click a picture to replace or resize it. Changes save on their own."
+                      ? "Click any wording to type over it, or click a picture to replace it. Changes save on their own."
                       : "This is how the page looks right now."}
                   </p>
                   {quick ? (
                     Object.keys(inlineEdits).length > 0 && (
-                      <Button variant="ghost" size="sm" onClick={() => { changeInline({}); setInlineSel(null); setResetKey((k) => k + 1); }}>Undo all changes</Button>
+                      <Button variant="ghost" size="sm" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
                     )
                   ) : (
                     <Button variant="ghost" size="sm" className="gap-2" onClick={() => setQuick(true)}>
-                      <Pencil className="w-4 h-4" /> Edit
+                      <Type className="w-4 h-4" /> Edit in place
                     </Button>
                   )}
                 </div>
-                <div className="flex">
-                <div className="h-[70vh] overflow-y-auto bg-background flex-1 min-w-0">
+                <div className="h-[70vh] overflow-y-auto bg-background">
                   {(() => {
                     const C = codedPages[previewSrc(page.path)];
                     return (
@@ -773,31 +772,11 @@ export default function DesignTab() {
                         editing={quick}
                         onChange={changeInline}
                         onPickImage={pickImage}
-                        onSelect={setInlineSel}
-                        selectedPath={inlineSel?.path ?? null}
                       >
                         <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense>
                       </InlineEditSurface>
                     );
                   })()}
-                </div>
-                {quick && (inlineSel ? (
-                  <InlineStylePanel
-                    sel={inlineSel}
-                    edits={inlineEdits}
-                    onChange={changeInline}
-                    onClose={() => setInlineSel(null)}
-                    onReplaceImage={async () => {
-                      const sel = inlineSel;
-                      const url = await pickImage();
-                      if (url) changeInline({ ...inlineEdits, [`img:${sel.path}`]: url });
-                    }}
-                  />
-                ) : (
-                  <aside className="border-l w-[260px] shrink-0 h-[70vh] p-4 text-xs text-muted-foreground">
-                    Select any wording or picture on the page to change its style or size.
-                  </aside>
-                ))}
                 </div>
               </div>
             ) : showLive ? (
