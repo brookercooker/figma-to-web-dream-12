@@ -870,7 +870,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       }
       order.push("button");
       keepFlow("button", el);
-      partAligns.button = visualAlign(el, node);
+      { const jc = el.parentElement ? getComputedStyle(el.parentElement).justifyContent : ""; partAligns.button = /end|right/.test(jc) ? "right" : jc === "center" ? "center" : alignOf(el.parentElement ?? el); }
       continue;
     }
 
