@@ -358,12 +358,21 @@ function layoutRows(
       return;
     }
     rowsOut.push(cols.map((c) => ({ parts: c.items.map((i) => i.part), box: c.box })));
+    const pcts = cols.map((col) => (nodeWidth ? Math.max(10, Math.min(100, Math.round(((col.box.right - col.box.left) / nodeWidth) * 100))) : 0));
+    // When another side-by-side row follows, this row fills the full width so the
+    // next row wraps onto its own line instead of joining this one (the last
+    // column absorbs the gap, keeping its own alignment).
+    const nextMulti = (rows[bi + 1]?.length ?? 0) > 1;
+    if (nextMulti && pcts.every(Boolean)) {
+      const sum = pcts.reduce((a, b) => a + b, 0);
+      if (sum < 100) pcts[pcts.length - 1] += 100 - sum;
+    }
     cols.forEach((col, ci) => {
-      const pct = nodeWidth ? Math.round(((col.box.right - col.box.left) / nodeWidth) * 100) : 0;
+      const pct = pcts[ci];
       col.items.forEach((it) => {
         flows[it.part] = "inline";
         if (col.items.length > 1) stacks[it.part] = `b${bi}c${ci}`;
-        if (pct) widths[it.part] = Math.max(10, Math.min(100, pct));
+        if (pct) widths[it.part] = pct;
         order.push(it.part);
       });
     });
