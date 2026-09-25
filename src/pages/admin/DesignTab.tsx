@@ -27,9 +27,8 @@ import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign,
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import InsertGap, { type InsertType } from "./InsertGap";
-import InlineEditSurface, { type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
+import InlineEditSurface, { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
 import InlineStylePanel from "./InlineStylePanel";
-import InlineSectionsPanel from "./InlineSectionsPanel";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null }
 
@@ -189,8 +188,49 @@ export default function DesignTab() {
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
   const [resetKey, setResetKey] = useState(0);
   const [inlineSel, setInlineSel] = useState<InlineSelection | null>(null);
-  const surfaceBox = useRef<HTMLDivElement>(null);
-  const getSurface = useMemo(() => () => surfaceBox.current?.querySelector<HTMLElement>(".inline-edit-surface") ?? null, []);
+  const [foldedChunks, setFoldedChunks] = useState<Set<string>>(new Set());
+  // Edits on shared objects, keyed by object; saved on the object so every page shows them.
+  const [objectEdits, setObjectEdits] = useState<Record<string, InlineEdits>>({});
+  const objectRows = useRef<Record<string, string>>({});
+  const objectTimers = useRef<Record<string, number>>({});
+  useEffect(() => {
+    (supabase as any).from("object_registry").select("id,component_key,inline_edits").then(({ data }: any) => {
+      const edits: Record<string, InlineEdits> = {};
+      (data ?? []).forEach((r: any) => {
+        if (!r.component_key) return;
+        objectRows.current[r.component_key] = r.id;
+        if (r.inline_edits) edits[r.component_key] = r.inline_edits;
+      });
+      setObjectEdits(edits);
+    });
+  }, []);
+  const changeScope = (scope: InlineScope, next: InlineEdits) => {
+    if (scope === "page") return changeInline(next);
+    setObjectEdits((cur) => ({ ...cur, [scope]: next }));
+    const id = objectRows.current[scope];
+    if (!id) return;
+    window.clearTimeout(objectTimers.current[scope]);
+    objectTimers.current[scope] = window.setTimeout(() => {
+      (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id);
+    }, 800);
+  };
+  const scopeEdits = (scope: InlineScope) => (scope === "page" ? inlineEdits : objectEdits[scope] ?? {});
+  /** Reorder sections among siblings, using order styles on the page's own edits. */
+  const reorderChunks = (from: InlineChunk, to: InlineChunk, after: boolean, all: InlineChunk[]) => {
+    const sibs = all.filter((c) => c.parent === from.parent);
+    const orderOf = (c: InlineChunk, i: number) => {
+      const o = parseInt(readStyle(inlineEdits, c.key).order ?? "");
+      return Number.isFinite(o) ? o : i;
+    };
+    const list = sibs.map((c, i) => ({ c, o: orderOf(c, i) })).sort((a, b) => a.o - b.o).map((x) => x.c).filter((c) => c.key !== from.key);
+    const at = list.findIndex((c) => c.key === to.key);
+    list.splice(after ? at + 1 : at, 0, from);
+    const out = { ...inlineEdits };
+    const patch = (key: string, props: Record<string, string>) => { out[styleKey(key)] = JSON.stringify({ ...readStyle(out, key), ...props }); };
+    patch(from.parent, { display: "flex", "flex-direction": "column" });
+    list.forEach((c, i) => patch(c.key, { order: String(i) }));
+    changeInline(out);
+  };
   const [imgAsk, setImgAsk] = useState<((url: string | null) => void) | null>(null);
   const pickImage = () => new Promise<string | null>((resolve) => setImgAsk(() => resolve));
   const inlineTimer = useRef<number>();
@@ -252,6 +292,7 @@ export default function DesignTab() {
     setCurrentFirst(true);
     setQuick(wantEdit && inPlace);
     setInlineSel(null);
+    setFoldedChunks(new Set());
     setInlineEdits(page?.inline_edits ?? {});
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -764,11 +805,14 @@ export default function DesignTab() {
                       <InlineEditSurface
                         key={`${page.id}-${quick}-${resetKey}`}
                         edits={inlineEdits}
+                        objectEdits={objectEdits}
                         editing={quick}
-                        onChange={changeInline}
-                        onPickImage={pickImage}
+                        onChange={changeScope}
                         onSelect={setInlineSel}
-                        selectedKey={inlineSel?.key ?? null}
+                        selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null}
+                        collapsed={foldedChunks}
+                        onToggleCollapse={(k) => setFoldedChunks((cur) => { const n = new Set(cur); if (n.has(k)) n.delete(k); else n.add(k); return n; })}
+                        onReorder={reorderChunks}
                       >
                         <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense>
                       </InlineEditSurface>
@@ -777,15 +821,19 @@ export default function DesignTab() {
                 </div>
                 {quick && (
                   <aside className="h-[70vh] overflow-y-auto border-l bg-background p-4">
-                    <InlineSectionsPanel key={`${page.id}-${resetKey}`} surface={getSurface} edits={inlineEdits} onChange={changeInline} />
+                    {inlineSel && inlineSel.scope !== "page" && (
+                      <p className="mb-4 rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+                        Part of the shared object <span className="font-medium text-foreground">{inlineSel.scope}</span>. Changes apply everywhere it's used.
+                      </p>
+                    )}
                     <InlineStylePanel
                       sel={inlineSel}
-                      edits={inlineEdits}
-                      onChange={changeInline}
+                      edits={inlineSel ? scopeEdits(inlineSel.scope) : inlineEdits}
+                      onChange={(next) => changeScope(inlineSel?.scope ?? "page", next)}
                       onReplaceImage={async () => {
                         if (!inlineSel) return;
                         const url = await pickImage();
-                        if (url) changeInline({ ...inlineEdits, [`img:${inlineSel.key}`]: url });
+                        if (url) changeScope(inlineSel.scope, { ...scopeEdits(inlineSel.scope), [`img:${inlineSel.key}`]: url });
                       }}
                     />
                   </aside>
