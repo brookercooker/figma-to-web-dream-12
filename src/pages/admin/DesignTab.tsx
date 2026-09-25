@@ -211,8 +211,14 @@ export default function DesignTab() {
     setBlocks(parsed);
     setActiveId("");
     setDirty(false);
-    // Pages that already have a design open showing exactly how they look today.
-    setShowLive(new URLSearchParams(window.location.search).get("mode") === "edit" ? false : !parsed.length);
+    // Pages open in Preview unless the link asks for Edit (e.g. returning from the object editor).
+    const qs = new URLSearchParams(window.location.search);
+    setShowLive(qs.get("mode") !== "edit");
+    if (qs.has("mode")) {
+      // Only the first page opened from that link starts in Edit.
+      qs.delete("mode");
+      window.history.replaceState(window.history.state, "", `${window.location.pathname}?${qs}`);
+    }
     // Only pages that really exist in code get the locked "Current page" section.
     // Newly created pages start empty, with the site header and footer around them.
     setHasExisting(!parsed.length && !!page && canIframe(page.path));
