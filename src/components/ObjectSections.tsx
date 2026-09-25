@@ -546,6 +546,8 @@ export interface CardOutline {
   radius?: number;
   pad?: number;
   bg?: TextColor;
+  /** last item sits at the bottom of the card, so links line up across cards */
+  pinLast?: boolean;
 }
 
 export function cardStyle(c?: CardOutline): React.CSSProperties {
@@ -2046,11 +2048,11 @@ function FreeText({
                     className={`flex h-full flex-col gap-4 ${col.items.some((ci) => ci.part.startsWith("divider:")) ? "w-full" : ""} ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]}`}
                     style={cardStyle(section.cards?.[cardKeyOf(section, it.part)])}
                 >
-                  {col.items.map((ci) => (
+                  {col.items.map((ci, cii) => (
                     <div
                       key={ci.part}
                       data-part-box={ci.part}
-                      className={`flex w-full flex-col ${partVAlignClass(section, ci.part)} ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
+                      className={`flex w-full flex-col ${cii > 0 && cii === col.items.length - 1 && section.cards?.[cardKeyOf(section, it.part)]?.pinLast ? "mt-auto" : ""} ${partVAlignClass(section, ci.part)} ${partAlignClass(section.flowAligns?.[ci.part] ?? a, partRotation(section, ci.part))} ${sizedPartClass(section, ci.part)}`}
                       style={{ ...partPadStyle(section, ci.part), ...(partRotation(section, ci.part) ? {} : partSizeStyle(section, ci.part)) }}
                     >
                       <RotatedPart deg={partRotation(section, ci.part)} size={partSizeStyle(section, ci.part)} vAlignClass={partVAlignClass(section, ci.part)}>{ci.node}</RotatedPart>
