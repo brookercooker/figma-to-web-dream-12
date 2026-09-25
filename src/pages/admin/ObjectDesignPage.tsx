@@ -1955,37 +1955,56 @@ export default function ObjectDesignPage() {
   const [dragBlock, setDragBlock] = useState("");
   const [blockDrop, setBlockDrop] = useState<{ id: string; before: boolean } | null>(null);
   const armedBlock = useRef("");
-  // While a block is being dragged: allow dropping anywhere (no "not allowed" cursor)
-  // and scroll the page when the pointer nears the top or bottom edge.
+  // Pointer-based block dragging: the wheel keeps working, and the page scrolls
+  // when the pointer nears the top or bottom edge.
+  const blockDropRef = useRef<{ id: string; before: boolean } | null>(null);
   useEffect(() => {
     if (!dragBlock) return;
     let speed = 0;
     let raf = 0;
+    let lastX = 0, lastY = 0;
+    const locate = () => {
+      const el = (document.elementFromPoint(lastX, lastY) as HTMLElement | null)?.closest("[data-block-id]") as HTMLElement | null;
+      let next: { id: string; before: boolean } | null = null;
+      if (el && el.dataset.blockId !== dragBlock) {
+        const r = el.getBoundingClientRect();
+        const before = el.dataset.blockRow === "1" ? lastX < r.left + r.width / 2 : lastY < r.top + r.height / 2;
+        next = { id: el.dataset.blockId!, before };
+      }
+      const cur = blockDropRef.current;
+      if (cur?.id !== next?.id || cur?.before !== next?.before) { blockDropRef.current = next; setBlockDrop(next); }
+    };
     const tick = () => {
-      if (speed) window.scrollBy(0, speed);
+      if (speed) { window.scrollBy(0, speed); locate(); }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    const over = (e: DragEvent) => {
-      e.preventDefault();
-      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-      const edge = 120;
-      const h = window.innerHeight;
+    const moveH = (e: MouseEvent) => {
+      lastX = e.clientX; lastY = e.clientY;
+      const edge = 120, h = window.innerHeight;
       if (e.clientY < edge) speed = -Math.ceil(((edge - e.clientY) / edge) * 24);
       else if (e.clientY > h - edge) speed = Math.ceil(((e.clientY - (h - edge)) / edge) * 24);
       else speed = 0;
+      locate();
     };
-    const wheel = (e: WheelEvent) => window.scrollBy(0, e.deltaY);
-    const stop = () => { speed = 0; };
-    document.addEventListener("dragover", over);
-    document.addEventListener("drop", (e) => e.preventDefault(), { once: true });
-    document.addEventListener("wheel", wheel, { passive: true });
-    document.addEventListener("dragend", stop);
+    const wheel = () => requestAnimationFrame(locate);
+    const up = () => {
+      const d = blockDropRef.current;
+      if (d) moveBlockTo(dragBlock, d.id, d.before);
+      blockDropRef.current = null; armedBlock.current = "";
+      setBlockDrop(null); setDragBlock("");
+    };
+    const prevSel = document.body.style.userSelect, prevCur = document.body.style.cursor;
+    document.body.style.userSelect = "none"; document.body.style.cursor = "grabbing";
+    window.addEventListener("mousemove", moveH);
+    window.addEventListener("wheel", wheel, { passive: true });
+    window.addEventListener("mouseup", up, { once: true });
     return () => {
       cancelAnimationFrame(raf);
-      document.removeEventListener("dragover", over);
-      document.removeEventListener("wheel", wheel);
-      document.removeEventListener("dragend", stop);
+      document.body.style.userSelect = prevSel; document.body.style.cursor = prevCur;
+      window.removeEventListener("mousemove", moveH);
+      window.removeEventListener("wheel", wheel);
+      window.removeEventListener("mouseup", up);
     };
   }, [dragBlock]);
 
@@ -4299,27 +4318,8 @@ export default function ObjectDesignPage() {
                 return (
                   <div
                     key={s.id}
-                    draggable={dragBlock === s.id}
-                    onDragStart={(e) => {
-                      if (armedBlock.current !== s.id) { e.preventDefault(); return; }
-                      e.dataTransfer.effectAllowed = "move";
-                      e.dataTransfer.setData("text/x-block", s.id);
-                    }}
-                    onDragEnd={() => { armedBlock.current = ""; setDragBlock(""); setBlockDrop(null); }}
-                    onDragOver={(e) => {
-                      if (!armedBlock.current) return;
-                      e.preventDefault();
-                      if (armedBlock.current === s.id) { if (blockDrop) setBlockDrop(null); return; }
-                      const r = e.currentTarget.getBoundingClientRect();
-                      const before = grp.length > 1 ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
-                      if (blockDrop?.id !== s.id || blockDrop.before !== before) setBlockDrop({ id: s.id, before });
-                    }}
-                    onDrop={(e) => {
-                      if (!armedBlock.current) return;
-                      e.preventDefault();
-                      if (blockDrop) moveBlockTo(armedBlock.current, s.id, blockDrop.before);
-                      armedBlock.current = ""; setDragBlock(""); setBlockDrop(null);
-                    }}
+                    data-block-id={s.id}
+                    data-block-row={grp.length > 1 ? "1" : undefined}
                     className={`relative rounded-lg border-2 bg-background transition-shadow ${dragBlock === s.id ? "opacity-50" : ""} ${
                       active ? "border-primary/50 shadow-lg" : "border-border shadow-sm hover:border-primary/25"
                     }`}
@@ -4337,12 +4337,16 @@ export default function ObjectDesignPage() {
                     <div
                       onMouseDown={(e) => {
                         if ((e.target as HTMLElement).closest("button,input,select,textarea,[contenteditable=true]")) return;
-                        armedBlock.current = s.id;
-                        setDragBlock(s.id);
-                        const up = () => {
-                          window.setTimeout(() => { if (armedBlock.current === s.id && !blockDrop) { armedBlock.current = ""; setDragBlock(""); } }, 0);
+                        if (e.button !== 0) return;
+                        const x0 = e.clientX, y0 = e.clientY;
+                        const mv = (ev: MouseEvent) => {
+                          if (Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 5) return;
+                          window.removeEventListener("mousemove", mv);
+                          armedBlock.current = s.id;
+                          setDragBlock(s.id);
                         };
-                        window.addEventListener("mouseup", up, { once: true });
+                        window.addEventListener("mousemove", mv);
+                        window.addEventListener("mouseup", () => window.removeEventListener("mousemove", mv), { once: true });
                       }}
                       title="Drag to move this block"
                       className={`flex cursor-grab items-center gap-2.5 active:cursor-grabbing ${collapsedBlocks[s.id] ? "rounded-md" : "rounded-t-md border-b-2"} px-3 py-3 ${active ? "border-primary/40 bg-background bg-[linear-gradient(hsl(var(--primary)/0.1),hsl(var(--primary)/0.1))]" : "border-foreground/15 bg-muted"}`}>
