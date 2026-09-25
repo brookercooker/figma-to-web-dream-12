@@ -30,6 +30,11 @@ const visible = (el: Element) => {
 };
 const hasContent = (el: Element) =>
   !!(el.textContent ?? "").trim() || !!el.querySelector("img,video,iframe,svg,form");
+/** Breadcrumb trails depend on where the page is shown, so they aren't kept. */
+const isCrumbs = (el: Element) => {
+  const n = el.matches('nav[aria-label*="readcrumb" i],ol[aria-label*="readcrumb" i]') ? el : el.querySelector('[aria-label*="readcrumb" i]');
+  return !!n && (n.textContent ?? "").trim().length >= (el.textContent ?? "").trim().length - 2;
+};
 const isChrome = (el: Element) =>
   /^(header|footer|nav)$/i.test(el.tagName) || el.getAttribute("role") === "banner" || el.getAttribute("role") === "contentinfo";
 
@@ -48,13 +53,13 @@ export function pageChunks(root: HTMLElement): HTMLElement[] {
         out.push(...inner.filter((c) => !isChrome(c)));
       } else out.push(k);
     }
-    return out;
+    return out.filter((c) => !isCrumbs(c));
   }
 }
 
 /** Best-effort readable name for a section. */
 export function chunkName(el: HTMLElement, fallback: string): string {
   const h = el.querySelector("h1,h2,h3");
-  const t = (h?.textContent ?? "").replace(/\s+/g, " ").trim();
+  const t = ((h as HTMLElement | null)?.innerText ?? "").replace(/\s+/g, " ").trim();
   return t ? (t.length > 40 ? `${t.slice(0, 40)}…` : t) : fallback;
 }
