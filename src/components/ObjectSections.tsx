@@ -466,6 +466,8 @@ export interface SectionVideo {
   width?: number;
   /** Pixel height; empty = widescreen shape. */
   height?: number;
+  /** Show the block's text in front of this video (like the homepage). */
+  textOnTop?: boolean;
 }
 
 /** Turn a YouTube / Vimeo link into an embed URL. Returns null for plain files. */
@@ -2225,6 +2227,33 @@ function OverlayImageTexts({
 
 function FreeView({ section }: { section: FreeSection }) {
   const hasImages = section.images.length > 0;
+
+  const topVideo = (section.videos ?? []).find((v) => v.textOnTop);
+  if (topVideo) {
+    const rest = { ...section, videos: (section.videos ?? []).filter((v) => v !== topVideo) } as FreeSection;
+    const vi = (section.videos ?? []).indexOf(topVideo);
+    return (
+      <section style={sectionPadStyle(section)} className="py-12 space-y-8">
+        <SectionBg section={section} />
+        <div
+          className={`relative overflow-hidden rounded-lg ${topVideo.height ? "" : overlayHeight[section.height ?? "md"] ?? "min-h-[420px]"}`}
+          style={{ height: topVideo.height ? `${topVideo.height}px` : undefined, width: topVideo.width ? `${topVideo.width}px` : undefined, maxWidth: "100%" }}
+        >
+          <div data-part={`video:${vi}`} className="pointer-events-none absolute inset-0">
+            <VideoPlayer video={{ ...topVideo, width: undefined, height: undefined, controls: false, autoplay: topVideo.autoplay ?? true, loop: topVideo.loop ?? true }} className="!rounded-none h-full" />
+          </div>
+          <div className="absolute inset-0 bg-ink/35" />
+          <div className={`relative flex h-full flex-col ${OVERLAY_VALIGN_CLASS[section.overlayVAlign ?? "middle"]} px-8 sm:px-14 py-16`}>
+            <FreeText section={{ ...section, images: [], videos: [] } as FreeSection} onDark />
+          </div>
+        </div>
+        {hasImages || (rest.videos ?? []).length ? (
+          <FreeGallery section={rest} />
+        ) : null}
+        <FreeVideos section={rest} />
+      </section>
+    );
+  }
 
   if (section.layout === "behind" && hasImages) {
     return (
