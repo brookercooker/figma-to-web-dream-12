@@ -83,9 +83,36 @@ export function sanitizeInline(input: string): string {
     .replace(/&(?!(amp|lt|gt|nbsp|#\d+);)/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-  return escaped.replace(/&lt;(\/?)([a-zA-Z]+)\s*\/?&gt;/g, (m, slash: string, tag: string) =>
-    ALLOWED_INLINE.test(tag) ? `<${slash}${tag.toLowerCase()}>` : m,
-  );
+  return escaped
+    .replace(/&lt;(\/?)([a-zA-Z]+)\s*\/?&gt;/g, (m, slash: string, tag: string) =>
+      ALLOWED_INLINE.test(tag) ? `<${slash}${tag.toLowerCase()}>` : m,
+    )
+    .replace(/&lt;span((?:\s+data-(?:color|font)="[^"&<>]*")+)\s*&gt;/g, (_m, attrs: string) => {
+      const color = /data-color="([^"]*)"/.exec(attrs)?.[1];
+      const font = /data-font="([^"]*)"/.exec(attrs)?.[1];
+      return segmentSpanOpen(color, font);
+    })
+    .replace(/&lt;\/span&gt;/g, "</span>");
+}
+
+/** CSS colour for a highlighted segment: a brand token or a hex value. */
+export function segmentColorCss(color?: string): string | undefined {
+  if (!color) return undefined;
+  if (TEXT_COLORS.some((c) => c.value === color)) return `hsl(var(--nova-${color}))`;
+  return /^#[0-9a-f]{3,8}$/i.test(color) ? color : undefined;
+}
+
+/** Opening tag for a text segment with its own colour and/or font. */
+export function segmentSpanOpen(color?: string, font?: string): string {
+  const css = segmentColorCss(color);
+  const f = font === "serif" || font === "sans" ? font : undefined;
+  const attrs = [
+    css ? `data-color="${color}"` : "",
+    f ? `data-font="${f}"` : "",
+    f ? `class="${f === "serif" ? "font-serif font-light" : "font-sans"}"` : "",
+    css ? `style="color:${css}"` : "",
+  ].filter(Boolean).join(" ");
+  return attrs ? `<span ${attrs}>` : "<span>";
 }
 
 /** Spread onto an element to render text with its inline formatting. */
@@ -2288,6 +2315,12 @@ export function cleanEditedHtml(html: string): string {
     if (tag === "div" || tag === "p") return inner ? `${inner}<br>` : "";
     const style = el.getAttribute("style") ?? "";
     let out = inner;
+    const color = el.getAttribute("data-color");
+    const font = el.getAttribute("data-font");
+    if (tag === "span" && (color || font) && inner) {
+      const a = [color ? ` data-color="${esc(color)}"` : "", font ? ` data-font="${esc(font)}"` : ""].join("");
+      out = `<span${a}>${out}</span>`;
+    }
     if (tag === "u" || /underline/.test(style)) out = `<u>${out}</u>`;
     if (tag === "i" || tag === "em" || /font-style:\s*italic/.test(style)) out = `<i>${out}</i>`;
     if (tag === "b" || tag === "strong" || /font-weight:\s*(bold|[6-9]00)/.test(style)) out = `<b>${out}</b>`;

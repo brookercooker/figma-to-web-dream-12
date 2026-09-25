@@ -42,6 +42,7 @@ import {
   type TextColor, type TextFont, type TextSize, type TextStyle,
   ContainedBgContext,
   bgColorCss,
+  segmentColorCss,
 } from "@/components/ObjectSections";
 
 /** Paints a block's own background inside its editor frame. */
@@ -80,6 +81,90 @@ function formatSelection(command: "bold" | "italic" | "underline") {
   document.execCommand(command);
   host.dispatchEvent(new Event("input", { bubbles: true }));
   return true;
+}
+
+/** Wraps the highlighted text in a span carrying its own colour or font. */
+function styleSelection(attr: "data-color" | "data-font", value: string | null) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  const node = range.commonAncestorContainer;
+  const host = (node instanceof HTMLElement ? node : node.parentElement)?.closest<HTMLElement>('[contenteditable="true"]');
+  if (!host) return;
+  const frag = range.extractContents();
+  // A new choice replaces the same setting on anything inside the selection.
+  frag.querySelectorAll<HTMLElement>(`span[${attr}]`).forEach((sp) => {
+    sp.removeAttribute(attr);
+    if (attr === "data-color") sp.style.color = "";
+    else sp.classList.remove("font-serif", "font-light", "font-sans");
+  });
+  const span = document.createElement("span");
+  if (value) {
+    span.setAttribute(attr, value);
+    if (attr === "data-color") span.style.color = segmentColorCss(value) ?? "";
+    else span.className = value === "serif" ? "font-serif font-light" : "font-sans";
+  }
+  span.appendChild(frag);
+  range.insertNode(span);
+  const next = document.createRange();
+  next.selectNodeContents(span);
+  sel.removeAllRanges();
+  sel.addRange(next);
+  host.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+/** Side-panel controls for just the highlighted part of a text element. */
+function SelectionStylePanel() {
+  const keep = (e: React.MouseEvent) => e.preventDefault();
+  const btn = "h-8 rounded-md border bg-background px-2.5 text-xs hover:bg-muted";
+  return (
+    <div className="space-y-3 border-b bg-muted/30 px-3 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Highlighted text</p>
+      <div className="flex flex-wrap gap-1.5">
+        <button type="button" onMouseDown={keep} onClick={() => formatSelection("bold")} className={`${btn} font-bold`}>B</button>
+        <button type="button" onMouseDown={keep} onClick={() => formatSelection("italic")} className={`${btn} italic`}>I</button>
+        <button type="button" onMouseDown={keep} onClick={() => formatSelection("underline")} className={`${btn} underline`}>U</button>
+        {TEXT_FONTS.map((f) => (
+          <button key={f.value} type="button" onMouseDown={keep} onClick={() => styleSelection("data-font", f.value)} className={`${btn} ${f.value === "serif" ? "font-serif" : "font-sans"}`}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {TEXT_COLORS.map((c) => (
+          <button
+            key={c.value}
+            type="button"
+            title={c.label}
+            aria-label={`${c.label} colour`}
+            onMouseDown={keep}
+            onClick={() => styleSelection("data-color", c.value)}
+            className="h-7 w-7 rounded-full border shadow-sm"
+            style={{ background: c.swatch }}
+          />
+        ))}
+        <button type="button" onMouseDown={keep} onClick={() => styleSelection("data-color", null)} className={btn}>
+          Default colour
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** True while part of a text element being edited in place is highlighted. */
+function useInlineSelection() {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const sel = window.getSelection();
+      const node = sel && sel.rangeCount && !sel.isCollapsed ? sel.anchorNode : null;
+      const el = node instanceof HTMLElement ? node : node?.parentElement;
+      setOn(!!el?.closest('[contenteditable="true"][data-text-body], [contenteditable="true"][data-part]'));
+    };
+    document.addEventListener("selectionchange", check);
+    return () => document.removeEventListener("selectionchange", check);
+  }, []);
+  return on;
 }
 
 interface ObjectRow {
@@ -877,6 +962,7 @@ export default function ObjectDesignPage() {
   const [preview, setPreview] = useState(false);
   const [importing, setImporting] = useState(false);
   const canvasRef = useRef<HTMLElement>(null);
+  const inlineSel = useInlineSelection();
   const [viewport, setViewport] = useState<ViewportKey>("desktop");
   const viewportWidth = VIEWPORTS.find((v) => v.key === viewport)?.width;
   const [createOpen, setCreateOpen] = useState(false);
@@ -4061,6 +4147,7 @@ export default function ObjectDesignPage() {
                 <p className="border-b bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   {title}
                 </p>
+                {inlineSel && <SelectionStylePanel />}
                 {showToolbar && <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s)}</div>}
                 <div data-inspector-section={s.id} className="inspector-flush p-4">{Inspector({ section: s })}</div>
               </div>
