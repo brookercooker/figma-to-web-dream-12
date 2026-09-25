@@ -1148,6 +1148,8 @@ export default function ObjectDesignPage() {
 
   // Clicking an element in the preview jumps to (and focuses) its controls.
   useEffect(() => {
+    // Keep the panel where the user left it — no automatic scrolling.
+    return;
     if (!focusPart || !activeId) return;
     // Selecting an image shouldn't yank the view down into its alt/link fields.
     if (focusPart.startsWith("image:")) return;
@@ -4298,8 +4300,6 @@ export default function ObjectDesignPage() {
           return (
             <aside className="lg:sticky lg:top-20 lg:self-start lg:z-20">
               <div
-                key={`${s.id}:${focusPart ?? ""}`}
-                ref={(el) => { if (el) el.scrollTop = 0; }}
                 className="w-full lg:w-[380px] lg:max-h-[calc(100vh-6rem)] overflow-y-auto border bg-background shadow-sm rounded-lg"
               >
                 <p className="border-b bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
