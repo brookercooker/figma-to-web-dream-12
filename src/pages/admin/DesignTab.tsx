@@ -234,7 +234,10 @@ export default function DesignTab() {
     setDirty(false);
     // Pages open in Preview unless the link asks for Edit (e.g. returning from the object editor).
     const qs = new URLSearchParams(window.location.search);
-    setShowLive(qs.get("mode") !== "edit");
+    const wantEdit = qs.get("mode") === "edit";
+    const inPlace = !parsed.length && !!page && !!codedPages[previewSrc(page.path)];
+    // Coded pages are edited in place, so they stay on the page view.
+    setShowLive(!wantEdit || inPlace);
     if (qs.has("mode")) {
       // Only the first page opened from that link starts in Edit.
       qs.delete("mode");
@@ -244,7 +247,7 @@ export default function DesignTab() {
     // Newly created pages start empty, with the site header and footer around them.
     setHasExisting(!parsed.length && !!page && canIframe(page.path));
     setCurrentFirst(true);
-    setQuick(qs.get("mode") === "edit" && !parsed.length && !!page && !!codedPages[previewSrc(page.path)]);
+    setQuick(wantEdit && inPlace);
     setInlineSel(null);
     setInlineEdits(page?.inline_edits ?? {});
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
