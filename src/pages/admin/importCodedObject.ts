@@ -1504,7 +1504,10 @@ function keepGaps(list: Section[], boxes: Map<Section, Box>, rootBox: DOMRect) {
     const prev = list[i - 1], next = list[i + 1];
     const pb = prev && boxes.get(prev), nb = next && boxes.get(next);
     const f = s as Section & { padTop?: number; padBottom?: number };
-    if (!prev) f.padTop = Math.round(b.top - rootBox.top);
+    // The first block, and any block sitting beside it, measure from the top of the object.
+    const besidePrev = !!pb && pb.top < b.bottom && b.top < pb.bottom && (pb.right <= b.left + 4 || b.right <= pb.left + 4);
+    const firstRow = !prev || (besidePrev && list.slice(0, i).every((q) => { const qb = boxes.get(q); return qb && qb.top < b.bottom && b.top < qb.bottom; }));
+    if (firstRow) f.padTop = Math.round(b.top - rootBox.top);
     else if (pb && pb.bottom <= b.top + 1) {
       const gap = b.top - pb.bottom;
       f.padTop = Math.round(isFree(prev) ? gap / 2 : gap);
@@ -1563,11 +1566,6 @@ function inlineRows(list: Section[], boxes: Map<Section, Box>, total: number): S
         const w = Math.round((boxes.get(r)!.width / Math.max(used, total * 0.6)) * 100);
         Object.assign(r, { flow: "inline", flowWidth: Math.max(10, Math.min(100, w)) });
       }
-      // Side-by-side blocks keep their tops lined up as in the original.
-      const padOf = (r: Section) => { const x = r as { padTop?: number; padY?: number }; return x.padTop ?? x.padY ?? 0; };
-      const lead = list[i];
-      const start = boxes.get(lead)!.top - padOf(lead);
-      for (const r of row) (r as { padTop?: number }).padTop = Math.max(0, Math.round(boxes.get(r)!.top - start));
     }
     res.push(...row);
     i = j;
