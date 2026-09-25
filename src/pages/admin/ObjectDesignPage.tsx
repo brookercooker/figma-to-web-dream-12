@@ -2448,7 +2448,7 @@ export default function ObjectDesignPage() {
                     <>
                       <Field label="Label">
                         <Input
-                          value={t.text}
+                          value={plainText(t.text)}
                           placeholder="Button label"
                           onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
                         />
@@ -2561,7 +2561,7 @@ export default function ObjectDesignPage() {
                     <>
                       <Textarea
                         rows={2}
-                        value={t.text}
+                        value={plainText(t.text)}
                         placeholder={`${kindLabel}…`}
                         onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
                       />
@@ -3166,7 +3166,7 @@ export default function ObjectDesignPage() {
 
 
             <Field label="Text">
-              <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
+              <Textarea rows={4} value={plainText(section.body)} onChange={(e) => patch(section.id, { body: e.target.value })} />
             </Field>
             <TextStyleFields
               label="Text style"
@@ -3304,7 +3304,7 @@ export default function ObjectDesignPage() {
                     <Field label={kindLabel}>
                       <Textarea
                         rows={kind === "text" ? 4 : 2}
-                        value={t.text}
+                        value={plainText(t.text)}
                         onChange={(e) => patchExtra(section.id, i, { text: e.target.value })}
                       />
                     </Field>
@@ -3893,7 +3893,7 @@ export default function ObjectDesignPage() {
 
         {parts.length ? null : (
           <p className="rounded-lg border border-dashed py-6 text-center text-xs text-muted-foreground">
-            Click anything above to change it, or add something new from the right.
+            Click anything above to change it, or add something new from the options below.
           </p>
         )}
 
@@ -3981,7 +3981,7 @@ export default function ObjectDesignPage() {
               <Input value={section.heading} onChange={(e) => patch(section.id, { heading: e.target.value })} />
             </Field>
             <Field label="Text (optional)">
-              <Textarea rows={3} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
+              <Textarea rows={3} value={plainText(section.body)} onChange={(e) => patch(section.id, { body: e.target.value })} />
             </Field>
             <TextStyleFields
               label="Heading style"
@@ -4069,7 +4069,7 @@ export default function ObjectDesignPage() {
               <Input value={section.heading} onChange={(e) => patch(section.id, { heading: e.target.value })} />
             </Field>
             <Field label="Text (optional)">
-              <Textarea rows={4} value={section.body ?? ""} onChange={(e) => patch(section.id, { body: e.target.value })} />
+              <Textarea rows={4} value={plainText(section.body)} onChange={(e) => patch(section.id, { body: e.target.value })} />
             </Field>
             <TextStyleFields
               label="Heading style"
