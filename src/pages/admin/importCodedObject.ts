@@ -870,7 +870,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       }
       order.push("button");
       keepFlow("button", el);
-      partAligns.button = alignOf(el.parentElement ?? el);
+      partAligns.button = visualAlign(el, node);
       continue;
     }
 
