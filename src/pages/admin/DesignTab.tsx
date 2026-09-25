@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { codedPages, pageChunks, chunkName } from "./codedPages";
+import type { Section } from "@/components/ObjectSections";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -18,7 +21,7 @@ import ObjectPickerDialog from "./ObjectPickerDialog";
 import TagsPanel from "./TagsPanel";
 import { matchesLabelFilter } from "./labelPath";
 import { MiniFrame } from "./ObjectMiniPreview";
-import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock } from "@/components/PageBlocks";
+import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, hasWideBlocks } from "@/components/PageBlocks";
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -74,7 +77,7 @@ export function InlinePagePreview({ name, blocks }: { name: string; blocks: Bloc
       <div className="pointer-events-none select-none [&_header]:!static [&_header]:!z-auto">
         <Header />
       </div>
-      <div className="mx-auto max-w-3xl px-6 py-10">
+      <div className={hasWideBlocks(blocks) ? "" : "mx-auto max-w-3xl px-6 py-10"}>
         {blocks.length ? (
           <PageBlocks blocks={blocks} />
         ) : (
@@ -115,6 +118,39 @@ function ToolButton({
   );
 }
 
+/** Renders a coded page off-screen, splits it into sections and converts each one. */
+function PageImportProbe({ path, onDone }: { path: string; onDone: (parts: { name: string; sections: Section[] }[]) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const start = Date.now();
+    const tick = async () => {
+      if (cancelled) return;
+      const root = ref.current;
+      const loading = !root || !root.children.length || root.querySelector(".animate-pulse") ||
+        [...root.querySelectorAll("img")].some((i) => !i.complete);
+      if (loading && Date.now() - start < 6000) { setTimeout(tick, 150); return; }
+      await new Promise((r) => setTimeout(r, 250));
+      if (cancelled || !root) return;
+      const { sectionsFromDom } = await import("./importCodedObject");
+      const chunks = pageChunks(root);
+      const parts = chunks
+        .map((el, i) => ({ name: chunkName(el, `Section ${i + 1}`), sections: sectionsFromDom(el) }))
+        .filter((p) => p.sections.length);
+      onDone(parts);
+    };
+    setTimeout(tick, 300);
+    return () => { cancelled = true; };
+  }, [path]); // eslint-disable-line react-hooks/exhaustive-deps
+  const C = codedPages[path];
+  return createPortal(
+    <div ref={ref} className="import-probe bg-background" style={{ position: "fixed", left: -20000, top: 0, width: 1280, pointerEvents: "none" }}>
+      <Suspense fallback={<div className="animate-pulse h-10" />}><C /></Suspense>
+    </div>,
+    document.body,
+  );
+}
+
 export default function DesignTab() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -142,6 +178,7 @@ export default function DesignTab() {
   const [hasExisting, setHasExisting] = useState(false);
   const [currentFirst, setCurrentFirst] = useState(true);
   const [objectAt, setObjectAt] = useState<number | null>(null);
+  const [importing, setImporting] = useState(false);
 
 
   const load = async () => {
@@ -429,6 +466,30 @@ export default function DesignTab() {
     </div>
   );
 
+  const finishImport = async (parts: { name: string; sections: Section[] }[]) => {
+    if (!page) return;
+    const made: ObjectBlock[] = [];
+    for (const part of parts) {
+      const { data } = await (supabase as any).from("object_registry").insert({
+        name: `${page.name} · ${part.name}`,
+        status: "Draft",
+        component_key: null,
+        description: `Converted from the ${page.name} page.`,
+        intended_pages: [page.path],
+        labels: [],
+        content: part.sections,
+      }).select("*").single();
+      if (data) made.push({ id: newId(), type: "object", objectId: data.id, name: data.name, align: "left", wide: true });
+    }
+    setImporting(false);
+    if (!made.length) { toast.error("Couldn't break this page into sections."); return; }
+    setBlocks((prev) => (currentFirst ? [...made, ...prev] : [...prev, ...made]));
+    setHasExisting(false);
+    setShowLive(false);
+    setDirty(true);
+    toast.success(`${page.name} is now ${made.length} editable sections.`);
+  };
+
   const existingCard = page ? (
     <div key="current-page-section">
       {addRow(currentFirst ? 0 : blocks.length, "Add a section above")}
@@ -436,10 +497,15 @@ export default function DesignTab() {
         <div className="flex items-center gap-2 border-b bg-muted px-3 py-2">
           <span className="text-xs font-semibold uppercase tracking-[0.14em]">Current page</span>
           <span className="text-xs text-muted-foreground">Built in code — shown here so you can add around it</span>
+          {codedPages[previewSrc(page.path)] && (
+            <Button size="sm" className="ml-auto gap-2" disabled={importing} onClick={() => setImporting(true)}>
+              <Pencil className="w-4 h-4" /> {importing ? "Breaking into sections…" : "Make editable"}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto"
+            className={codedPages[previewSrc(page.path)] ? "" : "ml-auto"}
             onClick={() => setCurrentFirst((v) => !v)}
           >
             {currentFirst ? <ArrowDown className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
@@ -654,14 +720,14 @@ export default function DesignTab() {
                 </ChromePreview>
               )}
 
-              <div className="p-6 sm:p-10 min-h-[50vh]">
+              <div className={hasWideBlocks(blocks) ? "min-h-[50vh] py-4" : "p-6 sm:p-10 min-h-[50vh]"}>
               {!blocks.length && !hasExisting && (
                 <p className="text-sm text-muted-foreground text-center py-16">
                   This page is empty. Add a heading, some text, or an image to begin.
                 </p>
               )}
 
-              <div className="max-w-3xl mx-auto">
+              <div className={hasWideBlocks(blocks) ? "px-8" : "max-w-3xl mx-auto"}>
                 {hasExisting && currentFirst && existingCard}
                 {blocks.map((b, i) => {
                   const active = b.id === activeId;
@@ -894,6 +960,9 @@ export default function DesignTab() {
         )}
       </section>
 
+      {page && importing && codedPages[previewSrc(page.path)] && (
+        <PageImportProbe path={previewSrc(page.path)} onDone={finishImport} />
+      )}
       {page && toolbarHidden && (
         <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 flex items-center gap-2 rounded-full border bg-background/95 px-3 py-2 shadow-lg backdrop-blur animate-in fade-in slide-in-from-bottom-2">
           <span className="px-1 text-xs text-muted-foreground">Add</span>
