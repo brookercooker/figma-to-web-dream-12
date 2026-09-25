@@ -1273,6 +1273,7 @@ export default function ObjectDesignPage() {
       setActiveId(s.id);
       setPreview(false);
     }
+    setImporting(false);
     setDirty(false);
   }, [object?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
