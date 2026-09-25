@@ -1872,12 +1872,18 @@ export default function ObjectDesignPage() {
       openBlock(id, `divider:${at}`);
       return;
     }
+    const nextExtra = (s.extras ?? []).length;
     if (kind === "button") {
-      if (s.buttonLabel === undefined) patch(s.id, { buttonLabel: "Explore", buttonHref: "/" });
-      openBlock("button", "button");
+      if (s.buttonLabel === undefined) {
+        patch(s.id, { buttonLabel: "Explore", buttonHref: "/" });
+        openBlock("button", "button");
+      } else {
+        const id = newSectionId();
+        patch(s.id, { extras: [...(s.extras ?? []), { id, text: "Learn more", kind: "button" as const, button: { href: "/", variant: "outline" as const } }] });
+        openBlock(id, `text:${nextExtra}`);
+      }
       return;
     }
-    const nextExtra = (s.extras ?? []).length;
     if (kind === "eyebrow") {
       if (s.eyebrow === undefined) {
         patch(s.id, { eyebrow: "Since 1951" });
@@ -3255,8 +3261,8 @@ export default function ObjectDesignPage() {
         if (!t) return null;
         
           const kind = t.kind ?? "text";
-          const kindLabel = FREE_TEXT_KINDS.find((k) => k.value === kind)?.label ?? "Text";
-          const kindIcon = kind === "title" ? Heading : kind === "eyebrow" ? Tag : AlignLeft;
+          const kindLabel = kind === "button" ? "Button" : FREE_TEXT_KINDS.find((k) => k.value === kind)?.label ?? "Text";
+          const kindIcon = kind === "button" ? MousePointerClick : kind === "title" ? Heading : kind === "eyebrow" ? Tag : AlignLeft;
           const kindDefaults =
             kind === "title"
               ? { font: "serif" as const, color: "ink" as const, size: "xl" as const }
@@ -3290,7 +3296,32 @@ export default function ObjectDesignPage() {
                     ))}
                   </select>
                 </Field>
-                {kind === "icon" ? (
+                {kind === "button" ? (
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Field label="Button label">
+                        <Input value={t.text} onChange={(e) => patchExtra(section.id, i, { text: e.target.value })} />
+                      </Field>
+                      <Field label="Button link">
+                        <Input value={t.button?.href ?? ""} placeholder="/collections" onChange={(e) => patchExtra(section.id, i, { button: { ...t.button, href: e.target.value } })} />
+                      </Field>
+                    </div>
+                    <Field label="Button style">
+                      <div>
+                        <Choice
+                          value={t.button?.variant ?? "solid"}
+                          options={BUTTON_STYLE_OPTIONS}
+                          onChange={(v) => patchExtra(section.id, i, { button: { ...t.button, variant: v } })}
+                        />
+                      </div>
+                    </Field>
+                    <ButtonIconField
+                      icon={t.icon}
+                      side={t.iconSide === "after" ? "after" : "before"}
+                      onChange={(n) => patchExtra(section.id, i, { icon: n.icon, iconSide: n.iconSide })}
+                    />
+                  </>
+                ) : kind === "icon" ? (
                   <>
                     <IconPicker
                       value={t.text}
