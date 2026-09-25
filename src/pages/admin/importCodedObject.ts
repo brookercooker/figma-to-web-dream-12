@@ -943,6 +943,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     // Skip wrappers that hold other text so copy is not duplicated.
     if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) continue;
     const plain = clean(el.innerText || el.textContent);
+    if (import.meta.env.DEV) ((window as any).__dbg ??= []).push(["cand", tag, plain.slice(0,30), seenText.has(plain)]);
     if (!plain || seenText.has(plain)) continue;
 
     // An underlined call-to-action ("Watch the film →") inside a clickable card
@@ -1000,6 +1001,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     }
     const style = styleOf(el, heading);
 
+    if (import.meta.env.DEV) ((window as any).__dbg ??= []).push(["leaf", plain.slice(0,30), !!rich, runs.length]);
     const iconHere = iconFor.get(el);
     if (!base.eyebrow && !heading && !iconHere && looksLikeEyebrow(el)) {
       base.eyebrow = text;
