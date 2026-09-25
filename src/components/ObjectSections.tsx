@@ -462,6 +462,10 @@ export interface SectionVideo {
   loop?: boolean;
   muted?: boolean;
   controls?: boolean;
+  /** Pixel width; empty = fill the space. */
+  width?: number;
+  /** Pixel height; empty = widescreen shape. */
+  height?: number;
 }
 
 /** Turn a YouTube / Vimeo link into an embed URL. Returns null for plain files. */
@@ -1775,10 +1779,11 @@ function FreeGallery({ section, onDark, items }: { section: FreeSection; onDark?
 
 export function VideoPlayer({ video, className = "" }: { video: SectionVideo; className?: string }) {
   const embed = videoEmbedUrl(video.url);
-  const box = `w-full overflow-hidden rounded-lg bg-muted aspect-video ${className}`;
+  const box = `w-full max-w-full overflow-hidden rounded-lg bg-muted ${video.height ? "" : "aspect-video"} ${className}`;
+  const dims: React.CSSProperties = { width: video.width ? `${video.width}px` : undefined, height: video.height ? `${video.height}px` : undefined };
   if (!video.url?.trim()) {
     return (
-      <div className={`${box} flex items-center justify-center text-xs text-muted-foreground`}>Video</div>
+      <div style={dims} className={`${box} flex items-center justify-center text-xs text-muted-foreground`}>Video</div>
     );
   }
   if (embed) {
@@ -1787,7 +1792,7 @@ export function VideoPlayer({ video, className = "" }: { video: SectionVideo; cl
     if (video.loop) params.set("loop", "1");
     const q = params.toString();
     return (
-      <div className={box}>
+      <div className={box} style={dims}>
         <iframe
           src={q ? `${embed}?${q}` : embed}
           title={video.caption || "Video"}
@@ -1800,7 +1805,7 @@ export function VideoPlayer({ video, className = "" }: { video: SectionVideo; cl
     );
   }
   return (
-    <div className={box}>
+    <div className={box} style={dims}>
       <video
         src={video.url}
         poster={video.poster || undefined}
