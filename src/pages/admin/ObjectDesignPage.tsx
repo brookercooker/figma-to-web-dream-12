@@ -4189,7 +4189,7 @@ export default function ObjectDesignPage() {
                     }`}
                     style={blockBgStyle(s)}
                   >
-                    <div className={`flex items-center gap-2.5 rounded-t-md border-b-2 px-3 py-3 ${active ? "border-primary/40 bg-primary/10" : "border-foreground/15 bg-muted"}`}>
+                    <div className={`flex items-center gap-2.5 rounded-t-md border-b-2 px-3 py-3 ${active ? "border-primary/40 bg-background bg-[linear-gradient(hsl(var(--primary)/0.1),hsl(var(--primary)/0.1))]" : "border-foreground/15 bg-muted"}`}>
                       <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold tabular-nums ${active ? "bg-primary text-primary-foreground" : "bg-foreground text-background"}`}>
                         {i + 1}
                       </span>
