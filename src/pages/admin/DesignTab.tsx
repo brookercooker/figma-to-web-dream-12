@@ -26,6 +26,7 @@ import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign,
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import InsertGap, { type InsertType } from "./InsertGap";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null }
 
