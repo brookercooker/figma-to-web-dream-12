@@ -3754,6 +3754,19 @@ export default function ObjectDesignPage() {
                     />
                   </Field>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {(["width", "height"] as const).map((k) => (
+                    <Field key={k} label={`${k === "width" ? "Width" : "Height"} (px)`}>
+                      <Input
+                        type="number"
+                        min={40}
+                        placeholder={k === "width" ? "Full width" : "Auto"}
+                        value={v[k] ?? ""}
+                        onChange={(e) => patchVideo(section.id, i, { [k]: e.target.value ? Math.max(40, Number(e.target.value)) : undefined })}
+                      />
+                    </Field>
+                  ))}
+                </div>
                 <div className="flex flex-wrap gap-4 text-sm">
                   <label className="flex items-center gap-2">
                     <input
