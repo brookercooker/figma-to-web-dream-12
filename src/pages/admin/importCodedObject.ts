@@ -976,15 +976,26 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const ib = firstImg.getBoundingClientRect();
     if (ib.height > 24) base.imageHeightPx = Math.round(ib.height);
     // A bordered card outlines the whole item, picture and wording together.
-    for (let el: HTMLElement | null = firstCard, i = 0; el && el !== node && i < 3; el = el.parentElement, i += 1) {
+    // Look at the card, anything inside it (down to the picture) and its
+    // single-item wrappers — whichever carries a border or ring outline.
+    const pool: HTMLElement[] = [];
+    for (let el: HTMLElement | null = firstCard.parentElement; el && el !== node && el.querySelectorAll("img").length === 1; el = el.parentElement) pool.push(el);
+    pool.reverse();
+    pool.push(firstCard, ...Array.from(firstCard.querySelectorAll<HTMLElement>("*")).filter((d) => d.contains(firstImg) || d === firstImg));
+    const ringOf = (el: HTMLElement) => {
+      const m = getComputedStyle(el).boxShadow.match(/(rgba?\([^)]*\))\s+0px\s+0px\s+0px\s+(\d+(?:\.\d+)?)px/);
+      return m && parseFloat(m[2]) > 0 && !/,\s*0\)$/.test(m[1]) ? { color: brandBorderColor(m[1]), width: Math.round(parseFloat(m[2])) || 1 } : null;
+    };
+    for (const el of pool) {
       const b = borderOf(el);
-      if (b && b.all) {
+      const hit = b && (b.all || (b.top && b.bottom)) ? b : ringOf(el);
+      if (hit) {
         const cs3 = getComputedStyle(el);
         base.imageBorder = true;
-        base.imageBorderColor = b.color as FreeSection["imageBorderColor"];
-        base.imageBorderWidth = b.width;
+        base.imageBorderColor = hit.color as FreeSection["imageBorderColor"];
+        base.imageBorderWidth = hit.width;
         base.imageBorderRadius = Math.round(parseFloat(cs3.borderTopLeftRadius)) || 0;
-        base.imageBorderPad = Math.round(parseFloat(cs3.paddingTop)) || 0;
+        base.imageBorderPad = el === firstImg ? 0 : Math.round(parseFloat(cs3.paddingTop)) || 0;
         break;
       }
     }
