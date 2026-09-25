@@ -1951,6 +1951,26 @@ export default function ObjectDesignPage() {
     setDirty(true);
   };
 
+  const [collapsedBlocks, setCollapsedBlocks] = useState<Record<string, boolean>>({});
+  const [dragBlock, setDragBlock] = useState("");
+  const [blockDrop, setBlockDrop] = useState<{ id: string; before: boolean } | null>(null);
+  const armedBlock = useRef("");
+  const moveBlockTo = (fromId: string, toId: string, before: boolean) => {
+    if (fromId === toId) return;
+    setSections((prev) => {
+      const from = prev.findIndex((x) => x.id === fromId);
+      if (from < 0) return prev;
+      const copy = [...prev];
+      const [item] = copy.splice(from, 1);
+      let to = copy.findIndex((x) => x.id === toId);
+      if (to < 0) return prev;
+      if (!before) to += 1;
+      copy.splice(to, 0, item);
+      return copy;
+    });
+    setDirty(true);
+  };
+
   const move = (id: string, dir: -1 | 1) => {
     setSections((prev) => {
       const i = prev.findIndex((s) => s.id === id);
@@ -4245,12 +4265,63 @@ export default function ObjectDesignPage() {
                 return (
                   <div
                     key={s.id}
-                    className={`rounded-lg border-2 bg-background transition-shadow ${
+                    draggable={dragBlock === s.id}
+                    onDragStart={(e) => {
+                      if (armedBlock.current !== s.id) { e.preventDefault(); return; }
+                      e.dataTransfer.effectAllowed = "move";
+                      e.dataTransfer.setData("text/x-block", s.id);
+                    }}
+                    onDragEnd={() => { armedBlock.current = ""; setDragBlock(""); setBlockDrop(null); }}
+                    onDragOver={(e) => {
+                      if (!armedBlock.current || armedBlock.current === s.id) return;
+                      e.preventDefault();
+                      const r = e.currentTarget.getBoundingClientRect();
+                      const before = grp.length > 1 ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
+                      if (blockDrop?.id !== s.id || blockDrop.before !== before) setBlockDrop({ id: s.id, before });
+                    }}
+                    onDrop={(e) => {
+                      if (!armedBlock.current) return;
+                      e.preventDefault();
+                      if (blockDrop) moveBlockTo(armedBlock.current, s.id, blockDrop.before);
+                      armedBlock.current = ""; setDragBlock(""); setBlockDrop(null);
+                    }}
+                    className={`relative rounded-lg border-2 bg-background transition-shadow ${dragBlock === s.id ? "opacity-50" : ""} ${
                       active ? "border-primary/50 shadow-lg" : "border-border shadow-sm hover:border-primary/25"
                     }`}
                     style={blockBgStyle(s)}
                   >
-                    <div className={`flex items-center gap-2.5 rounded-t-md border-b-2 px-3 py-3 ${active ? "border-primary/40 bg-background bg-[linear-gradient(hsl(var(--primary)/0.1),hsl(var(--primary)/0.1))]" : "border-foreground/15 bg-muted"}`}>
+                    {blockDrop?.id === s.id && (
+                      <div
+                        className={`pointer-events-none absolute z-30 rounded-full bg-primary ${
+                          grp.length > 1
+                            ? `inset-y-0 w-1 ${blockDrop.before ? "-left-2" : "-right-2"}`
+                            : `inset-x-0 h-1 ${blockDrop.before ? "-top-3" : "-bottom-3"}`
+                        }`}
+                      />
+                    )}
+                    <div
+                      onMouseDown={(e) => {
+                        if ((e.target as HTMLElement).closest("button,input,select,textarea,[contenteditable=true]")) return;
+                        armedBlock.current = s.id;
+                        setDragBlock(s.id);
+                        const up = () => {
+                          window.setTimeout(() => { if (armedBlock.current === s.id && !blockDrop) { armedBlock.current = ""; setDragBlock(""); } }, 0);
+                        };
+                        window.addEventListener("mouseup", up, { once: true });
+                      }}
+                      title="Drag to move this block"
+                      className={`flex cursor-grab items-center gap-2.5 active:cursor-grabbing ${collapsedBlocks[s.id] ? "rounded-md" : "rounded-t-md border-b-2"} px-3 py-3 ${active ? "border-primary/40 bg-background bg-[linear-gradient(hsl(var(--primary)/0.1),hsl(var(--primary)/0.1))]" : "border-foreground/15 bg-muted"}`}>
+                      <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <button
+                        type="button"
+                        title={collapsedBlocks[s.id] ? "Expand block" : "Collapse block"}
+                        aria-label={collapsedBlocks[s.id] ? "Expand block" : "Collapse block"}
+                        aria-expanded={!collapsedBlocks[s.id]}
+                        onClick={() => setCollapsedBlocks((c) => ({ ...c, [s.id]: !c[s.id] }))}
+                        className="rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
+                      >
+                        <ChevronDown className={`h-4 w-4 transition-transform ${collapsedBlocks[s.id] ? "-rotate-90" : ""}`} />
+                      </button>
                       <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold tabular-nums ${active ? "bg-primary text-primary-foreground" : "bg-foreground text-background"}`}>
                         {i + 1}
                       </span>
@@ -4279,6 +4350,7 @@ export default function ObjectDesignPage() {
                       />
                     </div>
 
+                    {!collapsedBlocks[s.id] && (<>
                     {s.type === "locked" && (
                       <div className="border-b border-dashed bg-muted/50 px-4 py-2 text-xs text-muted-foreground">
                         <span className="font-semibold text-foreground">{s.title}:</span> {s.note} It is kept exactly as built — you can move or delete it, but not change it here.
@@ -4327,6 +4399,7 @@ export default function ObjectDesignPage() {
                         <SectionView section={s} />
                       )}
                     </BlockCanvas>
+                    </>)}
 
 
                   </div>
