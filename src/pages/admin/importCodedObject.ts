@@ -1003,12 +1003,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (repeatingCards.length >= 3 && (/^\d+\s*(\/|of|—|–|-)\s*\d+$/i.test(plain) || (/^(\d{1,3}|\/|of)$/i.test(plain) && !!el.closest("div")?.parentElement?.querySelector("button")))) continue;
     seenText.add(plain);
     const rich = richOf(el);
-    const text = rich ?? plain;
+    let text = rich ?? plain;
 
     const heading = /^h[1-6]$/.test(tag);
     let runs = rich ? [] : runsOf(el);
     let brText: string | null = null;
-    if (runs.length > 1 && runs.every((r) => r.styleEl === el)) { brText = runs.map((r) => escapeHtml(r.text)).join("<br>"); runs = []; }
+    if (runs.length > 1 && runs.every((r) => r.styleEl === el)) { brText = runs.map((r) => escapeHtml(r.text)).join("<br>"); runs = []; text = brText; }
     if (runs.length > 1) {
       // Mixed styling (an italic phrase, a line break) keeps each run's look,
       // stacked in the same place.
