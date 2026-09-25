@@ -76,6 +76,21 @@ function applyIcon(el: HTMLElement, value: string) {
   if (old) old.replaceWith(svg); else el.appendChild(svg);
 }
 
+/** A see-through copy of `el` that follows the pointer while dragging. */
+function makeGhost(el: HTMLElement, x: number, y: number) {
+  const r = el.getBoundingClientRect();
+  const g = el.cloneNode(true) as HTMLElement;
+  const dx = x - r.left, dy = y - r.top;
+  Object.assign(g.style, {
+    position: "fixed", left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${Math.min(r.height, 400)}px`,
+    overflow: "hidden", opacity: "0.55", pointerEvents: "none", zIndex: "9999", margin: "0",
+    boxShadow: "0 12px 32px hsl(var(--foreground) / 0.18)", background: "hsl(var(--background))",
+  });
+  g.removeAttribute("data-inline-dragging");
+  document.body.appendChild(g);
+  return { move: (mx: number, my: number) => { g.style.left = `${mx - dx}px`; g.style.top = `${my - dy}px`; }, remove: () => g.remove() };
+}
+
 /** Which border edge of `el` (if any) sits within a few pixels of the point. */
 function edgeAt(el: HTMLElement, x: number, y: number): InlineSelection["side"] | null {
   const cs = getComputedStyle(el);
@@ -304,7 +319,7 @@ export default function InlineEditSurface({
       return x >= r.left && x <= r.right && y >= r.top && y < r.top + BAR;
     });
 
-  const drag = useRef<{ from: InlineChunk; x: number; y: number; moved: boolean; target?: { c: InlineChunk; after: boolean } } | null>(null);
+  const drag = useRef<{ from: InlineChunk; x: number; y: number; moved: boolean; target?: { c: InlineChunk; after: boolean }; ghost?: ReturnType<typeof makeGhost> } | null>(null);
 
   const clearDrop = () => ref.current?.querySelectorAll("[data-inline-drop]").forEach((el) => el.removeAttribute("data-inline-drop"));
 
@@ -319,6 +334,8 @@ export default function InlineEditSurface({
       const d = drag.current;
       if (!d) return;
       if (!d.moved && Math.hypot(ev.clientX - d.x, ev.clientY - d.y) < 5) return;
+      if (!d.ghost) d.ghost = makeGhost(d.from.el, d.x, d.y);
+      d.ghost.move(ev.clientX, ev.clientY);
       d.moved = true;
       d.from.el.setAttribute("data-inline-dragging", "");
       document.body.style.cursor = "grabbing";
@@ -347,6 +364,7 @@ export default function InlineEditSurface({
       drag.current = null;
       clearDrop();
       if (!d) return;
+      d.ghost?.remove();
       d.from.el.removeAttribute("data-inline-dragging");
       if (!d.moved) onToggleCollapse?.(d.from.key);
       else if (d.target) onReorder?.(d.from, d.target.c, d.target.after, chunksRef.current);
