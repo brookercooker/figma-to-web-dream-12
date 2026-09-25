@@ -80,7 +80,7 @@ function visualAlign(el: HTMLElement, stop?: HTMLElement): SectionAlign {
     const grid = /grid/.test(pcs.display);
     if (flex && pcs.flexDirection.startsWith("column") && pcs.alignItems === "center") return "center";
     if (flex && pcs.flexDirection.startsWith("row") && pcs.justifyContent === "center" && parent.children.length === 1) return "center";
-    if (grid && (pcs.justifyItems === "center" || pcs.placeItems?.includes("center"))) return "center";
+    if (grid && pcs.justifyItems === "center") return "center";
     if (flex && pcs.flexDirection.startsWith("column") && pcs.alignItems === "flex-end") return "right";
     const pr = parent.getBoundingClientRect();
     const cr = cur.getBoundingClientRect();
@@ -307,7 +307,9 @@ function layoutRows(
     if (prev && prev.length > 1) {
       const targets = band.items.map((it) => {
         const hits = prev.filter((c) => hOverlap(c.box, it.box) > 0.5);
-        const fits = hits.length === 1 && it.box.width <= (hits[0].box.right - hits[0].box.left) * 1.25;
+        const colW = hits[0] ? hits[0].box.right - hits[0].box.left : 0;
+        const centred = hits[0] ? Math.abs((hits[0].box.left + hits[0].box.right) / 2 - (it.box.left + it.box.right) / 2) < 10 : false;
+        const fits = hits.length === 1 && (it.box.width <= colW * 1.25 || centred);
         return fits ? hits[0] : null;
       });
       if (targets.every(Boolean)) {
@@ -718,10 +720,13 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       const r = el.getBoundingClientRect();
       if (!name || r.width < 12) continue;
       const cs = getComputedStyle(el);
-      extras.push({ id: id(), text: name, kind: "icon", style: { color: colorOf(cs.color), sizePx: Math.round(r.width) } });
+      // An icon drawn inside a round outline keeps its ring.
+      const wrap = el.parentElement && el.parentElement.children.length === 1 ? el.parentElement : null;
+      const ring = !!wrap && parseFloat(getComputedStyle(wrap).borderTopWidth) > 0 && parseFloat(getComputedStyle(wrap).borderTopLeftRadius) >= wrap.getBoundingClientRect().width / 2 - 1;
+      extras.push({ id: id(), text: name, kind: "icon", style: { color: colorOf(cs.color), sizePx: Math.round(r.width), ...(ring ? { iconRing: true } : {}) } });
       const part = `text:${extras.length - 1}`;
       order.push(part);
-      keepFlow(part, el);
+      keepFlow(part, wrap ?? el);
       continue;
     }
 
@@ -861,7 +866,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   // Items on their own line that were narrower than the block keep that width.
   const widths = { ...laid.widths };
   for (const [part, el] of Object.entries(partEls)) {
-    if (laid.flows[part] || !nodeWidth) continue;
+    if (laid.flows[part] || !nodeWidth || imageBoxes.length) continue;
     const disp = getComputedStyle(el).display;
     if (disp.startsWith("inline") && part !== "videos") continue;
     const w = el.getBoundingClientRect().width;
@@ -890,7 +895,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   // Repeating product cards become a carousel (or grid) of pictures with their wording.
   if (repeatingCards.length >= 3) {
     base.gallery = carousel ? "carousel" : "grid";
-    const per = Math.max(1, Math.min(4, visibleCards || 3));
+    const cw = repeatingCards[0][1].getBoundingClientRect().width;
+    const per = Math.max(1, Math.min(4, cw ? Math.round(nodeWidth / cw) : visibleCards || 3));
     base.columns = per as 1 | 2 | 3 | 4;
     if (cardAlign) base.captionAlign = cardAlign;
   } else if (images.length === 1 && imageBoxes[0] && nodeWidth) {
