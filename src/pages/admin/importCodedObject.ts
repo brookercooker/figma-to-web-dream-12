@@ -863,6 +863,16 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       base.buttonHref = el.getAttribute("href") ?? "#";
       base.buttonVariant = kind;
       base.labelStyle = styleOf(el, false);
+      {
+        const bcs = getComputedStyle(el);
+        const bw = parseFloat(bcs.borderTopWidth) || 0;
+        base.buttonBox = {
+          padX: Math.round((parseFloat(bcs.paddingLeft) + parseFloat(bcs.paddingRight)) / 2),
+          padY: Math.round((parseFloat(bcs.paddingTop) + parseFloat(bcs.paddingBottom)) / 2),
+          ...(bw > 0 && bcs.borderTopStyle !== "none" ? { borderWidth: bw, borderColor: bcs.borderTopColor } : {}),
+          ...(parseFloat(bcs.letterSpacing) > 0 && parseFloat(bcs.fontSize) > 0 ? { trackingEm: +(parseFloat(bcs.letterSpacing) / parseFloat(bcs.fontSize)).toFixed(3) } : {}),
+        };
+      }
       const bsvg = el.querySelector("svg");
       if (bsvg) {
         base.buttonIcon = iconNameOf(bsvg) ?? "arrowRight";
@@ -1156,7 +1166,13 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   const cs = getComputedStyle(node);
   const padY = Math.round((parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) / 2);
   const padX = Math.round((parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)) / 2);
-  if (padY > 0) base.padY = padY;
+  const buttonOnly = !!base.buttonLabel && !base.heading && !base.eyebrow && !base.body && !images.length && !extras.length;
+  if (buttonOnly) {
+    // A lone button keeps its original gap: its own margins stand in for padding,
+    // and the editor's default spacing is cancelled (negative when it overshoots).
+    const m = (parseFloat(cs.marginTop) + parseFloat(cs.marginBottom)) / 2;
+    base.padY = Math.round(padY + m) - 8;
+  } else if (padY > 0) base.padY = padY;
   if (padX > 0) base.padX = padX;
 
   // Text that sat on top of a picture keeps sitting on top of it.
