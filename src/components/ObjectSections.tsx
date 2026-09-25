@@ -478,6 +478,9 @@ export function sectionPadStyle(section: {
   padX?: number;
   bg?: TextColor;
   bgImage?: string;
+  frame?: BlockFrame;
+  frameColor?: TextColor;
+  frameWidth?: number;
 }): React.CSSProperties {
   const y = section.padY ?? 48;
   const x = section.padX ?? 0;
@@ -487,7 +490,68 @@ export function sectionPadStyle(section: {
     ...spaceStyle(x, "Left"),
     ...spaceStyle(x, "Right"),
     ...(section.bg || section.bgImage ? { position: "relative", isolation: "isolate" } : {}),
+    ...frameStyle(section),
   };
+}
+
+/** Where a block's framing lines sit. */
+export type BlockFrame = "top" | "bottom" | "y" | "all";
+
+export const FRAME_OPTIONS: { value: BlockFrame | ""; label: string }[] = [
+  { value: "", label: "None" },
+  { value: "y", label: "Top & bottom" },
+  { value: "top", label: "Top only" },
+  { value: "bottom", label: "Bottom only" },
+  { value: "all", label: "All sides" },
+];
+
+/** Brand colours offered for outlines and frames. */
+export const OUTLINE_COLORS: { value: TextColor; label: string; swatch: string }[] = [
+  { value: "sand", label: "Sand", swatch: "hsl(var(--nova-sand))" },
+  { value: "brass", label: "Tan", swatch: "hsl(var(--nova-brass))" },
+  { value: "stone", label: "Stone", swatch: "hsl(var(--nova-stone))" },
+  { value: "ink", label: "Ink", swatch: "hsl(var(--nova-ink))" },
+  { value: "garnet", label: "Garnet", swatch: "hsl(var(--nova-garnet))" },
+];
+
+export function outlineColorCss(c: TextColor): string {
+  if (c === "sand") return "hsl(var(--nova-sand))";
+  return textColorCss(c);
+}
+
+export function frameStyle(s: { frame?: BlockFrame; frameColor?: TextColor; frameWidth?: number }): React.CSSProperties {
+  if (!s.frame) return {};
+  const line = `${s.frameWidth ?? 1}px solid ${outlineColorCss(s.frameColor ?? "sand")}`;
+  if (s.frame === "all") return { border: line };
+  return {
+    ...(s.frame === "y" || s.frame === "top" ? { borderTop: line } : {}),
+    ...(s.frame === "y" || s.frame === "bottom" ? { borderBottom: line } : {}),
+  };
+}
+
+/** Outline drawn around one item or one stacked column, making it a card. */
+export interface CardOutline {
+  color?: TextColor;
+  width?: number;
+  radius?: number;
+  pad?: number;
+  bg?: TextColor;
+}
+
+export function cardStyle(c?: CardOutline): React.CSSProperties {
+  if (!c) return {};
+  const style: React.CSSProperties = {
+    padding: c.pad ?? 24,
+    borderRadius: c.radius ?? 0,
+  };
+  if (c.color) style.border = `${c.width ?? 1}px solid ${outlineColorCss(c.color)}`;
+  if (c.bg) style.backgroundColor = c.bg === "sand" ? "hsl(var(--nova-sand) / 0.4)" : bgColorCss(c.bg);
+  return style;
+}
+
+/** Key a part's card outline is stored under: its stack id, or the part itself. */
+export function cardKeyOf(section: { stacks?: Record<string, string> }, part: string): string {
+  return section.stacks?.[part] ?? part;
 }
 
 /**
@@ -863,6 +927,12 @@ export interface FreeSection {
   flowVAligns?: Record<string, PartVAlign>;
   /** items sharing a stack id are stacked vertically inside one column of a side-by-side row */
   stacks?: Record<string, string>;
+  /** card outlines, keyed by stack id (for stacked items) or by part */
+  cards?: Record<string, CardOutline>;
+  /** framing lines around the whole block */
+  frame?: BlockFrame;
+  frameColor?: TextColor;
+  frameWidth?: number;
   /** per-element vertical padding in pixels, keyed by the same parts */
   padsY?: Record<string, number>;
   /** per-element horizontal padding in pixels, keyed by the same parts */
@@ -1931,7 +2001,11 @@ function FreeText({
                 <div
                   key={col.key}
                   className={`flex flex-col gap-4 px-3 ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
-                  style={flowWidthStyle(w)}
+                  style={{ ...(flowWidthStyle(w) ?? {}) }}
+                >
+                  <div
+                    className={`flex h-full flex-col gap-4 ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]}`}
+                    style={cardStyle(section.cards?.[cardKeyOf(section, it.part)])}
                 >
                   {col.items.map((ci) => (
                     <div
@@ -1943,6 +2017,7 @@ function FreeText({
                       <RotatedPart deg={partRotation(section, ci.part)} size={partSizeStyle(section, ci.part)} vAlignClass={partVAlignClass(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
                   ))}
+                  </div>
                 </div>
               );
             })}
@@ -1959,7 +2034,7 @@ function FreeText({
               >
                 <div
                   className={`flex flex-col gap-4 ${alignText[a]} ${w ? "" : "w-full"}`}
-                  style={flowWidthStyle(w)}
+                  style={{ ...(flowWidthStyle(w) ?? {}), ...cardStyle(section.cards?.[cardKeyOf(section, it.part)]) }}
                 >
                   {columns[0].items.map((ci) => (
                     <div

@@ -43,7 +43,15 @@ import {
   ContainedBgContext,
   bgColorCss,
   segmentColorCss,
+  cardKeyOf,
+  FRAME_OPTIONS,
+  OUTLINE_COLORS,
+  EMPHASIS_BG as OUTLINE_EMPHASIS_BG,
+  type CardOutline,
+  type BlockFrame,
 } from "@/components/ObjectSections";
+
+const EMPHASIS_BG = OUTLINE_EMPHASIS_BG;
 
 /** Paints a block's own background inside its editor frame. */
 function blockBgStyle(sec: object): React.CSSProperties | undefined {
@@ -54,6 +62,62 @@ function blockBgStyle(sec: object): React.CSSProperties | undefined {
     ...(bg ? { backgroundColor: bgColorCss(bg) } : {}),
     ...(s.bgImage ? { backgroundImage: `url(${s.bgImage})`, backgroundSize: "cover", backgroundPosition: "center" } : {}),
   };
+}
+
+/** Placement, brand-colour and thickness pickers for outlines and frame lines. */
+function OutlineControls({
+  placement, color, width, onChange,
+}: {
+  placement?: BlockFrame | "";
+  color?: string;
+  width?: number;
+  onChange: (p: { placement?: BlockFrame | ""; color?: string; width?: number }) => void;
+}) {
+  const showPlacement = placement !== undefined;
+  const active = showPlacement ? !!placement : !!color;
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {showPlacement ? (
+        <select
+          aria-label="Frame placement"
+          className="h-7 rounded-md border bg-background px-2 text-xs"
+          value={placement}
+          onChange={(e) => onChange({ placement: e.target.value as BlockFrame | "" })}
+        >
+          {FRAME_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      ) : null}
+      <div className="flex items-center gap-1" role="radiogroup" aria-label="Outline colour">
+        {OUTLINE_COLORS.map((c) => {
+          const on = (color ?? (showPlacement ? "sand" : "")) === c.value && active;
+          return (
+            <button
+              key={c.value}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              title={c.label}
+              aria-label={c.label}
+              className={`h-5 w-5 rounded-full border ${on ? "ring-2 ring-foreground/60 ring-offset-1" : ""}`}
+              style={{ background: c.swatch }}
+              onClick={() => onChange(showPlacement && !placement ? { placement: "y", color: c.value } : { color: c.value })}
+            />
+          );
+        })}
+      </div>
+      {active ? (
+        <select
+          aria-label="Line thickness"
+          className="h-7 rounded-md border bg-background px-2 text-xs"
+          value={width ?? 1}
+          onChange={(e) => onChange({ width: Number(e.target.value) })}
+        >
+          <option value={1}>1px</option>
+          <option value={2}>2px</option>
+        </select>
+      ) : null}
+    </div>
+  );
 }
 
 /** Icon shown on the icon-only "add item" row inside an image editor. */
@@ -2877,6 +2941,23 @@ export default function ObjectDesignPage() {
             ) : null}
             </div>
             </div>
+            {section.type === "free" ? (
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Frame lines</span>
+                <OutlineControls
+                  placement={(section as FreeSection).frame ?? ""}
+                  color={(section as FreeSection).frameColor}
+                  width={(section as FreeSection).frameWidth}
+                  onChange={(p) =>
+                    patch(section.id, {
+                      ...("placement" in p ? { frame: p.placement || undefined } : {}),
+                      ...("color" in p ? { frameColor: p.color } : {}),
+                      ...("width" in p ? { frameWidth: p.width } : {}),
+                    } as Partial<Section>)
+                  }
+                />
+              </div>
+            ) : null}
           </div>
           <div className="ml-auto flex gap-2">
             {parts.length ? (
@@ -3566,6 +3647,79 @@ export default function ObjectDesignPage() {
     return (
       <div className="space-y-4">
         {parts.map((p) => <Fragment key={p}>{renderPart(p)}</Fragment>)}
+
+        {selected ? (() => {
+          const key = cardKeyOf(section, selected);
+          const card = section.cards?.[key];
+          const stacked = !!section.stacks?.[selected];
+          const setCard = (next: CardOutline | undefined) => {
+            const cards = { ...(section.cards ?? {}) };
+            if (next) cards[key] = next;
+            else delete cards[key];
+            patch(section.id, { cards: Object.keys(cards).length ? cards : undefined });
+          };
+          return (
+            <div className="rounded-lg border p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Card outline</span>
+                {card ? (
+                  <button type="button" className="text-xs text-muted-foreground underline" onClick={() => setCard(undefined)}>
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stacked ? "Wraps this item and everything stacked with it." : "Wraps this item."}
+              </p>
+              <OutlineControls
+                color={card?.color}
+                width={card?.width}
+                onChange={(p) => setCard({ ...(card ?? {}), ...("color" in p ? { color: p.color } : {}), ...("width" in p ? { width: p.width } : {}) })}
+              />
+              {card ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                    Corners
+                    <select
+                      className="h-8 rounded-md border bg-background px-2 text-xs text-foreground"
+                      value={card.radius ?? 0}
+                      onChange={(e) => setCard({ ...card, radius: Number(e.target.value) })}
+                    >
+                      <option value={0}>Sharp</option>
+                      <option value={4}>Subtle</option>
+                      <option value={8}>Rounded</option>
+                    </select>
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                    Inner space
+                    <select
+                      className="h-8 rounded-md border bg-background px-2 text-xs text-foreground"
+                      value={card.pad ?? 24}
+                      onChange={(e) => setCard({ ...card, pad: Number(e.target.value) })}
+                    >
+                      <option value={16}>Compact</option>
+                      <option value={24}>Standard</option>
+                      <option value={32}>Spacious</option>
+                    </select>
+                  </label>
+                  <label className="col-span-2 flex flex-col gap-1 text-xs text-muted-foreground">
+                    Fill
+                    <select
+                      className="h-8 rounded-md border bg-background px-2 text-xs text-foreground"
+                      value={card.bg ?? ""}
+                      onChange={(e) => setCard({ ...card, bg: e.target.value || undefined })}
+                    >
+                      <option value="">None</option>
+                      <option value="cream">White</option>
+                      <option value="sand">Sand tint</option>
+                      <option value={EMPHASIS_BG}>Emphasis</option>
+                    </select>
+                  </label>
+                </div>
+              ) : null}
+            </div>
+          );
+        })() : null}
 
         {parts.length ? null : (
           <p className="rounded-lg border border-dashed py-6 text-center text-xs text-muted-foreground">

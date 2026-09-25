@@ -388,6 +388,39 @@ const centerInside = (inner: Box, outer: Box) => {
   return cx >= outer.left && cx <= outer.right && cy >= outer.top && cy <= outer.bottom;
 };
 
+/** Visible border lines on an element, with their colour (brand token when it matches). */
+function borderOf(el: HTMLElement): { top: boolean; bottom: boolean; all: boolean; color: string; width: number } | null {
+  const cs = getComputedStyle(el);
+  const on = (side: "Top" | "Bottom" | "Left" | "Right") =>
+    parseFloat(cs[`border${side}Width` as "borderTopWidth"]) > 0 &&
+    cs[`border${side}Style` as "borderTopStyle"] !== "none" &&
+    !/rgba\([^)]*,\s*0\)$/.test(cs[`border${side}Color` as "borderTopColor"]);
+  const top = on("Top"), bottom = on("Bottom"), left = on("Left"), right = on("Right");
+  if (!top && !bottom) return null;
+  const side = top ? "Top" : "Bottom";
+  const raw = cs[`border${side}Color` as "borderTopColor"];
+  const width = Math.round(parseFloat(cs[`border${side}Width` as "borderTopWidth"])) || 1;
+  return { top, bottom, all: top && bottom && left && right, color: brandBorderColor(raw), width };
+}
+
+/** Maps a computed border colour back to the nearest brand token, else keeps it as-is. */
+function brandBorderColor(raw: string): string {
+  const probe = document.createElement("span");
+  document.body.appendChild(probe);
+  const tokens = ["sand", "brass", "stone", "ink", "garnet"];
+  const rgb = (s: string) => (s.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+  const target = rgb(raw);
+  let best = raw, dist = 40;
+  for (const t of tokens) {
+    probe.style.color = `hsl(var(--nova-${t}))`;
+    const c = rgb(getComputedStyle(probe).color);
+    const d = Math.hypot(c[0] - target[0], c[1] - target[1], c[2] - target[2]);
+    if (d < dist) { dist = d; best = t; }
+  }
+  probe.remove();
+  return best;
+}
+
 function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   const node = parts.length === 1 ? parts[0] : (parts[0].parentElement ?? parts[0]);
   const base: FreeSection = {
@@ -411,9 +444,11 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   const imageBoxes: Box[] = [];
 
   const partAligns: Record<string, SectionAlign> = {};
+  const partEls: Record<string, HTMLElement> = {};
   const keepFlow = (part: string, el: HTMLElement) => {
     textBoxes.push({ part, box: boxOf(el) });
     if (!partAligns[part]) partAligns[part] = alignOf(el);
+    if (!partEls[part]) partEls[part] = el;
   };
 
   const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,span,img,a,button";
@@ -641,6 +676,55 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
 
   const bg = backgroundOf(node);
   if (bg) base.bg = bg;
+
+  // Outlined cards: a bordered box wrapping a stacked column or a single item.
+  const cards: NonNullable<FreeSection["cards"]> = {};
+  const groupsByKey: Record<string, HTMLElement[]> = {};
+  for (const [part, el] of Object.entries(partEls)) {
+    if (!base.flows?.[part]) continue;
+    const key = base.stacks?.[part] ?? part;
+    (groupsByKey[key] ??= []).push(el);
+  }
+  for (const [key, els] of Object.entries(groupsByKey)) {
+    let anc: HTMLElement | null = els[0];
+    while (anc && anc !== node && !els.every((e) => anc!.contains(e))) anc = anc.parentElement;
+    for (let el = anc; el && el !== node && node.contains(el); el = el.parentElement) {
+      const b = borderOf(el);
+      if (b && b.all) {
+        const cs2 = getComputedStyle(el);
+        cards[key] = {
+          color: b.color,
+          width: b.width,
+          radius: Math.round(parseFloat(cs2.borderTopLeftRadius)) || 0,
+          pad: Math.round(parseFloat(cs2.paddingTop)) || 24,
+          ...(backgroundOf(el) ? { bg: backgroundOf(el) } : {}),
+        };
+        break;
+      }
+    }
+  }
+  if (Object.keys(cards).length) base.cards = cards;
+
+  // Framing lines on the block itself, or on a wrapper whose edge it shares.
+  const nb = node.getBoundingClientRect();
+  for (let el: HTMLElement | null = node; el && el.tagName !== "BODY"; el = el.parentElement) {
+    if (el.hasAttribute("data-import-root")) break;
+    const b = borderOf(el);
+    if (b) {
+      const eb = el.getBoundingClientRect();
+      const top = b.top && (el === node || Math.abs(eb.top - nb.top) < 140 + parseFloat(getComputedStyle(el).paddingTop));
+      const bottom = b.bottom && (el === node || Math.abs(eb.bottom - nb.bottom) < 140 + parseFloat(getComputedStyle(el).paddingBottom));
+      if (b.all && el === node) base.frame = "all";
+      else if (top && bottom) base.frame = "y";
+      else if (top) base.frame = "top";
+      else if (bottom) base.frame = "bottom";
+      if (base.frame) {
+        base.frameColor = b.color;
+        if (b.width > 1) base.frameWidth = b.width;
+        break;
+      }
+    }
+  }
 
   const empty = !base.heading && !base.eyebrow && !base.body && !images.length && !extras.length;
   return empty ? null : base;
