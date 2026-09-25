@@ -1146,6 +1146,15 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         const pct = Math.floor(100 / Math.max(1, perRow));
         const ps = [...partCard.entries()].filter(([, c]) => c === card).map(([p]) => p)
           .sort((a, b) => (boxOfPart.get(a)?.top ?? 0) - (boxOfPart.get(b)?.top ?? 0));
+        // A line spanning the card is drawn full width inside its column.
+        for (const p of ps) {
+          const m = /^divider:(\d+)$/.exec(p);
+          const bx = boxOfPart.get(p);
+          if (m && bx && base.dividers?.[+m[1]] && bx.width >= r.width * 0.95) {
+            const d = { ...base.dividers[+m[1]] }; delete d.widthPct; d.width = "full";
+            base.dividers[+m[1]] = d;
+          }
+        }
         for (const p of ps) { flows[p] = "inline"; stacks[p] = `card${k}`; fw[p] = pct; cardParts.push(p); }
       });
       const cur = base.order ?? [];
