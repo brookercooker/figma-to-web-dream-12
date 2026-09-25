@@ -358,17 +358,36 @@ function layoutRows(
       return;
     }
     rowsOut.push(cols.map((c) => ({ parts: c.items.map((i) => i.part), box: c.box })));
+    const pcts = cols.map((col) => (nodeWidth ? Math.max(10, Math.min(100, Math.round(((col.box.right - col.box.left) / nodeWidth) * 100))) : 0));
+    // When another side-by-side row follows, this row fills the full width so the
+    // next row wraps onto its own line instead of joining this one (the last
+    // column absorbs the gap, keeping its own alignment).
+    const nextMulti = (rows[bi + 1]?.length ?? 0) > 1;
+    if (nextMulti && pcts.every(Boolean)) {
+      const sum = pcts.reduce((a, b) => a + b, 0);
+      if (sum < 100) pcts[pcts.length - 1] += 100 - sum;
+    }
     cols.forEach((col, ci) => {
-      const pct = nodeWidth ? Math.round(((col.box.right - col.box.left) / nodeWidth) * 100) : 0;
+      const pct = pcts[ci];
       col.items.forEach((it) => {
         flows[it.part] = "inline";
         if (col.items.length > 1) stacks[it.part] = `b${bi}c${ci}`;
-        if (pct) widths[it.part] = Math.max(10, Math.min(100, pct));
+        if (pct) widths[it.part] = pct;
         order.push(it.part);
       });
     });
   });
   return { flows, widths, stacks, order, rows: rowsOut };
+}
+
+/** Short wording drawn with only a bottom rule under it — reads as a link. */
+function isUnderlinedLink(el: HTMLElement): boolean {
+  const label = (el.textContent ?? "").replace(/\s+/g, " ").trim();
+  if (!label || label.length > 40 || el.querySelector("p,h1,h2,h3,h4,h5,h6,img")) return false;
+  const cs = getComputedStyle(el);
+  const bottom = parseFloat(cs.borderBottomWidth) > 0 && cs.borderBottomStyle !== "none";
+  const top = parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== "none";
+  return bottom && !top && cs.display !== "block";
 }
 
 /** Solid, outlined or plain-link look of a link or button — null when it's just text. */
@@ -704,6 +723,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   const iconTaken = new Set<Element>();
   for (const svg of all.filter((e) => e.tagName.toLowerCase() === "svg")) {
     if (svg.closest("a,button")) continue;
+    // Icons inside an underlined link travel with that link.
+    { let p = svg.parentElement; let hit = false; while (p && p !== node) { if (p.tagName === "SPAN" && isUnderlinedLink(p)) { hit = true; break; } p = p.parentElement; } if (hit) continue; }
     const name = iconNameOf(svg);
     const parent = svg.parentElement;
     if (!name || !parent) continue;
@@ -776,7 +797,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (tag === "a" || tag === "button") {
       const label = clean(el.innerText || el.textContent);
       // Skip wrappers around images or long blocks of copy.
-      if (!label || label.length > 40 || el.querySelector("img,h1,h2,h3,h4,h5,h6,p,span")) continue;
+      // Short label spans and icon spans inside a button are part of the button.
+      if (!label || label.length > 40 || el.querySelector("img,video,h1,h2,h3,h4,h5,h6,p")) continue;
       const kind = buttonKindOf(el);
       if (base.buttonLabel || !kind) {
         // A plain text link reads as text, keeping its look.
@@ -810,10 +832,37 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
 
     // Spans inside a paragraph or heading belong to that text, not their own.
     if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6")) continue;
+    // Spans inside an underlined link belong to that link.
+    if (tag === "span" && el.parentElement?.closest("span") && (() => { let p = el.parentElement; while (p && p !== node) { if (p.tagName === "SPAN" && isUnderlinedLink(p)) return true; p = p.parentElement; } return false; })()) continue;
     // Skip wrappers that hold other text so copy is not duplicated.
     if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) continue;
     const plain = clean(el.innerText || el.textContent);
     if (!plain || seenText.has(plain)) continue;
+
+    // An underlined call-to-action ("Watch the film →") inside a clickable card
+    // stays a link-style button with its icon and underline.
+    if (tag === "span" && isUnderlinedLink(el)) {
+      seenText.add(plain);
+      const svg = el.querySelector("svg");
+      const icon = svg ? iconNameOf(svg) ?? "arrowRight" : undefined;
+      const href = el.closest("a")?.getAttribute("href") ?? "#";
+      if (!base.buttonLabel) {
+        base.buttonLabel = plain;
+        base.buttonHref = href;
+        base.buttonVariant = "link";
+        base.labelStyle = { ...styleOf(el, false), underline: true };
+        if (icon && svg) { base.buttonIcon = icon; base.buttonIconSide = iconSideOf(svg, el); }
+        order.push("button");
+        keepFlow("button", el);
+        partAligns.button = alignOf(el.parentElement ?? el);
+      } else {
+        extras.push({ id: id(), text: plain, kind: "text", style: { ...styleOf(el, false), underline: true }, ...(icon && svg ? { icon, iconSide: iconSideOf(svg, el) } : {}) });
+        const part = `text:${extras.length - 1}`;
+        order.push(part);
+        keepFlow(part, el);
+      }
+      continue;
+    }
     // A carousel's own counter ("2 / 14") beside its play button is replaced by the editor's controls.
     if (repeatingCards.length >= 3 && (/^\d+\s*(\/|of|—|–|-)\s*\d+$/i.test(plain) || (/^(\d{1,3}|\/|of)$/i.test(plain) && !!el.closest("div")?.parentElement?.querySelector("button")))) continue;
     seenText.add(plain);
@@ -898,6 +947,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const els = parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]);
     for (const el of els) {
       if (el.closest("[data-import-skip],button,a,svg,form")) continue;
+      if (el.tagName === "SPAN" && isUnderlinedLink(el)) continue;
       const r = el.getBoundingClientRect();
       if (r.width < 16) continue;
       const cs = getComputedStyle(el);
@@ -965,6 +1015,24 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const v = near((b) => b.top) ? "top" : near((b) => b.bottom) ? "bottom" : near((b) => (b.top + b.bottom) / 2) ? "middle" : "top";
     for (const c of cols) for (const part of c.parts) vAligns[part] = v;
   }
+  // A short rule beside wording (a line before an eyebrow) gets a column sized
+  // to the rule itself, and fills that column.
+  dividers.forEach((d, i) => {
+    const part = `divider:${i}`;
+    if (!laid.flows[part]) return;
+    const box = textBoxes.find((t) => t.part === part)?.box;
+    const px = box?.width ?? 0;
+    dividers[i] = { ...d, width: "full", widthPct: undefined };
+    if (px && nodeWidth) widths[part] = Math.max(3, Math.round(((px + 24) / nodeWidth) * 100));
+    // Keep a padded row full width so the next row still wraps below it.
+    const ri = laid.rows.findIndex((cols) => cols.some((c) => c.parts.includes(part)));
+    const cols = laid.rows[ri];
+    if (cols && laid.rows[ri + 1] && cols.every((c) => widths[c.parts[0]])) {
+      const lastParts = cols[cols.length - 1].parts;
+      const others = cols.slice(0, -1).reduce((n, c) => n + widths[c.parts[0]], 0);
+      for (const p of lastParts) widths[p] = Math.max(10, 100 - others);
+    }
+  });
   if (Object.keys(widths).length) base.flowWidths = widths; else delete base.flowWidths;
   if (Object.keys(vAligns).length) {
     base.flowVAligns = vAligns;
