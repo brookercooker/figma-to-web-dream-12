@@ -12,7 +12,7 @@ import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
   AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
   ChevronDown, ChevronRight, GripVertical, Film,
-PanelLeftOpen, PanelLeftClose, Monitor, Tablet, Smartphone } from "lucide-react";
+PanelLeftOpen, PanelLeftClose, Monitor, Tablet, Smartphone, Eye } from "lucide-react";
 import { DeviceFrame, DEVICE_WIDTH, type Device } from "@/components/DeviceFrame";
 import CreatePageDialog from "./CreatePageDialog";
 import ConfirmDialog from "./ConfirmDialog";
