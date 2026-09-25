@@ -1563,6 +1563,10 @@ function inlineRows(list: Section[], boxes: Map<Section, Box>, total: number): S
         const w = Math.round((boxes.get(r)!.width / Math.max(used, total * 0.6)) * 100);
         Object.assign(r, { flow: "inline", flowWidth: Math.max(10, Math.min(100, w)) });
       }
+      // Side-by-side blocks keep their tops lined up as in the original.
+      const padOf = (r: Section) => { const x = r as { padTop?: number; padY?: number }; return x.padTop ?? x.padY ?? 0; };
+      const start = Math.min(...row.map((r) => boxes.get(r)!.top - padOf(r)));
+      for (const r of row) (r as { padTop?: number }).padTop = Math.max(0, Math.round(boxes.get(r)!.top - start));
     }
     res.push(...row);
     i = j;
