@@ -1793,7 +1793,7 @@ function FreeMarquee({ section, onDark, items }: { section: FreeSection; onDark?
           );
           return (
             <div key={i} aria-hidden={i >= items.length || undefined} className="shrink-0 transition-opacity duration-300 hover:opacity-60">
-              {e.image.link && !isThumb ? <a href={e.image.link}>{body}</a> : body}
+              {e.image.href && !isThumb ? <a href={e.image.href}>{body}</a> : body}
             </div>
           );
         })}
