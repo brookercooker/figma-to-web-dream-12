@@ -39,7 +39,7 @@ export default function ObjectInPlaceEditor() {
     setEdits(next);
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
-      (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id);
+      (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id).then(() => {});
     }, 800);
   };
   const pickImage = () => new Promise<string | null>((resolve) => setImgAsk(() => resolve));

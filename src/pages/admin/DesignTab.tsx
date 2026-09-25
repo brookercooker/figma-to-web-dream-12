@@ -201,7 +201,7 @@ export default function DesignTab() {
         objectRows.current[r.component_key] = r.id;
         if (r.inline_edits) edits[r.component_key] = r.inline_edits;
       });
-      setObjectEdits(edits); console.log("DBG", JSON.stringify(edits).slice(0,300));
+      setObjectEdits(edits);
     });
   }, []);
   const changeScope = (scope: InlineScope, next: InlineEdits) => {
@@ -211,7 +211,7 @@ export default function DesignTab() {
     if (!id) return;
     window.clearTimeout(objectTimers.current[scope]);
     objectTimers.current[scope] = window.setTimeout(() => {
-      (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id);
+      (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id).then(() => {});
     }, 800);
   };
   const scopeEdits = (scope: InlineScope) => (scope === "page" ? inlineEdits : objectEdits[scope] ?? {});
