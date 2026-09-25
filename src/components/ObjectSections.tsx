@@ -2121,7 +2121,7 @@ export function SectionView({ section }: { section: Section }) {
     case "locked":
       return (
         <div
-          inert
+          {...({ inert: "" } as object)}
           className="pointer-events-none select-none [&_*]:!opacity-100"
           dangerouslySetInnerHTML={{ __html: section.html }}
         />
