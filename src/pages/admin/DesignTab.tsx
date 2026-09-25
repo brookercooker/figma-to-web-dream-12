@@ -269,6 +269,83 @@ export default function DesignTab() {
     setDirty(true);
   };
 
+  // Pointer-based dragging: see-through copy follows the pointer, the wheel keeps
+  // working, and the page scrolls near the top or bottom edge.
+  const grabRef = useRef({ x: 0, y: 0 });
+  const dropRef = useRef<{ id: string; before: boolean } | null>(null);
+  const startDrag = (e: React.MouseEvent, id: string) => {
+    if (e.button !== 0) return;
+    const x0 = e.clientX, y0 = e.clientY;
+    const mv = (ev: MouseEvent) => {
+      if (Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 5) return;
+      window.removeEventListener("mousemove", mv);
+      grabRef.current = { x: ev.clientX, y: ev.clientY };
+      setDragId(id);
+    };
+    window.addEventListener("mousemove", mv);
+    window.addEventListener("mouseup", () => window.removeEventListener("mousemove", mv), { once: true });
+  };
+  useEffect(() => {
+    if (!dragId) return;
+    let speed = 0, raf = 0;
+    let lastX = grabRef.current.x, lastY = grabRef.current.y;
+    const locate = () => {
+      const el = (document.elementFromPoint(lastX, lastY) as HTMLElement | null)?.closest("[data-page-block]") as HTMLElement | null;
+      let next: { id: string; before: boolean } | null = null;
+      if (el && el.dataset.pageBlock !== dragId) {
+        const r = el.getBoundingClientRect();
+        next = { id: el.dataset.pageBlock!, before: lastY < r.top + r.height / 2 };
+      }
+      const cur = dropRef.current;
+      if (cur?.id !== next?.id || cur?.before !== next?.before) { dropRef.current = next; setDropAt(next); }
+    };
+    const src = document.querySelector(`[data-page-block="${dragId}"]`) as HTMLElement | null;
+    let ghost: HTMLElement | null = null;
+    let offX = 0, offY = 0;
+    if (src) {
+      const r = src.getBoundingClientRect();
+      offX = lastX - r.left; offY = lastY - r.top;
+      ghost = src.cloneNode(true) as HTMLElement;
+      ghost.removeAttribute("data-page-block");
+      Object.assign(ghost.style, {
+        position: "fixed", left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`,
+        maxHeight: "320px", overflow: "hidden", opacity: "0.6", pointerEvents: "none", zIndex: "1000",
+        margin: "0", background: "hsl(var(--background))", borderRadius: "0.5rem",
+        boxShadow: "0 20px 40px -12px hsl(var(--foreground) / 0.35)",
+      });
+      document.body.appendChild(ghost);
+    }
+    const place = () => { if (ghost) { ghost.style.left = `${lastX - offX}px`; ghost.style.top = `${lastY - offY}px`; } };
+    const tick = () => { if (speed) { window.scrollBy(0, speed); locate(); } raf = requestAnimationFrame(tick); };
+    raf = requestAnimationFrame(tick);
+    const moveH = (e: MouseEvent) => {
+      lastX = e.clientX; lastY = e.clientY;
+      const edge = 120, h = window.innerHeight;
+      if (e.clientY < edge) speed = -Math.ceil(((edge - e.clientY) / edge) * 24);
+      else if (e.clientY > h - edge) speed = Math.ceil(((e.clientY - (h - edge)) / edge) * 24);
+      else speed = 0;
+      place(); locate();
+    };
+    const wheel = () => requestAnimationFrame(locate);
+    const up = () => {
+      const d = dropRef.current;
+      if (d) moveTo(dragId, d.id, d.before);
+      dropRef.current = null; setDropAt(null); setDragId("");
+    };
+    const prevSel = document.body.style.userSelect, prevCur = document.body.style.cursor;
+    document.body.style.userSelect = "none"; document.body.style.cursor = "grabbing";
+    window.addEventListener("mousemove", moveH);
+    window.addEventListener("wheel", wheel, { passive: true });
+    window.addEventListener("mouseup", up, { once: true });
+    return () => {
+      cancelAnimationFrame(raf); ghost?.remove();
+      document.body.style.userSelect = prevSel; document.body.style.cursor = prevCur;
+      window.removeEventListener("mousemove", moveH);
+      window.removeEventListener("wheel", wheel);
+      window.removeEventListener("mouseup", up);
+    };
+  }, [dragId]);
+
   /** Drag a block to a new position in the page. */
   const moveTo = (id: string, targetId: string, before: boolean) => {
     if (id === targetId) return;
@@ -592,24 +669,7 @@ export default function DesignTab() {
                     <div
                       key={b.id}
                       onClick={() => setActiveId(b.id)}
-                      draggable={dragId === b.id}
-                      onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", b.id); }}
-                      onDragEnd={() => { setDragId(""); setDropAt(null); }}
-                      onDragOver={(e) => {
-                        if (!dragId || dragId === b.id) return;
-                        e.preventDefault();
-                        const r = e.currentTarget.getBoundingClientRect();
-                        setDropAt({ id: b.id, before: e.clientY < r.top + r.height / 2 });
-                      }}
-                      onDragLeave={() => setDropAt((d) => (d?.id === b.id ? null : d))}
-                      onDrop={(e) => {
-                        if (!dragId) return;
-                        e.preventDefault();
-                        const r = e.currentTarget.getBoundingClientRect();
-                        moveTo(dragId, b.id, e.clientY < r.top + r.height / 2);
-                        setDragId("");
-                        setDropAt(null);
-                      }}
+                      data-page-block={b.id}
                       className={`group relative rounded-lg px-3 transition-colors cursor-text ${
                         active ? "ring-2 ring-primary/40 bg-muted/30" : "hover:bg-muted/20"
                       } ${dragId === b.id ? "opacity-50" : ""} ${
@@ -624,8 +684,7 @@ export default function DesignTab() {
                         type="button"
                         title="Drag to move"
                         aria-label="Drag to move"
-                        onMouseDown={() => setDragId(b.id)}
-                        onMouseUp={() => setDragId("")}
+                        onMouseDown={(e) => startDrag(e, b.id)}
                         className={`absolute -left-7 top-2 z-20 cursor-grab rounded p-1 text-muted-foreground transition-opacity hover:bg-muted active:cursor-grabbing ${
                           active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                         }`}
@@ -638,9 +697,8 @@ export default function DesignTab() {
                           onMouseDown={(e) => {
                             const t = e.target as HTMLElement;
                             if (t.closest("input,textarea,select,[contenteditable=true]")) return;
-                            setDragId(b.id);
+                            startDrag(e, b.id);
                           }}
-                          onMouseUp={() => setDragId("")}
                           className="sticky top-16 z-10 -mx-3 mb-2 flex flex-wrap items-center gap-1 border-b bg-background/95 px-3 py-2 backdrop-blur cursor-grab active:cursor-grabbing"
                         >
                           {b.type === "object" ? (
