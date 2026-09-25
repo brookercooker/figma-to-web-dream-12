@@ -1479,7 +1479,7 @@ function FreeFigureBody({
 
   return (
     <div
-      className={bordered ? "overflow-hidden" : ""}
+      className={`h-full ${bordered ? "overflow-hidden" : ""}`}
       style={{ ...(bordered ? imageBorderStyleOf(section) : {}), ...(bordered && (texts.length || image.caption) && (section.imageBorderPad ?? 12) < 12 ? { padding: 12 } : {}), ...(imageWidthStyle(section) ?? {}) }}
     >
       <div data-part={`image:${index}`} style={imageBoxStyle(section)}>
