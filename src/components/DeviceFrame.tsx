@@ -35,7 +35,7 @@ export function DeviceFrame({ children, className, title }: { children: ReactNod
   }, [frame]);
 
   return (
-    <iframe ref={setFrame} title={title} className={className} srcDoc="<!doctype html><html><head></head><body></body></html>">
+    <iframe ref={setFrame} title={title} className={className}>
       {body && createPortal(children, body)}
     </iframe>
   );

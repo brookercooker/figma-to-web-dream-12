@@ -12,7 +12,8 @@ import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
   AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
   ChevronDown, ChevronRight, GripVertical, Film,
-PanelLeftOpen, PanelLeftClose } from "lucide-react";
+PanelLeftOpen, PanelLeftClose, Monitor, Tablet, Smartphone } from "lucide-react";
+import { DeviceFrame, DEVICE_WIDTH, type Device } from "@/components/DeviceFrame";
 import CreatePageDialog from "./CreatePageDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
@@ -310,6 +311,8 @@ export default function DesignTab() {
   // working, and the page scrolls near the top or bottom edge.
   const grabRef = useRef({ x: 0, y: 0 });
   const dropRef = useRef<{ id: string; before: boolean } | null>(null);
+  const [device, setDevice] = useState<Device>("desktop");
+  const deviceStyle = DEVICE_WIDTH[device] ? { width: DEVICE_WIDTH[device]!, maxWidth: "100%", margin: "0 auto" } : undefined;
   const startDrag = (e: React.MouseEvent, id: string) => {
     if (e.button !== 0) return;
     const x0 = e.clientX, y0 = e.clientY;
@@ -672,6 +675,21 @@ export default function DesignTab() {
                   Edit
                 </button>
               </div>
+              <div className="inline-flex rounded-md border overflow-hidden mr-1" role="group" aria-label="Screen size">
+                {([["desktop", Monitor, "Desktop"], ["tablet", Tablet, "Tablet"], ["phone", Smartphone, "Phone"]] as const).map(([d, Icon, label]) => (
+                  <button
+                    key={d}
+                    type="button"
+                    title={label}
+                    aria-label={label}
+                    aria-pressed={device === d}
+                    onClick={() => setDevice(d)}
+                    className={`px-2.5 py-1.5 transition-colors ${device === d ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </button>
+                ))}
+              </div>
               <span ref={toolbarRef} className="inline-flex" />
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
                 <Boxes className="w-4 h-4" /> Object
@@ -700,20 +718,29 @@ export default function DesignTab() {
                   </Button>
                 </div>
                 {savedBlocks.length || !canIframe(page.path) ? (
-                  <div className="h-[70vh] overflow-y-auto bg-background">
-                    <InlinePagePreview name={page.name} blocks={savedBlocks} />
-                  </div>
+                  device === "desktop" ? (
+                    <div className="h-[70vh] overflow-y-auto bg-background">
+                      <InlinePagePreview name={page.name} blocks={savedBlocks} />
+                    </div>
+                  ) : (
+                    <div className="bg-muted/40 py-4">
+                      <DeviceFrame title={`${page.name} preview`} className="block h-[70vh] border bg-background shadow-sm" >
+                        <InlinePagePreview name={page.name} blocks={savedBlocks} />
+                      </DeviceFrame>
+                    </div>
+                  )
                 ) : (
                   <iframe
                     key={`${page.id}-${page.updated_at}`}
                     src={previewSrc(page.path)}
                     title={`${page.name} preview`}
                     className="w-full h-[70vh] bg-background"
+                    style={deviceStyle}
                   />
                 )}
               </div>
             ) : (
-            <div className="rounded-lg border bg-background overflow-hidden">
+            <div className="rounded-lg border bg-background overflow-hidden" style={deviceStyle}>
               {!hasExisting && (
                 <ChromePreview label="Site header">
                   <Header />
