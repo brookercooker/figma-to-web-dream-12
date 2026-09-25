@@ -3931,6 +3931,11 @@ export default function ObjectDesignPage() {
                       </div>
                     </div>
 
+                    {s.type === "locked" && (
+                      <div className="border-b border-dashed bg-muted/50 px-4 py-2 text-xs text-muted-foreground">
+                        <span className="font-semibold text-foreground">{s.title}:</span> {s.note} It is kept exactly as built — you can move or delete it, but not change it here.
+                      </div>
+                    )}
 
                     <BlockCanvas
                       section={s}
