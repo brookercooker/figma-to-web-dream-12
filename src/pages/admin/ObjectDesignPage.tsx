@@ -42,6 +42,7 @@ import {
   type TextColor, type TextFont, type TextSize, type TextStyle,
   ContainedBgContext,
   bgColorCss,
+  segmentColorCss,
 } from "@/components/ObjectSections";
 
 /** Paints a block's own background inside its editor frame. */
@@ -961,6 +962,7 @@ export default function ObjectDesignPage() {
   const [preview, setPreview] = useState(false);
   const [importing, setImporting] = useState(false);
   const canvasRef = useRef<HTMLElement>(null);
+  const inlineSel = useInlineSelection();
   const [viewport, setViewport] = useState<ViewportKey>("desktop");
   const viewportWidth = VIEWPORTS.find((v) => v.key === viewport)?.width;
   const [createOpen, setCreateOpen] = useState(false);
@@ -4145,6 +4147,7 @@ export default function ObjectDesignPage() {
                 <p className="border-b bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   {title}
                 </p>
+                {inlineSel && <SelectionStylePanel />}
                 {showToolbar && <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s)}</div>}
                 <div data-inspector-section={s.id} className="inspector-flush p-4">{Inspector({ section: s })}</div>
               </div>
