@@ -26,6 +26,7 @@ import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign,
 
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import InsertGap, { type InsertType } from "./InsertGap";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null }
 
@@ -298,6 +299,11 @@ export default function DesignTab() {
     setDirty(true);
     if (type === "image") setPickerFor(block.id);
     if (type === "video") setVideoFor(block.id);
+  };
+
+  const insertAt = (type: InsertType, at: number) => {
+    if (type === "object") { setObjectAt(at); setObjectFor("new"); return; }
+    addBlock(type, at);
   };
 
   const move = (id: string, dir: -1 | 1) => {
@@ -783,6 +789,9 @@ export default function DesignTab() {
                           : ""
                       }`}
                     >
+                      {!dragId && <InsertGap edge="top" onAdd={(t) => insertAt(t, i)} />}
+                      {!dragId && i === blocks.length - 1 && <InsertGap edge="bottom" onAdd={(t) => insertAt(t, i + 1)} />}
+
                       <button
                         type="button"
                         title="Drag to move"
