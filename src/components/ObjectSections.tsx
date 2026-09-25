@@ -273,8 +273,6 @@ export interface ImageText {
   iconLabelSide?: "before" | "after" | "above" | "below";
   /** how the icon's wording lines up when it sits above or below */
   iconLabelAlign?: SectionAlign;
-  /** link settings when kind is "button" */
-  button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor };
   /** optional symbol shown with this text */
   icon?: string;
   /** where that symbol sits relative to the text */
@@ -937,6 +935,8 @@ export interface FreeParagraph {
   /** what sort of text this is; defaults to a body paragraph */
   kind?: FreeTextKind;
   style?: TextStyle;
+  /** link settings when kind is "button" */
+  button?: { href?: string; variant?: ButtonSection["variant"]; bg?: TextColor };
   /** wording shown with the icon when kind is "icon" */
   iconLabel?: string;
   /** where the icon's wording sits */
