@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  ArrowLeft, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
+  ArrowLeft, MoreHorizontal, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
   LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
@@ -4674,5 +4674,64 @@ function CodedImportProbe({
       </Suspense>
     </div>,
     document.body,
+  );
+}
+
+type HeaderAction = {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  onClick: () => void;
+  disabled?: boolean;
+  selected?: boolean;
+};
+
+/** Block header buttons that fold into a "…" menu when the header is too narrow. */
+function BlockHeaderControls({ active, onToggle, actions }: { active: boolean; onToggle: () => void; actions: HeaderAction[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(actions.length);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const header = el?.parentElement;
+    if (!el || !header) return;
+    const measure = () => {
+      let used = 0;
+      for (const c of Array.from(header.children)) if (c !== el) used += (c as HTMLElement).offsetWidth + 10;
+      const room = header.clientWidth - 24 - used;
+      const EDIT = 64, BTN = 40, MORE = 40;
+      if (EDIT + actions.length * BTN <= room) return setVisible(actions.length);
+      setVisible(Math.max(0, Math.min(actions.length - 1, Math.floor((room - EDIT - MORE) / BTN))));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(header);
+    return () => ro.disconnect();
+  }, [actions.length]);
+  const shown = actions.slice(0, visible);
+  const hidden = actions.slice(visible);
+  return (
+    <div ref={ref} className="ml-auto flex shrink-0 items-center gap-1">
+      <Button variant="ghost" size="sm" onClick={onToggle}>{active ? "Done" : "Edit"}</Button>
+      {shown.map((a) => (
+        <Button key={a.label} variant={a.selected ? "secondary" : "ghost"} size="sm" title={a.label} aria-label={a.label} disabled={a.disabled} onClick={a.onClick}>
+          <a.icon className="w-4 h-4" />
+        </Button>
+      ))}
+      {hidden.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" title="More" aria-label="More block controls">
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {hidden.map((a) => (
+              <DropdownMenuItem key={a.label} disabled={a.disabled} onSelect={a.onClick} className="gap-2">
+                <a.icon className="w-4 h-4" /> {a.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
   );
 }
