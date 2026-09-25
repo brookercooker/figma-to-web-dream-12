@@ -379,7 +379,7 @@ export default function InlineEditSurface({
     if (!div) {
       let best: { el: HTMLElement; side: NonNullable<InlineSelection["side"]>; area: number } | null = null;
       for (const el of root.querySelectorAll<HTMLElement>("*")) {
-        if (el.closest("header,footer,nav") || el.hasAttribute("data-inline-chunk")) continue;
+        if (el.closest("header,footer,nav")) continue;
         const side = edgeAt(el, e.clientX, e.clientY);
         if (!side) continue;
         const r = el.getBoundingClientRect();
