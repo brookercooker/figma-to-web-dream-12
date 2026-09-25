@@ -767,7 +767,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
           void cs;
         }
       }
-      items.sort((a, b) => a.top - b.top);
+      items.sort((a, b) => (a.bx && b.bx && vOverlap(a.bx, b.bx) > 0.3 ? a.bx.left - b.bx.left : a.top - b.top));
       // Items sharing a line with the one before them stay on that line.
       const byRow = [...items];
       for (let i = 1; i < byRow.length; i++) {
@@ -775,7 +775,6 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         if (a && b && vOverlap(a, b) > 0.3 && b.left >= a.right - 2) byRow[i].t.inline = true;
       }
       texts.splice(0, texts.length, ...byRow.map((i) => i.t));
-      picked.splice(0, picked.length, ...picked);
     }
     // A line on its own is not a caption; leave it for the block.
     if (texts.some((t) => t.kind !== "divider")) {
