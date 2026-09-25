@@ -990,7 +990,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     };
     const els = parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]);
     for (const el of els) {
-      if (el.closest("[data-import-skip],button,a,svg,form")) continue;
+      if (consumedRules.has(el) || el.closest("[data-import-skip],button,a,svg,form")) continue;
       if (el.tagName === "SPAN" && isUnderlinedLink(el)) continue;
       const r = el.getBoundingClientRect();
       if (r.width < 16) continue;
