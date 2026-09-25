@@ -195,6 +195,10 @@ export default function DesignTab() {
   useEffect(() => { load(); }, []);
 
   const page = useMemo(() => pages.find((p) => p.id === selectedId) ?? null, [pages, selectedId]);
+  // Entering Edit on a coded page converts it into editable sections automatically.
+  useEffect(() => {
+    if (!showLive && hasExisting && !importing && page && codedPages[previewSrc(page.path)]) setImporting(true);
+  }, [showLive, hasExisting, importing, page]);
   // What the page shows once saved — re-read from the row so saving refreshes it.
   const savedBlocks = useMemo(() => parseBlocks(page?.content), [page?.content]);
 
