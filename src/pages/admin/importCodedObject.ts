@@ -266,7 +266,8 @@ function runsOf(el: HTMLElement): { text: string; styleEl: HTMLElement; box: Box
     if (n instanceof HTMLElement) {
       const cs = getComputedStyle(n);
       const pcs = getComputedStyle(el);
-      const differs = cs.fontStyle !== pcs.fontStyle || cs.color !== pcs.color || cs.fontWeight !== pcs.fontWeight || cs.display === "block";
+      // Only a new line starts a new run; emphasis within a line stays with it.
+      const differs = cs.display === "block" && (cs.fontStyle !== pcs.fontStyle || cs.color !== pcs.color || cs.fontWeight !== pcs.fontWeight || true);
       if (differs) {
         flush(el);
         buf = [n];
@@ -314,7 +315,7 @@ function contentRoot(el: HTMLElement): HTMLElement {
  * an image-and-text row and a grid of cards stay separate instead of collapsing
  * into one long block.
  */
-function blockRoots(root: HTMLElement): HTMLElement[] {
+function blockRoots(root: HTMLElement): HTMLElement[][] {
   const sections = [...root.querySelectorAll<HTMLElement>("section")].filter(
     (s) => !s.parentElement?.closest("section"),
   );
@@ -325,12 +326,35 @@ function blockRoots(root: HTMLElement): HTMLElement[] {
     const bands = [...inner.children].filter(
       (c): c is HTMLElement => c instanceof HTMLElement && isVisible(c) && hasContent(c),
     );
-    // Keep everything in one block unless a band is itself a separate
-    // picture-led area (a gallery below a heading, for instance).
-    if (bands.length < 2) return [inner];
-    const heavy = bands.filter((b) => b.querySelectorAll("img").length >= 2);
-    return heavy.length && heavy.length < bands.length ? bands : [inner];
+    if (bands.length < 2 || !bands.some(isMultiColumn)) return [[inner]];
+    // Rows of side-by-side items (a grid of steps, image beside text) each get
+    // their own block; stacked text between them is kept together.
+    const groups: HTMLElement[][] = [];
+    let run: HTMLElement[] = [];
+    for (const band of bands) {
+      if (isMultiColumn(band)) {
+        if (run.length) groups.push(run);
+        run = [];
+        groups.push([band]);
+      } else run.push(band);
+    }
+    if (run.length) groups.push(run);
+    return groups;
   });
+}
+
+/** Whether an element lays its content out in side-by-side columns. */
+function isMultiColumn(el: HTMLElement): boolean {
+  let cur = el;
+  for (let depth = 0; depth < 4; depth++) {
+    const kids = [...cur.children].filter(
+      (c): c is HTMLElement => c instanceof HTMLElement && isVisible(c) && hasContent(c),
+    );
+    if (kids.length === 1) { cur = kids[0]; continue; }
+    const boxes = kids.map(boxOf);
+    return boxes.some((a, i) => boxes.some((b, j) => j > i && vOverlap(a, b) > 0.5 && (a.right <= b.left + 2 || b.right <= a.left + 2)));
+  }
+  return false;
 }
 
 /** Picture painted as a CSS background rather than an <img>. */
@@ -364,7 +388,8 @@ const centerInside = (inner: Box, outer: Box) => {
   return cx >= outer.left && cx <= outer.right && cy >= outer.top && cy <= outer.bottom;
 };
 
-function sectionFromNode(node: HTMLElement): FreeSection | null {
+function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
+  const node = parts.length === 1 ? parts[0] : (parts[0].parentElement ?? parts[0]);
   const base: FreeSection = {
     id: id(),
     type: "free",
@@ -392,7 +417,7 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   };
 
   const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,span,img,a,button";
-  const all = [node, ...node.querySelectorAll<HTMLElement>("*")].filter(isVisible);
+  const all = parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]).filter(isVisible);
   const candidates = all.filter((el) => el.matches(TEXTUAL) || !!bgImageUrl(el));
 
   const isTextLeaf = (el: HTMLElement) => {
@@ -679,10 +704,10 @@ export function sectionsFromDom(root: HTMLElement): Section[] {
   const out: Section[] = [];
   const pending = [...locked];
   try {
-    for (const node of blockRoots(root)) {
-      const inside = pending.filter((l) => node.contains(l.el));
-      const free = sectionFromNode(node);
-      const freeTop = node.getBoundingClientRect().top;
+    for (const group of blockRoots(root)) {
+      const inside = pending.filter((l) => group.some((g) => g.contains(l.el)));
+      const free = sectionFromNode(group);
+      const freeTop = group[0].getBoundingClientRect().top;
       const before = free ? inside.filter((l) => l.top <= freeTop + 4) : inside;
       const after = inside.filter((l) => !before.includes(l));
       before.forEach((l) => out.push(l.section));
