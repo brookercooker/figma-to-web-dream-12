@@ -578,7 +578,10 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   const nodeWidth = node.getBoundingClientRect().width;
   const laid = layoutRows(textBoxes, nodeWidth);
   base.order = laid.order.length === order.length ? laid.order : order;
-  if (Object.keys(laid.flows).length) base.flows = laid.flows;
+  if (Object.keys(laid.flows).length) {
+    base.flows = laid.flows;
+    base.rowVAlign = "top";
+  }
   if (Object.keys(laid.widths).length) base.flowWidths = laid.widths;
   if (Object.keys(laid.stacks).length) base.stacks = laid.stacks;
 
