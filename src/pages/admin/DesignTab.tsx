@@ -700,9 +700,6 @@ export default function DesignTab() {
               <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video")}>
                 <Film className="w-4 h-4" /> Video
               </Button>
-              <span className="inline-flex items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
-                <Save className="w-4 h-4" /> {saving || dirty ? "Saving…" : "All changes saved"}
-              </span>
             </div>
 
             {showLive ? (
