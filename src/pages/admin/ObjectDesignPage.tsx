@@ -1996,7 +1996,7 @@ export default function ObjectDesignPage() {
     setImporting(false);
     const list = imported.length ? imported : [makeSection("free")];
     setSections(list);
-    setActiveId(list[0].id);
+    setActiveId((list.find((x) => focusChunk != null && (x as { origin?: string }).origin === focusChunk) ?? list[0]).id);
     setDirty(true);
   };
 
@@ -5031,7 +5031,7 @@ function CodedImportProbe({
       const { sectionsFromDom } = await import("./importCodedObject");
       done.current = true;
       const obj = root.firstElementChild as HTMLElement | null;
-      const tag = (list: Section[], origin: string) => { list.forEach((x) => ((x as { origin?: string }).origin = origin)); return list; };
+      const tag = (list: Section[], origin: string) => { if (import.meta.env.DEV) (window as unknown as { __lastImport?: unknown }).__lastImport = list; list.forEach((x) => ((x as { origin?: string }).origin = origin)); return list; };
       if (chunk !== undefined && obj) {
         const el = elementAtPath(obj, chunk) as HTMLElement | null;
         onDone(tag(sectionsFromDom(el ?? obj), chunk));
