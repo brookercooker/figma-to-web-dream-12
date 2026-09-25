@@ -308,6 +308,8 @@ export interface SectionImage {
   focus?: string;
   /** how far the picture is zoomed inside its crop window, in percent (100 = no zoom) */
   zoom?: number;
+  /** where text sitting on this picture lines up vertically (overrides the block setting) */
+  textVAlign?: "top" | "middle" | "bottom";
 }
 
 /** Zoom kept within sane limits. */
@@ -2191,7 +2193,7 @@ function FreeView({ section }: { section: FreeSection }) {
                 />
               </div>
               {(section.imageScrim ?? "none") === "none" ? <div className="absolute inset-0 bg-ink/35" /> : null}
-              <div className={`relative flex h-full flex-col ${OVERLAY_VALIGN_CLASS[section.overlayVAlign ?? "middle"]} px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
+              <div className={`relative flex h-full flex-col ${OVERLAY_VALIGN_CLASS[img.textVAlign ?? section.overlayVAlign ?? "middle"]} px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
                 <OverlayImageTexts section={section} image={img} index={i} />
               </div>
             </div>
