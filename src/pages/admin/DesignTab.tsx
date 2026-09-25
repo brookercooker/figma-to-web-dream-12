@@ -815,7 +815,7 @@ export default function DesignTab() {
                         collapsed={foldedChunks}
                         onToggleCollapse={(k) => setFoldedChunks((cur) => { const n = new Set(cur); if (n.has(k)) n.delete(k); else n.add(k); return n; })}
                         onReorder={reorderChunks}
-                        onOpenObject={(k, section) => { const id = objectRows.current[k]; if (id) navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&inplace=1&section=${encodeURIComponent(section)}`); }}
+                        onOpenObject={(k, section) => { const id = objectRows.current[k]; if (id) navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`); }}
                       >
                         <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense>
                       </InlineEditSurface>
