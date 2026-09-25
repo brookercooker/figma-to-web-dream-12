@@ -22,6 +22,7 @@ import AddButtonRow from "./AddButtonRow";
 import ConfirmDialog from "./ConfirmDialog";
 import Thumbnail from "./Thumbnail";
 import PageMiniPreview from "./PageMiniPreview";
+import ListPager, { usePager } from "./ListPager";
 import PagePreviewDialog from "./PagePreviewDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
 import CreateLandingPageDialog from "./CreateLandingPageDialog";
@@ -242,6 +243,7 @@ export default function LandingPagesView() {
       return sort === "oldest" ? da - db : db - da;
     });
   }, [rows, q, searchField, tagFilters, statusFilter, sort, dateFrom, dateTo, timeRange, showArchived, hiddenIds]);
+  const pager = usePager(filtered.length);
 
 
   const updateLandingStatus = async (
@@ -508,7 +510,7 @@ export default function LandingPagesView() {
                   : <>No landing pages match the current filters. Click <strong>Add New Landing Page</strong> to create one.</>}
                 </td></tr>
               )}
-              {filtered.map((r, idx) => {
+              {filtered.slice(pager.start, pager.end).map((r, i) => { const idx = pager.start + i;
                 const work = landingWork(r);
                 const sched = scheduleStatus(work, r.start_at, r.end_at);
                 const slug = r.path.replace(/^\/landing\//, "");
@@ -664,6 +666,7 @@ export default function LandingPagesView() {
               })}
             </tbody>
           </table>
+      <ListPager {...pager} total={filtered.length} />
         </div>
       </div>
 

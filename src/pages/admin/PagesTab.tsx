@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import Thumbnail from "./Thumbnail";
 import PageMiniPreview from "./PageMiniPreview";
+import ListPager, { usePager } from "./ListPager";
 import TagsPanel from "./TagsPanel";
 import InlineEdit from "./InlineEdit";
 import ConfirmDialog from "./ConfirmDialog";
@@ -361,6 +362,7 @@ export default function PagesTab() {
     e.dataTransfer.effectAllowed = "copy";
   };
 
+  const pager = usePager(filtered.length);
   return (
     <div className="space-y-4">
       <div className="inline-flex rounded-lg border p-1 bg-muted/30">
@@ -523,7 +525,7 @@ export default function PagesTab() {
               </td>
             </tr>
           )}
-          {filtered.map((p, idx) => {
+          {filtered.slice(pager.start, pager.end).map((p, i) => { const idx = pager.start + i;
             const on = selected.has(p.id);
             const pageType = getPageType(p.path, p.name);
             const typeClass =
@@ -679,6 +681,7 @@ export default function PagesTab() {
           })}
         </tbody>
       </table>
+      <ListPager {...pager} total={filtered.length} />
       </div>
 
 
