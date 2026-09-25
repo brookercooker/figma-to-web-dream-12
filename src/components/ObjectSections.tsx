@@ -1,4 +1,5 @@
 import DOMPurify from "dompurify";
+import CodedChunk from "@/components/CodedChunk";
 import { useIsThumbnail } from "@/lib/thumbnail";
 /**
  * Shared section model + renderer for Objects built in the Object Design page.
@@ -1112,6 +1113,9 @@ export interface LockedSection {
   note: string;
   /** snapshot of the original markup */
   html: string;
+  /** Not converted yet: shown live from this coded object's part at `chunk`. */
+  codedKey?: string;
+  chunk?: string;
 }
 
 export type Section =
@@ -2373,6 +2377,7 @@ export function SectionView({ section }: { section: Section }) {
       return <FreeView section={section} />;
 
     case "locked":
+      if (section.codedKey && section.chunk !== undefined) return <CodedChunk codedKey={section.codedKey} chunk={section.chunk} />;
       return (
         <div
           {...({ inert: "" } as object)}
