@@ -553,11 +553,11 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   const partEls: Record<string, HTMLElement> = {};
   const keepFlow = (part: string, el: HTMLElement) => {
     textBoxes.push({ part, box: boxOf(el) });
-    if (!partAligns[part]) partAligns[part] = alignOf(el);
+    if (!partAligns[part]) partAligns[part] = visualAlign(el, node);
     if (!partEls[part]) partEls[part] = el;
   };
 
-  const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,span,img,a,button";
+  const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,span,img,a,button,video,svg";
   const all = parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]).filter(isVisible);
   const candidates = all.filter((el) => el.matches(TEXTUAL) || !!bgImageUrl(el));
 
@@ -577,7 +577,54 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   const consumed = new Set<HTMLElement>();
   let overlaid: HTMLElement | null = null;
 
+  // Repeating cards (a carousel or grid of products): each card's picture
+  // carries all of the wording inside that card, lined up the same way.
+  const cardOf = (img: HTMLElement): HTMLElement | null => {
+    let card: HTMLElement | null = null;
+    for (let cur = img.parentElement; cur && cur !== node && node.contains(cur); cur = cur.parentElement) {
+      if (cur.querySelectorAll("img").length !== 1) break;
+      card = cur;
+    }
+    return card;
+  };
+  const cardByImg = new Map<HTMLElement, HTMLElement>();
   for (const el of imageEls) {
+    const c = cardOf(el);
+    if (c) cardByImg.set(el, c);
+  }
+  const siblingCounts = new Map<Element, number>();
+  for (const c of cardByImg.values()) {
+    // Cards may be wrapped once more (carousel slides), so count by grandparent too.
+    const key = c.parentElement?.parentElement && c.parentElement.children.length === 1 ? c.parentElement.parentElement : c.parentElement;
+    if (key) siblingCounts.set(key, (siblingCounts.get(key) ?? 0) + 1);
+  }
+  const repeatingCards = [...cardByImg.entries()].filter(([, c]) => {
+    const key = c.parentElement?.parentElement && c.parentElement.children.length === 1 ? c.parentElement.parentElement : c.parentElement;
+    return key && (siblingCounts.get(key) ?? 0) >= 3;
+  });
+  let cardAlign: SectionAlign | null = null;
+  let carousel = false;
+  let visibleCards = 0;
+  if (repeatingCards.length >= 3) {
+    carousel = !!node.querySelector("[aria-roledescription='carousel'],[aria-roledescription='slide']");
+    const nb = node.getBoundingClientRect();
+    for (const [img, card] of repeatingCards) {
+      const cb = card.getBoundingClientRect();
+      if (cb.left >= nb.left - 4 && cb.right <= nb.right + 4) visibleCards += 1;
+      else carousel = true;
+      const leaves = textLeaves.filter((l) => card.contains(l.el) && !consumed.has(l.el));
+      if (!leaves.length) continue;
+      if (!cardAlign) cardAlign = visualAlign(leaves[0].el, card);
+      const texts = leaves.map((l) => {
+        consumed.add(l.el);
+        return { ...imageTextOf(l.el, clean(l.el.innerText || l.el.textContent)), align: cardAlign as SectionAlign };
+      });
+      attached.set(img, texts);
+    }
+  }
+
+  for (const el of imageEls) {
+    if (attached.has(el)) continue;
     const box = boxOf(el);
     const texts: ImageText[] = [];
     for (const leaf of textLeaves) {
@@ -622,9 +669,61 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   }
 
 
+  // Icons sitting beside a piece of wording travel with that wording.
+  const iconFor = new Map<HTMLElement, { icon: string; side: "before" | "after" }>();
+  const iconTaken = new Set<Element>();
+  for (const svg of all.filter((e) => e.tagName.toLowerCase() === "svg")) {
+    if (svg.closest("a,button")) continue;
+    const name = iconNameOf(svg);
+    const parent = svg.parentElement;
+    if (!name || !parent) continue;
+    const sibs = [...parent.children].filter((c) => c !== svg && c instanceof HTMLElement && isVisible(c)) as HTMLElement[];
+    const text = sibs.length === 1 && isTextLeaf(sibs[0]) ? sibs[0] : isTextLeaf(parent) ? parent : null;
+    if (text && !consumed.has(text)) {
+      iconFor.set(text, { icon: name, side: iconSideOf(svg, text) });
+      iconTaken.add(svg);
+    }
+  }
+
   for (const el of candidates) {
     const tag = el.tagName.toLowerCase();
     if (consumed.has(el)) continue;
+
+    if (tag === "video") {
+      const v = el as unknown as HTMLVideoElement;
+      const url = v.currentSrc || v.src || v.querySelector("source")?.getAttribute("src") || "";
+      if (!url) continue;
+      const video: SectionVideo = {
+        id: id(),
+        url,
+        poster: v.poster || undefined,
+        controls: v.controls,
+        autoplay: v.autoplay || undefined,
+        loop: v.loop || undefined,
+        muted: v.muted || undefined,
+      };
+      base.videos = [...(base.videos ?? []), video];
+      if (!order.includes("videos")) {
+        order.push("videos");
+        // Measure the video's frame (its sized wrapper) so its width carries over.
+        const frame = v.parentElement && v.parentElement.children.length === 1 ? v.parentElement : (v as unknown as HTMLElement);
+        keepFlow("videos", frame);
+      }
+      continue;
+    }
+
+    if (tag === "svg") {
+      if (iconTaken.has(el) || el.closest("a,button")) continue;
+      const name = iconNameOf(el);
+      const r = el.getBoundingClientRect();
+      if (!name || r.width < 12) continue;
+      const cs = getComputedStyle(el);
+      extras.push({ id: id(), text: name, kind: "icon", style: { color: colorOf(cs.color), sizePx: Math.round(r.width) } });
+      const part = `text:${extras.length - 1}`;
+      order.push(part);
+      keepFlow(part, el);
+      continue;
+    }
 
     if (tag === "img" || (!el.matches(TEXTUAL) && bgImageUrl(el))) {
       const img = el as HTMLImageElement;
@@ -650,7 +749,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         // A plain text link reads as text, keeping its look.
         if (seenText.has(label)) continue;
         seenText.add(label);
-        extras.push({ id: id(), text: label, kind: "text", style: styleOf(el, false) });
+        const svg = el.querySelector("svg");
+        const icon = svg ? iconNameOf(svg) ?? "arrowRight" : undefined;
+        extras.push({
+          id: id(), text: label, kind: "text", style: styleOf(el, false),
+          ...(icon && svg ? { icon, iconSide: iconSideOf(svg, el) } : {}),
+        });
         const part = `text:${extras.length - 1}`;
         order.push(part);
         keepFlow(part, el);
@@ -660,9 +764,10 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       base.buttonHref = el.getAttribute("href") ?? "#";
       base.buttonVariant = kind;
       base.labelStyle = styleOf(el, false);
-      if (el.querySelector("svg")) {
-        base.buttonIcon = "arrowRight";
-        base.buttonIconSide = "after";
+      const bsvg = el.querySelector("svg");
+      if (bsvg) {
+        base.buttonIcon = iconNameOf(bsvg) ?? "arrowRight";
+        base.buttonIconSide = iconSideOf(bsvg, el);
       }
       order.push("button");
       keepFlow("button", el);
@@ -674,12 +779,14 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6")) continue;
     // Skip wrappers that hold other text so copy is not duplicated.
     if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) continue;
-    const text = clean(el.innerText || el.textContent);
-    if (!text || seenText.has(text)) continue;
-    seenText.add(text);
+    const plain = clean(el.innerText || el.textContent);
+    if (!plain || seenText.has(plain)) continue;
+    seenText.add(plain);
+    const rich = richOf(el);
+    const text = rich ?? plain;
 
     const heading = /^h[1-6]$/.test(tag);
-    const runs = runsOf(el);
+    const runs = rich ? [] : runsOf(el);
     if (runs.length > 1) {
       // Mixed styling (an italic phrase, a line break) keeps each run's look,
       // stacked in the same place.
@@ -690,34 +797,35 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
           base.textStyle = style;
           order.push("heading");
           textBoxes.push({ part: "heading", box: run.box });
-          partAligns.heading = alignOf(el);
+          partAligns.heading = visualAlign(el, node);
           return;
         }
         extras.push({ id: id(), text: run.text, kind: heading ? "title" : "text", style });
         const part = `text:${extras.length - 1}`;
         order.push(part);
         textBoxes.push({ part, box: run.box });
-        partAligns[part] = alignOf(el);
+        partAligns[part] = visualAlign(el, node);
       });
       continue;
     }
     const style = styleOf(el, heading);
 
-    if (!base.eyebrow && !heading && looksLikeEyebrow(el)) {
+    const iconHere = iconFor.get(el);
+    if (!base.eyebrow && !heading && !iconHere && looksLikeEyebrow(el)) {
       base.eyebrow = text;
       base.eyebrowStyle = style;
       order.push("eyebrow");
       keepFlow("eyebrow", el);
       continue;
     }
-    if (heading && !base.heading) {
+    if (heading && !base.heading && !iconHere) {
       base.heading = text;
       base.textStyle = style;
       order.push("heading");
       keepFlow("heading", el);
       continue;
     }
-    if (!heading && !base.body && text.length > 24) {
+    if (!heading && !base.body && !iconHere && plain.length > 24) {
       base.body = text;
       base.bodyStyle = style;
       order.push("body");
@@ -730,6 +838,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       text,
       kind: heading ? "title" : "text",
       style,
+      ...(iconHere ? { icon: iconHere.icon, iconSide: iconHere.side } : {}),
     };
     extras.push(extra);
     const part = `text:${extras.length - 1}`;
@@ -741,20 +850,56 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   base.extras = extras;
   base.captionAlign = base.align;
 
-  const nodeWidth = node.getBoundingClientRect().width;
+  const ncs = getComputedStyle(node);
+  const nodeWidth = node.getBoundingClientRect().width - (parseFloat(ncs.paddingLeft) || 0) - (parseFloat(ncs.paddingRight) || 0);
   const laid = layoutRows(textBoxes, nodeWidth);
   base.order = laid.order.length === order.length ? laid.order : order;
   if (Object.keys(laid.flows).length) {
     base.flows = laid.flows;
     base.rowVAlign = "top";
   }
-  if (Object.keys(laid.widths).length) base.flowWidths = laid.widths;
+  // Items on their own line that were narrower than the block keep that width.
+  const widths = { ...laid.widths };
+  for (const [part, el] of Object.entries(partEls)) {
+    if (laid.flows[part] || !nodeWidth) continue;
+    const disp = getComputedStyle(el).display;
+    if (disp.startsWith("inline") && part !== "videos") continue;
+    const w = el.getBoundingClientRect().width;
+    const pct = (w / nodeWidth) * 100;
+    if (pct < 92 && pct > 5) widths[part] = Math.min(100, Math.round(pct + (part === "videos" ? 0 : 3)));
+  }
+  if (Object.keys(widths).length) base.flowWidths = widths;
   if (Object.keys(laid.stacks).length) base.stacks = laid.stacks;
 
   // Each text keeps its own alignment when it differs from the block's.
   const aligns: Record<string, SectionAlign> = {};
   for (const [part, a] of Object.entries(partAligns)) if (a !== base.align) aligns[part] = a;
   if (Object.keys(aligns).length) base.flowAligns = aligns;
+
+  // A block whose items are mostly centred is a centred block.
+  const alignVals = Object.values(partAligns);
+  const centred = alignVals.filter((a) => a === "center").length;
+  if (alignVals.length && centred > alignVals.length / 2 && base.align !== "center") {
+    base.align = "center";
+    base.captionAlign = "center";
+    const re: Record<string, SectionAlign> = {};
+    for (const [part, a] of Object.entries(partAligns)) if (a !== "center") re[part] = a;
+    base.flowAligns = Object.keys(re).length ? re : undefined;
+  }
+
+  // Repeating product cards become a carousel (or grid) of pictures with their wording.
+  if (repeatingCards.length >= 3) {
+    base.gallery = carousel ? "carousel" : "grid";
+    const per = Math.max(1, Math.min(4, visibleCards || 3));
+    base.columns = per as 1 | 2 | 3 | 4;
+    if (cardAlign) base.captionAlign = cardAlign;
+  } else if (images.length === 1 && imageBoxes[0] && nodeWidth) {
+    // A single picture keeps its original size.
+    const b = imageBoxes[0];
+    if (b.width < nodeWidth * 0.95) base.imageWidthPx = Math.round(b.width);
+    const h = b.bottom - b.top;
+    if (h > 24) base.imageHeightPx = Math.round(h);
+  }
 
   // Spacing around the block follows the original padding.
   const cs = getComputedStyle(node);
