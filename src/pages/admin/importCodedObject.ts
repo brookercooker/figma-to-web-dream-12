@@ -208,6 +208,51 @@ function layoutRows(
   return { flows, widths, stacks, order };
 }
 
+/** Solid, outlined or plain-link look of a link or button — null when it's just text. */
+function buttonKindOf(el: HTMLElement): "solid" | "outline" | "link" | null {
+  const cs = getComputedStyle(el);
+  const bg = parseRgb(cs.backgroundColor);
+  if (bg && bg[3] > 0.1) return "solid";
+  if (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== "none") return "outline";
+  if (cs.textTransform === "uppercase" && parseFloat(cs.letterSpacing) > 0.5) return "link";
+  return null;
+}
+
+/** Splits text with inline emphasis or line breaks into separately styled runs. */
+function runsOf(el: HTMLElement): { text: string; styleEl: HTMLElement; box: Box }[] {
+  if (!el.querySelector("em,i,strong,b,br,span")) return [];
+  const runs: { text: string; styleEl: HTMLElement; box: Box }[] = [];
+  let buf: Node[] = [];
+  const flush = (styleEl: HTMLElement) => {
+    const text = clean(buf.map((n) => n.textContent).join(""));
+    if (text) {
+      const range = document.createRange();
+      range.setStartBefore(buf[0]);
+      range.setEndAfter(buf[buf.length - 1]);
+      const r = range.getBoundingClientRect();
+      runs.push({ text, styleEl, box: { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width } });
+    }
+    buf = [];
+  };
+  for (const n of [...el.childNodes]) {
+    if (n instanceof HTMLBRElement) { flush(el); continue; }
+    if (n instanceof HTMLElement) {
+      const cs = getComputedStyle(n);
+      const pcs = getComputedStyle(el);
+      const differs = cs.fontStyle !== pcs.fontStyle || cs.color !== pcs.color || cs.fontWeight !== pcs.fontWeight || cs.display === "block";
+      if (differs) {
+        flush(el);
+        buf = [n];
+        flush(n);
+        continue;
+      }
+    }
+    buf.push(n);
+  }
+  flush(el);
+  return runs;
+}
+
 /** Background tint painted behind the block, when it isn't plain white. */
 function backgroundOf(node: HTMLElement): TextColor | undefined {
   let el: HTMLElement | null = node;
@@ -253,11 +298,11 @@ function blockRoots(root: HTMLElement): HTMLElement[] {
     const bands = [...inner.children].filter(
       (c): c is HTMLElement => c instanceof HTMLElement && isVisible(c) && hasContent(c),
     );
+    // Keep everything in one block unless a band is itself a separate
+    // picture-led area (a gallery below a heading, for instance).
     if (bands.length < 2) return [inner];
-    // A row or grid of cards stays one block; only stacked bands are split.
-    const boxes = bands.map(boxOf);
-    const sideBySide = boxes.some((a, i) => boxes.some((b, j) => j !== i && vOverlap(a, b) > 0.5));
-    return sideBySide ? [inner] : bands;
+    const heavy = bands.filter((b) => b.querySelectorAll("img").length >= 2);
+    return heavy.length && heavy.length < bands.length ? bands : [inner];
   });
 }
 
@@ -406,11 +451,26 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
     if (tag === "a" || tag === "button") {
       const label = clean(el.innerText || el.textContent);
       // Skip wrappers around images or long blocks of copy.
-      if (!label || label.length > 40 || el.querySelector("img,h1,h2,h3,p")) continue;
-      if (base.buttonLabel) continue;
+      if (!label || label.length > 40 || el.querySelector("img,h1,h2,h3,h4,h5,h6,p,span")) continue;
+      const kind = buttonKindOf(el);
+      if (base.buttonLabel || !kind) {
+        // A plain text link reads as text, keeping its look.
+        if (seenText.has(label)) continue;
+        seenText.add(label);
+        extras.push({ id: id(), text: label, kind: "text", style: styleOf(el, false) });
+        const part = `text:${extras.length - 1}`;
+        order.push(part);
+        keepFlow(part, el);
+        continue;
+      }
       base.buttonLabel = label;
       base.buttonHref = el.getAttribute("href") ?? "#";
-      base.buttonVariant = "outline";
+      base.buttonVariant = kind;
+      base.labelStyle = styleOf(el, false);
+      if (el.querySelector("svg")) {
+        base.buttonIcon = "arrowRight";
+        base.buttonIconSide = "after";
+      }
       order.push("button");
       keepFlow("button", el);
       partAligns.button = alignOf(el.parentElement ?? el);
@@ -426,6 +486,28 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
     seenText.add(text);
 
     const heading = /^h[1-6]$/.test(tag);
+    const runs = runsOf(el);
+    if (runs.length > 1) {
+      // Mixed styling (an italic phrase, a line break) keeps each run's look,
+      // stacked in the same place.
+      runs.forEach((run, ri) => {
+        const style = { ...styleOf(run.styleEl, heading), sizePx: styleOf(el, heading).sizePx };
+        if (ri === 0 && heading && !base.heading) {
+          base.heading = run.text;
+          base.textStyle = style;
+          order.push("heading");
+          textBoxes.push({ part: "heading", box: run.box });
+          partAligns.heading = alignOf(el);
+          return;
+        }
+        extras.push({ id: id(), text: run.text, kind: heading ? "title" : "text", style });
+        const part = `text:${extras.length - 1}`;
+        order.push(part);
+        textBoxes.push({ part, box: run.box });
+        partAligns[part] = alignOf(el);
+      });
+      continue;
+    }
     const style = styleOf(el, heading);
 
     if (!base.eyebrow && !heading && looksLikeEyebrow(el)) {

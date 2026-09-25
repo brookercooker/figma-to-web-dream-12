@@ -863,6 +863,7 @@ export default function ObjectDesignPage() {
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
   const [importing, setImporting] = useState(false);
+  const canvasRef = useRef<HTMLElement>(null);
   const [viewport, setViewport] = useState<ViewportKey>("desktop");
   const viewportWidth = VIEWPORTS.find((v) => v.key === viewport)?.width;
   const [createOpen, setCreateOpen] = useState(false);
@@ -3854,6 +3855,7 @@ export default function ObjectDesignPage() {
         )}
 
         <section
+          ref={canvasRef}
           className="min-w-0 w-full mx-auto transition-[max-width]"
           style={viewportWidth ? { maxWidth: viewportWidth } : undefined}
         >
@@ -3866,7 +3868,7 @@ export default function ObjectDesignPage() {
               Turning this object into editable blocks…
               <CodedImportProbe
                 codedKey={codedKey}
-                width={viewportWidth || 1200}
+                width={viewportWidth || canvasRef.current?.clientWidth || 1000}
                 onDone={finishImport}
               />
             </div>
