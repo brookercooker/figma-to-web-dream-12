@@ -180,19 +180,46 @@ function layoutRows(
     } else bands.push({ items: [item], bottom: item.box.bottom });
   }
 
-  bands.forEach((band, bi) => {
-    const cols: { items: typeof parts; box: Box }[] = [];
-    for (const item of band.items) {
+  type Col = { items: typeof parts; box: Box };
+  const colsOf = (items: typeof parts): Col[] => {
+    const cols: Col[] = [];
+    for (const item of items) {
       const col = cols.find((c) => hOverlap(c.box, item.box) > 0.5);
       if (col) {
         col.items.push(item);
         col.box = unionBox([col.box, item.box]) as Box;
       } else cols.push({ items: [item], box: { ...item.box } });
     }
-    cols.sort((a, b) => a.box.left - b.box.left);
-    for (const col of cols) col.items.sort((a, b) => a.box.top - b.box.top);
+    return cols.sort((x, y) => x.box.left - y.box.left);
+  };
+
+  // A band that sits wholly under one column of the band above (the rest of a
+  // tall side column) is folded back into that column.
+  const rows: Col[][] = [];
+  for (const band of bands) {
+    const prev = rows[rows.length - 1];
+    if (prev && prev.length > 1) {
+      const targets = band.items.map((it) => {
+        const hits = prev.filter((c) => hOverlap(c.box, it.box) > 0.5);
+        const fits = hits.length === 1 && it.box.width <= (hits[0].box.right - hits[0].box.left) * 1.25;
+        return fits ? hits[0] : null;
+      });
+      if (targets.every(Boolean)) {
+        band.items.forEach((it, i) => {
+          const col = targets[i] as Col;
+          col.items.push(it);
+          col.box = unionBox([col.box, it.box]) as Box;
+        });
+        continue;
+      }
+    }
+    rows.push(colsOf(band.items));
+  }
+
+  rows.forEach((cols, bi) => {
+    for (const col of cols) col.items.sort((x, y) => x.box.top - y.box.top);
     if (cols.length < 2) {
-      band.items.forEach((it) => order.push(it.part));
+      cols.forEach((c) => c.items.forEach((it) => order.push(it.part)));
       return;
     }
     cols.forEach((col, ci) => {
