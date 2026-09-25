@@ -2001,7 +2001,11 @@ function FreeText({
                 <div
                   key={col.key}
                   className={`flex flex-col gap-4 px-3 ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
-                  style={flowWidthStyle(w)}
+                  style={{ ...(flowWidthStyle(w) ?? {}) }}
+                >
+                  <div
+                    className={`flex h-full flex-col gap-4 ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]}`}
+                    style={cardStyle(section.cards?.[cardKeyOf(section, it.part)])}
                 >
                   {col.items.map((ci) => (
                     <div
@@ -2013,6 +2017,7 @@ function FreeText({
                       <RotatedPart deg={partRotation(section, ci.part)} size={partSizeStyle(section, ci.part)} vAlignClass={partVAlignClass(section, ci.part)}>{ci.node}</RotatedPart>
                     </div>
                   ))}
+                  </div>
                 </div>
               );
             })}
@@ -2029,7 +2034,7 @@ function FreeText({
               >
                 <div
                   className={`flex flex-col gap-4 ${alignText[a]} ${w ? "" : "w-full"}`}
-                  style={flowWidthStyle(w)}
+                  style={{ ...(flowWidthStyle(w) ?? {}), ...cardStyle(section.cards?.[cardKeyOf(section, it.part)]) }}
                 >
                   {columns[0].items.map((ci) => (
                     <div
