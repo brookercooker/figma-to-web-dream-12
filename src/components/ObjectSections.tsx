@@ -925,6 +925,10 @@ export interface FreeParagraph {
   icon?: string;
   /** where that symbol sits relative to the text */
   iconSide?: "before" | "after" | "above" | "below";
+  /** symbol pinned to the opposite end of the line from the text */
+  iconSpread?: boolean;
+  /** symbol colour, when it differs from the text */
+  iconColor?: TextColor;
 }
 
 /** A separating bar placed between content. */
@@ -1166,7 +1170,7 @@ import {
   ChevronLeft, ChevronRight, Pause, Play,
   Calendar, Ruler, Compass, Lightbulb, MapPin, Phone, Mail, Clock, Star, Heart,
   Sparkles, Truck, ShieldCheck, Award, Home, Sofa, PenTool, Palette, Camera,
-  Quote, Check, Leaf,
+  Quote, Check, Leaf, Droplets, Sun, Moon, Wrench, Flame, Zap, Gift, Users, Tag, Globe, Package, Settings, Eye, Info,
   ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, MoveRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -1177,7 +1181,8 @@ export const SECTION_ICONS: Record<string, LucideIcon> = {
   mapPin: MapPin, phone: Phone, mail: Mail, clock: Clock, star: Star, heart: Heart,
   sparkles: Sparkles, truck: Truck, shield: ShieldCheck, award: Award, home: Home,
   sofa: Sofa, pen: PenTool, palette: Palette, camera: Camera, quote: Quote,
-  check: Check, leaf: Leaf,
+  check: Check, leaf: Leaf, droplets: Droplets, sun: Sun, moon: Moon, wrench: Wrench, flame: Flame, zap: Zap,
+  gift: Gift, users: Users, tag: Tag, globe: Globe, package: Package, settings: Settings, eye: Eye, info: Info,
   arrowRight: ArrowRight, arrowLeft: ArrowLeft, arrowUp: ArrowUp, arrowDown: ArrowDown,
   arrowUpRight: ArrowUpRight, chevronRight: ChevronRight, chevronLeft: ChevronLeft, longArrow: MoveRight,
 };
@@ -1251,7 +1256,7 @@ export function SectionIcon({
 export function TextWithIcon({
   item, fallbackColor, align, children, part,
 }: {
-  item: { icon?: string; iconSide?: "before" | "after" | "above" | "below"; style?: TextStyle };
+  item: { icon?: string; iconSide?: "before" | "after" | "above" | "below"; style?: TextStyle; iconSpread?: boolean; iconColor?: TextColor };
   fallbackColor?: TextColor;
   align?: SectionAlign;
   children: React.ReactNode;
@@ -1262,14 +1267,14 @@ export function TextWithIcon({
   if (!name) return <>{children}</>;
   const Icon = SECTION_ICONS[name] ?? SECTION_ICONS.sparkles;
   const size = Math.max(14, Math.round((item.style?.sizePx ?? 20) * 1.2));
-  const color = textColorCss(item.style?.color ?? fallbackColor ?? "ink");
+  const color = textColorCss(item.iconColor ?? item.style?.color ?? fallbackColor ?? "ink");
   const glyph = <Icon style={{ width: size, height: size, color, flex: "none" }} strokeWidth={1.4} />;
   const side = item.iconSide ?? "before";
   const stack = side === "above" || side === "below";
   const first = side === "before" || side === "above";
   const justify = align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
   return (
-    <span data-part={part} className={`flex gap-2 ${stack ? `flex-col ${align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start"}` : `flex-row items-center ${justify}`}`}>
+    <span data-part={part} className={`flex gap-2 ${stack ? `flex-col ${align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start"}` : `flex-row items-center ${item.iconSpread ? "w-full justify-between" : justify}`}`}>
       {first ? glyph : null}
       {children}
       {first ? null : glyph}
