@@ -3346,7 +3346,7 @@ export default function ObjectDesignPage() {
                 </Field>
               )}
             </div>
-            <Field label="Border around image and text">
+            <Field label={(eff.gallery ?? section.gallery) === "carousel" ? "Outline each carousel item (image and text)" : "Outline each image with its text"}>
               <div>
                 <Choice
                   value={eff.imageBorder ? "on" : "off"}

@@ -1658,7 +1658,7 @@ function FreeCarousel({ section, onDark, items }: { section: FreeSection; onDark
             ))}
           </div>
           <span className="text-[11px] uppercase tracking-[0.18em] text-stone">
-            {(((i % n) + n) % n) + 1} of {n}
+            {(((i % n) + n) % n) + 1} / {n}
           </span>
           <button
             type="button"
@@ -1995,7 +1995,7 @@ function FreeText({
               const w = section.flowWidths?.[it.part];
               const a = section.flowAligns?.[it.part] ?? section.align;
               const isMedia = col.items.length === 1 && (it.part.startsWith("image") || it.part.startsWith("media") || it.part.startsWith("video"));
-              const valign = section.rowVAlign ?? "middle";
+              const valign = section.flowVAligns?.[it.part] ?? section.rowVAlign ?? "middle";
               const justify = valign === "top" ? "justify-start" : valign === "bottom" ? "justify-end" : "justify-center";
               return (
                 <div
