@@ -1355,6 +1355,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const per = Math.max(1, Math.min(4, cw ? Math.round(nodeWidth / cw) : visibleCards || 3));
     base.columns = per as 1 | 2 | 3 | 4;
     if (carousel) base.perView = per;
+    else {
+      // Cards that wrap onto several rows keep the same number per row.
+      const top0 = repeatingCards[0][1].getBoundingClientRect().top;
+      const perRow = repeatingCards.filter(([, c]) => Math.abs(c.getBoundingClientRect().top - top0) < 8).length;
+      if (perRow >= 1 && perRow < repeatingCards.length) base.imagesPerRow = perRow;
+    }
     if (cardAlign) base.captionAlign = cardAlign;
     // Every card's picture keeps the height it had on the page.
     const [firstImg, firstCard] = repeatingCards[0];
