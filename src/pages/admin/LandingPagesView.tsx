@@ -243,6 +243,7 @@ export default function LandingPagesView() {
       return sort === "oldest" ? da - db : db - da;
     });
   }, [rows, q, searchField, tagFilters, statusFilter, sort, dateFrom, dateTo, timeRange, showArchived, hiddenIds]);
+  const pager = usePager(filtered.length);
 
 
   const updateLandingStatus = async (
@@ -807,7 +808,6 @@ function EditLandingDialog({
     onClose();
   };
 
-  const pager = usePager(filtered.length);
   return (
     <Dialog open={!!row} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md">
