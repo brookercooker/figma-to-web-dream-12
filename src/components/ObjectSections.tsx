@@ -2032,6 +2032,7 @@ function FreeText({
           // Side-by-side items share one row height: media stretches to it, text centres within it.
           <div key={group[0].part} className={`-mx-3 flex w-full flex-wrap items-stretch ${alignRow[section.align]}`}>
             {columns.map((col) => {
+              const rowHasButton = columns.some((c) => c.items.some((ci) => ci.part === "button"));
               const it = col.items[0];
               const w = section.flowWidths?.[it.part];
               const a = section.flowAligns?.[it.part] ?? section.align;
@@ -2042,7 +2043,13 @@ function FreeText({
                 <div
                   key={col.key}
                   className={`flex flex-col gap-4 px-3 ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]} ${w ? "" : "min-w-[10rem] flex-1 basis-0"}`}
-                  style={{ ...(flowWidthStyle(w) ?? {}) }}
+                  style={
+                    // A button keeps its natural width; wording beside it takes the rest,
+                    // so the two never overlap when the canvas is narrower than the original.
+                    rowHasButton && w
+                      ? (col.items.some((ci) => ci.part === "button") ? { flex: "0 0 auto", maxWidth: "100%" } : { flex: `1 1 ${w}%`, minWidth: 0 })
+                      : { ...(flowWidthStyle(w) ?? {}) }
+                  }
                 >
                   <div
                     className={`flex h-full flex-col gap-4 ${col.items.some((ci) => ci.part.startsWith("divider:")) ? "w-full" : ""} ${isMedia ? "justify-stretch [&_img]:h-full [&>*]:h-full" : justify} ${alignText[a]}`}

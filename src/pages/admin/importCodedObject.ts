@@ -450,7 +450,7 @@ function backgroundOf(node: HTMLElement): TextColor | undefined {
 }
 
 const hasContent = (el: HTMLElement) =>
-  !!clean(el.innerText || el.textContent) || !!el.querySelector("img,video");
+  !!clean(el.innerText || el.textContent) || /^(img|video)$/i.test(el.tagName) || !!el.querySelector("img,video");
 
 /** Walks past plain wrappers (containers, width limiters) to the real content. */
 function contentRoot(el: HTMLElement): HTMLElement {
@@ -606,14 +606,14 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (!partEls[part]) partEls[part] = el;
   };
 
-  const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,span,img,a,button,video,svg";
+  const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,dt,dd,li,span,img,a,button,video,svg";
   const all = parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]).filter(isVisible);
   const candidates = all.filter((el) => el.matches(TEXTUAL) || !!bgImageUrl(el));
 
   const isTextLeaf = (el: HTMLElement) => {
     const tag = el.tagName.toLowerCase();
-    if (!/^(h[1-6]|p|span)$/.test(tag)) return false;
-    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6")) return false;
+    if (!/^(h[1-6]|p|span|dt|dd|li)$/.test(tag)) return false;
+    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6,dt,dd,li")) return false;
     if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) return false;
     return !!clean(el.innerText || el.textContent);
   };
@@ -885,7 +885,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     }
 
     // Spans inside a paragraph or heading belong to that text, not their own.
-    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6")) continue;
+    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6,dt,dd,li")) continue;
     // Spans inside an underlined link belong to that link.
     if (tag === "span" && el.parentElement?.closest("span") && (() => { let p = el.parentElement; while (p && p !== node) { if (p.tagName === "SPAN" && isUnderlinedLink(p)) return true; p = p.parentElement; } return false; })()) continue;
     // Skip wrappers that hold other text so copy is not duplicated.
@@ -993,7 +993,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const nw = nr.width || 1;
     const addRule = (color: string | undefined, thickness: number, box: Box) => {
       if (dividers.some((d, i) => { const b = textBoxes.find((t) => t.part === `divider:${i}`)?.box; return b && Math.abs(b.top - box.top) < 3 && hOverlap(b, box) > 0.8; })) return;
-      const pct = Math.round((box.width / nw) * 100);
+      // Measured against the column it sits in (text starting at the same left edge),
+      // since a line inside a side column is drawn inside that column.
+      const sameLeft = textBoxes.filter((t) => Math.abs(t.box.left - box.left) < 6 && !t.part.startsWith("divider:"));
+      const colRight = Math.max(box.right, ...sameLeft.map((t) => t.box.right));
+      const colW = sameLeft.length && Math.abs(box.left - (nr.left + (parseFloat(getComputedStyle(node).paddingLeft) || 0))) > 24 ? Math.min(nw, colRight - box.left) : nw;
+      const pct = Math.round((box.width / (colW || nw)) * 100);
       if (color === "sand") color = "hsl(var(--nova-sand))";
       dividers.push({ id: id(), color: color as TextColor | undefined, thickness: Math.max(1, Math.round(thickness)), ...(pct >= 97 ? { width: "full" as const } : { widthPct: Math.max(2, pct) }) });
       const part = `divider:${dividers.length - 1}`;
@@ -1062,6 +1067,41 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const first = cols[0], last = cols[cols.length - 1];
     const used = cols.reduce((n, c) => n + c.box.width, 0);
     const spread = first.box.left - cLeft < 16 && cRight - last.box.right < 16 && used < (cRight - cLeft) * 0.8;
+    // A row spread across a narrower container (label left, value right inside
+    // one column) keeps that container's width, pinned left and right.
+    let inner: DOMRect | null = null;
+    if (!spread) {
+      const a = partEls[first.parts[0]], b = partEls[last.parts[0]];
+      let anc: HTMLElement | null = a?.parentElement ?? null;
+      while (anc && anc !== node && b && !anc.contains(b)) anc = anc.parentElement;
+      if (anc && anc !== node) {
+        const r = anc.getBoundingClientRect();
+        const acs = getComputedStyle(anc);
+        const l = r.left + (parseFloat(acs.paddingLeft) || 0), rr = r.right - (parseFloat(acs.paddingRight) || 0);
+        if (first.box.left - l < 8 && rr - last.box.right < 8 && used < (rr - l) * 0.8) inner = new DOMRect(l, r.top, rr - l, r.height);
+        else if (nodeWidth && rr - l < nodeWidth * 0.9 && rr - l > 0) {
+          // A row inside a narrower column is drawn inside that column, so its
+          // widths are measured against the column, not the whole block.
+          // Each piece keeps its own measured width within that column (the last
+          // one takes what is left), so buttons never overlap their neighbours.
+          const cw = rr - l + 24;
+          let used2 = 0;
+          cols.forEach((c, ci) => {
+            const last = ci === cols.length - 1;
+            const pct = last ? Math.max(10, 99 - used2) : Math.min(90, Math.ceil(((c.box.width + 24) / cw) * 100));
+            used2 += pct;
+            for (const part of c.parts) widths[part] = pct;
+          });
+        }
+      }
+    }
+    if (inner && nodeWidth) {
+      const share = Math.max(5, Math.floor(100 / cols.length) - 1);
+      cols.forEach((c, ci) => {
+        const a: SectionAlign = ci === 0 ? "left" : ci === cols.length - 1 ? "right" : "center";
+        for (const part of c.parts) { widths[part] = share; partAligns[part] = a; }
+      });
+    }
     if (spread) {
       cols.forEach((c, ci) => {
         const a: SectionAlign = ci === 0 ? "left" : ci === cols.length - 1 ? "right" : "center";
