@@ -27,8 +27,9 @@ import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign,
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import InsertGap, { type InsertType } from "./InsertGap";
+import InlineEditSurface, { type InlineEdits } from "@/components/InlineEditSurface";
 
-interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null }
+interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null }
 
 /**
  * Shows the real site header / footer around the editable page content so the
@@ -181,12 +182,29 @@ export default function DesignTab() {
   const [currentFirst, setCurrentFirst] = useState(true);
   const [objectAt, setObjectAt] = useState<number | null>(null);
   const [importing, setImporting] = useState(false);
+  // In-place editing of a coded page: type over text, click pictures to swap.
+  const [quick, setQuick] = useState(false);
+  const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
+  const [resetKey, setResetKey] = useState(0);
+  const [imgAsk, setImgAsk] = useState<((url: string | null) => void) | null>(null);
+  const pickImage = () => new Promise<string | null>((resolve) => setImgAsk(() => resolve));
+  const inlineTimer = useRef<number>();
+  const changeInline = (next: InlineEdits) => {
+    setInlineEdits(next);
+    const id = selectedId;
+    window.clearTimeout(inlineTimer.current);
+    inlineTimer.current = window.setTimeout(async () => {
+      const updated_at = new Date().toISOString();
+      await (supabase as any).from("pages").update({ inline_edits: next, updated_at }).eq("id", id);
+      setPages((cur) => cur.map((x) => (x.id === id ? { ...x, inline_edits: next, updated_at } : x)));
+    }, 800);
+  };
 
 
   const load = async () => {
     const { data } = await (supabase as any)
       .from("pages")
-      .select("id,name,path,content,updated_at,tags")
+      .select("id,name,path,content,updated_at,tags,inline_edits")
       .is("archived_at", null)
       .order("name", { ascending: true });
     setPages(data ?? []);
@@ -224,6 +242,8 @@ export default function DesignTab() {
     // Newly created pages start empty, with the site header and footer around them.
     setHasExisting(!parsed.length && !!page && canIframe(page.path));
     setCurrentFirst(true);
+    setQuick(false);
+    setInlineEdits(page?.inline_edits ?? {});
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
@@ -675,15 +695,24 @@ export default function DesignTab() {
               <div className="inline-flex rounded-md border overflow-hidden mr-1">
                 <button
                   type="button"
-                  onClick={() => setShowLive(true)}
-                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors ${showLive ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  onClick={() => { setShowLive(true); setQuick(false); }}
+                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors ${showLive && !quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
                 >
                   <Eye className="w-3.5 h-3.5" /> Preview
                 </button>
+                {hasExisting && codedPages[previewSrc(page.path)] && (
+                  <button
+                    type="button"
+                    onClick={() => { setShowLive(true); setQuick(true); }}
+                    className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  >
+                    <Type className="w-3.5 h-3.5" /> Edit in place
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => setShowLive(false)}
-                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors ${!showLive ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  onClick={() => { setShowLive(false); setQuick(false); }}
+                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${!showLive ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
                 >
                   <Pencil className="w-3.5 h-3.5" /> Edit
                 </button>
@@ -715,7 +744,42 @@ export default function DesignTab() {
               </Button>
             </div>
 
-            {showLive ? (
+            {showLive && hasExisting && codedPages[previewSrc(page.path)] && (quick || device === "desktop") ? (
+              <div className="border rounded-lg overflow-hidden bg-background" style={deviceStyle}>
+                <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
+                  <p className="text-xs text-muted-foreground">
+                    {quick
+                      ? "Click any wording to type over it, or click a picture to replace it. Changes save on their own."
+                      : "This is how the page looks right now."}
+                  </p>
+                  {quick ? (
+                    Object.keys(inlineEdits).length > 0 && (
+                      <Button variant="ghost" size="sm" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
+                    )
+                  ) : (
+                    <Button variant="ghost" size="sm" className="gap-2" onClick={() => setQuick(true)}>
+                      <Type className="w-4 h-4" /> Edit in place
+                    </Button>
+                  )}
+                </div>
+                <div className="h-[70vh] overflow-y-auto bg-background">
+                  {(() => {
+                    const C = codedPages[previewSrc(page.path)];
+                    return (
+                      <InlineEditSurface
+                        key={`${page.id}-${quick}-${resetKey}`}
+                        edits={inlineEdits}
+                        editing={quick}
+                        onChange={changeInline}
+                        onPickImage={pickImage}
+                      >
+                        <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense>
+                      </InlineEditSurface>
+                    );
+                  })()}
+                </div>
+              </div>
+            ) : showLive ? (
               <div className="border rounded-lg overflow-hidden bg-background">
                 <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
                   <p className="text-xs text-muted-foreground">
@@ -1062,6 +1126,11 @@ export default function DesignTab() {
           if (videoFor) update(videoFor, { url, poster: poster ?? undefined } as Partial<Block>);
           setVideoFor(null);
         }}
+      />
+      <ImagePickerDialog
+        open={!!imgAsk}
+        onOpenChange={(v) => { if (!v && imgAsk) { imgAsk(null); setImgAsk(null); } }}
+        onPick={({ url }) => { imgAsk?.(url); setImgAsk(null); }}
       />
       <ImagePickerDialog
         open={!!pickerFor}
