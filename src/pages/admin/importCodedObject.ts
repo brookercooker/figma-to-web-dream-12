@@ -1221,7 +1221,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         };
         // The card keeps its own width, not just the width of the words inside it.
         if (nodeWidth && base.flowWidths) {
-          const pct = Math.min(100, Math.round(((el.getBoundingClientRect().width + 24) / nodeWidth) * 100));
+          const pct = Math.min(100, Math.floor(((el.getBoundingClientRect().width + 24) / (nodeWidth + 24)) * 100));
           for (const [part, e] of Object.entries(partEls)) {
             if ((base.stacks?.[part] ?? part) === key && el.contains(e)) base.flowWidths[part] = pct;
           }
