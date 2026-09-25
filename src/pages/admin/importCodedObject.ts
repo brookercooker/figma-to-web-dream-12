@@ -839,7 +839,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (text && !consumed.has(text)) {
       // An icon pinned to the opposite end of a row from its wording (icon left, number right) keeps that spread.
       const pcs = getComputedStyle(parent);
-      const spread = text !== parent && pcs.display.includes("flex") && pcs.justifyContent === "space-between";
+      const spread = pcs.display.includes("flex") && pcs.justifyContent === "space-between";
       iconFor.set(text, { icon: name, side: iconSideOf(svg, text), ...(spread ? { spread: true, row: parent } : {}), color: colorOf(getComputedStyle(svg).color) });
       iconTaken.add(svg);
     }
@@ -951,15 +951,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     }
 
     // Spans inside a paragraph or heading belong to that text, not their own.
-    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6,dt,dd,li")) continue;
-    // Spans inside an underlined link belong to that link.
-    if (tag === "span" && el.parentElement?.closest("span") && (() => { let p = el.parentElement; while (p && p !== node) { if (p.tagName === "SPAN" && isUnderlinedLink(p)) return true; p = p.parentElement; } return false; })()) continue;
-    // Skip wrappers that hold other text so copy is not duplicated.
-    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,button")) continue;
-    if (el.querySelector("a") && !inlineLinkText(el)) continue;
-    const plain = clean(el.innerText || el.textContent);
     // A small empty ring or dot (timeline markers) comes across as a circle icon.
-    if (!plain && tag === "span") {
+    if (!clean(el.textContent) && tag === "span") {
       const r = el.getBoundingClientRect();
       const cs = getComputedStyle(el);
       const bw = parseFloat(cs.borderTopWidth) || 0;
@@ -973,6 +966,13 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       }
       continue;
     }
+    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6,dt,dd,li")) continue;
+    // Spans inside an underlined link belong to that link.
+    if (tag === "span" && el.parentElement?.closest("span") && (() => { let p = el.parentElement; while (p && p !== node) { if (p.tagName === "SPAN" && isUnderlinedLink(p)) return true; p = p.parentElement; } return false; })()) continue;
+    // Skip wrappers that hold other text so copy is not duplicated.
+    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,button")) continue;
+    if (el.querySelector("a") && !inlineLinkText(el)) continue;
+    const plain = clean(el.innerText || el.textContent);
     if (!plain || seenText.has(plain)) continue;
 
     // An underlined call-to-action ("Watch the film →") inside a clickable card
@@ -1006,7 +1006,9 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const text = rich ?? plain;
 
     const heading = /^h[1-6]$/.test(tag);
-    const runs = rich ? [] : runsOf(el);
+    let runs = rich ? [] : runsOf(el);
+    let brText: string | null = null;
+    if (runs.length > 1 && runs.every((r) => r.styleEl === el)) { brText = runs.map((r) => escapeHtml(r.text)).join("<br>"); runs = []; }
     if (runs.length > 1) {
       // Mixed styling (an italic phrase, a line break) keeps each run's look,
       // stacked in the same place.

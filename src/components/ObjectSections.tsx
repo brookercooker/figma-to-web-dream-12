@@ -639,7 +639,10 @@ export const BG_COLORS: { value: TextColor; label: string; swatch: string }[] = 
 /** CSS color for a block background: brand surface token, or any custom color. */
 export function bgColorCss(c: TextColor): string {
   const token = BG_COLORS.find((t) => t.value === c && t.value !== "");
-  return token ? token.swatch : (c as string);
+  if (token) return token.swatch;
+  // Brand colour names (ink, sand, …) paint with their token.
+  if (TEXT_COLORS.some((t) => t.value === c && t.value !== "")) return `hsl(var(--nova-${c}))`;
+  return c as string;
 }
 
 /** Positive values become padding; negative values become negative margin (CSS has no negative padding). */
