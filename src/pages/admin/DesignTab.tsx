@@ -676,16 +676,16 @@ export default function DesignTab() {
                 <button
                   type="button"
                   onClick={() => setShowLive(true)}
-                  className={`px-3 py-1.5 text-xs transition-colors ${showLive ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors ${showLive ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
                 >
-                  Preview
+                  <Eye className="w-3.5 h-3.5" /> Preview
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowLive(false)}
-                  className={`px-3 py-1.5 text-xs transition-colors ${!showLive ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors ${!showLive ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
                 >
-                  Edit
+                  <Pencil className="w-3.5 h-3.5" /> Edit
                 </button>
               </div>
               <div className="inline-flex rounded-md border overflow-hidden mr-1" role="group" aria-label="Screen size">
