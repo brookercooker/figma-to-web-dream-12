@@ -608,7 +608,6 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
 
   const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,span,img,a,button,video,svg";
   const all = parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]).filter(isVisible);
-  console.log("IMPDBG parts", parts.map((p) => p.outerHTML.slice(0, 120)), all.filter((e) => e.tagName === "BUTTON").map((e) => e.textContent));
   const candidates = all.filter((el) => el.matches(TEXTUAL) || !!bgImageUrl(el));
 
   const isTextLeaf = (el: HTMLElement) => {
