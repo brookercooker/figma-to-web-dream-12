@@ -872,7 +872,9 @@ export default function DesignTab() {
                       {b.type === "object" ? (
                         <div className="py-2">
                           {!active && (
-                            <button
+                            <div title="Drag to move" onMouseDown={(e) => startDrag(e, b.id)} className="flex w-full cursor-grab items-center gap-1 rounded hover:bg-muted/40 active:cursor-grabbing">
+                            <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+<button
                               type="button"
                               title={collapsed[b.id] ? "Expand object" : "Collapse object"}
                               onClick={(e) => {
@@ -884,6 +886,7 @@ export default function DesignTab() {
                               {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                               <span>Object: {b.name ?? "Saved object"}</span>
                             </button>
+                            </div>
                           )}
                           {!collapsed[b.id] && (
                             <div className="pointer-events-none">
@@ -894,7 +897,9 @@ export default function DesignTab() {
                       ) : b.type === "image" || b.type === "video" ? (
                         <div className="py-2">
                           {!active && (
-                            <button
+                            <div title="Drag to move" onMouseDown={(e) => startDrag(e, b.id)} className="flex w-full cursor-grab items-center gap-1 rounded hover:bg-muted/40 active:cursor-grabbing">
+                            <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
+<button
                               type="button"
                               title={collapsed[b.id] ? "Expand" : "Collapse"}
                               onClick={(e) => {
@@ -906,6 +911,7 @@ export default function DesignTab() {
                               {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                               <span>{b.type === "video" ? "Video" : "Image"}</span>
                             </button>
+                            </div>
                           )}
                           {!collapsed[b.id] && (
                             <>
