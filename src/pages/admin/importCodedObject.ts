@@ -10,6 +10,8 @@
 
 import {
   newSectionId,
+  SECTION_ICON_NAMES,
+  type SectionVideo,
   type FreeParagraph,
   type FreeSection,
   type LockedSection,
@@ -54,9 +56,113 @@ function looksLikeEyebrow(el: HTMLElement): boolean {
 function isVisible(el: HTMLElement): boolean {
   if (el.closest("[aria-hidden='true']")) return false;
   if (el.closest("[data-import-skip]")) return false;
+  if (el.closest(".sr-only")) return false;
   const cs = getComputedStyle(el);
   if (cs.display === "none" || cs.visibility === "hidden" || cs.opacity === "0") return false;
+  const r = el.getBoundingClientRect();
+  if (r.width <= 1 && r.height <= 1 && el.tagName.toLowerCase() !== "img") return false;
   return true;
+}
+
+/**
+ * Alignment as it looks on the page: text-align, but also items centred by a
+ * flex/grid parent or by auto margins.
+ */
+function visualAlign(el: HTMLElement, stop?: HTMLElement): SectionAlign {
+  const own = alignOf(el);
+  if (own !== "left") return own;
+  let cur: HTMLElement = el;
+  for (let i = 0; i < 4; i += 1) {
+    const parent = cur.parentElement;
+    if (!parent || cur === stop) break;
+    const pcs = getComputedStyle(parent);
+    const flex = /flex/.test(pcs.display);
+    const grid = /grid/.test(pcs.display);
+    if (flex && pcs.flexDirection.startsWith("column") && pcs.alignItems === "center") return "center";
+    if (flex && pcs.flexDirection.startsWith("row") && pcs.justifyContent === "center" && parent.children.length === 1) return "center";
+    if (grid && (pcs.justifyItems === "center" || pcs.placeItems?.includes("center"))) return "center";
+    if (flex && pcs.flexDirection.startsWith("column") && pcs.alignItems === "flex-end") return "right";
+    const pr = parent.getBoundingClientRect();
+    const cr = cur.getBoundingClientRect();
+    const padL = parseFloat(pcs.paddingLeft) || 0;
+    const padR = parseFloat(pcs.paddingRight) || 0;
+    const gapL = cr.left - (pr.left + padL);
+    const gapR = pr.right - padR - cr.right;
+    if (gapL > 12 && gapR > 12 && Math.abs(gapL - gapR) < 4) return "center";
+    if (parent === stop) break;
+    cur = parent;
+  }
+  return "left";
+}
+
+const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+/**
+ * Keeps coloured, italic or bold words inside one piece of text as inline
+ * markup, so "Seventy years of *light*" stays one line with its styled word.
+ * Returns null when the text has no differently styled parts.
+ */
+function richOf(el: HTMLElement): string | null {
+  const base = getComputedStyle(el);
+  let styled = false;
+  const serifOf = (f: string) => /serif/.test(f.toLowerCase().replace(/sans-serif/g, ""));
+  const walk = (node: Node): string => {
+    if (node.nodeType === Node.TEXT_NODE) return escapeHtml((node.textContent ?? "").replace(/\s+/g, " "));
+    if (!(node instanceof HTMLElement)) return "";
+    if (node.tagName === "BR") return "<br>";
+    if (node.tagName.toLowerCase() === "svg" || !isVisible(node)) return "";
+    const inner = [...node.childNodes].map(walk).join("");
+    const cs = getComputedStyle(node);
+    let open = "";
+    let close = "";
+    const bold = Number(cs.fontWeight) >= 600 && Number(base.fontWeight) < 600;
+    const italic = cs.fontStyle === "italic" && base.fontStyle !== "italic";
+    const underline = cs.textDecorationLine.includes("underline") && !base.textDecorationLine.includes("underline");
+    const colorDiff = cs.color !== base.color;
+    const fontDiff = serifOf(cs.fontFamily) !== serifOf(base.fontFamily);
+    if (colorDiff || fontDiff) {
+      const color = colorDiff ? colorOf(cs.color) : undefined;
+      const font = fontDiff ? (serifOf(cs.fontFamily) ? "serif" : "sans") : undefined;
+      const attrs = [color ? `data-color="${color}"` : "", font ? `data-font="${font}"` : ""].filter(Boolean).join(" ");
+      if (attrs) { open += `<span ${attrs}>`; close = "</span>" + close; }
+    }
+    if (bold) { open += "<b>"; close = "</b>" + close; }
+    if (italic) { open += "<i>"; close = "</i>" + close; }
+    if (underline) { open += "<u>"; close = "</u>" + close; }
+    if (open) styled = true;
+    // A child laid out as its own line keeps a line break before it.
+    const block = cs.display === "block" && node !== el;
+    return `${block ? "<br>" : ""}${open}${inner}${close}`;
+  };
+  const html = [...el.childNodes].map(walk).join("").replace(/^(\s|<br>)+|(\s|<br>)+$/g, "").replace(/\s+/g, " ").trim();
+  return styled ? html : null;
+}
+
+/** Lucide icon names that the editor offers under a different key. */
+const ICON_ALIASES: Record<string, string> = {
+  "move-right": "longArrow",
+  "shield-check": "shield",
+  "pen-tool": "pen",
+  "house": "home",
+};
+
+/** Editor icon name for a rendered lucide svg, when the editor has it. */
+function iconNameOf(svg: Element): string | undefined {
+  const cls = svg.getAttribute("class") ?? "";
+  const m = [...cls.matchAll(/lucide-([a-z0-9-]+)/g)].map((x) => x[1]).filter((n) => n !== "icon");
+  for (const raw of m) {
+    if (ICON_ALIASES[raw]) return ICON_ALIASES[raw];
+    const camel = raw.replace(/-([a-z0-9])/g, (_s, c: string) => c.toUpperCase());
+    if (SECTION_ICON_NAMES.includes(camel)) return camel;
+  }
+  return undefined;
+}
+
+/** Whether an icon sits before or after the wording beside it. */
+function iconSideOf(svg: Element, host: HTMLElement): "before" | "after" {
+  const s = svg.getBoundingClientRect();
+  const h = host.getBoundingClientRect();
+  return s.left + s.width / 2 < h.left + h.width / 2 ? "before" : "after";
 }
 
 /** Nova palette, so colors coming out of the DOM keep their brand token. */
