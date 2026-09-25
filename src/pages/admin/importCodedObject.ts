@@ -995,8 +995,9 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       if (dividers.some((d, i) => { const b = textBoxes.find((t) => t.part === `divider:${i}`)?.box; return b && Math.abs(b.top - box.top) < 3 && hOverlap(b, box) > 0.8; })) return;
       // Measured against the column it sits in (text starting at the same left edge),
       // since a line inside a side column is drawn inside that column.
-      const colRight = Math.max(box.right, ...textBoxes.filter((t) => Math.abs(t.box.left - box.left) < 6).map((t) => t.box.right));
-      const colW = Math.abs(box.left - (nr.left + (parseFloat(getComputedStyle(node).paddingLeft) || 0))) > 24 ? Math.min(nw, colRight - box.left) : nw;
+      const sameLeft = textBoxes.filter((t) => Math.abs(t.box.left - box.left) < 6 && !t.part.startsWith("divider:"));
+      const colRight = Math.max(box.right, ...sameLeft.map((t) => t.box.right));
+      const colW = sameLeft.length && Math.abs(box.left - (nr.left + (parseFloat(getComputedStyle(node).paddingLeft) || 0))) > 24 ? Math.min(nw, colRight - box.left) : nw;
       const pct = Math.round((box.width / (colW || nw)) * 100);
       if (color === "sand") color = "hsl(var(--nova-sand))";
       dividers.push({ id: id(), color: color as TextColor | undefined, thickness: Math.max(1, Math.round(thickness)), ...(pct >= 97 ? { width: "full" as const } : { widthPct: Math.max(2, pct) }) });
@@ -1081,8 +1082,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         else if (nodeWidth && rr - l < nodeWidth * 0.9 && rr - l > 0) {
           // A row inside a narrower column is drawn inside that column, so its
           // widths are measured against the column, not the whole block.
-          const k = nodeWidth / (rr - l);
-          for (const c of cols) for (const part of c.parts) if (widths[part]) widths[part] = Math.min(100, Math.round(widths[part] * k));
+          // Letting them share the column evenly keeps buttons from overlapping.
+          for (const c of cols) for (const part of c.parts) delete widths[part];
         }
       }
     }
