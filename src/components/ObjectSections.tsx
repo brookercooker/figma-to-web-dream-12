@@ -569,6 +569,8 @@ export interface CardOutline {
   radius?: number;
   pad?: number;
   bg?: TextColor;
+  /** only one side drawn (a line between stats); all sides when unset */
+  sides?: "left" | "right";
   /** last item sits at the bottom of the card, so links line up across cards */
   pinLast?: boolean;
 }
@@ -579,7 +581,12 @@ export function cardStyle(c?: CardOutline): React.CSSProperties {
     padding: c.pad ?? 24,
     borderRadius: c.radius ?? 0,
   };
-  if (c.color) style.border = `${c.width ?? 1}px solid ${outlineColorCss(c.color)}`;
+  if (c.color) {
+    const line = `${c.width ?? 1}px solid ${outlineColorCss(c.color)}`;
+    if (c.sides === "left") { style.borderLeft = line; style.padding = `0 ${c.pad ?? 24}px`; }
+    else if (c.sides === "right") { style.borderRight = line; style.padding = `0 ${c.pad ?? 24}px`; }
+    else style.border = line;
+  }
   if (c.bg) style.backgroundColor = c.bg === "sand" ? "hsl(var(--nova-sand) / 0.4)" : bgColorCss(c.bg);
   return style;
 }
@@ -1173,7 +1180,7 @@ import {
   ChevronLeft, ChevronRight, Pause, Play,
   Calendar, Ruler, Compass, Lightbulb, MapPin, Phone, Mail, Clock, Star, Heart,
   Sparkles, Truck, ShieldCheck, Award, Home, Sofa, PenTool, Palette, Camera,
-  Quote, Check, Leaf, Droplets, Sun, Moon, Wrench, Flame, Zap, Gift, Users, Tag, Globe, Package, Settings, Eye, Info, Plus, Minus,
+  Quote, Check, Leaf, Droplets, Sun, Moon, Wrench, Flame, Zap, Gift, Users, Tag, Globe, Package, Settings, Eye, Info, Plus, Minus, Circle, CircleDot,
   ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, MoveRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -1185,7 +1192,7 @@ export const SECTION_ICONS: Record<string, LucideIcon> = {
   sparkles: Sparkles, truck: Truck, shield: ShieldCheck, award: Award, home: Home,
   sofa: Sofa, pen: PenTool, palette: Palette, camera: Camera, quote: Quote,
   check: Check, leaf: Leaf, droplets: Droplets, sun: Sun, moon: Moon, wrench: Wrench, flame: Flame, zap: Zap,
-  gift: Gift, users: Users, tag: Tag, globe: Globe, package: Package, settings: Settings, eye: Eye, info: Info, plus: Plus, minus: Minus,
+  gift: Gift, users: Users, tag: Tag, globe: Globe, package: Package, settings: Settings, eye: Eye, info: Info, plus: Plus, minus: Minus, circle: Circle, dot: CircleDot,
   arrowRight: ArrowRight, arrowLeft: ArrowLeft, arrowUp: ArrowUp, arrowDown: ArrowDown,
   arrowUpRight: ArrowUpRight, chevronRight: ChevronRight, chevronLeft: ChevronLeft, longArrow: MoveRight,
 };

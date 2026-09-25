@@ -958,6 +958,21 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,button")) continue;
     if (el.querySelector("a") && !inlineLinkText(el)) continue;
     const plain = clean(el.innerText || el.textContent);
+    // A small empty ring or dot (timeline markers) comes across as a circle icon.
+    if (!plain && tag === "span") {
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      const bw = parseFloat(cs.borderTopWidth) || 0;
+      const fill = parseRgb(cs.backgroundColor);
+      if (r.width >= 4 && r.width <= 28 && Math.abs(r.width - r.height) < 2 && parseFloat(cs.borderTopLeftRadius) >= r.width / 2 - 1 && (bw > 0 || (fill && fill[3] > 0.1))) {
+        const col = bw > 0 ? cs.borderTopColor : cs.backgroundColor;
+        extras.push({ id: id(), text: bw > 0 ? "circle" : "dot", kind: "icon", style: { color: colorOf(col) ?? (colorOf(col) as TextColor | undefined), sizePx: Math.max(8, Math.round(r.width)) } });
+        const part = `text:${extras.length - 1}`;
+        order.push(part);
+        keepFlow(part, el);
+      }
+      continue;
+    }
     if (!plain || seenText.has(plain)) continue;
 
     // An underlined call-to-action ("Watch the film →") inside a clickable card
@@ -1150,6 +1165,24 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         const hit = cardsList.find((c) => { const r = c.getBoundingClientRect(); return t.box.left >= r.left - 3 && t.box.right <= r.right + 3 && t.box.top >= r.top - 3 && t.box.top <= r.bottom + 3; });
         if (hit) partCard.set(t.part, hit);
       }
+      // A line running behind several cards (a timeline's rail) is drawn inside each card, at the same height.
+      for (const t of [...textBoxes]) {
+        const m = /^divider:(\d+)$/.exec(t.part);
+        if (!m || partCard.has(t.part) || !base.dividers?.[+m[1]]) continue;
+        const crossed = cardsList.filter((c) => { const r = c.getBoundingClientRect(); return hOverlap(t.box, boxOf(c)) > 0.6 && t.box.top >= r.top - 3 && t.box.top <= r.bottom + 3; });
+        if (crossed.length < 2) continue;
+        const proto = { ...base.dividers[+m[1]] }; delete proto.widthPct; proto.width = "full";
+        crossed.forEach((c, i) => {
+          const r = c.getBoundingClientRect();
+          const cb = { top: t.box.top, bottom: t.box.bottom, left: r.left, right: r.right, width: r.width };
+          if (i === 0) { base.dividers![+m[1]] = proto; t.box = cb; partCard.set(t.part, c); return; }
+          base.dividers!.push({ ...proto, id: id() });
+          const part = `divider:${base.dividers!.length - 1}`;
+          textBoxes.push({ part, box: cb });
+          (base.order ??= []).push(part);
+          partCard.set(part, c);
+        });
+      }
       const boxOfPart = new Map(textBoxes.map((t) => [t.part, t.box]));
       const flows = { ...(base.flows ?? {}) } as Record<string, "inline">;
       const stacks = { ...(base.stacks ?? {}) };
@@ -1160,7 +1193,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         const perRow = cardsList.filter((c) => Math.abs(c.getBoundingClientRect().top - r.top) < 4).length;
         const pct = Math.floor(100 / Math.max(1, perRow));
         const ps = [...partCard.entries()].filter(([, c]) => c === card).map(([p]) => p)
-          .sort((a, b) => (boxOfPart.get(a)?.top ?? 0) - (boxOfPart.get(b)?.top ?? 0));
+          .sort((a, b) => { const A = boxOfPart.get(a), B = boxOfPart.get(b); return (A ? (A.top + A.bottom) / 2 : 0) - (B ? (B.top + B.bottom) / 2 : 0); });
         // A line spanning the card is drawn full width inside its column.
         for (const p of ps) {
           const m = /^divider:(\d+)$/.exec(p);
@@ -1371,6 +1404,23 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     while (anc && anc !== node && !els.every((e) => anc!.contains(e))) anc = anc.parentElement;
     for (let el = anc; el && el !== node && node.contains(el); el = el.parentElement) {
       const b = borderOf(el);
+      {
+        // A card marked off by a single upright line (stats split by vertical rules) keeps that line.
+        const cs3 = getComputedStyle(el);
+        const w = (side: "Left" | "Right" | "Top" | "Bottom") =>
+          cs3[`border${side}Style` as "borderLeftStyle"] !== "none" ? parseFloat(cs3[`border${side}Width` as "borderLeftWidth"]) || 0 : 0;
+        const lw = w("Left"), rw = w("Right");
+        if (!b?.all && !w("Top") && !w("Bottom") && (lw > 0) !== (rw > 0)) {
+          const raw = lw > 0 ? cs3.borderLeftColor : cs3.borderRightColor;
+          cards[key] = {
+            color: (colorOf(raw) ?? brandBorderColor(raw)) as TextColor,
+            width: Math.round(lw || rw),
+            sides: lw > 0 ? "left" : "right",
+            pad: Math.round(parseFloat(lw > 0 ? cs3.paddingLeft : cs3.paddingRight)) || 24,
+          };
+          break;
+        }
+      }
       if (b && b.all) {
         const cs2 = getComputedStyle(el);
         cards[key] = {
