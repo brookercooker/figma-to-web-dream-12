@@ -1110,6 +1110,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   if (Object.keys(widths).length) base.flowWidths = widths;
   if (Object.keys(laid.stacks).length) base.stacks = laid.stacks;
 
+  let cardWidths: Record<string, number> | null = null;
   // Grids of text cards (several items in each grid cell) keep one column per card,
   // with everything inside the card stacked in reading order.
   {
@@ -1152,6 +1153,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       const rest = cur.filter((p) => !partCard.has(p));
       base.order = [...rest.slice(0, at < 0 ? rest.length : cur.slice(0, at).filter((p) => !partCard.has(p)).length), ...cardParts, ...rest.slice(at < 0 ? rest.length : cur.slice(0, at).filter((p) => !partCard.has(p)).length)];
       base.flows = flows; base.stacks = stacks; base.flowWidths = fw; base.rowVAlign = "top";
+      cardWidths = Object.fromEntries(cardParts.map((p) => [p, fw[p]]));
       laid.rows = laid.rows.filter((cols) => !cols.some((c) => c.parts.some((p) => partCard.has(p))));
     }
   }
@@ -1391,6 +1393,11 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     }
   }
 
+  // Every item in a text card shares the card's width, so the card stays one column.
+  if (cardWidths) {
+    base.flowWidths = { ...(base.flowWidths ?? {}), ...cardWidths };
+    for (const p of Object.keys(cardWidths)) base.flows = { ...(base.flows ?? {}), [p]: "inline" };
+  }
   const empty = !base.heading && !base.eyebrow && !base.body && !base.buttonLabel && !images.length && !extras.length;
   return empty ? null : base;
 }
