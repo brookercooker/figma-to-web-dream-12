@@ -1166,13 +1166,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   const cs = getComputedStyle(node);
   const padY = Math.round((parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) / 2);
   const padX = Math.round((parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)) / 2);
-  const buttonOnly = !!base.buttonLabel && !base.heading && !base.eyebrow && !base.body && !images.length && !extras.length;
-  if (buttonOnly) {
-    // A lone button keeps its original gap: its own margins stand in for padding,
-    // and the editor's default spacing is cancelled (negative when it overshoots).
+  // Spacing always follows the original: padding plus the block's own margins,
+  // with no editor default added (0 means flush, as in the original).
+  {
     const m = (parseFloat(cs.marginTop) + parseFloat(cs.marginBottom)) / 2;
-    base.padY = Math.round(padY + m);
-  } else if (padY > 0) base.padY = padY;
+    base.padY = Math.round(padY + (Number.isFinite(m) ? m : 0));
+  }
   if (padX > 0) base.padX = padX;
 
   // Text that sat on top of a picture keeps sitting on top of it.
