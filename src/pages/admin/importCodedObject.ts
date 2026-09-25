@@ -977,6 +977,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   // Divider lines: thin empty rules, and top/bottom border lines on wrappers,
   // placed where they sat so nearby buttons and text keep their position.
   const dividers: FreeDivider[] = [];
+  let nodeRuleUsed = false;
   {
     const nr = node.getBoundingClientRect();
     const nw = nr.width || 1;
@@ -1003,9 +1004,13 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         addRule(colorOf(col) ?? brandBorderColor(col), el.tagName === "HR" ? parseFloat(cs.borderTopWidth) || r.height || 1 : r.height, { left: r.left, right: r.right, top: r.top, bottom: r.top + 1, width: r.width } as Box);
         continue;
       }
-      if (el === node || empty) continue;
+      if (empty) continue;
       const b = borderOf(el);
       if (!b || b.all) continue;
+      // A single top or bottom line on the block's own wrapper (e.g. a rule
+      // under a heading) becomes a real divider rather than a frame line.
+      if (el === node && b.top && b.bottom) continue;
+      if (el === node) nodeRuleUsed = true;
       if (b.top) addRule(b.color, b.width, { left: r.left, right: r.right, top: r.top - 1, bottom: r.top, width: r.width } as Box);
       if (b.bottom) addRule(b.color, b.width, { left: r.left, right: r.right, top: r.bottom, bottom: r.bottom + 1, width: r.width } as Box);
     }
@@ -1203,7 +1208,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
 
   // Framing lines on the block itself, or on a wrapper whose edge it shares.
   const nb = node.getBoundingClientRect();
-  for (let el: HTMLElement | null = node; el && el.tagName !== "BODY"; el = el.parentElement) {
+  for (let el: HTMLElement | null = nodeRuleUsed ? node.parentElement : node; el && el.tagName !== "BODY"; el = el.parentElement) {
     if (el.hasAttribute("data-import-root")) break;
     const b = borderOf(el);
     if (b) {
