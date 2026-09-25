@@ -1567,7 +1567,10 @@ export function sectionsFromDom(root: HTMLElement): Section[] {
   });
   // Continuously scrolling strips (brand marquees) become "Scrolling strip" image groups.
   for (const track of Array.from(root.querySelectorAll<HTMLElement>("[style*='animation']"))) {
-    const m = /\b(scroll-reverse|scroll)\s+([\d.]+)s/.exec(track.style.animation || "");
+    const a = track.style.animation || "";
+    const nm = /(?:^|\s)(scroll-reverse|scroll)(?:\s|$)/.exec(a);
+    const dur = /([\d.]+)s\b/.exec(a);
+    const m = nm && dur ? [a, nm[1], dur[1]] : null;
     if (!m || track.closest("[data-import-skip]") || track.children.length < 4) continue;
     const kids = Array.from(track.children) as HTMLElement[];
     const half = kids.slice(0, Math.ceil(kids.length / 2));
