@@ -786,6 +786,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) continue;
     const plain = clean(el.innerText || el.textContent);
     if (!plain || seenText.has(plain)) continue;
+    // A carousel's own counter ("2 / 14") beside its play button is replaced by the editor's controls.
+    if (repeatingCards.length >= 3 && /^\d+\s*(\/|of)\s*\d+$/i.test(plain)) continue;
     seenText.add(plain);
     const rich = richOf(el);
     const text = rich ?? plain;
@@ -898,6 +900,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const cw = repeatingCards[0][1].getBoundingClientRect().width;
     const per = Math.max(1, Math.min(4, cw ? Math.round(nodeWidth / cw) : visibleCards || 3));
     base.columns = per as 1 | 2 | 3 | 4;
+    if (carousel) base.perView = per;
     if (cardAlign) base.captionAlign = cardAlign;
   } else if (images.length === 1 && imageBoxes[0] && nodeWidth) {
     // A single picture keeps its original size.
