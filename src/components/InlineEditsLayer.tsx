@@ -5,6 +5,14 @@ import InlineEditSurface, { type InlineEdits } from "@/components/InlineEditSurf
 /** Shows in-place edits made in the page editor on the public site. */
 export default function InlineEditsLayer({ path, children }: { path: string; children: ReactNode }) {
   const [edits, setEdits] = useState<InlineEdits>({});
+  const [objectEdits, setObjectEdits] = useState<Record<string, InlineEdits>>({});
+  useEffect(() => {
+    (supabase as any).from("object_registry").select("component_key,inline_edits").then(({ data }: any) => {
+      const out: Record<string, InlineEdits> = {};
+      (data ?? []).forEach((r: any) => { if (r.component_key && r.inline_edits) out[r.component_key] = r.inline_edits; });
+      setObjectEdits(out);
+    });
+  }, [path]);
   useEffect(() => {
     let live = true;
     const key = path === "/" ? "/home" : path;
@@ -12,5 +20,5 @@ export default function InlineEditsLayer({ path, children }: { path: string; chi
       .then(({ data }: any) => { if (live) setEdits(data?.inline_edits ?? {}); });
     return () => { live = false; };
   }, [path]);
-  return <InlineEditSurface key={path} edits={edits}>{children}</InlineEditSurface>;
+  return <InlineEditSurface key={path} edits={edits} objectEdits={objectEdits}>{children}</InlineEditSurface>;
 }
