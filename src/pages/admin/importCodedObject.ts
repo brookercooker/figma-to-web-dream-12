@@ -450,7 +450,7 @@ function backgroundOf(node: HTMLElement): TextColor | undefined {
 }
 
 const hasContent = (el: HTMLElement) =>
-  !!clean(el.innerText || el.textContent) || !!el.querySelector("img,video");
+  !!clean(el.innerText || el.textContent) || /^(img|video)$/i.test(el.tagName) || !!el.querySelector("img,video");
 
 /** Walks past plain wrappers (containers, width limiters) to the real content. */
 function contentRoot(el: HTMLElement): HTMLElement {
@@ -606,14 +606,14 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (!partEls[part]) partEls[part] = el;
   };
 
-  const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,span,img,a,button,video,svg";
+  const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,dt,dd,li,span,img,a,button,video,svg";
   const all = parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]).filter(isVisible);
   const candidates = all.filter((el) => el.matches(TEXTUAL) || !!bgImageUrl(el));
 
   const isTextLeaf = (el: HTMLElement) => {
     const tag = el.tagName.toLowerCase();
-    if (!/^(h[1-6]|p|span)$/.test(tag)) return false;
-    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6")) return false;
+    if (!/^(h[1-6]|p|span|dt|dd|li)$/.test(tag)) return false;
+    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6,dt,dd,li")) return false;
     if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) return false;
     return !!clean(el.innerText || el.textContent);
   };
@@ -885,7 +885,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     }
 
     // Spans inside a paragraph or heading belong to that text, not their own.
-    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6")) continue;
+    if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6,dt,dd,li")) continue;
     // Spans inside an underlined link belong to that link.
     if (tag === "span" && el.parentElement?.closest("span") && (() => { let p = el.parentElement; while (p && p !== node) { if (p.tagName === "SPAN" && isUnderlinedLink(p)) return true; p = p.parentElement; } return false; })()) continue;
     // Skip wrappers that hold other text so copy is not duplicated.
