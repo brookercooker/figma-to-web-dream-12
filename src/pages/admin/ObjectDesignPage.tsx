@@ -5035,13 +5035,18 @@ function CodedImportProbe({
       /** Convert one part in its real surroundings: hide the rest, read the whole object. */
       const convertOnly = (el: Element | null) => {
         if (!obj || !el) return sectionsFromDom(obj ?? root);
-        const hidden: Element[] = [];
+        // Other parts are lifted out briefly (and put straight back) so they can't leak into the result.
+        const lifted: { c: Element; parent: Element; next: Node | null }[] = [];
         let n: Element = el;
         while (n !== obj && n.parentElement) {
-          for (const c of n.parentElement.children) if (c !== n) { c.setAttribute("data-inline-isolated-out", ""); hidden.push(c); }
-          n = n.parentElement;
+          const parent: Element = n.parentElement;
+          for (const c of [...parent.children]) if (c !== n) lifted.push({ c, parent, next: c.nextSibling });
+          n = parent;
         }
-        try { return sectionsFromDom(obj); } finally { hidden.forEach((c) => c.removeAttribute("data-inline-isolated-out")); }
+        lifted.forEach(({ c }) => c.remove());
+        try { return sectionsFromDom(obj); } finally {
+          for (const { c, parent, next } of [...lifted].reverse()) parent.insertBefore(c, next && next.parentNode === parent ? next : null);
+        }
       };
       if (chunk !== undefined && obj) {
         onDone(tag(convertOnly(elementAtPath(obj, chunk)), chunk));
