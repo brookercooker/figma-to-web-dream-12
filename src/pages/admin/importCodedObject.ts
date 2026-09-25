@@ -270,7 +270,9 @@ function layoutRows(
   widths: Record<string, number>;
   stacks: Record<string, string>;
   order: string[];
+  rows: { parts: string[]; box: Box }[][];
 } {
+  const rowsOut: { parts: string[]; box: Box }[][] = [];
   const flows: Record<string, "inline"> = {};
   const widths: Record<string, number> = {};
   const stacks: Record<string, string> = {};
@@ -330,6 +332,7 @@ function layoutRows(
       cols.forEach((c) => c.items.forEach((it) => order.push(it.part)));
       return;
     }
+    rowsOut.push(cols.map((c) => ({ parts: c.items.map((i) => i.part), box: c.box })));
     cols.forEach((col, ci) => {
       const pct = nodeWidth ? Math.round(((col.box.right - col.box.left) / nodeWidth) * 100) : 0;
       col.items.forEach((it) => {
@@ -340,7 +343,7 @@ function layoutRows(
       });
     });
   });
-  return { flows, widths, stacks, order };
+  return { flows, widths, stacks, order, rows: rowsOut };
 }
 
 /** Solid, outlined or plain-link look of a link or button — null when it's just text. */
@@ -787,7 +790,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const plain = clean(el.innerText || el.textContent);
     if (!plain || seenText.has(plain)) continue;
     // A carousel's own counter ("2 / 14") beside its play button is replaced by the editor's controls.
-    if (repeatingCards.length >= 3 && /^\d+\s*(\/|of)\s*\d+$/i.test(plain)) continue;
+    if (repeatingCards.length >= 3 && (/^\d+\s*(\/|of|—|–|-)\s*\d+$/i.test(plain) || (/^(\d{1,3}|\/|of)$/i.test(plain) && !!el.closest("div")?.parentElement?.querySelector("button")))) continue;
     seenText.add(plain);
     const rich = richOf(el);
     const text = rich ?? plain;
@@ -878,6 +881,34 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   if (Object.keys(widths).length) base.flowWidths = widths;
   if (Object.keys(laid.stacks).length) base.stacks = laid.stacks;
 
+  // Rows keep their spread (title far left, button far right) and vertical alignment.
+  const rowNb = node.getBoundingClientRect();
+  const cLeft = rowNb.left + (parseFloat(ncs.paddingLeft) || 0);
+  const cRight = rowNb.right - (parseFloat(ncs.paddingRight) || 0);
+  const vAligns: Record<string, "top" | "middle" | "bottom"> = {};
+  for (const cols of laid.rows) {
+    const first = cols[0], last = cols[cols.length - 1];
+    const used = cols.reduce((n, c) => n + c.box.width, 0);
+    const spread = first.box.left - cLeft < 16 && cRight - last.box.right < 16 && used < (cRight - cLeft) * 0.8;
+    if (spread) {
+      cols.forEach((c, ci) => {
+        const a: SectionAlign = ci === 0 ? "left" : ci === cols.length - 1 ? "right" : "center";
+        for (const part of c.parts) {
+          delete widths[part];
+          partAligns[part] = a;
+        }
+      });
+    }
+    const near = (f: (b: Box) => number) => Math.max(...cols.map((c) => f(c.box))) - Math.min(...cols.map((c) => f(c.box))) < 4;
+    const v = near((b) => b.top) ? "top" : near((b) => b.bottom) ? "bottom" : near((b) => (b.top + b.bottom) / 2) ? "middle" : "top";
+    for (const c of cols) for (const part of c.parts) vAligns[part] = v;
+  }
+  if (Object.keys(widths).length) base.flowWidths = widths; else delete base.flowWidths;
+  if (Object.keys(vAligns).length) {
+    base.flowVAligns = vAligns;
+    base.rowVAlign = vAligns[laid.rows[0][0].parts[0]] ?? "top";
+  }
+
   // Each text keeps its own alignment when it differs from the block's.
   const aligns: Record<string, SectionAlign> = {};
   for (const [part, a] of Object.entries(partAligns)) if (a !== base.align) aligns[part] = a;
@@ -902,6 +933,26 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     base.columns = per as 1 | 2 | 3 | 4;
     if (carousel) base.perView = per;
     if (cardAlign) base.captionAlign = cardAlign;
+    // Every card's picture keeps the height it had on the page.
+    const [firstImg, firstCard] = repeatingCards[0];
+    const ib = firstImg.getBoundingClientRect();
+    if (ib.height > 24) base.imageHeightPx = Math.round(ib.height);
+    // A bordered card outlines the whole item, picture and wording together.
+    for (let el: HTMLElement | null = firstCard, i = 0; el && el !== node && i < 3; el = el.parentElement, i += 1) {
+      const b = borderOf(el);
+      if (b && b.all) {
+        const cs3 = getComputedStyle(el);
+        base.imageBorder = true;
+        base.imageBorderColor = b.color as FreeSection["imageBorderColor"];
+        base.imageBorderWidth = b.width;
+        base.imageBorderRadius = Math.round(parseFloat(cs3.borderTopLeftRadius)) || 0;
+        base.imageBorderPad = Math.round(parseFloat(cs3.paddingTop)) || 0;
+        break;
+      }
+    }
+  } else if (images.length > 1 && imageBoxes.length) {
+    const h = imageBoxes[0].bottom - imageBoxes[0].top;
+    if (h > 24) base.imageHeightPx = Math.round(h);
   } else if (images.length === 1 && imageBoxes[0] && nodeWidth) {
     // A single picture keeps its original size.
     const b = imageBoxes[0];
