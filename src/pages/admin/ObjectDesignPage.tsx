@@ -2027,6 +2027,26 @@ export default function ObjectDesignPage() {
     }
   };
 
+  // Auto-save: quietly store changes shortly after the user stops editing.
+  useEffect(() => {
+    if (!dirty || !object) return;
+    const id = object.id;
+    const content = sections;
+    const t = window.setTimeout(async () => {
+      setSaving(true);
+      const updated_at = new Date().toISOString();
+      const { error } = await (supabase as any)
+        .from("object_registry")
+        .update({ content, updated_at })
+        .eq("id", id);
+      setSaving(false);
+      if (error) { toast.error(error.message ?? "Could not save this object"); return; }
+      setObjects((cur) => cur.map((o) => (o.id === id ? ({ ...o, content, updated_at } as any) : o)));
+      setDirty(false);
+    }, 800);
+    return () => window.clearTimeout(t);
+  }, [dirty, sections, object?.id]);
+
   const ImageEditor = ({
     section, index, image, showCaption,
   }: { section: Section; index: number; image: SectionImage; showCaption?: boolean }) => {
@@ -4071,9 +4091,9 @@ export default function ObjectDesignPage() {
               >
                 <Trash2 className="w-4 h-4" /> Delete
               </Button>
-              <Button size="sm" className="gap-2" onClick={save} disabled={saving || !dirty}>
-                <Save className="w-4 h-4" /> {saving ? "Saving…" : dirty ? "Save" : "Saved"}
-              </Button>
+              <span className="inline-flex items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
+                <Save className="w-4 h-4" /> {saving || dirty ? "Saving…" : "All changes saved"}
+              </span>
             </div>
           )}
         </div>
