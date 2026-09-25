@@ -121,10 +121,12 @@ function richOf(el: HTMLElement): string | null {
     const underline = cs.textDecorationLine.includes("underline") && !base.textDecorationLine.includes("underline");
     const colorDiff = cs.color !== base.color;
     const fontDiff = serifOf(cs.fontFamily) !== serifOf(base.fontFamily);
-    if (colorDiff || fontDiff) {
+    const ratio = parseFloat(cs.fontSize) / (parseFloat(base.fontSize) || 1);
+    const sizeDiff = Math.abs(ratio - 1) > 0.12;
+    if (colorDiff || fontDiff || sizeDiff) {
       const color = colorDiff ? colorOf(cs.color) : undefined;
       const font = fontDiff ? (serifOf(cs.fontFamily) ? "serif" : "sans") : undefined;
-      const attrs = [color ? `data-color="${color}"` : "", font ? `data-font="${font}"` : ""].filter(Boolean).join(" ");
+      const attrs = [color ? `data-color="${color}"` : "", font ? `data-font="${font}"` : "", sizeDiff ? `data-size="${ratio.toFixed(2)}"` : ""].filter(Boolean).join(" ");
       if (attrs) { open += `<span ${attrs}>`; close = "</span>" + close; }
     }
     if (bold) { open += "<b>"; close = "</b>" + close; }
@@ -137,6 +139,16 @@ function richOf(el: HTMLElement): string | null {
   };
   const html = [...el.childNodes].map(walk).join("").replace(/^(\s|<br>)+|(\s|<br>)+$/g, "").replace(/\s+/g, " ").trim();
   return styled ? html : null;
+}
+
+/** A sentence with a plain text link inside it ("Something else? Write to us.") reads as one piece of wording. */
+function inlineLinkText(el: HTMLElement): boolean {
+  const links = [...el.querySelectorAll<HTMLElement>("a")];
+  if (!links.length || el.querySelector("h1,h2,h3,h4,h5,h6,p,img,video,button")) return false;
+  if (links.some((a) => getComputedStyle(a).display !== "inline" || a.querySelector("svg"))) return false;
+  const all = clean(el.textContent);
+  const linkText = clean(links.map((a) => a.textContent).join(" "));
+  return all.length > linkText.length + 2;
 }
 
 /** Lucide icon names that the editor offers under a different key. */
@@ -614,7 +626,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const tag = el.tagName.toLowerCase();
     if (!/^(h[1-6]|p|span|dt|dd|li)$/.test(tag)) return false;
     if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6,dt,dd,li")) return false;
-    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) return false;
+    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,button")) return false;
+    if (el.querySelector("a") && !inlineLinkText(el)) return false;
     return !!clean(el.innerText || el.textContent);
   };
 
@@ -826,7 +839,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (text && !consumed.has(text)) {
       // An icon pinned to the opposite end of a row from its wording (icon left, number right) keeps that spread.
       const pcs = getComputedStyle(parent);
-      const spread = text !== parent && pcs.display.includes("flex") && pcs.justifyContent === "space-between";
+      const spread = pcs.display.includes("flex") && pcs.justifyContent === "space-between";
       iconFor.set(text, { icon: name, side: iconSideOf(svg, text), ...(spread ? { spread: true, row: parent } : {}), color: colorOf(getComputedStyle(svg).color) });
       iconTaken.add(svg);
     }
@@ -891,6 +904,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     }
 
     if (tag === "a" || tag === "button") {
+      { const host = el.parentElement?.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6,dt,dd,li"); if (tag === "a" && host && inlineLinkText(host)) continue; }
       const label = clean(el.innerText || el.textContent);
       // Skip wrappers around images or long blocks of copy.
       // Short label spans and icon spans inside a button are part of the button.
@@ -937,11 +951,27 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     }
 
     // Spans inside a paragraph or heading belong to that text, not their own.
+    // A small empty ring or dot (timeline markers) comes across as a circle icon.
+    if (!clean(el.textContent) && tag === "span") {
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      const bw = parseFloat(cs.borderTopWidth) || 0;
+      const fill = parseRgb(cs.backgroundColor);
+      if (r.width >= 4 && r.width <= 28 && Math.abs(r.width - r.height) < 2 && parseFloat(cs.borderTopLeftRadius) >= r.width / 2 - 1 && (bw > 0 || (fill && fill[3] > 0.1))) {
+        const col = bw > 0 ? cs.borderTopColor : cs.backgroundColor;
+        extras.push({ id: id(), text: bw > 0 ? "circle" : "dot", kind: "icon", style: { color: colorOf(col) ?? (colorOf(col) as TextColor | undefined), sizePx: Math.max(8, Math.round(r.width)) } });
+        const part = `text:${extras.length - 1}`;
+        order.push(part);
+        keepFlow(part, el);
+      }
+      continue;
+    }
     if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6,dt,dd,li")) continue;
     // Spans inside an underlined link belong to that link.
     if (tag === "span" && el.parentElement?.closest("span") && (() => { let p = el.parentElement; while (p && p !== node) { if (p.tagName === "SPAN" && isUnderlinedLink(p)) return true; p = p.parentElement; } return false; })()) continue;
     // Skip wrappers that hold other text so copy is not duplicated.
-    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) continue;
+    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,button")) continue;
+    if (el.querySelector("a") && !inlineLinkText(el)) continue;
     const plain = clean(el.innerText || el.textContent);
     if (!plain || seenText.has(plain)) continue;
 
@@ -973,10 +1003,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (repeatingCards.length >= 3 && (/^\d+\s*(\/|of|—|–|-)\s*\d+$/i.test(plain) || (/^(\d{1,3}|\/|of)$/i.test(plain) && !!el.closest("div")?.parentElement?.querySelector("button")))) continue;
     seenText.add(plain);
     const rich = richOf(el);
-    const text = rich ?? plain;
+    let text = rich ?? plain;
 
     const heading = /^h[1-6]$/.test(tag);
-    const runs = rich ? [] : runsOf(el);
+    let runs = rich ? [] : runsOf(el);
+    let brText: string | null = null;
+    if (runs.length > 1 && runs.every((r) => r.styleEl === el)) { brText = runs.map((r) => escapeHtml(r.text)).join("<br>"); runs = []; text = brText; }
     if (runs.length > 1) {
       // Mixed styling (an italic phrase, a line break) keeps each run's look,
       // stacked in the same place.
@@ -1135,6 +1167,24 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         const hit = cardsList.find((c) => { const r = c.getBoundingClientRect(); return t.box.left >= r.left - 3 && t.box.right <= r.right + 3 && t.box.top >= r.top - 3 && t.box.top <= r.bottom + 3; });
         if (hit) partCard.set(t.part, hit);
       }
+      // A line running behind several cards (a timeline's rail) is drawn inside each card, at the same height.
+      for (const t of [...textBoxes]) {
+        const m = /^divider:(\d+)$/.exec(t.part);
+        if (!m || partCard.has(t.part) || !base.dividers?.[+m[1]]) continue;
+        const crossed = cardsList.filter((c) => { const r = c.getBoundingClientRect(); return hOverlap(t.box, boxOf(c)) > 0.6 && t.box.top >= r.top - 3 && t.box.top <= r.bottom + 3; });
+        if (crossed.length < 2) continue;
+        const proto = { ...base.dividers[+m[1]] }; delete proto.widthPct; proto.width = "full";
+        crossed.forEach((c, i) => {
+          const r = c.getBoundingClientRect();
+          const cb = { top: t.box.top, bottom: t.box.bottom, left: r.left, right: r.right, width: r.width };
+          if (i === 0) { base.dividers![+m[1]] = proto; t.box = cb; partCard.set(t.part, c); return; }
+          base.dividers!.push({ ...proto, id: id() });
+          const part = `divider:${base.dividers!.length - 1}`;
+          textBoxes.push({ part, box: cb });
+          (base.order ??= []).push(part);
+          partCard.set(part, c);
+        });
+      }
       const boxOfPart = new Map(textBoxes.map((t) => [t.part, t.box]));
       const flows = { ...(base.flows ?? {}) } as Record<string, "inline">;
       const stacks = { ...(base.stacks ?? {}) };
@@ -1145,7 +1195,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         const perRow = cardsList.filter((c) => Math.abs(c.getBoundingClientRect().top - r.top) < 4).length;
         const pct = Math.floor(100 / Math.max(1, perRow));
         const ps = [...partCard.entries()].filter(([, c]) => c === card).map(([p]) => p)
-          .sort((a, b) => (boxOfPart.get(a)?.top ?? 0) - (boxOfPart.get(b)?.top ?? 0));
+          .sort((a, b) => { const A = boxOfPart.get(a), B = boxOfPart.get(b); return (A ? (A.top + A.bottom) / 2 : 0) - (B ? (B.top + B.bottom) / 2 : 0); });
         // A line spanning the card is drawn full width inside its column.
         for (const p of ps) {
           const m = /^divider:(\d+)$/.exec(p);
@@ -1356,6 +1406,23 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     while (anc && anc !== node && !els.every((e) => anc!.contains(e))) anc = anc.parentElement;
     for (let el = anc; el && el !== node && node.contains(el); el = el.parentElement) {
       const b = borderOf(el);
+      {
+        // A card marked off by a single upright line (stats split by vertical rules) keeps that line.
+        const cs3 = getComputedStyle(el);
+        const w = (side: "Left" | "Right" | "Top" | "Bottom") =>
+          cs3[`border${side}Style` as "borderLeftStyle"] !== "none" ? parseFloat(cs3[`border${side}Width` as "borderLeftWidth"]) || 0 : 0;
+        const lw = w("Left"), rw = w("Right");
+        if (!b?.all && !w("Top") && !w("Bottom") && (lw > 0) !== (rw > 0)) {
+          const raw = lw > 0 ? cs3.borderLeftColor : cs3.borderRightColor;
+          cards[key] = {
+            color: (colorOf(raw) ?? brandBorderColor(raw)) as TextColor,
+            width: Math.round(lw || rw),
+            sides: lw > 0 ? "left" : "right",
+            pad: Math.round(parseFloat(lw > 0 ? cs3.paddingLeft : cs3.paddingRight)) || 24,
+          };
+          break;
+        }
+      }
       if (b && b.all) {
         const cs2 = getComputedStyle(el);
         cards[key] = {
