@@ -666,7 +666,7 @@ export default function DesignTab() {
                   onClick={() => setShowLive(true)}
                   className={`px-3 py-1.5 text-xs transition-colors ${showLive ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
                 >
-                  Current page
+                  Preview
                 </button>
                 <button
                   type="button"
