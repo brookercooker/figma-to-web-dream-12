@@ -708,7 +708,7 @@ export default function DesignTab() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { if (hasExisting && codedPages[previewSrc(page.path)]) { setShowLive(true); setQuick(true); } else { setShowLive(false); setQuick(false); } }}
+                  onClick={() => { setListOpen(false); if (hasExisting && codedPages[previewSrc(page.path)]) { setShowLive(true); setQuick(true); } else { setShowLive(false); setQuick(false); } }}
                   className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${!showLive || quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
                 >
                   <Pencil className="w-3.5 h-3.5" /> Edit
@@ -754,7 +754,7 @@ export default function DesignTab() {
                       <Button variant="ghost" size="sm" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
                     )
                   ) : (
-                    <Button variant="ghost" size="sm" className="gap-2" onClick={() => setQuick(true)}>
+                    <Button variant="ghost" size="sm" className="gap-2" onClick={() => { setListOpen(false); setQuick(true); }}>
                       <Pencil className="w-4 h-4" /> Edit
                     </Button>
                   )}
@@ -802,7 +802,7 @@ export default function DesignTab() {
                       ? "This is how the page looks right now. Switch to Edit to change it."
                       : "This is how the page looks right now. Add a heading, text, or an image to design it."}
                   </p>
-                  <Button variant="ghost" size="sm" className="gap-2" onClick={() => setShowLive(false)}>
+                  <Button variant="ghost" size="sm" className="gap-2" onClick={() => { setListOpen(false); setShowLive(false); }}>
                     <Pencil className="w-4 h-4" /> Edit
                   </Button>
                 </div>
