@@ -102,7 +102,7 @@ const AppShell = () => {
             <Route path="/manage/pages" element={<AdminIndex />} />
             <Route path="/manage/design" element={<PageDesignPage />} />
             <Route path="/manage/objects" element={<AdminIndex />} />
-            <Route path="/manage/objects/design" element={<ObjectDesignPage />} />
+            <Route path="/manage/objects/design" element={<ObjectDesignRoute />} />
             <Route path="/manage/objects/workspace/:slugId" element={<ObjectWorkspace />} />
             <Route path="/manage/images" element={<AdminIndex />} />
             <Route path="/manage/videos" element={<AdminIndex />} />

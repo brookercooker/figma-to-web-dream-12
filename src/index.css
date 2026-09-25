@@ -287,3 +287,5 @@
 .inline-edit-surface [data-inline-chunk][data-inline-object]::before { padding-right: 200px; }
 .inline-edit-surface [data-inline-divider] { cursor: pointer; }
 .inline-edit-surface [data-inline-divider]:hover { outline: 2px solid hsl(var(--ring) / .6); outline-offset: 3px; }
+
+[data-inline-isolated-out] { display: none !important; }

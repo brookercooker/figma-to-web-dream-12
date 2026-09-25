@@ -110,10 +110,14 @@ export interface InlineChunk { key: string; parent: string; el: HTMLElement }
 
 export default function InlineEditSurface({
   children, edits, objectEdits = {}, editing = false, onChange, onPickImage, onSelect, selectedKey,
-  collapsed, onToggleCollapse, onReorder, onOpenObject,
+  collapsed, onToggleCollapse, onReorder, onOpenObject, sections = true, isolate,
 }: {
-  /** Open a shared object in the object editor. */
-  onOpenObject?: (key: string) => void;
+  /** Open a shared object in the object editor; `section` is the part's path inside the object. */
+  onOpenObject?: (key: string, section: string) => void;
+  /** Draw section bars (off in the object editor). */
+  sections?: boolean;
+  /** Show only this part (path inside the first object) and hide everything else. */
+  isolate?: string;
   children: ReactNode;
   edits: InlineEdits;
   objectEdits?: Record<string, InlineEdits>;
@@ -153,6 +157,18 @@ export default function InlineEditSurface({
     objectsRef.current = map ? findObjectRoots(root, map) : [];
     applyEdits(root, editsRef.current, "page");
     for (const o of objectsRef.current) applyEdits(o.el, objRef.current[o.key] ?? {}, "obj");
+    if (isolate !== undefined && objectsRef.current[0]) {
+      const target = byPath(objectsRef.current[0].el, isolate) as HTMLElement | null;
+      if (target) {
+        let n: HTMLElement = target;
+        while (n !== root && n.parentElement) {
+          [...n.parentElement.children].forEach((c) => {
+            if (c !== n) (c as HTMLElement).setAttribute("data-inline-isolated-out", "");
+          });
+          n = n.parentElement;
+        }
+      }
+    }
     if (!editing) return;
     editableTexts(root).forEach((el) => {
       if (el.dataset.inlineEditable) return;
@@ -167,6 +183,7 @@ export default function InlineEditSurface({
       if (el.dataset.inlineDivider || el.closest("header,footer,nav")) return;
       if (isDivider(el)) el.dataset.inlineDivider = "1";
     });
+    if (!sections) return;
     // Sections, each with a heading bar drawn by CSS.
     const first = root.firstElementChild as HTMLElement | null;
     if (!first) return;
@@ -362,7 +379,11 @@ export default function InlineEditSurface({
         {b.object && onOpenObject && (
           <button
             type="button"
-            onClick={() => onOpenObject(b.object!)}
+            onClick={() => {
+              const c = chunksRef.current.find((x) => x.key === b.key);
+              const o = objectsRef.current.find((x) => x.key === b.object);
+              onOpenObject(b.object!, c && o && o.el.contains(c.el) && o.el !== c.el ? pathOf(o.el, c.el) : "");
+            }}
             className="absolute z-[70] my-1.5 inline-flex h-7 items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted"
             style={{ top: b.top, left: b.left + b.width - 190, width: 180 }}
           >
