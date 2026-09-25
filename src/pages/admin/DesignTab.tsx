@@ -798,7 +798,7 @@ export default function DesignTab() {
                   </div>
                 )}
                 <div className={quick ? "grid grid-cols-[1fr_260px]" : ""}>
-                <div ref={surfaceBox} className="h-[70vh] overflow-y-auto bg-background">
+                <div className="h-[70vh] overflow-y-auto bg-background">
                   {(() => {
                     const C = codedPages[previewSrc(page.path)];
                     return (
