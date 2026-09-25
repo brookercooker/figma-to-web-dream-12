@@ -935,9 +935,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       order.push(part);
       textBoxes.push({ part, box });
     };
-    // Scan the whole object, not just the text pieces, so short accent rules
-    // beside an eyebrow and border lines on wrappers are found too.
-    const els = [...new Set([...parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]), ...node.querySelectorAll<HTMLElement>("*")])];
+    const els = parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]);
     for (const el of els) {
       if (el.closest("[data-import-skip],button,a,svg,form")) continue;
       if (el.tagName === "SPAN" && isUnderlinedLink(el)) continue;
