@@ -1,6 +1,18 @@
 import ConfirmDialog from "./ConfirmDialog";
 import { Fragment, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+
+/** Wording without inline formatting tags, for plain text boxes. */
+function plainText(text?: string | null): string {
+  if (!text) return "";
+  return text
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -1413,7 +1425,19 @@ export default function ObjectDesignPage() {
     return (data ?? []) as ObjectRow[];
   };
 
-  useEffect(() => { load(); }, []);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { load().then(() => setLoaded(true)); }, []);
+
+  // A link to an object that no longer exists: say so and show the list.
+  useEffect(() => {
+    if (!loaded || !selectedId) return;
+    if (objects.some((o) => o.id === selectedId)) return;
+    toast.error("That object couldn't be found. Pick one from the list.");
+    const next = new URLSearchParams(params);
+    next.delete("object");
+    setParams(next, { replace: true });
+    setLibraryOpen(true);
+  }, [loaded, selectedId, objects]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const object = useMemo(
     () => objects.find((o) => o.id === selectedId) ?? null,
@@ -1466,6 +1490,11 @@ export default function ObjectDesignPage() {
     const next = new URLSearchParams(params);
     next.set("object", id);
     setParams(next, { replace: true });
+    // On small screens the list covers the editor: fold it away after picking.
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      setLibraryOpen(false);
+      window.scrollTo({ top: 0 });
+    }
   };
 
   // keep an editing panel expanded while its content is being changed
@@ -4881,8 +4910,8 @@ function CodedImportProbe({
       const root = ref.current;
       const loading = !root || root.querySelector(".animate-pulse") ||
         [...root.querySelectorAll("img")].some((i) => !i.complete);
-      if (loading && Date.now() - start < 4000) {
-        setTimeout(tick, 150);
+      if (loading && Date.now() - start < 1500) {
+        setTimeout(tick, 100);
         return;
       }
       await new Promise((r) => setTimeout(r, 200));
