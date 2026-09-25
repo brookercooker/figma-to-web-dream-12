@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import { useIsThumbnail } from "@/lib/thumbnail";
 /**
  * Shared section model + renderer for Objects built in the Object Design page.
