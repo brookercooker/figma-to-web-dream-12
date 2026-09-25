@@ -1435,7 +1435,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (h > 24) base.imageHeightPx = Math.round(h);
     // Pictures laid out over several rows keep the same number per row.
     const top0 = imageBoxes[0].top;
-    const perRow = declaredColumns(images[0] as Element, node) || imageBoxes.filter((b) => Math.abs(b.top - top0) < Math.max(8, h / 2)).length;
+    const perRow = declaredColumns([...node.querySelectorAll("img")].find((im) => { const r = im.getBoundingClientRect(); return Math.abs(r.top - top0) < 2 && Math.abs(r.left - imageBoxes[0].left) < 2; }), node) || imageBoxes.filter((b) => Math.abs(b.top - top0) < Math.max(8, h / 2)).length;
     if (perRow >= 1 && perRow < imageBoxes.length) base.imagesPerRow = perRow;
   } else if (images.length === 1 && imageBoxes[0] && nodeWidth) {
     // A single picture keeps its original size.
