@@ -745,7 +745,13 @@ export default function DesignTab() {
                 </ChromePreview>
               )}
 
-              <div className={hasWideBlocks(blocks) ? "min-h-[50vh] py-4" : "p-6 sm:p-10 min-h-[50vh]"}>
+              {importing && (
+                <div role="status" className="flex items-center justify-center gap-2 py-24 text-sm text-muted-foreground">
+                  <span className="h-3 w-3 rounded-full border-2 border-muted-foreground/40 border-t-foreground animate-spin" aria-hidden />
+                  Converting this page so it can be edited…
+                </div>
+              )}
+              <div hidden={importing} className={hasWideBlocks(blocks) ? "min-h-[50vh] py-4" : "p-6 sm:p-10 min-h-[50vh]"}>
               {!blocks.length && !hasExisting && (
                 <p className="text-sm text-muted-foreground text-center py-16">
                   This page is empty. Add a heading, some text, or an image to begin.
