@@ -29,6 +29,7 @@ import Footer from "@/components/Footer";
 import InsertGap, { type InsertType } from "./InsertGap";
 import InlineEditSurface, { type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
 import InlineStylePanel from "./InlineStylePanel";
+import InlineSectionsPanel from "./InlineSectionsPanel";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null }
 
@@ -188,6 +189,8 @@ export default function DesignTab() {
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
   const [resetKey, setResetKey] = useState(0);
   const [inlineSel, setInlineSel] = useState<InlineSelection | null>(null);
+  const surfaceBox = useRef<HTMLDivElement>(null);
+  const getSurface = useMemo(() => () => surfaceBox.current?.querySelector<HTMLElement>(".inline-edit-surface") ?? null, []);
   const [imgAsk, setImgAsk] = useState<((url: string | null) => void) | null>(null);
   const pickImage = () => new Promise<string | null>((resolve) => setImgAsk(() => resolve));
   const inlineTimer = useRef<number>();
@@ -754,7 +757,7 @@ export default function DesignTab() {
                   </div>
                 )}
                 <div className={quick ? "grid grid-cols-[1fr_260px]" : ""}>
-                <div className="h-[70vh] overflow-y-auto bg-background">
+                <div ref={surfaceBox} className="h-[70vh] overflow-y-auto bg-background">
                   {(() => {
                     const C = codedPages[previewSrc(page.path)];
                     return (
@@ -774,6 +777,7 @@ export default function DesignTab() {
                 </div>
                 {quick && (
                   <aside className="h-[70vh] overflow-y-auto border-l bg-background p-4">
+                    <InlineSectionsPanel key={`${page.id}-${resetKey}`} surface={getSurface} edits={inlineEdits} onChange={changeInline} />
                     <InlineStylePanel
                       sel={inlineSel}
                       edits={inlineEdits}
