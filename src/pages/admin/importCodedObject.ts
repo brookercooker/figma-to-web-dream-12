@@ -1326,7 +1326,31 @@ export function sectionsFromDom(root: HTMLElement): Section[] {
   } finally {
     locked.forEach((l) => l.el.removeAttribute("data-import-skip"));
   }
+  keepGaps(out, boxes, root.getBoundingClientRect());
   return inlineRows(out, boxes, root.getBoundingClientRect().width);
+}
+
+/** Space between stacked blocks matches the original exactly, split across the two blocks. */
+function keepGaps(list: Section[], boxes: Map<Section, Box>, rootBox: DOMRect) {
+  const isFree = (s?: Section) => !!s && s.type === "free";
+  list.forEach((s, i) => {
+    if (!isFree(s)) return;
+    const b = boxes.get(s);
+    if (!b) return;
+    const prev = list[i - 1], next = list[i + 1];
+    const pb = prev && boxes.get(prev), nb = next && boxes.get(next);
+    const f = s as Section & { padTop?: number; padBottom?: number };
+    if (!prev) f.padTop = Math.round(b.top - rootBox.top);
+    else if (pb && pb.bottom <= b.top + 1) {
+      const gap = b.top - pb.bottom;
+      f.padTop = Math.round(isFree(prev) ? gap / 2 : gap);
+    }
+    if (!next) f.padBottom = Math.round(rootBox.bottom - b.bottom);
+    else if (nb && b.bottom <= nb.top + 1) {
+      const gap = nb.top - b.bottom;
+      f.padBottom = Math.round(isFree(next) ? gap / 2 : gap);
+    }
+  });
 }
 
 /** Outer edges of a group's visible content, leaving out parts kept as locked sections. */

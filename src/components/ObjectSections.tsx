@@ -481,6 +481,8 @@ export const FLOW_OPTIONS: { value: SectionFlow; label: string }[] = [
 /** Inline padding for a block; falls back to the default 48px vertical rhythm. */
 export function sectionPadStyle(section: {
   padY?: number;
+  padTop?: number;
+  padBottom?: number;
   padX?: number;
   bg?: TextColor;
   bgImage?: string;
@@ -491,8 +493,8 @@ export function sectionPadStyle(section: {
   const y = section.padY ?? 48;
   const x = section.padX ?? 0;
   return {
-    ...spaceStyle(y, "Top"),
-    ...spaceStyle(y, "Bottom"),
+    ...spaceStyle(section.padTop ?? y, "Top"),
+    ...spaceStyle(section.padBottom ?? y, "Bottom"),
     ...spaceStyle(x, "Left"),
     ...spaceStyle(x, "Right"),
     ...(section.bg || section.bgImage ? { position: "relative", isolation: "isolate" } : {}),
@@ -1037,6 +1039,9 @@ export interface FreeSection {
   buttonBox?: ButtonBox;
   /** vertical padding around the block, in pixels */
   padY?: number;
+  /** measured space above/below the block, carried over on convert (overrides padY) */
+  padTop?: number;
+  padBottom?: number;
   /** horizontal padding around the block, in pixels */
   padX?: number;
   /** background color behind the whole block (subtle emphasis) */
