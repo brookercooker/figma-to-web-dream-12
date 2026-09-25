@@ -185,6 +185,7 @@ export default function DesignTab() {
   // In-place editing of a coded page: type over text, click pictures to swap.
   const [quick, setQuick] = useState(false);
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
+  const [resetKey, setResetKey] = useState(0);
   const [imgAsk, setImgAsk] = useState<((url: string | null) => void) | null>(null);
   const pickImage = () => new Promise<string | null>((resolve) => setImgAsk(() => resolve));
   const inlineTimer = useRef<number>();
@@ -753,7 +754,7 @@ export default function DesignTab() {
                   </p>
                   {quick ? (
                     Object.keys(inlineEdits).length > 0 && (
-                      <Button variant="ghost" size="sm" onClick={() => changeInline({})}>Undo all changes</Button>
+                      <Button variant="ghost" size="sm" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
                     )
                   ) : (
                     <Button variant="ghost" size="sm" className="gap-2" onClick={() => setQuick(true)}>
@@ -766,7 +767,7 @@ export default function DesignTab() {
                     const C = codedPages[previewSrc(page.path)];
                     return (
                       <InlineEditSurface
-                        key={`${page.id}-${quick}-${Object.keys(inlineEdits).length === 0}`}
+                        key={`${page.id}-${quick}-${resetKey}`}
                         edits={inlineEdits}
                         editing={quick}
                         onChange={changeInline}
