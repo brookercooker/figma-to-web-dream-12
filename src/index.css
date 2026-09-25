@@ -289,3 +289,7 @@
 .inline-edit-surface [data-inline-divider]:hover { outline: 2px solid hsl(var(--ring) / .6); outline-offset: 3px; }
 
 [data-inline-isolated-out] { display: none !important; }
+.inline-edit-surface [data-inline-drop-item="before-y"] { box-shadow: 0 -3px 0 hsl(var(--ring)); }
+.inline-edit-surface [data-inline-drop-item="after-y"] { box-shadow: 0 3px 0 hsl(var(--ring)); }
+.inline-edit-surface [data-inline-drop-item="before-x"] { box-shadow: -3px 0 0 hsl(var(--ring)); }
+.inline-edit-surface [data-inline-drop-item="after-x"] { box-shadow: 3px 0 0 hsl(var(--ring)); }

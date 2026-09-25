@@ -10,7 +10,9 @@
  * each; bars fold a section away and can be dragged to reorder sections.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { ChevronDown, ChevronRight, ExternalLink, GripVertical, icons } from "lucide-react";
 import DOMPurify from "dompurify";
 import { findObjectRoots, loadObjectComponents, objectComponentsNow, type ObjectRoot } from "@/lib/objectScopes";
 import { pageChunks, chunkName } from "@/pages/admin/codedPages";
@@ -18,7 +20,10 @@ import { pageChunks, chunkName } from "@/pages/admin/codedPages";
 export type InlineEdits = Record<string, string>;
 /** "page" or the registry key of a shared object. */
 export type InlineScope = string;
-export interface InlineSelection { key: string; kind: "text" | "image" | "divider"; el: HTMLElement; scope: InlineScope }
+/** `side` is set when the line is an edge (border) of a larger element. */
+export interface InlineSelection { key: string; kind: "text" | "image" | "divider"; el: HTMLElement; scope: InlineScope; side?: "top" | "bottom" | "left" | "right" }
+/** Icons offered for buttons and links (lucide names). */
+export const LINK_ICONS = ["ArrowRight", "ArrowUpRight", "ChevronRight", "ExternalLink", "Plus", "MapPin", "Phone", "Mail", "Calendar", "ShoppingBag", "Heart", "Download", "Play", "Search", "Star", "Sparkles", "Lightbulb", "Lamp"] as const;
 export const styleKey = (key: string) => `style:${key}`;
 export const readStyle = (edits: InlineEdits, key: string): Record<string, string> => {
   try { return JSON.parse(edits[styleKey(key)] ?? "{}"); } catch { return {}; }
@@ -51,7 +56,38 @@ function byPath(root: Element, path: string): Element | null {
 }
 
 const clean = (html: string) =>
-  DOMPurify.sanitize(html, { ALLOWED_TAGS: ["b", "strong", "i", "em", "br", "span", "u", "font"], ALLOWED_ATTR: ["style", "color"] });
+  DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ["b", "strong", "i", "em", "br", "span", "u", "font", "svg", "path", "circle", "line", "polyline", "polygon", "rect"],
+    ALLOWED_ATTR: ["style", "color", "class", "viewBox", "d", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "width", "height", "cx", "cy", "r", "x", "y", "x1", "y1", "x2", "y2", "rx", "ry", "points", "xmlns", "aria-hidden", "data-inline-icon"],
+  });
+
+/** Swap (or hide) the icon inside a button or link. Value: lucide name, or "none". */
+function applyIcon(el: HTMLElement, value: string) {
+  const old = el.querySelector("svg");
+  if (old?.getAttribute("data-inline-icon") === value) return;
+  if (value === "none") { if (old) { old.style.display = "none"; old.setAttribute("data-inline-icon", "none"); } return; }
+  const Icon = (icons as Record<string, Parameters<typeof createElement>[0]>)[value];
+  if (!Icon) return;
+  const cls = old?.getAttribute("class") ?? "inline-block h-4 w-4 ml-2 align-[-2px]";
+  const holder = document.createElement("span");
+  holder.innerHTML = renderToStaticMarkup(createElement(Icon as React.ComponentType<Record<string, unknown>>, { className: cls, "aria-hidden": true }));
+  const svg = holder.firstElementChild as SVGElement;
+  svg.setAttribute("data-inline-icon", value);
+  if (old) old.replaceWith(svg); else el.appendChild(svg);
+}
+
+/** Which border edge of `el` (if any) sits within a few pixels of the point. */
+function edgeAt(el: HTMLElement, x: number, y: number): InlineSelection["side"] | null {
+  const cs = getComputedStyle(el);
+  const r = el.getBoundingClientRect();
+  const has = (s: string) => parseFloat(cs.getPropertyValue(`border-${s}-width`)) > 0 && cs.getPropertyValue(`border-${s}-style`) !== "none";
+  const inX = x >= r.left - 5 && x <= r.right + 5, inY = y >= r.top - 5 && y <= r.bottom + 5;
+  if (inX && has("top") && Math.abs(y - r.top) <= 5) return "top";
+  if (inX && has("bottom") && Math.abs(y - r.bottom) <= 5) return "bottom";
+  if (inY && has("left") && Math.abs(x - r.left) <= 5) return "left";
+  if (inY && has("right") && Math.abs(x - r.right) <= 5) return "right";
+  return null;
+}
 
 /** Thin, empty lines used as decorative rules. */
 function isDivider(el: HTMLElement): boolean {
@@ -80,8 +116,12 @@ function editableTexts(root: Element): HTMLElement[] {
 
 function applyEdits(root: Element, edits: InlineEdits, tag: string) {
   const attr = `data-inline-styled-${tag}`;
-  for (const [key, value] of Object.entries(edits)) {
-    if (key.startsWith("style:")) {
+  const entries = Object.entries(edits).sort(([a], [b]) => Number(a.startsWith("icon:")) - Number(b.startsWith("icon:")));
+  for (const [key, value] of entries) {
+    if (key.startsWith("icon:")) {
+      const el = byPath(root, key.slice(5)) as HTMLElement | null;
+      if (el) applyIcon(el, value);
+    } else if (key.startsWith("style:")) {
       const el = byPath(root, key.slice(6)) as HTMLElement | null;
       if (!el) continue;
       let obj: Record<string, string> = {};
@@ -335,6 +375,24 @@ export default function InlineEditSurface({
       return e.clientX >= r.left - 6 && e.clientX <= r.right + 6 && e.clientY >= r.top - 6 && e.clientY <= r.bottom + 6;
     }) ?? null);
     const txt = t.closest<HTMLElement>("[data-inline-editable]");
+    // Lines drawn as an element's edge (border) can be picked too.
+    if (!div) {
+      let best: { el: HTMLElement; side: NonNullable<InlineSelection["side"]>; area: number } | null = null;
+      for (const el of root.querySelectorAll<HTMLElement>("*")) {
+        if (el.closest("header,footer,nav")) continue;
+        const side = edgeAt(el, e.clientX, e.clientY);
+        if (!side) continue;
+        const r = el.getBoundingClientRect();
+        const area = r.width * r.height;
+        if (!best || area < best.area) best = { el, side, area };
+      }
+      if (best) {
+        e.preventDefault();
+        const { scope, root: base } = scopeOf(best.el);
+        onSelect?.({ key: pathOf(base, best.el), kind: "divider", el: best.el, scope, side: best.side });
+        return;
+      }
+    }
     if (div && !txt) {
       e.preventDefault();
       const { scope, root: base } = scopeOf(div);
@@ -343,6 +401,87 @@ export default function InlineEditSurface({
       const { scope, root: base } = scopeOf(txt);
       onSelect?.({ key: pathOf(base, txt), kind: "text", el: txt, scope });
     } else onSelect?.(null);
+  };
+
+  // ---- Moving a selected text box or picture among its neighbours ----
+  const [grip, setGrip] = useState<{ top: number; left: number } | null>(null);
+  const unitOf = (el: HTMLElement, base: Element) => {
+    let u = el;
+    while (u.parentElement && u.parentElement !== base && u.parentElement !== ref.current && u.parentElement.children.length === 1) u = u.parentElement;
+    return u;
+  };
+  const selectedEl = () => {
+    if (!selectedKey || !ref.current) return null;
+    const [scope, key] = selectedKey.split("|");
+    const base = scope === "page" ? ref.current : objectsRef.current.find((o) => o.key === scope)?.el;
+    const el = base ? (byPath(base, key) as HTMLElement | null) : null;
+    return el && base && (el.dataset.inlineEditable || el.dataset.inlineImage) ? { el, base, scope } : null;
+  };
+  useEffect(() => {
+    if (!editing) { setGrip(null); return; }
+    const place = () => {
+      const s = selectedEl();
+      const o = outer.current?.getBoundingClientRect();
+      if (!s || !o) { setGrip((g) => (g ? null : g)); return; }
+      const r = unitOf(s.el, s.base).getBoundingClientRect();
+      const next = { top: r.top - o.top, left: Math.max(0, r.left - o.left - 30) };
+      setGrip((g) => (g && g.top === next.top && g.left === next.left ? g : next));
+    };
+    place();
+    const id = window.setInterval(place, 300);
+    return () => window.clearInterval(id);
+  }, [selectedKey, editing]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const startItemDrag = (e: React.PointerEvent) => {
+    const s = selectedEl();
+    if (!s || !onChange) return;
+    e.preventDefault();
+    const unit = unitOf(s.el, s.base);
+    const parent = unit.parentElement!;
+    const pcs = getComputedStyle(parent);
+    const row = (pcs.display.includes("flex") && !pcs.flexDirection.startsWith("column")) || (pcs.display.includes("grid") && pcs.gridTemplateColumns.split(" ").length > 1);
+    const sibs = [...parent.children].filter((c) => c !== unit && (c as HTMLElement).getBoundingClientRect().height > 0) as HTMLElement[];
+    let target: { el: HTMLElement; after: boolean } | null = null;
+    unit.setAttribute("data-inline-dragging", "");
+    document.body.style.cursor = "grabbing";
+    const clear = () => parent.querySelectorAll("[data-inline-drop-item]").forEach((c) => c.removeAttribute("data-inline-drop-item"));
+    const move = (ev: PointerEvent) => {
+      clear();
+      target = null;
+      let bestD = Infinity;
+      for (const c of sibs) {
+        const r = c.getBoundingClientRect();
+        const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2;
+        const d = Math.hypot(ev.clientX - cx, ev.clientY - cy);
+        if (d < bestD) { bestD = d; target = { el: c, after: row ? ev.clientX > cx : ev.clientY > cy }; }
+      }
+      if (target) target.el.setAttribute("data-inline-drop-item", `${target.after ? "after" : "before"}-${row ? "x" : "y"}`);
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      document.body.style.cursor = "";
+      unit.removeAttribute("data-inline-dragging");
+      clear();
+      if (!target) return;
+      // Current visual order, then move the item and store it as order styles.
+      const kids = ([...parent.children] as HTMLElement[])
+        .map((c, i) => ({ c, o: parseInt(getComputedStyle(c).order) || 0, i }))
+        .sort((a, b) => a.o - b.o || a.i - b.i).map((x) => x.c).filter((c) => c !== unit);
+      const at = kids.indexOf(target.el);
+      kids.splice(target.after ? at + 1 : at, 0, unit);
+      const cur = s.scope === "page" ? editsRef.current : (objRef.current[s.scope] ?? {});
+      const out = { ...cur };
+      const patch = (el: Element, props: Record<string, string>) => {
+        const k = pathOf(s.base, el);
+        out[styleKey(k)] = JSON.stringify({ ...readStyle(out, k), ...props });
+      };
+      if (!pcs.display.includes("flex") && !pcs.display.includes("grid")) patch(parent, { display: "flex", "flex-direction": "column" });
+      kids.forEach((c, i) => patch(c, { order: String(i) }));
+      onChange(s.scope, out);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -364,6 +503,18 @@ export default function InlineEditSurface({
     >
       {children}
     </div>
+    {editing && grip && (
+      <button
+        type="button"
+        aria-label="Drag to move"
+        title="Drag to move"
+        onPointerDown={startItemDrag}
+        className="absolute z-[75] flex h-7 w-6 cursor-grab items-center justify-center rounded border bg-background text-foreground shadow-sm hover:bg-muted active:cursor-grabbing"
+        style={{ top: grip.top, left: grip.left }}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+    )}
     {editing && bars.map((b) => (
       <div key={b.key}>
         <button
