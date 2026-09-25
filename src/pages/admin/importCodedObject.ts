@@ -776,7 +776,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (tag === "a" || tag === "button") {
       const label = clean(el.innerText || el.textContent);
       // Skip wrappers around images or long blocks of copy.
-      if (!label || label.length > 40 || el.querySelector("img,h1,h2,h3,h4,h5,h6,p,span")) continue;
+      // Short label spans and icon spans inside a button are part of the button.
+      if (!label || label.length > 40 || el.querySelector("img,video,h1,h2,h3,h4,h5,h6,p")) continue;
       const kind = buttonKindOf(el);
       if (base.buttonLabel || !kind) {
         // A plain text link reads as text, keeping its look.
