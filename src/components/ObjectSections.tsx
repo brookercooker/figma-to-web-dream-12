@@ -1173,7 +1173,7 @@ import {
   ChevronLeft, ChevronRight, Pause, Play,
   Calendar, Ruler, Compass, Lightbulb, MapPin, Phone, Mail, Clock, Star, Heart,
   Sparkles, Truck, ShieldCheck, Award, Home, Sofa, PenTool, Palette, Camera,
-  Quote, Check, Leaf, Droplets, Sun, Moon, Wrench, Flame, Zap, Gift, Users, Tag, Globe, Package, Settings, Eye, Info,
+  Quote, Check, Leaf, Droplets, Sun, Moon, Wrench, Flame, Zap, Gift, Users, Tag, Globe, Package, Settings, Eye, Info, Plus, Minus,
   ArrowRight, ArrowLeft, ArrowUp, ArrowDown, ArrowUpRight, MoveRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
