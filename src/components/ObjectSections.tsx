@@ -1033,6 +1033,8 @@ export interface FreeSection {
   buttonIcon?: string;
   /** which side the symbol sits on */
   buttonIconSide?: "before" | "after";
+  /** exact inner space, outline and letter spacing carried over from a coded button */
+  buttonBox?: ButtonBox;
   /** vertical padding around the block, in pixels */
   padY?: number;
   /** horizontal padding around the block, in pixels */
@@ -1384,9 +1386,11 @@ const bgTextColor: Record<TextColorToken, TextColor> = {
   ink: "cream", stone: "cream", brass: "ink", garnet: "cream", cream: "ink",
 };
 
+export type ButtonBox = { padX: number; padY: number; borderWidth?: number; borderColor?: string; trackingEm?: number };
+
 function SectionButton({
-  label, href, variant = "solid", style, bg, icon, iconSide = "before",
-}: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle; bg?: TextColor; icon?: string; iconSide?: "before" | "after" }) {
+  label, href, variant = "solid", style, bg, icon, iconSide = "before", box,
+}: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle; bg?: TextColor; icon?: string; iconSide?: "before" | "after"; box?: ButtonBox }) {
   const base = "inline-flex items-center justify-center gap-2 uppercase tracking-[0.18em] transition-colors";
   const fill = bg ?? "ink";
   const custom = isCustomColor(fill);
@@ -1399,6 +1403,12 @@ function SectionButton({
   const fallbackText: TextColor = variant === "solid" && !custom ? bgTextColor[fill as TextColorToken] : "ink";
   const text = bodyClasses(style, { color: fallbackText, size: "sm" });
   const inline: React.CSSProperties = { ...textInlineStyle(style) };
+  if (box) {
+    inline.padding = `${box.padY}px ${box.padX}px`;
+    inline.whiteSpace = "nowrap";
+    if (box.trackingEm !== undefined) inline.letterSpacing = `${box.trackingEm}em`;
+    if (box.borderWidth) { inline.borderWidth = box.borderWidth; inline.borderStyle = "solid"; inline.borderColor = box.borderColor; }
+  }
   if (variant === "solid" && custom) {
     inline.backgroundColor = fill as string;
     if (!style?.color) inline.color = contrastOn(fill as string);
@@ -1961,8 +1971,9 @@ function FreeText({
     ) });
   });
   if (section.buttonLabel) items.push({ part: "button", node: (
-    <div data-part="button" className="mt-2">
+    <div data-part="button" className={section.buttonBox ? "" : "mt-2"}>
       <SectionButton
+        box={section.buttonBox}
         label={section.buttonLabel}
         href={section.buttonHref || "#"}
         variant={section.buttonVariant ?? (onDark ? "outline" : "solid")}

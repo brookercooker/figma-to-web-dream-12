@@ -1171,7 +1171,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     // A lone button keeps its original gap: its own margins stand in for padding,
     // and the editor's default spacing is cancelled (negative when it overshoots).
     const m = (parseFloat(cs.marginTop) + parseFloat(cs.marginBottom)) / 2;
-    base.padY = Math.round(padY + m) - 8;
+    base.padY = Math.round(padY + m);
   } else if (padY > 0) base.padY = padY;
   if (padX > 0) base.padX = padX;
 
