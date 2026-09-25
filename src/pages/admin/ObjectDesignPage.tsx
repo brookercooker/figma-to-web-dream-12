@@ -5032,9 +5032,19 @@ function CodedImportProbe({
       done.current = true;
       const obj = root.firstElementChild as HTMLElement | null;
       const tag = (list: Section[], origin: string) => { if (import.meta.env.DEV) (window as unknown as { __lastImport?: unknown }).__lastImport = list; list.forEach((x) => ((x as { origin?: string }).origin = origin)); return list; };
+      /** Convert one part in its real surroundings: hide the rest, read the whole object. */
+      const convertOnly = (el: Element | null) => {
+        if (!obj || !el) return sectionsFromDom(obj ?? root);
+        const hidden: Element[] = [];
+        let n: Element = el;
+        while (n !== obj && n.parentElement) {
+          for (const c of n.parentElement.children) if (c !== n) { c.setAttribute("data-inline-isolated-out", ""); hidden.push(c); }
+          n = n.parentElement;
+        }
+        try { return sectionsFromDom(obj); } finally { hidden.forEach((c) => c.removeAttribute("data-inline-isolated-out")); }
+      };
       if (chunk !== undefined && obj) {
-        const el = elementAtPath(obj, chunk) as HTMLElement | null;
-        onDone(tag(sectionsFromDom(el ?? obj), chunk));
+        onDone(tag(convertOnly(elementAtPath(obj, chunk)), chunk));
         return;
       }
       if (split && obj) {
@@ -5047,7 +5057,7 @@ function CodedImportProbe({
           const path = pathWithin(obj, el);
           // The chosen part may sit inside, or around, one of these parts.
           if (target && (el === target || el.contains(target) || target.contains(el))) {
-            out.push(...tag(sectionsFromDom(el), focus!));
+            out.push(...tag(convertOnly(el), focus!));
             return;
           }
           out.push({ id: newSectionId(), type: "locked", title: chunkName(el, `Section ${i + 1}`), note: "", html: "", codedKey, chunk: path, origin: path } as Section);
