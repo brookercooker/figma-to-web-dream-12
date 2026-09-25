@@ -1955,6 +1955,40 @@ export default function ObjectDesignPage() {
   const [dragBlock, setDragBlock] = useState("");
   const [blockDrop, setBlockDrop] = useState<{ id: string; before: boolean } | null>(null);
   const armedBlock = useRef("");
+  // While a block is being dragged: allow dropping anywhere (no "not allowed" cursor)
+  // and scroll the page when the pointer nears the top or bottom edge.
+  useEffect(() => {
+    if (!dragBlock) return;
+    let speed = 0;
+    let raf = 0;
+    const tick = () => {
+      if (speed) window.scrollBy(0, speed);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    const over = (e: DragEvent) => {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      const edge = 120;
+      const h = window.innerHeight;
+      if (e.clientY < edge) speed = -Math.ceil(((edge - e.clientY) / edge) * 24);
+      else if (e.clientY > h - edge) speed = Math.ceil(((e.clientY - (h - edge)) / edge) * 24);
+      else speed = 0;
+    };
+    const wheel = (e: WheelEvent) => window.scrollBy(0, e.deltaY);
+    const stop = () => { speed = 0; };
+    document.addEventListener("dragover", over);
+    document.addEventListener("drop", (e) => e.preventDefault(), { once: true });
+    document.addEventListener("wheel", wheel, { passive: true });
+    document.addEventListener("dragend", stop);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener("dragover", over);
+      document.removeEventListener("wheel", wheel);
+      document.removeEventListener("dragend", stop);
+    };
+  }, [dragBlock]);
+
   const moveBlockTo = (fromId: string, toId: string, before: boolean) => {
     if (fromId === toId) return;
     setSections((prev) => {
@@ -4273,8 +4307,9 @@ export default function ObjectDesignPage() {
                     }}
                     onDragEnd={() => { armedBlock.current = ""; setDragBlock(""); setBlockDrop(null); }}
                     onDragOver={(e) => {
-                      if (!armedBlock.current || armedBlock.current === s.id) return;
+                      if (!armedBlock.current) return;
                       e.preventDefault();
+                      if (armedBlock.current === s.id) { if (blockDrop) setBlockDrop(null); return; }
                       const r = e.currentTarget.getBoundingClientRect();
                       const before = grp.length > 1 ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
                       if (blockDrop?.id !== s.id || blockDrop.before !== before) setBlockDrop({ id: s.id, before });
