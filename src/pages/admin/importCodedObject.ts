@@ -1565,6 +1565,33 @@ export function sectionsFromDom(root: HTMLElement): Section[] {
     };
     return { ...l, section, top: l.el.getBoundingClientRect().top };
   });
+  // Continuously scrolling strips (brand marquees) become "Scrolling strip" image groups.
+  for (const track of Array.from(root.querySelectorAll<HTMLElement>("[style*='animation']"))) {
+    const a = track.style.animation || "";
+    const nm = /(?:^|\s)(scroll-reverse|scroll)(?:\s|$)/.exec(a);
+    const dur = /([\d.]+)s\b/.exec(a);
+    const m = nm && dur ? [a, nm[1], dur[1]] : null;
+    if (!m || track.closest("[data-import-skip]") || track.children.length < 4) continue;
+    const kids = Array.from(track.children) as HTMLElement[];
+    const half = kids.slice(0, Math.ceil(kids.length / 2));
+    const images: SectionImage[] = half.map((k) => {
+      const img = k.querySelector("img");
+      const name = (img?.alt || k.textContent || "").trim();
+      const href = k.closest("a")?.getAttribute("href") || k.querySelector("a")?.getAttribute("href") || undefined;
+      return { url: img?.getAttribute("src") ?? "", alt: name, caption: img ? undefined : name, href };
+    });
+    const perItem = parseFloat(m[2]) / half.length;
+    const holder = (track.parentElement?.classList.contains("overflow-hidden") ? track.parentElement : track) as HTMLElement;
+    const section: FreeSection = {
+      id: id(), type: "free", images, layout: "stacked", imageSide: "left", gallery: "marquee", columns: 1,
+      marqueeDir: m[1] === "scroll-reverse" ? "right" : "left",
+      marqueeSpeed: perItem > 4.5 ? "slow" : perItem < 2.5 ? "fast" : "medium",
+      marqueePause: true,
+    } as FreeSection;
+    const img0 = holder.querySelector("img");
+    if (img0) section.imageHeightPx = Math.round(img0.getBoundingClientRect().height) || undefined;
+    locked.push({ el: holder, title: "", reason: "", section: section as unknown as LockedSection, top: holder.getBoundingClientRect().top } as (typeof locked)[number]);
+  }
   locked.forEach((l) => l.el.setAttribute("data-import-skip", ""));
 
   const out: Section[] = [];
