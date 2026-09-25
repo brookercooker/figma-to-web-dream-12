@@ -3779,6 +3779,18 @@ export default function ObjectDesignPage() {
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
+                      checked={!!v.textOnTop}
+                      onChange={(e) => {
+                        const on = e.target.checked;
+                        (section as FreeSection).videos?.forEach((_, j) => j !== i && patchVideo(section.id, j, { textOnTop: false }));
+                        patchVideo(section.id, i, on ? { textOnTop: true, autoplay: true, loop: true } : { textOnTop: false });
+                      }}
+                    />
+                    Show text on top
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
                       checked={!!v.loop}
                       onChange={(e) => patchVideo(section.id, i, { loop: e.target.checked })}
                     />
