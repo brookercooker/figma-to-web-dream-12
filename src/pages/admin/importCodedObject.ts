@@ -620,7 +620,42 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
 
   // Text sitting on a picture, or reading as its caption, is attached to that
   // picture so it can be moved behind, beside or above it afterwards.
-  const textLeaves = candidates.filter(isTextLeaf).map((el) => ({ el, box: boxOf(el) }));
+  // Thin empty lines (short rules) travel with the wording around them too.
+  const ruleEls = new Set<HTMLElement>();
+  for (const el of parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")])) {
+    if (el.closest("[data-import-skip],button,svg,form")) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 8 || r.height <= 0 || r.height > 4) continue;
+    if (clean(el.textContent) || el.querySelector("img,video,svg")) continue;
+    const cs = getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0) continue;
+    const bg = parseRgb(cs.backgroundColor);
+    if (el.tagName === "HR" || (bg && bg[3] > 0.1)) ruleEls.add(el);
+  }
+  const textLeaves = [...candidates.filter(isTextLeaf), ...ruleEls]
+    .sort((a, b) => (a === b ? 0 : a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+    .map((el) => ({ el, box: boxOf(el) }));
+  const consumedRules = new Set<HTMLElement>();
+  /** A rule attached to a picture, sized against that picture's width. */
+  const ruleTextOf = (el: HTMLElement, host: HTMLElement): ImageText => {
+    consumedRules.add(el);
+    const cs = getComputedStyle(el);
+    const r = el.getBoundingClientRect();
+    const hw = host.getBoundingClientRect().width || 1;
+    const col = el.tagName === "HR" ? cs.borderTopColor : cs.backgroundColor;
+    const pct = Math.round((r.width / hw) * 100);
+    return {
+      id: id(),
+      kind: "divider",
+      text: "",
+      align: visualAlign(el, host),
+      divider: {
+        color: (colorOf(col) ?? brandBorderColor(col)) as TextColor,
+        thickness: Math.max(1, Math.round(el.tagName === "HR" ? parseFloat(cs.borderTopWidth) || 1 : r.height)),
+        ...(pct >= 97 ? { width: "full" as const } : { widthPct: Math.max(2, pct) }),
+      },
+    };
+  };
   const imageEls = all.filter((el) => el.tagName.toLowerCase() === "img" || !!bgImageUrl(el));
   const attached = new Map<HTMLElement, ImageText[]>();
   const consumed = new Set<HTMLElement>();
@@ -666,6 +701,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       if (!cardAlign) cardAlign = visualAlign(leaves[0].el, card);
       const texts = leaves.map((l) => {
         consumed.add(l.el);
+        if (ruleEls.has(l.el)) return { ...ruleTextOf(l.el, card), align: cardAlign as SectionAlign };
         return { ...imageTextOf(l.el, clean(l.el.innerText || l.el.textContent)), align: cardAlign as SectionAlign };
       });
       attached.set(img, texts);
@@ -676,10 +712,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (attached.has(el)) continue;
     const box = boxOf(el);
     const texts: ImageText[] = [];
+    const picked: HTMLElement[] = [];
     for (const leaf of textLeaves) {
       if (consumed.has(leaf.el) || leaf.el === el) continue;
-      const text = clean(leaf.el.innerText || leaf.el.textContent);
-      if (!text) continue;
+      const rule = ruleEls.has(leaf.el);
+      const text = rule ? "" : clean(leaf.el.innerText || leaf.el.textContent);
+      if (!text && !rule) continue;
       const over = centerInside(leaf.box, box);
       const below = leaf.box.top >= box.bottom - 4 && leaf.box.top < box.bottom + 96;
       const above = leaf.box.bottom <= box.top + 4 && leaf.box.bottom > box.top - 96;
@@ -688,11 +726,17 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         hOverlap(leaf.box, box) > 0.6 &&
         (leaf.el.parentElement === el.parentElement || !!el.parentElement?.contains(leaf.el));
       if (!over && !near) continue;
-      if (over) overlaid = overlaid ?? leaf.el;
-      texts.push(imageTextOf(leaf.el, text));
-      consumed.add(leaf.el);
+      if (over && !rule) overlaid = overlaid ?? leaf.el;
+      texts.push(rule ? ruleTextOf(leaf.el, el) : imageTextOf(leaf.el, text));
+      picked.push(leaf.el);
     }
-    if (texts.length) attached.set(el, texts);
+    // A line on its own is not a caption; leave it for the block.
+    if (texts.some((t) => t.kind !== "divider")) {
+      for (const p of picked) consumed.add(p);
+      attached.set(el, texts);
+    } else {
+      for (const p of picked) consumedRules.delete(p);
+    }
   }
 
   // A short label living in the same card as a single picture is that picture's
@@ -705,7 +749,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       const label = clean(card.innerText || card.textContent);
       if (!label || label.length > 120) continue;
       const leaves = textLeaves.filter(
-        (leaf) => card?.contains(leaf.el) && !consumed.has(leaf.el) && !el.contains(leaf.el),
+        (leaf) => card?.contains(leaf.el) && !consumed.has(leaf.el) && !el.contains(leaf.el) && !ruleEls.has(leaf.el),
       );
       if (!leaves.length || leaves.length > 2) continue;
       const texts = leaves.map((leaf) => {
@@ -946,7 +990,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     };
     const els = parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]);
     for (const el of els) {
-      if (el.closest("[data-import-skip],button,a,svg,form")) continue;
+      if (consumedRules.has(el) || el.closest("[data-import-skip],button,a,svg,form")) continue;
       if (el.tagName === "SPAN" && isUnderlinedLink(el)) continue;
       const r = el.getBoundingClientRect();
       if (r.width < 16) continue;
