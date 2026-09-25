@@ -208,7 +208,7 @@ export default function InlineEditSurface({
   const barAt = (x: number, y: number) =>
     chunksRef.current.find((c) => {
       const r = c.el.getBoundingClientRect();
-      return x >= r.left && x <= r.right && y >= r.top - BAR && y < r.top;
+      return x >= r.left && x <= r.right && y >= r.top && y < r.top + BAR;
     });
 
   const drag = useRef<{ from: InlineChunk; x: number; y: number; moved: boolean; target?: { c: InlineChunk; after: boolean } } | null>(null);
@@ -239,7 +239,7 @@ export default function InlineEditSurface({
       let best: { c: InlineChunk; after: boolean } | undefined;
       for (const c2 of sibs) {
         const r = c2.el.getBoundingClientRect();
-        const top = r.top - BAR;
+        const top = r.top;
         const mid = top + (r.bottom - top) / 2;
         if (ev.clientY >= top && ev.clientY <= r.bottom) { best = { c: c2, after: ev.clientY > mid }; break; }
       }
