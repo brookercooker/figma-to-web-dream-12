@@ -984,6 +984,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const addRule = (color: string | undefined, thickness: number, box: Box) => {
       if (dividers.some((d, i) => { const b = textBoxes.find((t) => t.part === `divider:${i}`)?.box; return b && Math.abs(b.top - box.top) < 3 && hOverlap(b, box) > 0.8; })) return;
       const pct = Math.round((box.width / nw) * 100);
+      if (color === "sand") color = "hsl(var(--nova-sand))";
       dividers.push({ id: id(), color: color as TextColor | undefined, thickness: Math.max(1, Math.round(thickness)), ...(pct >= 97 ? { width: "full" as const } : { widthPct: Math.max(2, pct) }) });
       const part = `divider:${dividers.length - 1}`;
       order.push(part);
