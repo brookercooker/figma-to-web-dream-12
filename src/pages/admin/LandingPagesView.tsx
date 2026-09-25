@@ -442,7 +442,7 @@ export default function LandingPagesView() {
             <Pencil className="w-[18px] h-[18px] opacity-80" />
             <span className="text-[15px] font-medium tracking-wide uppercase">Edit Pages</span>
           </button>
-          <AddButtonRow subtle text="Add new pages" label="Landing Page" onClick={() => setCreating(true)} />
+          <AddButtonRow subtle text="Add new page" label="Landing Page" onClick={() => setCreating(true)} />
         </div>
 
 
