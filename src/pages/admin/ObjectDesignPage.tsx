@@ -2126,6 +2126,21 @@ export default function ObjectDesignPage() {
           </Field>
         </>
       )}
+      {imgOpen && (section as any).layout === "behind" && (image.texts ?? []).length > 0 && (
+        <Field label="Text position on picture">
+          <div>
+            <Choice
+              value={image.textVAlign ?? (section as any).overlayVAlign ?? "middle"}
+              options={[
+                { value: "top" as const, label: "Top", icon: AlignVerticalJustifyStart },
+                { value: "middle" as const, label: "Middle", icon: AlignVerticalJustifyCenter },
+                { value: "bottom" as const, label: "Bottom", icon: AlignVerticalJustifyEnd },
+              ]}
+              onChange={(v) => patchImage(section.id, index, { textVAlign: v })}
+            />
+          </div>
+        </Field>
+      )}
       {showCaption && imgOpen && (
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-1">
