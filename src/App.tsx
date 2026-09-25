@@ -1,6 +1,7 @@
 import { Suspense, useEffect } from "react";
 import { lazyRetry } from "@/lib/lazyRetry";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import InlineEditsLayer from "@/components/InlineEditsLayer";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -90,6 +91,7 @@ const AppShell = () => {
       {!isAdmin && !isObjectRoute && !isLandingRoute && <Header />}
       {!isAdmin && isLandingRoute && <LandingHeader />}
       <main id="main-content">
+        <InlineEditsLayer path={location.pathname}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             {/* Root redirects to the Site Manager default view. */}
@@ -175,6 +177,7 @@ const AppShell = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        </InlineEditsLayer>
       </main>
       {!isAdmin && !isObjectRoute && !isLandingRoute && <Footer />}
       {!isAdmin && isLandingRoute && <LandingFooter />}
