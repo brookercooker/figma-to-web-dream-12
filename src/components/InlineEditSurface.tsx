@@ -7,6 +7,12 @@ import { useEffect, useRef, type ReactNode } from "react";
 import DOMPurify from "dompurify";
 
 export type InlineEdits = Record<string, string>;
+export type InlineStyle = Partial<Record<"fontSize" | "fontWeight" | "fontStyle" | "textAlign" | "color" | "textTransform" | "letterSpacing" | "width" | "height" | "objectFit" | "maxWidth", string>>;
+export interface InlineSelection { path: string; kind: "text" | "image"; el: HTMLElement }
+export const styleKey = (path: string) => `style:${path}`;
+export const readStyle = (edits: InlineEdits, path: string): InlineStyle => {
+  try { return JSON.parse(edits[styleKey(path)] ?? "{}"); } catch { return {}; }
+};
 
 const TEXT_TAGS = "h1,h2,h3,h4,h5,h6,p,li,a,button,span,blockquote,figcaption,dt,dd,label,small,em,strong";
 const BLOCKISH = /^(DIV|SECTION|ARTICLE|UL|OL|IMG|VIDEO|IFRAME|SVG|FORM|INPUT|TEXTAREA|SELECT|H[1-6]|P|LI|FIGURE|TABLE|NAV|HEADER|FOOTER|BUTTON)$/;
@@ -52,7 +58,15 @@ function editableTexts(root: Element): HTMLElement[] {
 /** Re-apply saved overrides whenever the page (re)renders. */
 function applyEdits(root: Element, edits: InlineEdits) {
   for (const [key, value] of Object.entries(edits)) {
-    if (key.startsWith("img:")) {
+    if (key.startsWith("style:")) {
+      const el = byPath(root, key.slice(6)) as HTMLElement | null;
+      if (!el) continue;
+      let st: InlineStyle = {};
+      try { st = JSON.parse(value); } catch { /* ignore */ }
+      for (const [k, v] of Object.entries(st)) {
+        if (v && (el.style as any)[k] !== v) (el.style as any)[k] = v;
+      }
+    } else if (key.startsWith("img:")) {
       const el = byPath(root, key.slice(4));
       if (el instanceof HTMLImageElement && el.getAttribute("src") !== value) {
         el.src = value;
@@ -66,8 +80,10 @@ function applyEdits(root: Element, edits: InlineEdits) {
 }
 
 export default function InlineEditSurface({
-  children, edits, editing = false, onChange, onPickImage,
+  children, edits, editing = false, onChange, onPickImage, onSelect, selectedPath,
 }: {
+  onSelect?: (sel: InlineSelection | null) => void;
+  selectedPath?: string | null;
   children: ReactNode;
   edits: InlineEdits;
   editing?: boolean;
@@ -133,13 +149,24 @@ export default function InlineEditSurface({
     // Links and buttons shouldn't navigate while editing.
     if (t.closest("a,button")) e.preventDefault();
     const img = t.closest("img[data-inline-image]") as HTMLImageElement | null;
-    if (img && onPickImage && onChange && ref.current) {
+    const txt = t.closest("[data-inline-editable]") as HTMLElement | null;
+    if (!ref.current) return;
+    if (img) {
       e.preventDefault();
       e.stopPropagation();
-      const url = await onPickImage(img.currentSrc || img.src);
-      if (url) onChange({ ...editsRef.current, [`img:${pathOf(ref.current, img)}`]: url });
+      onSelect?.({ path: pathOf(ref.current, img), kind: "image", el: img });
+    } else if (txt) {
+      onSelect?.({ path: pathOf(ref.current, txt), kind: "text", el: txt });
     }
   };
+
+  // Outline the selected element.
+  useEffect(() => {
+    const root = ref.current;
+    if (!root) return;
+    root.querySelectorAll("[data-inline-selected]").forEach((n) => n.removeAttribute("data-inline-selected"));
+    if (selectedPath) byPath(root, selectedPath)?.setAttribute("data-inline-selected", "1");
+  }, [selectedPath, edits]);
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     // Enter finishes a line of text instead of adding new blocks inside it.
