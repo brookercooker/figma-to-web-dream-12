@@ -46,4 +46,8 @@ export const objectRegistry: Record<string, RegistryEntry> = {
   ExampleQuoteBanner:   lazyEntry(() => import("./ExampleQuoteBanner")),
   ExampleCareGuide:     lazyEntry(() => import("./ExampleCareGuide")),
   ExampleVisitStrip:    lazyEntry(() => import("./ExampleVisitStrip")),
+  ExampleTimeline:      lazyEntry(() => import("./ExampleTimeline")),
+  ExampleSplitNewsletter: lazyEntry(() => import("./ExampleSplitNewsletter")),
+  ExampleStatsRow:      lazyEntry(() => import("./ExampleStatsRow")),
+  ExampleFaqList:       lazyEntry(() => import("./ExampleFaqList")),
 };
