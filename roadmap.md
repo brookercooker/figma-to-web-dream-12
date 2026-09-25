@@ -9,3 +9,4 @@
 - [ ] Follow-up: tall (9:16) videos convert to a wide 16:9 frame
 
 - [x] Edit = in-place editing for coded pages, with text style + image size controls
+- [ ] Larger fold icon; open shared object in object editor; font picker; colour/style on selected words; select & edit dividers
