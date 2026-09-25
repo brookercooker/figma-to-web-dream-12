@@ -266,7 +266,8 @@ function runsOf(el: HTMLElement): { text: string; styleEl: HTMLElement; box: Box
     if (n instanceof HTMLElement) {
       const cs = getComputedStyle(n);
       const pcs = getComputedStyle(el);
-      const differs = cs.fontStyle !== pcs.fontStyle || cs.color !== pcs.color || cs.fontWeight !== pcs.fontWeight || cs.display === "block";
+      // Only a new line starts a new run; emphasis within a line stays with it.
+      const differs = cs.display === "block" && (cs.fontStyle !== pcs.fontStyle || cs.color !== pcs.color || cs.fontWeight !== pcs.fontWeight || true);
       if (differs) {
         flush(el);
         buf = [n];
