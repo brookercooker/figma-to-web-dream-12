@@ -141,6 +141,16 @@ function richOf(el: HTMLElement): string | null {
   return styled ? html : null;
 }
 
+/** A sentence with a plain text link inside it ("Something else? Write to us.") reads as one piece of wording. */
+function inlineLinkText(el: HTMLElement): boolean {
+  const links = [...el.querySelectorAll<HTMLElement>("a")];
+  if (!links.length || el.querySelector("h1,h2,h3,h4,h5,h6,p,img,video,button")) return false;
+  if (links.some((a) => getComputedStyle(a).display !== "inline" || a.querySelector("svg"))) return false;
+  const all = clean(el.textContent);
+  const linkText = clean(links.map((a) => a.textContent).join(" "));
+  return all.length > linkText.length + 2;
+}
+
 /** Lucide icon names that the editor offers under a different key. */
 const ICON_ALIASES: Record<string, string> = {
   "move-right": "longArrow",
@@ -616,7 +626,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const tag = el.tagName.toLowerCase();
     if (!/^(h[1-6]|p|span|dt|dd|li)$/.test(tag)) return false;
     if (tag === "span" && el.closest("p,h1,h2,h3,h4,h5,h6,dt,dd,li")) return false;
-    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) return false;
+    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,button")) return false;
+    if (el.querySelector("a") && !inlineLinkText(el)) return false;
     return !!clean(el.innerText || el.textContent);
   };
 
@@ -893,6 +904,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     }
 
     if (tag === "a" || tag === "button") {
+      { const host = el.parentElement?.closest<HTMLElement>("p,h1,h2,h3,h4,h5,h6,dt,dd,li"); if (tag === "a" && host && inlineLinkText(host)) continue; }
       const label = clean(el.innerText || el.textContent);
       // Skip wrappers around images or long blocks of copy.
       // Short label spans and icon spans inside a button are part of the button.
@@ -943,7 +955,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     // Spans inside an underlined link belong to that link.
     if (tag === "span" && el.parentElement?.closest("span") && (() => { let p = el.parentElement; while (p && p !== node) { if (p.tagName === "SPAN" && isUnderlinedLink(p)) return true; p = p.parentElement; } return false; })()) continue;
     // Skip wrappers that hold other text so copy is not duplicated.
-    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,a,button")) continue;
+    if (el.querySelector("h1,h2,h3,h4,h5,h6,p,img,button")) continue;
+    if (el.querySelector("a") && !inlineLinkText(el)) continue;
     const plain = clean(el.innerText || el.textContent);
     if (!plain || seenText.has(plain)) continue;
 
