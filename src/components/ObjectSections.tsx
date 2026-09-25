@@ -467,8 +467,6 @@ export function sectionPadStyle(section: {
  * Full-bleed background layer for a block: paints the block's colour or image
  * edge-to-edge across the page while the content stays inside the container.
  */
-/** When true (the editor), block backgrounds stay inside the block instead of bleeding edge to edge. */
-export const ContainedBgContext = createContext(false);
 
 export function SectionBg({ section }: { section: { bg?: TextColor; bgImage?: string } }) {
   const contained = useContext(ContainedBgContext);
@@ -1012,6 +1010,8 @@ export function parseSections(value: unknown): Section[] {
 /* ------------------------------- rendering ------------------------------- */
 
 import { Fragment, createContext, useContext, useEffect, useRef, useState } from "react";
+/** When true (the editor), block backgrounds stay inside the block instead of bleeding edge to edge. */
+export const ContainedBgContext = createContext(false);
 import {
   ChevronLeft, ChevronRight, Pause, Play,
   Calendar, Ruler, Compass, Lightbulb, MapPin, Phone, Mail, Clock, Star, Heart,
