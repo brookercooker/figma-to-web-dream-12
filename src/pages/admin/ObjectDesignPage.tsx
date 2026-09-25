@@ -53,6 +53,17 @@ import {
 
 const EMPHASIS_BG = OUTLINE_EMPHASIS_BG;
 
+/** Paints a block's own background inside its editor frame. */
+function blockBgStyle(sec: object): React.CSSProperties | undefined {
+  const s = sec as { bgImage?: string };
+  const bg = (s as { bg?: Parameters<typeof bgColorCss>[0] }).bg;
+  if (!bg && !s.bgImage) return undefined;
+  return {
+    ...(bg ? { backgroundColor: bgColorCss(bg) } : {}),
+    ...(s.bgImage ? { backgroundImage: `url(${s.bgImage})`, backgroundSize: "cover", backgroundPosition: "center" } : {}),
+  };
+}
+
 /** Placement, brand-colour and thickness pickers for outlines and frame lines. */
 function OutlineControls({
   placement, color, width, onChange,
