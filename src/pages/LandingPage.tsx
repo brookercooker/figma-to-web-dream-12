@@ -1,3 +1,4 @@
+import { inEditorPreview } from "@/lib/editorPreview";
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
@@ -57,7 +58,7 @@ export default function LandingPage() {
   }, [slug]);
 
   if (loading) return <div className="min-h-[60vh]" aria-hidden />;
-  if (redirectTo) {
+  if (redirectTo && !inEditorPreview()) {
     const target = isPublicLandingHost()
       ? redirectTo.replace(/^\/landing\//, "/")
       : redirectTo;
