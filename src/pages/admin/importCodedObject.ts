@@ -1311,7 +1311,6 @@ export function sectionsFromDom(root: HTMLElement): Section[] {
   } finally {
     locked.forEach((l) => l.el.removeAttribute("data-import-skip"));
   }
-  console.log("IMPDBG out", JSON.stringify(out.map((s) => ({ t: s.type, b: (s as any).buttonLabel, o: (s as any).order }))));
   return inlineRows(out, boxes, root.getBoundingClientRect().width);
 }
 
