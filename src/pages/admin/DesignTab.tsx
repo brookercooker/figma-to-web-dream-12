@@ -201,7 +201,7 @@ export default function DesignTab() {
         objectRows.current[r.component_key] = r.id;
         if (r.inline_edits) edits[r.component_key] = r.inline_edits;
       });
-      setObjectEdits(edits);
+      setObjectEdits(edits); console.log("DBG", JSON.stringify(edits).slice(0,300));
     });
   }, []);
   const changeScope = (scope: InlineScope, next: InlineEdits) => {
@@ -292,7 +292,7 @@ export default function DesignTab() {
     // Newly created pages start empty, with the site header and footer around them.
     setHasExisting(!parsed.length && !!page && canIframe(page.path));
     setCurrentFirst(true);
-    setQuick(wantEdit && inPlace); console.log("DBG", wantEdit, inPlace, parsed.length);
+    setQuick(wantEdit && inPlace);
     setInlineSel(null);
     setFoldedChunks(new Set());
     setInlineEdits(page?.inline_edits ?? {});
