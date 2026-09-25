@@ -211,7 +211,7 @@ export default function DesignTab() {
     if (!id) return;
     window.clearTimeout(objectTimers.current[scope]);
     objectTimers.current[scope] = window.setTimeout(() => {
-      (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id);
+      (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id).then(() => {});
     }, 800);
   };
   const scopeEdits = (scope: InlineScope) => (scope === "page" ? inlineEdits : objectEdits[scope] ?? {});
@@ -271,6 +271,8 @@ export default function DesignTab() {
   const savedBlocks = useMemo(() => parseBlocks(page?.content), [page?.content]);
 
   useEffect(() => {
+    // Wait for the page to load so a "mode=edit" link isn't used up early.
+    if (!page) return;
     const parsed = parseBlocks(page?.content);
     setBlocks(parsed);
     setActiveId("");
@@ -813,7 +815,7 @@ export default function DesignTab() {
                         collapsed={foldedChunks}
                         onToggleCollapse={(k) => setFoldedChunks((cur) => { const n = new Set(cur); if (n.has(k)) n.delete(k); else n.add(k); return n; })}
                         onReorder={reorderChunks}
-                        onOpenObject={(k) => { const id = objectRows.current[k]; if (id) navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}`); }}
+                        onOpenObject={(k, section) => { const id = objectRows.current[k]; if (id) navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&inplace=1&section=${encodeURIComponent(section)}`); }}
                       >
                         <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense>
                       </InlineEditSurface>
