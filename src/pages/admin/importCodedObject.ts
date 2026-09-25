@@ -13,6 +13,7 @@ import {
   SECTION_ICON_NAMES,
   type SectionVideo,
   type FreeParagraph,
+  type FreeDivider,
   type FreeSection,
   type LockedSection,
   type ImageText,
@@ -855,6 +856,43 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     order.push(part);
     keepFlow(part, el);
   }
+
+  // Divider lines: thin empty rules, and top/bottom border lines on wrappers,
+  // placed where they sat so nearby buttons and text keep their position.
+  const dividers: FreeDivider[] = [];
+  {
+    const nr = node.getBoundingClientRect();
+    const nw = nr.width || 1;
+    const addRule = (color: string | undefined, thickness: number, box: Box) => {
+      if (dividers.some((d, i) => { const b = textBoxes.find((t) => t.part === `divider:${i}`)?.box; return b && Math.abs(b.top - box.top) < 3 && hOverlap(b, box) > 0.8; })) return;
+      const pct = Math.round((box.width / nw) * 100);
+      dividers.push({ id: id(), color: color as TextColor | undefined, thickness: Math.max(1, Math.round(thickness)), ...(pct >= 97 ? { width: "full" as const } : { widthPct: Math.max(2, pct) }) });
+      const part = `divider:${dividers.length - 1}`;
+      order.push(part);
+      textBoxes.push({ part, box });
+    };
+    const els = parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")]);
+    for (const el of els) {
+      if (el.closest("[data-import-skip],button,a,svg,form")) continue;
+      const r = el.getBoundingClientRect();
+      if (r.width < 16) continue;
+      const cs = getComputedStyle(el);
+      if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0) continue;
+      const empty = !clean(el.textContent) && !el.querySelector("img,video,svg");
+      const bg = parseRgb(cs.backgroundColor);
+      if (el.tagName === "HR" || (empty && r.height > 0 && r.height <= 4 && bg && bg[3] > 0.1)) {
+        const col = el.tagName === "HR" && !(bg && bg[3] > 0.1) ? cs.borderTopColor : cs.backgroundColor;
+        addRule(colorOf(col) ?? brandBorderColor(col), el.tagName === "HR" ? parseFloat(cs.borderTopWidth) || r.height || 1 : r.height, { left: r.left, right: r.right, top: r.top, bottom: r.top + 1, width: r.width } as Box);
+        continue;
+      }
+      if (el === node || empty) continue;
+      const b = borderOf(el);
+      if (!b || b.all) continue;
+      if (b.top) addRule(b.color, b.width, { left: r.left, right: r.right, top: r.top - 1, bottom: r.top, width: r.width } as Box);
+      if (b.bottom) addRule(b.color, b.width, { left: r.left, right: r.right, top: r.bottom, bottom: r.bottom + 1, width: r.width } as Box);
+    }
+  }
+  if (dividers.length) base.dividers = dividers;
 
   base.images = images;
   base.extras = extras;
