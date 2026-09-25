@@ -45,16 +45,21 @@ function alignOf(el: Element): SectionAlign {
  */
 function tracksOf(el: Element): number {
   const cs = getComputedStyle(el);
-  if (cs.display === "grid" || cs.display === "inline-grid") {
-    const t = cs.gridTemplateColumns;
-    if (t && t !== "none") return t.split(/\s+(?![^(]*\))/).filter((x) => /px|fr|%|auto|minmax/.test(x)).length;
-  }
-  if ((cs.display === "flex" || cs.display === "inline-flex") && !cs.flexDirection.startsWith("column")) {
+  const firstRow = () => {
     const kids = [...el.children].filter((k) => (k as HTMLElement).getBoundingClientRect().width > 1);
     if (!kids.length) return 0;
     const top0 = kids[0].getBoundingClientRect().top;
     return kids.filter((k) => Math.abs(k.getBoundingClientRect().top - top0) < 4).length;
+  };
+  if (cs.display === "grid" || cs.display === "inline-grid") {
+    const t = cs.gridTemplateColumns;
+    if (t && t !== "none") {
+      const tracks = t.split(/\s+(?![^(]*\))/).filter((x) => /px|fr|%|auto|minmax/.test(x)).length;
+      // Items can span several tracks (e.g. a 12-track grid holding 2 items), so count items per row.
+      return Math.min(tracks, firstRow() || tracks);
+    }
   }
+  if ((cs.display === "flex" || cs.display === "inline-flex") && !cs.flexDirection.startsWith("column")) return firstRow();
   return 0;
 }
 

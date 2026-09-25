@@ -14,6 +14,7 @@ function plainText(text?: string | null): string {
     .replace(/&amp;/g, "&");
 }
 import { Link, useSearchParams } from "react-router-dom";
+import { elementAtPath } from "@/components/CodedChunk";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1038,6 +1039,10 @@ export default function ObjectDesignPage() {
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
   const [importing, setImporting] = useState(false);
+  /** One not-yet-converted part being turned into blocks. */
+  const [converting, setConverting] = useState<{ id: string; chunk: string } | null>(null);
+  /** Opened from a page section: show just that part until "Show full object". */
+  const [focusChunk, setFocusChunk] = useState<string | null>(() => new URLSearchParams(window.location.search).get("section"));
   const canvasRef = useRef<HTMLElement>(null);
   const inlineSel = useInlineSelection();
   const [viewport, setViewport] = useState<ViewportKey>("desktop");
@@ -1970,13 +1975,43 @@ export default function ObjectDesignPage() {
   };
 
 
+  /** Convert one part of the coded object into editable blocks, leaving the rest as built. */
+  const convertChunk = (id: string) => {
+    const s = sections.find((x) => x.id === id);
+    if (!s || s.type !== "locked" || s.chunk === undefined) return;
+    setConverting({ id, chunk: s.chunk });
+  };
+  const finishChunk = (imported: Section[]) => {
+    const target = converting;
+    setConverting(null);
+    if (!target) return;
+    const list = imported.length ? imported : [makeSection("free")];
+    list.forEach((x) => ((x as { origin?: string }).origin = target.chunk));
+    setSections((prev) => prev.flatMap((x) => (x.id === target.id ? list : [x])));
+    setActiveId(list[0].id);
+    setDirty(true);
+  };
+
   const finishImport = (imported: Section[]) => {
     setImporting(false);
     const list = imported.length ? imported : [makeSection("free")];
     setSections(list);
-    setActiveId(list[0].id);
+    setActiveId((list.find((x) => focusChunk != null && (x as { origin?: string }).origin === focusChunk) ?? list[0]).id);
     setDirty(true);
   };
+
+  useEffect(() => {
+    if (!object || preview || importing || converting) return;
+    if (!sections.length && codedKey) { setImporting(true); return; }
+    if (focusChunk == null) return;
+    const hit = sections.find((x) => x.type === "locked" && x.chunk === focusChunk);
+    if (hit) convertChunk(hit.id);
+  }, [object?.id, preview, sections, importing, converting, focusChunk]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const originOf = (x: Section) => (x as { origin?: string }).origin;
+  /** Sections shown: only the chosen part when opened from a page, unless none match. */
+  const focusMatches = focusChunk != null && sections.some((x) => originOf(x) === focusChunk);
+  const shown = focusMatches ? sections.filter((x) => originOf(x) === focusChunk) : sections;
 
   const add = (type: SectionType) => {
     const s = makeSection(type);
@@ -3966,6 +4001,12 @@ export default function ObjectDesignPage() {
   const Inspector = ({ section }: { section: Section }) => {
     switch (section.type) {
       case "locked":
+        if (section.chunk !== undefined) return (
+          <div className="space-y-3 rounded-md border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground">
+            <p><span className="font-medium text-foreground">{section.title}</span> hasn't been made editable yet, so it shows exactly as built.</p>
+            <Button size="sm" className="gap-1.5" onClick={() => convertChunk(section.id)}><Pencil className="h-3.5 w-3.5" /> Edit this section</Button>
+          </div>
+        );
         return (
           <div className="rounded-md border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground">
             <p className="font-medium text-foreground">{section.title} — not editable here</p>
@@ -4377,8 +4418,20 @@ export default function ObjectDesignPage() {
               Turning this object into editable blocks…
               <CodedImportProbe
                 codedKey={codedKey}
+                split
+                focus={focusChunk}
                 width={viewportWidth || canvasRef.current?.clientWidth || 1000}
                 onDone={finishImport}
+              />
+            </div>
+          ) : converting && codedKey ? (
+            <div className="border rounded-lg p-12 text-center text-sm text-muted-foreground">
+              Turning this section into editable blocks…
+              <CodedImportProbe
+                codedKey={codedKey}
+                chunk={converting.chunk}
+                width={viewportWidth || canvasRef.current?.clientWidth || 1000}
+                onDone={finishChunk}
               />
             </div>
           ) : preview ? (
@@ -4390,7 +4443,7 @@ export default function ObjectDesignPage() {
               </div>
               <div className="p-4">
                 {sections.length ? (
-                  <SectionFlowList sections={sections} />
+                  <SectionFlowList sections={shown} />
                 ) : codedKey ? (
                   <div>
                     <Suspense fallback={<div className="h-64 animate-pulse rounded-lg bg-muted" />}>
@@ -4416,8 +4469,14 @@ export default function ObjectDesignPage() {
               </div>
 
 
+              {focusMatches && (
+                <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/40 px-4 py-2 text-sm">
+                  <span className="text-muted-foreground">Showing only the section you chose. Changes save to this object and apply everywhere it's used.</span>
+                  <Button variant="outline" size="sm" onClick={() => setFocusChunk(null)}>Show full object</Button>
+                </div>
+              )}
 <ContainedBgContext.Provider value={!preview}>
-              {groupByFlow(sections.map((s, i) => [s, i] as const), ([s]) => s.flow).map((grp) => {
+              {groupByFlow(sections.map((s, i) => [s, i] as const).filter(([s]) => !focusMatches || originOf(s) === focusChunk), ([s]) => s.flow).map((grp) => {
                 const cards = grp.map(([s, i]) => {
                 const active = s.id === activeId;
                 return (
@@ -4496,7 +4555,12 @@ export default function ObjectDesignPage() {
                     </div>
 
                     {!collapsedBlocks[s.id] && (<>
-                    {s.type === "locked" && (
+                    {s.type === "locked" && s.chunk !== undefined ? (
+                      <div className="flex items-center justify-between gap-3 border-b border-dashed bg-muted/50 px-4 py-2 text-xs text-muted-foreground">
+                        <span><span className="font-semibold text-foreground">{s.title}</span> is shown exactly as built. Edit it to change its wording, pictures and layout.</span>
+                        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => convertChunk(s.id)}><Pencil className="h-3.5 w-3.5" /> Edit this section</Button>
+                      </div>
+                    ) : s.type === "locked" && (
                       <div className="border-b border-dashed bg-muted/50 px-4 py-2 text-xs text-muted-foreground">
                         <span className="font-semibold text-foreground">{s.title}:</span> {s.note} It is kept exactly as built — you can move or delete it, but not change it here.
                       </div>
@@ -4923,12 +4987,27 @@ export default function ObjectDesignPage() {
 }
 
 
+function pathWithin(root: Element, el: Element): string {
+  const parts: number[] = [];
+  let n: Element | null = el;
+  while (n && n !== root && n.parentElement) { parts.unshift([...n.parentElement.children].indexOf(n)); n = n.parentElement; }
+  return parts.join(".");
+}
+
 /** Renders a coded object off-screen, waits for it to settle, then reads it into blocks. */
 function CodedImportProbe({
   codedKey,
   width,
   onDone,
+  split,
+  focus,
+  chunk,
 }: {
+  /** Split into parts shown as built, converting only `focus` (if any). */
+  split?: boolean;
+  focus?: string | null;
+  /** Convert only the part at this path. */
+  chunk?: string;
   codedKey: string;
   width: number;
   onDone: (sections: Section[]) => void;
@@ -4951,6 +5030,46 @@ function CodedImportProbe({
       if (cancelled || !root) return;
       const { sectionsFromDom } = await import("./importCodedObject");
       done.current = true;
+      const obj = root.firstElementChild as HTMLElement | null;
+      const tag = (list: Section[], origin: string) => { if (import.meta.env.DEV) (window as unknown as { __lastImport?: unknown }).__lastImport = list; list.forEach((x) => ((x as { origin?: string }).origin = origin)); return list; };
+      /** Convert one part in its real surroundings: hide the rest, read the whole object. */
+      const convertOnly = (el: Element | null) => {
+        if (!obj || !el) return sectionsFromDom(obj ?? root);
+        // Other parts are lifted out briefly (and put straight back) so they can't leak into the result.
+        const lifted: { c: Element; parent: Element; next: Node | null }[] = [];
+        let n: Element = el;
+        while (n !== obj && n.parentElement) {
+          const parent: Element = n.parentElement;
+          for (const c of [...parent.children]) if (c !== n) lifted.push({ c, parent, next: c.nextSibling });
+          n = parent;
+        }
+        lifted.forEach(({ c }) => c.remove());
+        try { return sectionsFromDom(obj); } finally {
+          for (const { c, parent, next } of [...lifted].reverse()) parent.insertBefore(c, next && next.parentNode === parent ? next : null);
+        }
+      };
+      if (chunk !== undefined && obj) {
+        onDone(tag(convertOnly(elementAtPath(obj, chunk)), chunk));
+        return;
+      }
+      if (split && obj) {
+        const { pageChunks, chunkName } = await import("./codedPages");
+        let parts = pageChunks(obj).filter((el) => el !== obj && el.getBoundingClientRect().height > 0);
+        if (!parts.length) parts = [obj];
+        const target = focus != null ? elementAtPath(obj, focus) : null;
+        const out: Section[] = [];
+        parts.forEach((el, i) => {
+          const path = pathWithin(obj, el);
+          // The chosen part may sit inside, or around, one of these parts.
+          if (target && (el === target || el.contains(target) || target.contains(el))) {
+            out.push(...tag(convertOnly(el), focus!));
+            return;
+          }
+          out.push({ id: newSectionId(), type: "locked", title: chunkName(el, `Section ${i + 1}`), note: "", html: "", codedKey, chunk: path, origin: path } as Section);
+        });
+        onDone(out);
+        return;
+      }
       { const out = sectionsFromDom(root); if (import.meta.env.DEV) (window as unknown as { __lastImport?: unknown }).__lastImport = out; onDone(out); }
     };
     setTimeout(tick, 300);

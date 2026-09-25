@@ -10,3 +10,4 @@
 
 - [x] Edit = in-place editing for coded pages, with text style + image size controls
 - [x] Larger fold icon; open shared object in object editor; font picker; colour/style on selected words; select & edit dividers
+- [x] Object editor: edit only chosen section, convert parts on demand
