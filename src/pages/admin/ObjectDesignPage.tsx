@@ -4179,40 +4179,28 @@ export default function ObjectDesignPage() {
                         {i + 1}
                       </span>
                       <span className="text-sm font-bold uppercase tracking-[0.14em] text-foreground">{SECTION_LABEL[s.type]}</span>
-                      <div className="ml-auto flex items-center gap-2">
-
-
-                        <Button variant="ghost" size="sm" onClick={() => setActiveId(active ? "" : s.id)}>
-                          {active ? "Done" : "Edit"}
-                        </Button>
-                        <Button variant="ghost" size="sm" disabled={i === 0} onClick={() => move(s.id, -1)}>
-                          <ArrowUp className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" disabled={i === sections.length - 1} onClick={() => move(s.id, 1)}>
-                          <ArrowDown className="w-4 h-4" />
-                        </Button>
-                        {s.type === "free" && (
-                          <Button
-                            variant={optionsFor === s.id ? "secondary" : "ghost"}
-                            size="sm"
-                            title="Block options"
-                            aria-label="Block options"
-                            onClick={() => {
-                              setActiveId(s.id);
-                              setFocusPart("");
-                              setOptionsFor(optionsFor === s.id ? "" : s.id);
-                            }}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="sm" title="Duplicate block" onClick={() => duplicateSection(s.id)}>
-                          <Copy className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => remove(s.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                      <BlockHeaderControls
+                        active={active}
+                        onToggle={() => setActiveId(active ? "" : s.id)}
+                        actions={[
+                          { label: "Move up", icon: ArrowUp, disabled: i === 0, onClick: () => move(s.id, -1) },
+                          { label: "Move down", icon: ArrowDown, disabled: i === sections.length - 1, onClick: () => move(s.id, 1) },
+                          ...(s.type === "free"
+                            ? [{
+                                label: "Block options",
+                                icon: Pencil,
+                                selected: optionsFor === s.id,
+                                onClick: () => {
+                                  setActiveId(s.id);
+                                  setFocusPart("");
+                                  setOptionsFor(optionsFor === s.id ? "" : s.id);
+                                },
+                              }]
+                            : []),
+                          { label: "Duplicate block", icon: Copy, onClick: () => duplicateSection(s.id) },
+                          { label: "Delete block", icon: Trash2, onClick: () => remove(s.id) },
+                        ]}
+                      />
                     </div>
 
                     {s.type === "locked" && (
