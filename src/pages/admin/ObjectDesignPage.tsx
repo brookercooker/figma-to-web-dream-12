@@ -1958,6 +1958,7 @@ export default function ObjectDesignPage() {
   // Pointer-based block dragging: the wheel keeps working, and the page scrolls
   // when the pointer nears the top or bottom edge.
   const blockDropRef = useRef<{ id: string; before: boolean } | null>(null);
+  const grabRef = useRef({ x: 0, y: 0 });
   useEffect(() => {
     if (!dragBlock) return;
     let speed = 0;
@@ -1985,6 +1986,7 @@ export default function ObjectDesignPage() {
       if (e.clientY < edge) speed = -Math.ceil(((edge - e.clientY) / edge) * 24);
       else if (e.clientY > h - edge) speed = Math.ceil(((e.clientY - (h - edge)) / edge) * 24);
       else speed = 0;
+      place();
       locate();
     };
     const wheel = () => requestAnimationFrame(locate);
@@ -1994,6 +1996,24 @@ export default function ObjectDesignPage() {
       blockDropRef.current = null; armedBlock.current = "";
       setBlockDrop(null); setDragBlock("");
     };
+    // Semi-transparent copy of the block that follows the pointer.
+    const src = document.querySelector(`[data-block-id="${dragBlock}"]`) as HTMLElement | null;
+    let ghost: HTMLElement | null = null;
+    let offX = 0, offY = 0;
+    if (src) {
+      const r = src.getBoundingClientRect();
+      offX = grabRef.current.x - r.left; offY = grabRef.current.y - r.top;
+      lastX = grabRef.current.x; lastY = grabRef.current.y;
+      ghost = src.cloneNode(true) as HTMLElement;
+      ghost.removeAttribute("data-block-id");
+      Object.assign(ghost.style, {
+        position: "fixed", left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`,
+        maxHeight: "320px", overflow: "hidden", opacity: "0.6", pointerEvents: "none",
+        zIndex: "1000", margin: "0", boxShadow: "0 20px 40px -12px hsl(var(--foreground) / 0.35)",
+      });
+      document.body.appendChild(ghost);
+    }
+    const place = () => { if (ghost) { ghost.style.left = `${lastX - offX}px`; ghost.style.top = `${lastY - offY}px`; } };
     const prevSel = document.body.style.userSelect, prevCur = document.body.style.cursor;
     document.body.style.userSelect = "none"; document.body.style.cursor = "grabbing";
     window.addEventListener("mousemove", moveH);
@@ -2001,6 +2021,7 @@ export default function ObjectDesignPage() {
     window.addEventListener("mouseup", up, { once: true });
     return () => {
       cancelAnimationFrame(raf);
+      ghost?.remove();
       document.body.style.userSelect = prevSel; document.body.style.cursor = prevCur;
       window.removeEventListener("mousemove", moveH);
       window.removeEventListener("wheel", wheel);
@@ -4343,6 +4364,7 @@ export default function ObjectDesignPage() {
                           if (Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 5) return;
                           window.removeEventListener("mousemove", mv);
                           armedBlock.current = s.id;
+                          grabRef.current = { x: ev.clientX, y: ev.clientY };
                           setDragBlock(s.id);
                         };
                         window.addEventListener("mousemove", mv);
