@@ -470,7 +470,8 @@ export function sectionPadStyle(section: {
 
 export function SectionBg({ section }: { section: { bg?: TextColor; bgImage?: string } }) {
   const contained = useContext(ContainedBgContext);
-  if (!section.bg && !section.bgImage) return null;
+  // In the editor the block frame paints the background itself.
+  if (contained || (!section.bg && !section.bgImage)) return null;
   return (
     <div
       aria-hidden
@@ -478,8 +479,8 @@ export function SectionBg({ section }: { section: { bg?: TextColor; bgImage?: st
         position: "absolute",
         top: 0,
         bottom: 0,
-        left: contained ? 0 : "calc(50% - 50vw)",
-        width: contained ? "100%" : "100vw",
+        left: "calc(50% - 50vw)",
+        width: "100vw",
         zIndex: -1,
         ...(section.bg ? { backgroundColor: bgColorCss(section.bg) } : {}),
         ...(section.bgImage
