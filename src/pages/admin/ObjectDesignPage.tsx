@@ -1451,12 +1451,12 @@ export default function ObjectDesignPage() {
     if (parsed.length) {
       setSections(parsed);
       setActiveId("");
-      setPreview(true);
+      setPreview(!params.get("returnPage"));
     } else if (object?.component_key && objectRegistry[object.component_key]) {
       // Built in code: show it as it is today until the user makes it editable.
       setSections([]);
       setActiveId("");
-      setPreview(true);
+      setPreview(!params.get("returnPage"));
     } else {
       // Nothing designed yet: open straight into an editable block.
       const s = makeSection("free");
