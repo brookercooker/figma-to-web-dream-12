@@ -1001,10 +1001,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   for (const cols of laid.rows) {
     const first = cols[0], last = cols[cols.length - 1];
     const used = cols.reduce((n, c) => n + c.box.width, 0);
-    // Only rows of compact items (a title far left, a button far right) count as
-    // spread — wide paragraph columns keep their own text alignment.
-    const compact = cols.every((c) => c.box.width < (cRight - cLeft) * 0.4);
-    const spread = compact && first.box.left - cLeft < 16 && cRight - last.box.right < 16 && used < (cRight - cLeft) * 0.8;
+    const spread = first.box.left - cLeft < 16 && cRight - last.box.right < 16 && used < (cRight - cLeft) * 0.8;
     if (spread) {
       cols.forEach((c, ci) => {
         const a: SectionAlign = ci === 0 ? "left" : ci === cols.length - 1 ? "right" : "center";

@@ -4657,7 +4657,7 @@ function CodedImportProbe({
       if (cancelled || !root) return;
       const { sectionsFromDom } = await import("./importCodedObject");
       done.current = true;
-      { const out = sectionsFromDom(root); (window as any).__lastImport = out; onDone(out); }
+      onDone(sectionsFromDom(root));
     };
     setTimeout(tick, 300);
     return () => { cancelled = true; };
