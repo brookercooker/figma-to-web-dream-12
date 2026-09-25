@@ -4143,7 +4143,11 @@ export default function ObjectDesignPage() {
           const title = showToolbar ? "Block" : partTypeLabel(s, focusPart);
           return (
             <aside className="lg:sticky lg:top-0 lg:self-start lg:-mt-6">
-              <div className="w-full lg:w-[380px] lg:h-[calc(100vh-4rem)] overflow-y-auto border bg-background shadow-sm lg:border-t-0 lg:rounded-b-lg rounded-lg">
+              <div
+                key={`${s.id}:${focusPart ?? ""}`}
+                ref={(el) => { if (el) el.scrollTop = 0; }}
+                className="w-full lg:w-[380px] lg:h-[calc(100vh-4rem)] overflow-y-auto border bg-background shadow-sm lg:border-t-0 lg:rounded-b-lg rounded-lg"
+              >
                 <p className="border-b bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                   {title}
                 </p>
