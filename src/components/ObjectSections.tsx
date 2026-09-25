@@ -1566,7 +1566,7 @@ function FreeFigureBody({
         const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
         if (t.kind === "divider") {
           return (
-            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-3 flex w-full flex-col" style={imageTextPadStyle(t)}>
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-1 flex w-full cursor-pointer flex-col py-2" style={imageTextPadStyle(t)}>
               <DividerBar
                 divider={{ id: t.id, ...(t.divider ?? {}) }}
                 align={t.align ?? image.captionAlign ?? blockAlign}
@@ -2153,7 +2153,7 @@ function OverlayImageTexts({
         const cls = d.heading ? headingClasses(ts, fallback) : bodyClasses(ts, fallback);
         if (t.kind === "divider") {
           return (
-            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-3 flex w-full flex-col" style={imageTextPadStyle(t)}>
+            <div key={t.id} data-part={`imagetext:${index}:${ti}`} className="mt-1 flex w-full cursor-pointer flex-col py-2" style={imageTextPadStyle(t)}>
               <DividerBar
                 divider={{ id: t.id, ...(t.divider ?? {}) }}
                 align={t.align ?? image.captionAlign ?? blockAlign}

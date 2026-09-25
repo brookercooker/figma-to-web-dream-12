@@ -758,7 +758,10 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         const b = borderOf(x);
         if (b && !b.all && clean(x.textContent)) {
           const cs = getComputedStyle(x);
-          const pct = Math.round((xb.width / (box.width || 1)) * 100);
+          const host = x.parentElement ?? x;
+          const hcs = getComputedStyle(host);
+          const hostW = host.getBoundingClientRect().width - (parseFloat(hcs.paddingLeft) || 0) - (parseFloat(hcs.paddingRight) || 0);
+          const pct = Math.round((xb.width / (Math.min(hostW, box.width) || 1)) * 100);
           const color = (b.color === "sand" ? "hsl(var(--nova-sand))" : b.color) as TextColor;
           const mk = (): ImageText => ({ id: id(), kind: "divider", text: "", divider: { color, thickness: b.width, ...(pct >= 97 ? { width: "full" as const } : { widthPct: Math.max(2, pct) }) } });
           if (b.top) items.push({ top: xb.top - 0.5, bx: null, t: mk() });
