@@ -1170,6 +1170,8 @@ export function sectionsFromDom(root: HTMLElement): Section[] {
   locked.forEach((l) => l.el.setAttribute("data-import-skip", ""));
 
   const out: Section[] = [];
+  const boxes = new Map<Section, Box>();
+  for (const l of locked) boxes.set(l.section, boxOf(l.el));
   const pending = [...locked];
   try {
     for (const group of blockRoots(root)) {
@@ -1179,7 +1181,11 @@ export function sectionsFromDom(root: HTMLElement): Section[] {
       const before = free ? inside.filter((l) => l.top <= freeTop + 4) : inside;
       const after = inside.filter((l) => !before.includes(l));
       before.forEach((l) => out.push(l.section));
-      if (free) out.push(free);
+      if (free) {
+        const cb = contentBox(group);
+        if (cb) boxes.set(free, cb);
+        out.push(free);
+      }
       after.forEach((l) => out.push(l.section));
       inside.forEach((l) => pending.splice(pending.indexOf(l), 1));
     }
@@ -1187,5 +1193,58 @@ export function sectionsFromDom(root: HTMLElement): Section[] {
   } finally {
     locked.forEach((l) => l.el.removeAttribute("data-import-skip"));
   }
-  return out;
+  return inlineRows(out, boxes, root.getBoundingClientRect().width);
+}
+
+/** Outer edges of a group's visible content, leaving out parts kept as locked sections. */
+function contentBox(group: HTMLElement[]): Box | null {
+  let top = Infinity, bottom = -Infinity, left = Infinity, right = -Infinity;
+  for (const g of group) {
+    for (const el of [g, ...g.querySelectorAll<HTMLElement>("*")]) {
+      if (el.closest("[data-import-skip]")) continue;
+      const media = /^(img|video|svg|picture|button|hr)$/i.test(el.tagName);
+      const text = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent?.trim());
+      if (!media && !text) continue;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      top = Math.min(top, r.top); bottom = Math.max(bottom, r.bottom);
+      left = Math.min(left, r.left); right = Math.max(right, r.right);
+    }
+  }
+  return top < bottom ? { top, bottom, left, right, width: right - left } : null;
+}
+
+/** Sections that sat side by side on the page share a row again, left to right, at their old widths. */
+function inlineRows(list: Section[], boxes: Map<Section, Box>, total: number): Section[] {
+  const res: Section[] = [];
+  let i = 0;
+  while (i < list.length) {
+    const row = [list[i]];
+    let j = i + 1;
+    while (j < list.length) {
+      const b = boxes.get(list[j]);
+      if (!b) break;
+      const beside = row.every((r) => {
+        const a = boxes.get(r);
+        if (!a) return false;
+        const ov = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        const minH = Math.min(a.bottom - a.top, b.bottom - b.top);
+        return ov > minH * 0.5 && (a.right <= b.left + 4 || b.right <= a.left + 4);
+      });
+      if (!beside) break;
+      row.push(list[j]);
+      j += 1;
+    }
+    if (row.length > 1 && total > 0) {
+      row.sort((a, b) => boxes.get(a)!.left - boxes.get(b)!.left);
+      const used = row.reduce((n, r) => n + boxes.get(r)!.width, 0);
+      for (const r of row) {
+        const w = Math.round((boxes.get(r)!.width / Math.max(used, total * 0.6)) * 100);
+        Object.assign(r, { flow: "inline", flowWidth: Math.max(10, Math.min(100, w)) });
+      }
+    }
+    res.push(...row);
+    i = j;
+  }
+  return res;
 }
