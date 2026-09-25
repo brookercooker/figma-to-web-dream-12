@@ -1953,7 +1953,7 @@ export default function ObjectDesignPage() {
 
   const [collapsedBlocks, setCollapsedBlocks] = useState<Record<string, boolean>>({});
   const [dragBlock, setDragBlock] = useState("");
-  const [dropAt, setDropAt] = useState<{ id: string; before: boolean } | null>(null);
+  const [blockDrop, setBlockDrop] = useState<{ id: string; before: boolean } | null>(null);
   const armedBlock = useRef("");
   const moveBlockTo = (fromId: string, toId: string, before: boolean) => {
     if (fromId === toId) return;
@@ -4271,31 +4271,31 @@ export default function ObjectDesignPage() {
                       e.dataTransfer.effectAllowed = "move";
                       e.dataTransfer.setData("text/x-block", s.id);
                     }}
-                    onDragEnd={() => { armedBlock.current = ""; setDragBlock(""); setDropAt(null); }}
+                    onDragEnd={() => { armedBlock.current = ""; setDragBlock(""); setBlockDrop(null); }}
                     onDragOver={(e) => {
                       if (!armedBlock.current || armedBlock.current === s.id) return;
                       e.preventDefault();
                       const r = e.currentTarget.getBoundingClientRect();
                       const before = grp.length > 1 ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
-                      if (dropAt?.id !== s.id || dropAt.before !== before) setDropAt({ id: s.id, before });
+                      if (blockDrop?.id !== s.id || blockDrop.before !== before) setBlockDrop({ id: s.id, before });
                     }}
                     onDrop={(e) => {
                       if (!armedBlock.current) return;
                       e.preventDefault();
-                      if (dropAt) moveBlockTo(armedBlock.current, s.id, dropAt.before);
-                      armedBlock.current = ""; setDragBlock(""); setDropAt(null);
+                      if (blockDrop) moveBlockTo(armedBlock.current, s.id, blockDrop.before);
+                      armedBlock.current = ""; setDragBlock(""); setBlockDrop(null);
                     }}
                     className={`relative rounded-lg border-2 bg-background transition-shadow ${dragBlock === s.id ? "opacity-50" : ""} ${
                       active ? "border-primary/50 shadow-lg" : "border-border shadow-sm hover:border-primary/25"
                     }`}
                     style={blockBgStyle(s)}
                   >
-                    {dropAt?.id === s.id && (
+                    {blockDrop?.id === s.id && (
                       <div
                         className={`pointer-events-none absolute z-30 rounded-full bg-primary ${
                           grp.length > 1
-                            ? `inset-y-0 w-1 ${dropAt.before ? "-left-2" : "-right-2"}`
-                            : `inset-x-0 h-1 ${dropAt.before ? "-top-3" : "-bottom-3"}`
+                            ? `inset-y-0 w-1 ${blockDrop.before ? "-left-2" : "-right-2"}`
+                            : `inset-x-0 h-1 ${blockDrop.before ? "-top-3" : "-bottom-3"}`
                         }`}
                       />
                     )}
@@ -4305,7 +4305,7 @@ export default function ObjectDesignPage() {
                         armedBlock.current = s.id;
                         setDragBlock(s.id);
                         const up = () => {
-                          window.setTimeout(() => { if (armedBlock.current === s.id && !dropAt) { armedBlock.current = ""; setDragBlock(""); } }, 0);
+                          window.setTimeout(() => { if (armedBlock.current === s.id && !blockDrop) { armedBlock.current = ""; setDragBlock(""); } }, 0);
                         };
                         window.addEventListener("mouseup", up, { once: true });
                       }}
