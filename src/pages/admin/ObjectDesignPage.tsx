@@ -1,3 +1,4 @@
+import ConfirmDialog from "./ConfirmDialog";
 import { Fragment, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
@@ -1447,6 +1448,19 @@ export default function ObjectDesignPage() {
     const term = q.trim().toLowerCase();
     return term ? objects.filter((o) => `${o.name} ${o.slug_id}`.toLowerCase().includes(term)) : objects;
   }, [objects, q]);
+
+  const [deletingObj, setDeletingObj] = useState<ObjectRow | null>(null);
+  const deleteObject = async (o: ObjectRow) => {
+    await (supabase as any).from("object_registry").delete().eq("id", o.id);
+    setObjects((cur) => cur.filter((x) => x.id !== o.id));
+    if (o.id === selectedId) {
+      const next = new URLSearchParams(params);
+      next.delete("object");
+      setParams(next, { replace: true });
+      setLibraryOpen(true);
+    }
+    setDeletingObj(null);
+  };
 
   const select = (id: string) => {
     const next = new URLSearchParams(params);
@@ -4049,6 +4063,14 @@ export default function ObjectDesignPage() {
                   <Pencil className="w-3.5 h-3.5" /> Edit
                 </button>
               </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2 text-destructive hover:text-destructive"
+                onClick={() => object && setDeletingObj(object as ObjectRow)}
+              >
+                <Trash2 className="w-4 h-4" /> Delete
+              </Button>
               <Button size="sm" className="gap-2" onClick={save} disabled={saving || !dirty}>
                 <Save className="w-4 h-4" /> {saving ? "Saving…" : dirty ? "Save" : "Saved"}
               </Button>
@@ -4067,6 +4089,15 @@ export default function ObjectDesignPage() {
           </Link>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!deletingObj}
+        onOpenChange={(o) => !o && setDeletingObj(null)}
+        title="Delete this object?"
+        description={<>"{deletingObj?.name}" will be removed from your objects. This can't be undone.</>}
+        confirmLabel="Delete object"
+        onConfirm={() => deletingObj && deleteObject(deletingObj)}
+      />
 
       <main
         className={`grid grid-cols-1 gap-6 px-4 py-6 ${
@@ -4097,10 +4128,10 @@ export default function ObjectDesignPage() {
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search objects" />
           <div className="border rounded-lg divide-y max-h-[70vh] overflow-y-auto">
             {filtered.map((o) => (
+              <div key={o.id} className="group relative">
               <button
-                key={o.id}
                 onClick={() => select(o.id)}
-                className={`w-full text-left px-3 py-2 transition-colors ${
+                className={`w-full text-left px-3 py-2 pr-10 transition-colors ${
                   o.id === selectedId ? "bg-muted" : "hover:bg-muted/60"
                 }`}
               >
@@ -4118,6 +4149,16 @@ export default function ObjectDesignPage() {
                 </div>
                 </div>
               </button>
+              <button
+                type="button"
+                title={`Delete ${o.name}`}
+                aria-label={`Delete ${o.name}`}
+                onClick={() => setDeletingObj(o)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive focus:opacity-100 group-hover:opacity-100"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+              </div>
             ))}
             {!filtered.length && <p className="p-3 text-sm text-muted-foreground">No objects found.</p>}
           </div>
