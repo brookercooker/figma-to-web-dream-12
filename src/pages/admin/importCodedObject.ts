@@ -845,9 +845,25 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     }
   }
 
+  // Carousels bring their own previous/next arrows and "x / total" counter,
+  // so the coded versions around them are left out.
+  const isCarouselControl = (el: HTMLElement) => {
+    if (!(carousel || repeatingCards.length >= 3)) return false;
+    if (repeatingCards.some(([, card]) => card.contains(el))) return false;
+    const ctl = el.closest("button,[role='button'],a") as HTMLElement | null;
+    if (ctl) {
+      const label = `${ctl.getAttribute("aria-label") ?? ""} ${ctl.getAttribute("title") ?? ""} ${clean(ctl.textContent)}`.toLowerCase();
+      if (/\b(prev|previous|next|back|forward|slide|pause|play)\b|[‹›←→<>]/.test(label)) return true;
+      if (!clean(ctl.textContent) && ctl.querySelector("svg")) return true;
+    }
+    const t = clean(el.textContent);
+    return /^(slide\s*)?\d{1,3}\s*(\/|of|—|–|-)\s*\d{1,3}$/i.test(t);
+  };
+
   for (const el of candidates) {
     const tag = el.tagName.toLowerCase();
     if (consumed.has(el)) continue;
+    if (isCarouselControl(el)) continue;
 
     if (tag === "video") {
       const v = el as unknown as HTMLVideoElement;
