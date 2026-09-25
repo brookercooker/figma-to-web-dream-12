@@ -712,8 +712,8 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const b = borderOf(el);
     if (b) {
       const eb = el.getBoundingClientRect();
-      const top = b.top && (el === node || Math.abs(eb.top - nb.top) < 40 + parseFloat(getComputedStyle(el).paddingTop));
-      const bottom = b.bottom && (el === node || Math.abs(eb.bottom - nb.bottom) < 40 + parseFloat(getComputedStyle(el).paddingBottom));
+      const top = b.top && (el === node || Math.abs(eb.top - nb.top) < 140 + parseFloat(getComputedStyle(el).paddingTop));
+      const bottom = b.bottom && (el === node || Math.abs(eb.bottom - nb.bottom) < 140 + parseFloat(getComputedStyle(el).paddingBottom));
       if (b.all && el === node) base.frame = "all";
       else if (top && bottom) base.frame = "y";
       else if (top) base.frame = "top";
