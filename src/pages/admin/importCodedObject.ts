@@ -38,12 +38,51 @@ function alignOf(el: Element): SectionAlign {
   return "left";
 }
 
+/**
+ * Column count as the browser actually laid it out, read from the layout
+ * declaration rather than guessed from positions. Works for any CSS grid
+ * (whatever classes or breakpoints produced it) and wrapping flex rows.
+ */
+function tracksOf(el: Element): number {
+  const cs = getComputedStyle(el);
+  if (cs.display === "grid" || cs.display === "inline-grid") {
+    const t = cs.gridTemplateColumns;
+    if (t && t !== "none") return t.split(/\s+(?![^(]*\))/).filter((x) => /px|fr|%|auto|minmax/.test(x)).length;
+  }
+  if ((cs.display === "flex" || cs.display === "inline-flex") && !cs.flexDirection.startsWith("column")) {
+    const kids = [...el.children].filter((k) => (k as HTMLElement).getBoundingClientRect().width > 1);
+    if (!kids.length) return 0;
+    const top0 = kids[0].getBoundingClientRect().top;
+    return kids.filter((k) => Math.abs(k.getBoundingClientRect().top - top0) < 4).length;
+  }
+  return 0;
+}
+
+/** Declared columns of the nearest grid/flex container holding `item`, up to `stop`. */
+function declaredColumns(item: Element | null | undefined, stop: Element): number {
+  for (let el = item?.parentElement ?? null; el && el !== stop.parentElement; el = el.parentElement) {
+    if (el.children.length < 2) continue;
+    const n = tracksOf(el);
+    if (n >= 2) return n;
+  }
+  return 0;
+}
+
 function columnsOf(root: Element): 1 | 2 | 3 | 4 {
-  const grid = root.querySelector('[class*="grid-cols-"]');
-  const cls = grid?.className?.toString() ?? "";
-  const matches = [...cls.matchAll(/(?:^|\s|:)grid-cols-(\d)/g)].map((m) => Number(m[1]));
-  const n = matches.length ? Math.max(...matches) : 0;
-  return (n >= 1 && n <= 4 ? n : 2) as 1 | 2 | 3 | 4;
+  let n = 0;
+  for (const el of [root, ...root.querySelectorAll("*")]) {
+    if (el.children.length < 2) continue;
+    const t = tracksOf(el);
+    const cs = getComputedStyle(el);
+    if ((cs.display === "grid" || cs.display === "inline-grid") && t > n) n = t;
+  }
+  if (!n) {
+    const grid = root.querySelector('[class*="grid-cols-"]');
+    const cls = grid?.className?.toString() ?? "";
+    const matches = [...cls.matchAll(/(?:^|\s|:)grid-cols-(\d)/g)].map((m) => Number(m[1]));
+    n = matches.length ? Math.max(...matches) : 0;
+  }
+  return (n >= 1 && n <= 4 ? n : Math.min(4, Math.max(2, n || 2))) as 1 | 2 | 3 | 4;
 }
 
 /** Small, spaced-out, uppercase text reads as an eyebrow. */
@@ -1226,7 +1265,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       const cardParts: string[] = [];
       cardsList.forEach((card, k) => {
         const r = card.getBoundingClientRect();
-        const perRow = cardsList.filter((c) => Math.abs(c.getBoundingClientRect().top - r.top) < 4).length;
+        const perRow = declaredColumns(card, node) || cardsList.filter((c) => Math.abs(c.getBoundingClientRect().top - r.top) < 4).length;
         const pct = Math.floor(100 / Math.max(1, perRow));
         const ps = [...partCard.entries()].filter(([, c]) => c === card).map(([p]) => p)
           .sort((a, b) => { const A = boxOfPart.get(a), B = boxOfPart.get(b); return (A ? (A.top + A.bottom) / 2 : 0) - (B ? (B.top + B.bottom) / 2 : 0); });
@@ -1352,13 +1391,14 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   if (repeatingCards.length >= 3) {
     base.gallery = carousel ? "carousel" : "grid";
     const cw = repeatingCards[0][1].getBoundingClientRect().width;
-    const per = Math.max(1, Math.min(4, cw ? Math.round(nodeWidth / cw) : visibleCards || 3));
+    const declared = carousel ? 0 : declaredColumns(repeatingCards[0][1], node);
+    const per = Math.max(1, Math.min(4, declared || (cw ? Math.round(nodeWidth / cw) : visibleCards || 3)));
     base.columns = per as 1 | 2 | 3 | 4;
     if (carousel) base.perView = per;
     else {
       // Cards that wrap onto several rows keep the same number per row.
       const top0 = repeatingCards[0][1].getBoundingClientRect().top;
-      const perRow = repeatingCards.filter(([, c]) => Math.abs(c.getBoundingClientRect().top - top0) < 8).length;
+      const perRow = declared || repeatingCards.filter(([, c]) => Math.abs(c.getBoundingClientRect().top - top0) < 8).length;
       if (perRow >= 1 && perRow < repeatingCards.length) base.imagesPerRow = perRow;
     }
     if (cardAlign) base.captionAlign = cardAlign;
@@ -1395,7 +1435,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     if (h > 24) base.imageHeightPx = Math.round(h);
     // Pictures laid out over several rows keep the same number per row.
     const top0 = imageBoxes[0].top;
-    const perRow = imageBoxes.filter((b) => Math.abs(b.top - top0) < Math.max(8, h / 2)).length;
+    const perRow = declaredColumns([...node.querySelectorAll("img")].find((im) => { const r = im.getBoundingClientRect(); return Math.abs(r.top - top0) < 2 && Math.abs(r.left - imageBoxes[0].left) < 2; }), node) || imageBoxes.filter((b) => Math.abs(b.top - top0) < Math.max(8, h / 2)).length;
     if (perRow >= 1 && perRow < imageBoxes.length) base.imagesPerRow = perRow;
   } else if (images.length === 1 && imageBoxes[0] && nodeWidth) {
     // A single picture keeps its original size.
