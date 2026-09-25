@@ -3,7 +3,7 @@
  * visitors see it; text can be typed over directly and pictures swapped.
  * Changes are stored as overrides keyed by each element's position in the page.
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import DOMPurify from "dompurify";
 
 export type InlineEdits = Record<string, string>;
@@ -78,7 +78,6 @@ export default function InlineEditSurface({
   const ref = useRef<HTMLDivElement>(null);
   const editsRef = useRef(edits);
   editsRef.current = edits;
-  const [tick, setTick] = useState(0);
 
   // Keep overrides applied as lazy content loads or React re-renders.
   useEffect(() => {
@@ -116,9 +115,10 @@ export default function InlineEditSurface({
       });
       root.querySelectorAll<HTMLElement>("[data-inline-image]").forEach((el) => delete el.dataset.inlineImage);
     };
-  }, [editing, tick]);
+  }, [editing]);
 
-  useEffect(() => { setTick((t) => t + 1); }, [edits]);
+  // Apply new overrides straight away (e.g. once loaded on the live site).
+  useEffect(() => { if (ref.current) applyEdits(ref.current, edits); }, [edits]);
 
   const onInput = (e: React.FormEvent) => {
     const root = ref.current;
