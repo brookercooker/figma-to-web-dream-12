@@ -620,7 +620,42 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
 
   // Text sitting on a picture, or reading as its caption, is attached to that
   // picture so it can be moved behind, beside or above it afterwards.
-  const textLeaves = candidates.filter(isTextLeaf).map((el) => ({ el, box: boxOf(el) }));
+  // Thin empty lines (short rules) travel with the wording around them too.
+  const ruleEls = new Set<HTMLElement>();
+  for (const el of parts.flatMap((p) => [p, ...p.querySelectorAll<HTMLElement>("*")])) {
+    if (el.closest("[data-import-skip],button,svg,form")) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 8 || r.height <= 0 || r.height > 4) continue;
+    if (clean(el.textContent) || el.querySelector("img,video,svg")) continue;
+    const cs = getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0) continue;
+    const bg = parseRgb(cs.backgroundColor);
+    if (el.tagName === "HR" || (bg && bg[3] > 0.1)) ruleEls.add(el);
+  }
+  const textLeaves = [...candidates.filter(isTextLeaf), ...ruleEls]
+    .sort((a, b) => (a === b ? 0 : a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1))
+    .map((el) => ({ el, box: boxOf(el) }));
+  const consumedRules = new Set<HTMLElement>();
+  /** A rule attached to a picture, sized against that picture's width. */
+  const ruleTextOf = (el: HTMLElement, host: HTMLElement): ImageText => {
+    consumedRules.add(el);
+    const cs = getComputedStyle(el);
+    const r = el.getBoundingClientRect();
+    const hw = host.getBoundingClientRect().width || 1;
+    const col = el.tagName === "HR" ? cs.borderTopColor : cs.backgroundColor;
+    const pct = Math.round((r.width / hw) * 100);
+    return {
+      id: id(),
+      kind: "divider",
+      text: "",
+      align: visualAlign(el, host),
+      divider: {
+        color: (colorOf(col) ?? brandBorderColor(col)) as TextColor,
+        thickness: Math.max(1, Math.round(el.tagName === "HR" ? parseFloat(cs.borderTopWidth) || 1 : r.height)),
+        ...(pct >= 97 ? { width: "full" as const } : { widthPct: Math.max(2, pct) }),
+      },
+    };
+  };
   const imageEls = all.filter((el) => el.tagName.toLowerCase() === "img" || !!bgImageUrl(el));
   const attached = new Map<HTMLElement, ImageText[]>();
   const consumed = new Set<HTMLElement>();
