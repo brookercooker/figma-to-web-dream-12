@@ -1228,7 +1228,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     }
   }
 
-  const empty = !base.heading && !base.eyebrow && !base.body && !images.length && !extras.length;
+  const empty = !base.heading && !base.eyebrow && !base.body && !base.buttonLabel && !images.length && !extras.length;
   return empty ? null : base;
 }
 
