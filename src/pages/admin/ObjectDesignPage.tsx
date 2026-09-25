@@ -45,7 +45,7 @@ import {
 } from "@/components/ObjectSections";
 
 /** Paints a block's own background inside its editor frame. */
-function blockBgStyle(s: { bg?: unknown; bgImage?: string }): React.CSSProperties | undefined {
+function blockBgStyle(s: object function blockBgStyle(s: { bg?: unknown; bgImage?: string }) { bgImage?: string }): React.CSSProperties | undefined {
   const bg = (s as { bg?: Parameters<typeof bgColorCss>[0] }).bg;
   if (!bg && !s.bgImage) return undefined;
   return {
