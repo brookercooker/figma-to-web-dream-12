@@ -743,22 +743,16 @@ export default function DesignTab() {
 
             {showLive && hasExisting && codedPages[previewSrc(page.path)] && (quick || device === "desktop") ? (
               <div className="border rounded-lg overflow-hidden bg-background" style={deviceStyle}>
-                <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
-                  <p className="text-xs text-muted-foreground">
-                    {quick
-                      ? "Click any wording to type over it, or select wording or a picture to change its style on the right. Changes save on their own."
-                      : "This is how the page looks right now."}
-                  </p>
-                  {quick ? (
-                    Object.keys(inlineEdits).length > 0 && (
+                {quick && (
+                  <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
+                    <p className="text-xs text-muted-foreground">
+                      Click any wording to type over it, or select wording or a picture to change its style on the right. Changes save on their own.
+                    </p>
+                    {Object.keys(inlineEdits).length > 0 && (
                       <Button variant="ghost" size="sm" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
-                    )
-                  ) : (
-                    <Button variant="ghost" size="sm" className="gap-2" onClick={() => { setListOpen(false); setQuick(true); }}>
-                      <Pencil className="w-4 h-4" /> Edit
-                    </Button>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
                 <div className={quick ? "grid grid-cols-[1fr_260px]" : ""}>
                 <div className="h-[70vh] overflow-y-auto bg-background">
                   {(() => {
@@ -796,16 +790,6 @@ export default function DesignTab() {
               </div>
             ) : showLive ? (
               <div className="border rounded-lg overflow-hidden bg-background">
-                <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
-                  <p className="text-xs text-muted-foreground">
-                    {blocks.length
-                      ? "This is how the page looks right now. Switch to Edit to change it."
-                      : "This is how the page looks right now. Add a heading, text, or an image to design it."}
-                  </p>
-                  <Button variant="ghost" size="sm" className="gap-2" onClick={() => { setListOpen(false); setShowLive(false); }}>
-                    <Pencil className="w-4 h-4" /> Edit
-                  </Button>
-                </div>
                 {savedBlocks.length || !canIframe(page.path) ? (
                   device === "desktop" ? (
                     <div className="h-[70vh] overflow-y-auto bg-background">
