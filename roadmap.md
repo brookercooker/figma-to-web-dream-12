@@ -7,3 +7,5 @@
 - [x] Carousels: images with their text grouped per item, uniform alignment
 - [x] Images keep width/height when adjusted
 - [ ] Follow-up: tall (9:16) videos convert to a wide 16:9 frame
+
+- [x] Edit = in-place editing for coded pages, with text style + image size controls
