@@ -1565,7 +1565,8 @@ function inlineRows(list: Section[], boxes: Map<Section, Box>, total: number): S
       }
       // Side-by-side blocks keep their tops lined up as in the original.
       const padOf = (r: Section) => { const x = r as { padTop?: number; padY?: number }; return x.padTop ?? x.padY ?? 0; };
-      const start = Math.min(...row.map((r) => boxes.get(r)!.top - padOf(r)));
+      const lead = list[i];
+      const start = boxes.get(lead)!.top - padOf(lead);
       for (const r of row) (r as { padTop?: number }).padTop = Math.max(0, Math.round(boxes.get(r)!.top - start));
     }
     res.push(...row);
