@@ -401,7 +401,7 @@ function backgroundOf(node: HTMLElement): TextColor | undefined {
 }
 
 const hasContent = (el: HTMLElement) =>
-  !!clean(el.innerText || el.textContent) || !!el.querySelector("img");
+  !!clean(el.innerText || el.textContent) || !!el.querySelector("img,video");
 
 /** Walks past plain wrappers (containers, width limiters) to the real content. */
 function contentRoot(el: HTMLElement): HTMLElement {
@@ -851,7 +851,7 @@ function lockedParts(root: HTMLElement): { el: HTMLElement; reason: string; titl
     const host = (el.closest("form") ?? el.parentElement ?? el) as HTMLElement;
     add(host, "Form field", "Fields people type into can't be built in the object editor.");
   });
-  root.querySelectorAll<HTMLElement>("iframe,canvas,video").forEach((el) =>
+  root.querySelectorAll<HTMLElement>("iframe,canvas").forEach((el) =>
     add(el, "Embedded media", "Embedded players and drawn graphics can't be built in the object editor."),
   );
   root.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6,p,span").forEach((el) => {
