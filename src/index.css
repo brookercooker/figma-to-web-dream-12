@@ -254,3 +254,10 @@
   animation-delay: 0s !important;
   transition: none !important;
 }
+
+/* In-place page editing */
+.inline-edit-surface [data-inline-editable] { outline: 1px dashed transparent; outline-offset: 3px; border-radius: 2px; cursor: text; transition: outline-color .15s; }
+.inline-edit-surface [data-inline-editable]:hover { outline-color: hsl(var(--ring) / .5); }
+.inline-edit-surface [data-inline-editable]:focus { outline: 2px solid hsl(var(--ring)); }
+.inline-edit-surface img[data-inline-image] { cursor: pointer; }
+.inline-edit-surface img[data-inline-image]:hover { outline: 2px solid hsl(var(--ring)); outline-offset: -2px; }
