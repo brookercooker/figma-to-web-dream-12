@@ -36,7 +36,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  SectionEditing, partRotation, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, imageZoom, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, groupByFlow, flowWidthStyle, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
+  SectionEditing, partRotation, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, imageZoom, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, groupByFlow, flowWidthStyle, fitRowWidths, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type RowVAlign, type ImageHeight, type PartVAlign,
   type TextColor, type TextFont, type TextSize, type TextStyle,
@@ -4273,8 +4273,9 @@ export default function ObjectDesignPage() {
                   <div key={`row-${grp[0][0].id}`} className="-mx-2 flex items-stretch">
                     {cards.map((card, ci) => {
                       const s = grp[ci][0];
+                      const fitted = fitRowWidths(grp.map(([g]) => g.flowWidth));
                       return (
-                        <div key={s.id} className={`min-w-0 px-2 [&>div]:h-full ${s.flowWidth ? "" : "flex-1 basis-0"}`} style={flowWidthStyle(s.flowWidth)}>
+                        <div key={s.id} className={`min-w-0 px-2 [&>div]:h-full ${s.flowWidth ? "" : "flex-1 basis-0"}`} style={flowWidthStyle(fitted[ci])}>
                           {card}
                         </div>
                       );

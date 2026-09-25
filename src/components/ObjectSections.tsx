@@ -758,6 +758,21 @@ export function flowWidthStyle(width?: number): React.CSSProperties {
   return { flex: `0 0 ${w}%`, maxWidth: `${w}%` };
 }
 
+/**
+ * Keep a row's block widths from adding up to more than the row.
+ * Blocks without a set width keep a share of what's left (at least 15% each);
+ * set widths are scaled down proportionally when they'd overflow.
+ */
+export function fitRowWidths(widths: (number | undefined)[]): (number | undefined)[] {
+  const set = widths.map((w) => (w && w > 0 ? Math.min(100, w) : 0));
+  const free = set.filter((w) => !w).length;
+  const room = Math.max(0, 100 - free * 15);
+  const total = set.reduce((a, b) => a + b, 0);
+  if (!total || total <= room) return set.map((w) => (w ? w : undefined));
+  const k = room / total;
+  return set.map((w) => (w ? Math.max(5, Math.floor(w * k * 10) / 10) : undefined));
+}
+
 /** Group consecutive inline entries together; separate entries stand alone. */
 export function groupByFlow<T>(items: T[], flowOf: (item: T) => SectionFlow | undefined): T[][] {
   const groups: T[][] = [];
@@ -2352,12 +2367,12 @@ export function SectionFlowList({ sections }: { sections: Section[] }) {
     <>
       {groupByFlow(sections, (s) => s.flow).map((group) =>
         group.length > 1 ? (
-          <div key={group[0].id} className="-mx-4 flex flex-wrap items-start">
-            {group.map((s) => (
+          <div key={group[0].id} className="-mx-4 flex items-start">
+            {group.map((s, gi) => (
               <div
                 key={s.id}
-                className={`px-4 ${s.flowWidth ? "" : "min-w-[16rem] flex-1 basis-0"}`}
-                style={flowWidthStyle(s.flowWidth)}
+                className={`min-w-0 px-4 ${s.flowWidth ? "" : "flex-1 basis-0"}`}
+                style={flowWidthStyle(fitRowWidths(group.map((g) => g.flowWidth))[gi])}
               >
                 <SectionView section={s} />
               </div>
