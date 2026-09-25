@@ -812,7 +812,7 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
 
 
   // Icons sitting beside a piece of wording travel with that wording.
-  const iconFor = new Map<HTMLElement, { icon: string; side: "before" | "after" }>();
+  const iconFor = new Map<HTMLElement, { icon: string; side: "before" | "after"; spread?: boolean; color?: TextColor; row?: HTMLElement }>();
   const iconTaken = new Set<Element>();
   for (const svg of all.filter((e) => e.tagName.toLowerCase() === "svg")) {
     if (svg.closest("a,button")) continue;
@@ -824,7 +824,10 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const sibs = [...parent.children].filter((c) => c !== svg && c instanceof HTMLElement && isVisible(c)) as HTMLElement[];
     const text = sibs.length === 1 && isTextLeaf(sibs[0]) ? sibs[0] : isTextLeaf(parent) ? parent : null;
     if (text && !consumed.has(text)) {
-      iconFor.set(text, { icon: name, side: iconSideOf(svg, text) });
+      // An icon pinned to the opposite end of a row from its wording (icon left, number right) keeps that spread.
+      const pcs = getComputedStyle(parent);
+      const spread = text !== parent && pcs.display.includes("flex") && pcs.justifyContent === "space-between";
+      iconFor.set(text, { icon: name, side: iconSideOf(svg, text), ...(spread ? { spread: true, row: parent } : {}), color: colorOf(getComputedStyle(svg).color) });
       iconTaken.add(svg);
     }
   }
@@ -1025,12 +1028,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
       text,
       kind: heading ? "title" : "text",
       style,
-      ...(iconHere ? { icon: iconHere.icon, iconSide: iconHere.side } : {}),
+      ...(iconHere ? { icon: iconHere.icon, iconSide: iconHere.side, ...(iconHere.spread ? { iconSpread: true } : {}), ...(iconHere.color ? { iconColor: iconHere.color } : {}) } : {}),
     };
     extras.push(extra);
     const part = `text:${extras.length - 1}`;
     order.push(part);
-    keepFlow(part, el);
+    keepFlow(part, iconHere?.row ?? el);
   }
 
   // Divider lines: thin empty rules, and top/bottom border lines on wrappers,
@@ -1106,6 +1109,52 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   }
   if (Object.keys(widths).length) base.flowWidths = widths;
   if (Object.keys(laid.stacks).length) base.stacks = laid.stacks;
+
+  // Grids of text cards (several items in each grid cell) keep one column per card,
+  // with everything inside the card stacked in reading order.
+  {
+    const cardOfEl = (el: HTMLElement): HTMLElement | null => {
+      for (let a: HTMLElement | null = el; a && a !== node && a.parentElement; a = a.parentElement) {
+        const P = a.parentElement;
+        if (!node.contains(P) && P !== node) break;
+        if (!getComputedStyle(P).display.includes("grid")) continue;
+        const kids = [...P.children].filter((c): c is HTMLElement => c instanceof HTMLElement && isVisible(c));
+        if (kids.length < 2) continue;
+        const counts = kids.map((k) => Object.values(partEls).filter((e) => k.contains(e)).length);
+        if (counts.every((c) => c >= 2)) return a;
+      }
+      return null;
+    };
+    const partCard = new Map<string, HTMLElement>();
+    for (const [part, el] of Object.entries(partEls)) { const c = cardOfEl(el); if (c) partCard.set(part, c); }
+    const cardsList = [...new Set(partCard.values())];
+    if (cardsList.length >= 2) {
+      for (const t of textBoxes) {
+        if (!t.part.startsWith("divider:") || partCard.has(t.part)) continue;
+        const hit = cardsList.find((c) => { const r = c.getBoundingClientRect(); return t.box.left >= r.left - 3 && t.box.right <= r.right + 3 && t.box.top >= r.top - 3 && t.box.top <= r.bottom + 3; });
+        if (hit) partCard.set(t.part, hit);
+      }
+      const boxOfPart = new Map(textBoxes.map((t) => [t.part, t.box]));
+      const flows = { ...(base.flows ?? {}) } as Record<string, "inline">;
+      const stacks = { ...(base.stacks ?? {}) };
+      const fw = { ...(base.flowWidths ?? {}) };
+      const cardParts: string[] = [];
+      cardsList.forEach((card, k) => {
+        const r = card.getBoundingClientRect();
+        const perRow = cardsList.filter((c) => Math.abs(c.getBoundingClientRect().top - r.top) < 4).length;
+        const pct = Math.floor(100 / Math.max(1, perRow));
+        const ps = [...partCard.entries()].filter(([, c]) => c === card).map(([p]) => p)
+          .sort((a, b) => (boxOfPart.get(a)?.top ?? 0) - (boxOfPart.get(b)?.top ?? 0));
+        for (const p of ps) { flows[p] = "inline"; stacks[p] = `card${k}`; fw[p] = pct; cardParts.push(p); }
+      });
+      const cur = base.order ?? [];
+      const at = cur.findIndex((p) => partCard.has(p));
+      const rest = cur.filter((p) => !partCard.has(p));
+      base.order = [...rest.slice(0, at < 0 ? rest.length : cur.slice(0, at).filter((p) => !partCard.has(p)).length), ...cardParts, ...rest.slice(at < 0 ? rest.length : cur.slice(0, at).filter((p) => !partCard.has(p)).length)];
+      base.flows = flows; base.stacks = stacks; base.flowWidths = fw; base.rowVAlign = "top";
+      laid.rows = laid.rows.filter((cols) => !cols.some((c) => c.parts.some((p) => partCard.has(p))));
+    }
+  }
 
   // Rows keep their spread (title far left, button far right) and vertical alignment.
   const rowNb = node.getBoundingClientRect();
