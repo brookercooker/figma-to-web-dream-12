@@ -1528,9 +1528,26 @@ function contentBox(group: HTMLElement[]): Box | null {
       if (el.closest("[data-import-skip]")) continue;
       const media = /^(img|video|svg|picture|button|hr)$/i.test(el.tagName);
       const text = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent?.trim());
-      if (!media && !text) continue;
       const r = el.getBoundingClientRect();
-      if (!r.width || !r.height) continue;
+      if (!r.width) continue;
+      // Lines count too: top/bottom borders on an item, and thin filled rules.
+      if (!media && !text) {
+        const cs = getComputedStyle(el);
+        const bt = parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== "none";
+        const bb = parseFloat(cs.borderBottomWidth) > 0 && cs.borderBottomStyle !== "none";
+        const bg = parseRgb(cs.backgroundColor);
+        const rule = r.height > 0 && r.height <= 4 && !!bg && bg[3] > 0.1;
+        if (el !== g && (bt || bb) && !rule) {
+          if (bt) top = Math.min(top, r.top);
+          if (bb) bottom = Math.max(bottom, r.bottom);
+          left = Math.min(left, r.left); right = Math.max(right, r.right);
+        } else if (rule) {
+          top = Math.min(top, r.top); bottom = Math.max(bottom, r.bottom);
+          left = Math.min(left, r.left); right = Math.max(right, r.right);
+        }
+        continue;
+      }
+      if (!r.height) continue;
       top = Math.min(top, r.top); bottom = Math.max(bottom, r.bottom);
       left = Math.min(left, r.left); right = Math.max(right, r.right);
     }
