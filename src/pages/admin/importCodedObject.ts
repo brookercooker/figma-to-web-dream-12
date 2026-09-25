@@ -1024,6 +1024,14 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const px = box?.width ?? 0;
     dividers[i] = { ...d, width: "full", widthPct: undefined };
     if (px && nodeWidth) widths[part] = Math.max(3, Math.round(((px + 24) / nodeWidth) * 100));
+    // Keep a padded row full width so the next row still wraps below it.
+    const ri = laid.rows.findIndex((cols) => cols.some((c) => c.parts.includes(part)));
+    const cols = laid.rows[ri];
+    if (cols && laid.rows[ri + 1] && cols.every((c) => widths[c.parts[0]])) {
+      const lastParts = cols[cols.length - 1].parts;
+      const others = cols.slice(0, -1).reduce((n, c) => n + widths[c.parts[0]], 0);
+      for (const p of lastParts) widths[p] = Math.max(10, 100 - others);
+    }
   });
   if (Object.keys(widths).length) base.flowWidths = widths; else delete base.flowWidths;
   if (Object.keys(vAligns).length) {
