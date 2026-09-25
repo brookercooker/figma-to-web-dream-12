@@ -40,6 +40,7 @@ import {
   type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type RowVAlign, type ImageHeight, type PartVAlign,
   type TextColor, type TextFont, type TextSize, type TextStyle,
+  ContainedBgContext,
 } from "@/components/ObjectSections";
 
 /** Icon shown on the icon-only "add item" row inside an image editor. */
@@ -3907,6 +3908,7 @@ export default function ObjectDesignPage() {
               </div>
 
 
+<ContainedBgContext.Provider value={!preview}>
               {sections.map((s, i) => {
                 const active = s.id === activeId;
                 return (
@@ -4010,6 +4012,7 @@ export default function ObjectDesignPage() {
                   </div>
                 );
               })}
+</ContainedBgContext.Provider>
 
               <div className="sticky bottom-4 z-40 flex justify-center">
                 <div className="flex w-full flex-wrap items-center gap-3 rounded-2xl border bg-background/95 px-5 py-4 shadow-lg backdrop-blur">
