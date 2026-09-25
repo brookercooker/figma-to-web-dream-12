@@ -262,3 +262,24 @@
 .inline-edit-surface img[data-inline-image] { cursor: pointer; }
 .inline-edit-surface img[data-inline-image]:hover { outline: 2px solid hsl(var(--ring)); outline-offset: -2px; }
 .inline-edit-surface [data-inline-selected] { outline: 2px solid hsl(var(--ring)) !important; outline-offset: 3px; }
+/* Section bars while editing in place */
+.inline-edit-surface [data-inline-chunk] { position: relative; margin-top: 48px !important; outline: 1px dashed hsl(var(--border)); outline-offset: 0; }
+.inline-edit-surface [data-inline-chunk]::before {
+  content: "\2807\00a0\00a0\25BE\00a0\00a0" attr(data-inline-chunk);
+  position: absolute; left: 0; right: 0; top: -40px; height: 40px; z-index: 5;
+  display: flex; align-items: center; padding: 0 14px;
+  background: hsl(var(--muted)); color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border)); border-bottom: 0; border-radius: 6px 6px 0 0;
+  font: 500 12px/1 var(--font-sans, system-ui), system-ui, sans-serif; letter-spacing: 0; text-transform: none; font-style: normal;
+  cursor: grab; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.inline-edit-surface [data-inline-chunk][data-inline-object]::before {
+  content: "\2807\00a0\00a0\25BE\00a0\00a0" attr(data-inline-chunk) "\00a0\00a0\00b7\00a0\00a0Shared object: " attr(data-inline-object) " \2014 changes apply everywhere it's used";
+}
+.inline-edit-surface [data-inline-chunk][data-inline-collapsed]::before { content: "\2807\00a0\00a0\25B8\00a0\00a0" attr(data-inline-chunk); border-bottom: 1px solid hsl(var(--border)); border-radius: 6px; }
+.inline-edit-surface [data-inline-chunk][data-inline-object][data-inline-collapsed]::before { content: "\2807\00a0\00a0\25B8\00a0\00a0" attr(data-inline-chunk) "\00a0\00a0\00b7\00a0\00a0Shared object: " attr(data-inline-object); }
+.inline-edit-surface [data-inline-collapsed] { height: 0 !important; min-height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; outline: none; overflow: visible !important; }
+.inline-edit-surface [data-inline-collapsed] > * { display: none !important; }
+.inline-edit-surface [data-inline-dragging] { opacity: .45; }
+.inline-edit-surface [data-inline-drop="before"]::before { box-shadow: 0 -3px 0 hsl(var(--ring)); }
+.inline-edit-surface [data-inline-drop="after"] { box-shadow: 0 3px 0 hsl(var(--ring)); }
