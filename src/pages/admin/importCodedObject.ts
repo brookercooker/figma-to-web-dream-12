@@ -1166,13 +1166,12 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
   const cs = getComputedStyle(node);
   const padY = Math.round((parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) / 2);
   const padX = Math.round((parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)) / 2);
-  const buttonOnly = !!base.buttonLabel && !base.heading && !base.eyebrow && !base.body && !images.length && !extras.length;
-  if (buttonOnly) {
-    // A lone button keeps its original gap: its own margins stand in for padding,
-    // and the editor's default spacing is cancelled (negative when it overshoots).
+  // Spacing always follows the original: padding plus the block's own margins,
+  // with no editor default added (0 means flush, as in the original).
+  {
     const m = (parseFloat(cs.marginTop) + parseFloat(cs.marginBottom)) / 2;
-    base.padY = Math.round(padY + m);
-  } else if (padY > 0) base.padY = padY;
+    base.padY = Math.round(padY + (Number.isFinite(m) ? m : 0));
+  }
   if (padX > 0) base.padX = padX;
 
   // Text that sat on top of a picture keeps sitting on top of it.
@@ -1327,7 +1326,31 @@ export function sectionsFromDom(root: HTMLElement): Section[] {
   } finally {
     locked.forEach((l) => l.el.removeAttribute("data-import-skip"));
   }
+  keepGaps(out, boxes, root.getBoundingClientRect());
   return inlineRows(out, boxes, root.getBoundingClientRect().width);
+}
+
+/** Space between stacked blocks matches the original exactly, split across the two blocks. */
+function keepGaps(list: Section[], boxes: Map<Section, Box>, rootBox: DOMRect) {
+  const isFree = (s?: Section) => !!s && s.type === "free";
+  list.forEach((s, i) => {
+    if (!isFree(s)) return;
+    const b = boxes.get(s);
+    if (!b) return;
+    const prev = list[i - 1], next = list[i + 1];
+    const pb = prev && boxes.get(prev), nb = next && boxes.get(next);
+    const f = s as Section & { padTop?: number; padBottom?: number };
+    if (!prev) f.padTop = Math.round(b.top - rootBox.top);
+    else if (pb && pb.bottom <= b.top + 1) {
+      const gap = b.top - pb.bottom;
+      f.padTop = Math.round(isFree(prev) ? gap / 2 : gap);
+    }
+    if (!next) f.padBottom = Math.round(rootBox.bottom - b.bottom);
+    else if (nb && b.bottom <= nb.top + 1) {
+      const gap = nb.top - b.bottom;
+      f.padBottom = Math.round(isFree(next) ? gap / 2 : gap);
+    }
+  });
 }
 
 /** Outer edges of a group's visible content, leaving out parts kept as locked sections. */
