@@ -878,6 +878,24 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
         loop: v.loop || undefined,
         muted: v.muted || undefined,
       };
+      // A background video with wording laid over it (like the homepage hero)
+      // becomes a video with the block's text on top.
+      {
+        const vr = el.getBoundingClientRect();
+        const pos = (e: HTMLElement | null) => { while (e && e !== node) { if (getComputedStyle(e).position === "absolute") return true; e = e.parentElement; } return false; };
+        const over = vr.width > 0 && Array.from(node.querySelectorAll<HTMLElement>("h1,h2,h3,p,a,button")).some((t) => {
+          if (!clean(t.textContent)) return false;
+          const r = t.getBoundingClientRect();
+          return r.width > 0 && r.left >= vr.left - 2 && r.right <= vr.right + 2 && r.top >= vr.top - 2 && r.bottom <= vr.bottom + 2;
+        });
+        if (over && (pos(el) || getComputedStyle(el).objectFit === "cover") && !(base.videos ?? []).some((x) => x.textOnTop)) {
+          video.textOnTop = true;
+          video.height = Math.round(vr.height);
+          video.autoplay = true; video.loop = true; video.controls = false;
+          const vt = Array.from(node.querySelectorAll<HTMLElement>("h1,h2,h3,p")).find((t) => clean(t.textContent));
+          if (vt) { const r = vt.getBoundingClientRect(); const mid = (r.top + r.bottom) / 2 - vr.top; base.overlayVAlign = mid < vr.height / 3 ? "top" : mid > (vr.height * 2) / 3 ? "bottom" : "middle"; }
+        }
+      }
       base.videos = [...(base.videos ?? []), video];
       if (!order.includes("videos")) {
         order.push("videos");
