@@ -2247,9 +2247,7 @@ function FreeView({ section }: { section: FreeSection }) {
             <FreeText section={{ ...section, images: [], videos: [] } as FreeSection} onDark />
           </div>
         </div>
-        {hasImages || (rest.videos ?? []).length ? (
-          <FreeGallery section={rest} />
-        ) : null}
+        {hasImages ? <FreeGallery section={rest} /> : null}
         <FreeVideos section={rest} />
       </section>
     );
