@@ -1520,6 +1520,19 @@ function lockedParts(root: HTMLElement): { el: HTMLElement; reason: string; titl
     for (let i = found.length - 1; i >= 0; i -= 1) if (el.contains(found[i].el)) found.splice(i, 1);
     found.push({ el, title, reason });
   };
+  // Scrolling marquees (e.g. brand strips) stay as live code.
+  root.querySelectorAll<HTMLElement>("*").forEach((el) => {
+    const inline = el.style.animation || el.style.animationName || "";
+    const cls = el.className?.toString() ?? "";
+    const cs = getComputedStyle(el);
+    const infinite = /infinite/.test(inline) || (cs.animationIterationCount === "infinite" && cs.animationName !== "none");
+    const named = /\b(scroll|marquee|ticker)\b/i.test(inline) || /\b(marquee|animate-scroll|animate-marquee|ticker)\b/.test(cls);
+    if (!(named || (infinite && el.children.length >= 3))) return;
+    let host: HTMLElement = el;
+    const p = el.parentElement;
+    if (p && p !== root && getComputedStyle(p).overflow.includes("hidden")) host = p;
+    add(host, "Scrolling strip", "Continuously scrolling items run as live code and can't be edited in the object editor.");
+  });
   root.querySelectorAll<HTMLElement>("form").forEach((el) =>
     add(el, "Form", "Forms collect and send information, which the object editor can't build."),
   );
