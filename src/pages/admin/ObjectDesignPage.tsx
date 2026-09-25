@@ -36,7 +36,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  SectionEditing, partRotation, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, imageZoom, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
+  SectionEditing, partRotation, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, imageZoom, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, groupByFlow, flowWidthStyle, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
   type RowVAlign, type ImageHeight, type PartVAlign,
   type TextColor, type TextFont, type TextSize, type TextStyle,
@@ -4163,7 +4163,8 @@ export default function ObjectDesignPage() {
 
 
 <ContainedBgContext.Provider value={!preview}>
-              {sections.map((s, i) => {
+              {groupByFlow(sections.map((s, i) => [s, i] as const), ([s]) => s.flow).map((grp) => {
+                const cards = grp.map(([s, i]) => {
                 const active = s.id === activeId;
                 return (
                   <div
@@ -4264,6 +4265,20 @@ export default function ObjectDesignPage() {
                     </BlockCanvas>
 
 
+                  </div>
+                );
+                });
+                if (grp.length < 2) return cards[0];
+                return (
+                  <div key={`row-${grp[0][0].id}`} className="flex items-stretch gap-4">
+                    {cards.map((card, ci) => {
+                      const s = grp[ci][0];
+                      return (
+                        <div key={s.id} className={`min-w-0 [&>div]:h-full ${s.flowWidth ? "" : "flex-1 basis-0"}`} style={flowWidthStyle(s.flowWidth)}>
+                          {card}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}
