@@ -1062,6 +1062,27 @@ function sectionFromNode(parts: HTMLElement[]): FreeSection | null {
     const first = cols[0], last = cols[cols.length - 1];
     const used = cols.reduce((n, c) => n + c.box.width, 0);
     const spread = first.box.left - cLeft < 16 && cRight - last.box.right < 16 && used < (cRight - cLeft) * 0.8;
+    // A row spread across a narrower container (label left, value right inside
+    // one column) keeps that container's width, pinned left and right.
+    let inner: DOMRect | null = null;
+    if (!spread) {
+      const a = partEls[first.parts[0]], b = partEls[last.parts[0]];
+      let anc: HTMLElement | null = a?.parentElement ?? null;
+      while (anc && anc !== node && b && !anc.contains(b)) anc = anc.parentElement;
+      if (anc && anc !== node) {
+        const r = anc.getBoundingClientRect();
+        const acs = getComputedStyle(anc);
+        const l = r.left + (parseFloat(acs.paddingLeft) || 0), rr = r.right - (parseFloat(acs.paddingRight) || 0);
+        if (first.box.left - l < 8 && rr - last.box.right < 8 && used < (rr - l) * 0.8) inner = new DOMRect(l, r.top, rr - l, r.height);
+      }
+    }
+    if (inner && nodeWidth) {
+      const share = Math.max(5, Math.floor((inner.width / nodeWidth) * 100 / cols.length));
+      cols.forEach((c, ci) => {
+        const a: SectionAlign = ci === 0 ? "left" : ci === cols.length - 1 ? "right" : "center";
+        for (const part of c.parts) { widths[part] = share; partAligns[part] = a; }
+      });
+    }
     if (spread) {
       cols.forEach((c, ci) => {
         const a: SectionAlign = ci === 0 ? "left" : ci === cols.length - 1 ? "right" : "center";
