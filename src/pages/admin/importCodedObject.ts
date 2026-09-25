@@ -12,6 +12,7 @@ import {
   newSectionId,
   type FreeParagraph,
   type FreeSection,
+  type LockedSection,
   type ImageText,
   type Section,
   type SectionAlign,
@@ -52,6 +53,7 @@ function looksLikeEyebrow(el: HTMLElement): boolean {
 
 function isVisible(el: HTMLElement): boolean {
   if (el.closest("[aria-hidden='true']")) return false;
+  if (el.closest("[data-import-skip]")) return false;
   const cs = getComputedStyle(el);
   if (cs.display === "none" || cs.visibility === "hidden" || cs.opacity === "0") return false;
   return true;
@@ -103,6 +105,17 @@ function styleOf(el: HTMLElement, heading: boolean): TextStyle {
     bold: weight >= 600 ? true : undefined,
     italic: cs.fontStyle === "italic" ? true : undefined,
     underline: cs.textDecorationLine.includes("underline") ? true : undefined,
+    uppercase: cs.textTransform === "uppercase" ? true : undefined,
+    trackingEm: (() => {
+      const ls = parseFloat(cs.letterSpacing);
+      const fs = parseFloat(cs.fontSize) || 16;
+      return Number.isFinite(ls) && Math.abs(ls) > 0.2 ? Math.round((ls / fs) * 1000) / 1000 : undefined;
+    })(),
+    lineHeight: (() => {
+      const lh = parseFloat(cs.lineHeight);
+      const fs = parseFloat(cs.fontSize) || 16;
+      return Number.isFinite(lh) ? Math.round((lh / fs) * 100) / 100 : undefined;
+    })(),
   };
 }
 
@@ -139,37 +152,132 @@ function hOverlap(a: Box, b: Box): number {
 }
 
 /**
- * Text that sat side by side on the page stays side by side: parts sharing a
- * vertical band become inline items, each keeping its share of the width.
+ * Rebuilds the side-by-side arrangement of the original. Texts are split into
+ * horizontal bands; inside a band, texts sharing a column are stacked and the
+ * columns sit next to each other, each keeping its share of the width.
  */
-function inlineRows(
+function layoutRows(
   parts: { part: string; box: Box }[],
   nodeWidth: number,
-): { flows: Record<string, "inline">; widths: Record<string, number> } {
+): {
+  flows: Record<string, "inline">;
+  widths: Record<string, number>;
+  stacks: Record<string, string>;
+  order: string[];
+} {
   const flows: Record<string, "inline"> = {};
   const widths: Record<string, number> = {};
-  const rows: { part: string; box: Box }[][] = [];
+  const stacks: Record<string, string> = {};
+  const order: string[] = [];
 
-  for (const item of parts) {
-    const row = rows.find((r) => r.every((other) => vOverlap(other.box, item.box) > 0.5));
-    if (row) row.push(item);
-    else rows.push([item]);
+  const sorted = [...parts].sort((a, b) => a.box.top - b.box.top || a.box.left - b.box.left);
+  const bands: { items: typeof parts; bottom: number }[] = [];
+  for (const item of sorted) {
+    const band = bands[bands.length - 1];
+    if (band && item.box.top < band.bottom - 2) {
+      band.items.push(item);
+      band.bottom = Math.max(band.bottom, item.box.bottom);
+    } else bands.push({ items: [item], bottom: item.box.bottom });
   }
 
-  // A column holding several stacked texts can't be represented inline, so we
-  // only keep side-by-side items that stand alone in their column.
-  const alone = (item: { part: string; box: Box }) =>
-    !parts.some((o) => o.part !== item.part && hOverlap(o.box, item.box) > 0.5);
-
-  for (const row of rows) {
-    if (row.length < 2 || !row.every(alone)) continue;
-    for (const { part, box } of row) {
-      flows[part] = "inline";
-      const pct = nodeWidth ? Math.round((box.width / nodeWidth) * 100) : 0;
-      if (pct) widths[part] = Math.max(10, Math.min(100, pct));
+  type Col = { items: typeof parts; box: Box };
+  const colsOf = (items: typeof parts): Col[] => {
+    const cols: Col[] = [];
+    for (const item of items) {
+      const col = cols.find((c) => hOverlap(c.box, item.box) > 0.5);
+      if (col) {
+        col.items.push(item);
+        col.box = unionBox([col.box, item.box]) as Box;
+      } else cols.push({ items: [item], box: { ...item.box } });
     }
+    return cols.sort((x, y) => x.box.left - y.box.left);
+  };
+
+  // A band that sits wholly under one column of the band above (the rest of a
+  // tall side column) is folded back into that column.
+  const rows: Col[][] = [];
+  for (const band of bands) {
+    const prev = rows[rows.length - 1];
+    if (prev && prev.length > 1) {
+      const targets = band.items.map((it) => {
+        const hits = prev.filter((c) => hOverlap(c.box, it.box) > 0.5);
+        const fits = hits.length === 1 && it.box.width <= (hits[0].box.right - hits[0].box.left) * 1.25;
+        return fits ? hits[0] : null;
+      });
+      if (targets.every(Boolean)) {
+        band.items.forEach((it, i) => {
+          const col = targets[i] as Col;
+          col.items.push(it);
+          col.box = unionBox([col.box, it.box]) as Box;
+        });
+        continue;
+      }
+    }
+    rows.push(colsOf(band.items));
   }
-  return { flows, widths };
+
+  rows.forEach((cols, bi) => {
+    for (const col of cols) col.items.sort((x, y) => x.box.top - y.box.top);
+    if (cols.length < 2) {
+      cols.forEach((c) => c.items.forEach((it) => order.push(it.part)));
+      return;
+    }
+    cols.forEach((col, ci) => {
+      const pct = nodeWidth ? Math.round(((col.box.right - col.box.left) / nodeWidth) * 100) : 0;
+      col.items.forEach((it) => {
+        flows[it.part] = "inline";
+        if (col.items.length > 1) stacks[it.part] = `b${bi}c${ci}`;
+        if (pct) widths[it.part] = Math.max(10, Math.min(100, pct));
+        order.push(it.part);
+      });
+    });
+  });
+  return { flows, widths, stacks, order };
+}
+
+/** Solid, outlined or plain-link look of a link or button — null when it's just text. */
+function buttonKindOf(el: HTMLElement): "solid" | "outline" | "link" | null {
+  const cs = getComputedStyle(el);
+  const bg = parseRgb(cs.backgroundColor);
+  if (bg && bg[3] > 0.1) return "solid";
+  if (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== "none") return "outline";
+  if (cs.textTransform === "uppercase" && parseFloat(cs.letterSpacing) > 0.5) return "link";
+  return null;
+}
+
+/** Splits text with inline emphasis or line breaks into separately styled runs. */
+function runsOf(el: HTMLElement): { text: string; styleEl: HTMLElement; box: Box }[] {
+  if (!el.querySelector("em,i,strong,b,br,span")) return [];
+  const runs: { text: string; styleEl: HTMLElement; box: Box }[] = [];
+  let buf: Node[] = [];
+  const flush = (styleEl: HTMLElement) => {
+    const text = clean(buf.map((n) => n.textContent).join(""));
+    if (text) {
+      const range = document.createRange();
+      range.setStartBefore(buf[0]);
+      range.setEndAfter(buf[buf.length - 1]);
+      const r = range.getBoundingClientRect();
+      runs.push({ text, styleEl, box: { top: r.top, bottom: r.bottom, left: r.left, right: r.right, width: r.width } });
+    }
+    buf = [];
+  };
+  for (const n of [...el.childNodes]) {
+    if (n instanceof HTMLBRElement) { flush(el); continue; }
+    if (n instanceof HTMLElement) {
+      const cs = getComputedStyle(n);
+      const pcs = getComputedStyle(el);
+      const differs = cs.fontStyle !== pcs.fontStyle || cs.color !== pcs.color || cs.fontWeight !== pcs.fontWeight || cs.display === "block";
+      if (differs) {
+        flush(el);
+        buf = [n];
+        flush(n);
+        continue;
+      }
+    }
+    buf.push(n);
+  }
+  flush(el);
+  return runs;
 }
 
 /** Background tint painted behind the block, when it isn't plain white. */
@@ -217,11 +325,11 @@ function blockRoots(root: HTMLElement): HTMLElement[] {
     const bands = [...inner.children].filter(
       (c): c is HTMLElement => c instanceof HTMLElement && isVisible(c) && hasContent(c),
     );
+    // Keep everything in one block unless a band is itself a separate
+    // picture-led area (a gallery below a heading, for instance).
     if (bands.length < 2) return [inner];
-    // A row or grid of cards stays one block; only stacked bands are split.
-    const boxes = bands.map(boxOf);
-    const sideBySide = boxes.some((a, i) => boxes.some((b, j) => j !== i && vOverlap(a, b) > 0.5));
-    return sideBySide ? [inner] : bands;
+    const heavy = bands.filter((b) => b.querySelectorAll("img").length >= 2);
+    return heavy.length && heavy.length < bands.length ? bands : [inner];
   });
 }
 
@@ -277,8 +385,10 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   const textBoxes: { part: string; box: Box }[] = [];
   const imageBoxes: Box[] = [];
 
+  const partAligns: Record<string, SectionAlign> = {};
   const keepFlow = (part: string, el: HTMLElement) => {
     textBoxes.push({ part, box: boxOf(el) });
+    if (!partAligns[part]) partAligns[part] = alignOf(el);
   };
 
   const TEXTUAL = "h1,h2,h3,h4,h5,h6,p,span,img,a,button";
@@ -368,12 +478,29 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
     if (tag === "a" || tag === "button") {
       const label = clean(el.innerText || el.textContent);
       // Skip wrappers around images or long blocks of copy.
-      if (!label || label.length > 40 || el.querySelector("img,h1,h2,h3,p")) continue;
-      if (base.buttonLabel) continue;
+      if (!label || label.length > 40 || el.querySelector("img,h1,h2,h3,h4,h5,h6,p,span")) continue;
+      const kind = buttonKindOf(el);
+      if (base.buttonLabel || !kind) {
+        // A plain text link reads as text, keeping its look.
+        if (seenText.has(label)) continue;
+        seenText.add(label);
+        extras.push({ id: id(), text: label, kind: "text", style: styleOf(el, false) });
+        const part = `text:${extras.length - 1}`;
+        order.push(part);
+        keepFlow(part, el);
+        continue;
+      }
       base.buttonLabel = label;
       base.buttonHref = el.getAttribute("href") ?? "#";
-      base.buttonVariant = "outline";
+      base.buttonVariant = kind;
+      base.labelStyle = styleOf(el, false);
+      if (el.querySelector("svg")) {
+        base.buttonIcon = "arrowRight";
+        base.buttonIconSide = "after";
+      }
       order.push("button");
+      keepFlow("button", el);
+      partAligns.button = alignOf(el.parentElement ?? el);
       continue;
     }
 
@@ -386,6 +513,28 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
     seenText.add(text);
 
     const heading = /^h[1-6]$/.test(tag);
+    const runs = runsOf(el);
+    if (runs.length > 1) {
+      // Mixed styling (an italic phrase, a line break) keeps each run's look,
+      // stacked in the same place.
+      runs.forEach((run, ri) => {
+        const style = { ...styleOf(run.styleEl, heading), sizePx: styleOf(el, heading).sizePx };
+        if (ri === 0 && heading && !base.heading) {
+          base.heading = run.text;
+          base.textStyle = style;
+          order.push("heading");
+          textBoxes.push({ part: "heading", box: run.box });
+          partAligns.heading = alignOf(el);
+          return;
+        }
+        extras.push({ id: id(), text: run.text, kind: heading ? "title" : "text", style });
+        const part = `text:${extras.length - 1}`;
+        order.push(part);
+        textBoxes.push({ part, box: run.box });
+        partAligns[part] = alignOf(el);
+      });
+      continue;
+    }
     const style = styleOf(el, heading);
 
     if (!base.eyebrow && !heading && looksLikeEyebrow(el)) {
@@ -424,13 +573,29 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
 
   base.images = images;
   base.extras = extras;
-  base.order = order;
   base.captionAlign = base.align;
 
   const nodeWidth = node.getBoundingClientRect().width;
-  const { flows, widths } = inlineRows(textBoxes, nodeWidth);
-  if (Object.keys(flows).length) base.flows = flows;
-  if (Object.keys(widths).length) base.flowWidths = widths;
+  const laid = layoutRows(textBoxes, nodeWidth);
+  base.order = laid.order.length === order.length ? laid.order : order;
+  if (Object.keys(laid.flows).length) {
+    base.flows = laid.flows;
+    base.rowVAlign = "top";
+  }
+  if (Object.keys(laid.widths).length) base.flowWidths = laid.widths;
+  if (Object.keys(laid.stacks).length) base.stacks = laid.stacks;
+
+  // Each text keeps its own alignment when it differs from the block's.
+  const aligns: Record<string, SectionAlign> = {};
+  for (const [part, a] of Object.entries(partAligns)) if (a !== base.align) aligns[part] = a;
+  if (Object.keys(aligns).length) base.flowAligns = aligns;
+
+  // Spacing around the block follows the original padding.
+  const cs = getComputedStyle(node);
+  const padY = Math.round((parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) / 2);
+  const padX = Math.round((parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)) / 2);
+  if (padY > 0) base.padY = padY;
+  if (padX > 0) base.padX = padX;
 
   // Text that sat on top of a picture keeps sitting on top of it.
   if (overlaid) {
@@ -456,9 +621,78 @@ function sectionFromNode(node: HTMLElement): FreeSection | null {
   return empty ? null : base;
 }
 
+/** Finds parts the editor can't rebuild: forms, embeds and special text effects. */
+function lockedParts(root: HTMLElement): { el: HTMLElement; reason: string; title: string }[] {
+  const found: { el: HTMLElement; reason: string; title: string }[] = [];
+  const add = (el: HTMLElement, title: string, reason: string) => {
+    if (found.some((f) => f.el.contains(el))) return;
+    for (let i = found.length - 1; i >= 0; i -= 1) if (el.contains(found[i].el)) found.splice(i, 1);
+    found.push({ el, title, reason });
+  };
+  root.querySelectorAll<HTMLElement>("form").forEach((el) =>
+    add(el, "Form", "Forms collect and send information, which the object editor can't build."),
+  );
+  root.querySelectorAll<HTMLElement>("input,textarea,select").forEach((el) => {
+    const host = (el.closest("form") ?? el.parentElement ?? el) as HTMLElement;
+    add(host, "Form field", "Fields people type into can't be built in the object editor.");
+  });
+  root.querySelectorAll<HTMLElement>("iframe,canvas,video").forEach((el) =>
+    add(el, "Embedded media", "Embedded players and drawn graphics can't be built in the object editor."),
+  );
+  root.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6,p,span").forEach((el) => {
+    const cs = getComputedStyle(el);
+    const clip = cs.backgroundClip === "text" || (cs as unknown as Record<string, string>).webkitBackgroundClip === "text";
+    const shadow = cs.textShadow && cs.textShadow !== "none";
+    const animated = /\banimate-(?!none)|\bmarquee|\bshimmer/.test(el.className?.toString() ?? "");
+    const stroke = (cs as unknown as Record<string, string>).webkitTextStroke?.match(/^[1-9]/);
+    if (!clip && !shadow && !animated && !stroke) return;
+    const host = (el.closest("h1,h2,h3,h4,h5,h6,p") ?? el) as HTMLElement;
+    add(
+      host,
+      "Special text effect",
+      clip
+        ? "This text uses a gradient or image fill, which the object editor can't reproduce."
+        : shadow
+          ? "This text uses a glow or shadow effect, which the object editor can't reproduce."
+          : animated
+            ? "This text moves or animates, which the object editor can't reproduce."
+            : "This text uses an outline effect, which the object editor can't reproduce.",
+    );
+  });
+  return found;
+}
+
 /** Reads a rendered coded object and returns editable blocks. */
 export function sectionsFromDom(root: HTMLElement): Section[] {
-  return blockRoots(root)
-    .map(sectionFromNode)
-    .filter((s): s is FreeSection => !!s);
+  const locked = lockedParts(root).map((l) => {
+    const section: LockedSection = {
+      id: id(),
+      type: "locked",
+      title: l.title,
+      note: l.reason,
+      html: l.el.outerHTML,
+    };
+    return { ...l, section, top: l.el.getBoundingClientRect().top };
+  });
+  locked.forEach((l) => l.el.setAttribute("data-import-skip", ""));
+
+  const out: Section[] = [];
+  const pending = [...locked];
+  try {
+    for (const node of blockRoots(root)) {
+      const inside = pending.filter((l) => node.contains(l.el));
+      const free = sectionFromNode(node);
+      const freeTop = node.getBoundingClientRect().top;
+      const before = free ? inside.filter((l) => l.top <= freeTop + 4) : inside;
+      const after = inside.filter((l) => !before.includes(l));
+      before.forEach((l) => out.push(l.section));
+      if (free) out.push(free);
+      after.forEach((l) => out.push(l.section));
+      inside.forEach((l) => pending.splice(pending.indexOf(l), 1));
+    }
+    pending.forEach((l) => out.push(l.section));
+  } finally {
+    locked.forEach((l) => l.el.removeAttribute("data-import-skip"));
+  }
+  return out;
 }

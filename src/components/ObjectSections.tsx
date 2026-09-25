@@ -31,6 +31,12 @@ export interface TextStyle {
   lines?: number;
   /** draw a circle around an icon item */
   iconRing?: boolean;
+  /** show in capital letters */
+  uppercase?: boolean;
+  /** letter spacing, in em */
+  trackingEm?: number;
+  /** line height, as a multiple of the font size */
+  lineHeight?: number;
 }
 
 export const MIN_TEXT_PX = 10;
@@ -45,6 +51,9 @@ export function textInlineStyle(style: TextStyle | undefined): React.CSSProperti
   const css: React.CSSProperties = {};
   if (style?.sizePx) css.fontSize = `${style.sizePx}px`;
   if (isCustomColor(style?.color)) css.color = style?.color as string;
+  if (style?.uppercase) css.textTransform = "uppercase";
+  if (style?.trackingEm) css.letterSpacing = `${style.trackingEm}em`;
+  if (style?.lineHeight) css.lineHeight = style.lineHeight;
   if (style?.lines && style.lines > 0) {
     css.display = "-webkit-box";
     (css as Record<string, unknown>).WebkitLineClamp = style.lines;
@@ -913,7 +922,20 @@ export interface FreeSection {
   bgImage?: string;
 }
 
+/** Part of a coded object the editor can't rebuild, kept exactly as it was. */
+export interface LockedSection {
+  id: string;
+  type: "locked";
+  flow?: SectionFlow;
+  flowWidth?: number;
+  title: string;
+  note: string;
+  /** snapshot of the original markup */
+  html: string;
+}
+
 export type Section =
+  | LockedSection
   | CarouselSection
   | ImageRowSection
   | CaptionedImagesSection
@@ -932,6 +954,7 @@ export const SECTION_LABEL: Record<SectionType, string> = {
   overlay: "Image with text on top",
   split: "Image beside text",
   button: "Button",
+  locked: "Not editable",
 };
 
 export const newSectionId = () =>
@@ -2094,6 +2117,15 @@ export function SectionView({ section }: { section: Section }) {
   switch (section.type) {
     case "free":
       return <FreeView section={section} />;
+
+    case "locked":
+      return (
+        <div
+          {...({ inert: "" } as object)}
+          className="pointer-events-none select-none [&_*]:!opacity-100"
+          dangerouslySetInnerHTML={{ __html: section.html }}
+        />
+      );
 
     case "carousel":
       return (

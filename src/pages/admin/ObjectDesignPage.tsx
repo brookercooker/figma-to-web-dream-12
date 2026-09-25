@@ -1,4 +1,5 @@
 import { Fragment, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -861,6 +862,8 @@ export default function ObjectDesignPage() {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const canvasRef = useRef<HTMLElement>(null);
   const [viewport, setViewport] = useState<ViewportKey>("desktop");
   const viewportWidth = VIEWPORTS.find((v) => v.key === viewport)?.width;
   const [createOpen, setCreateOpen] = useState(false);
@@ -1271,6 +1274,7 @@ export default function ObjectDesignPage() {
       setActiveId(s.id);
       setPreview(false);
     }
+    setImporting(false);
     setDirty(false);
   }, [object?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1735,6 +1739,10 @@ export default function ObjectDesignPage() {
   const enterEdit = () => {
     setPreview(false);
     setLibraryOpen(false);
+    if (!sections.length && codedKey) {
+      setImporting(true);
+      return;
+    }
     setSections((prev) => {
       if (prev.length) {
         setActiveId((cur) => (cur && prev.some((s) => s.id === cur) ? cur : prev[0].id));
@@ -1747,6 +1755,14 @@ export default function ObjectDesignPage() {
     });
   };
 
+
+  const finishImport = (imported: Section[]) => {
+    setImporting(false);
+    const list = imported.length ? imported : [makeSection("free")];
+    setSections(list);
+    setActiveId(list[0].id);
+    setDirty(true);
+  };
 
   const add = (type: SectionType) => {
     const s = makeSection(type);
@@ -3464,6 +3480,13 @@ export default function ObjectDesignPage() {
 
   const Inspector = ({ section }: { section: Section }) => {
     switch (section.type) {
+      case "locked":
+        return (
+          <div className="rounded-md border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">{section.title} — not editable here</p>
+            <p className="mt-1">{section.note} It stays exactly as it was built. You can move or delete it.</p>
+          </div>
+        );
       case "free":
         return freeInspector(section);
       case "carousel":
@@ -3832,12 +3855,22 @@ export default function ObjectDesignPage() {
         )}
 
         <section
+          ref={canvasRef}
           className="min-w-0 w-full mx-auto transition-[max-width]"
           style={viewportWidth ? { maxWidth: viewportWidth } : undefined}
         >
           {!object ? (
             <div className="border rounded-lg p-12 text-center text-muted-foreground">
               Pick an object on the left to design it, or create a new one.
+            </div>
+          ) : importing && codedKey ? (
+            <div className="border rounded-lg p-12 text-center text-sm text-muted-foreground">
+              Turning this object into editable blocks…
+              <CodedImportProbe
+                codedKey={codedKey}
+                width={viewportWidth || canvasRef.current?.clientWidth || 1000}
+                onDone={finishImport}
+              />
             </div>
           ) : preview ? (
             <div className="border rounded-lg bg-background overflow-hidden">
@@ -3924,6 +3957,11 @@ export default function ObjectDesignPage() {
                       </div>
                     </div>
 
+                    {s.type === "locked" && (
+                      <div className="border-b border-dashed bg-muted/50 px-4 py-2 text-xs text-muted-foreground">
+                        <span className="font-semibold text-foreground">{s.title}:</span> {s.note} It is kept exactly as built — you can move or delete it, but not change it here.
+                      </div>
+                    )}
 
                     <BlockCanvas
                       section={s}
@@ -4322,5 +4360,54 @@ export default function ObjectDesignPage() {
         }}
       />
     </div>
+  );
+}
+
+
+/** Renders a coded object off-screen, waits for it to settle, then reads it into blocks. */
+function CodedImportProbe({
+  codedKey,
+  width,
+  onDone,
+}: {
+  codedKey: string;
+  width: number;
+  onDone: (sections: Section[]) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const done = useRef(false);
+  useEffect(() => {
+    let cancelled = false;
+    const start = Date.now();
+    const tick = async () => {
+      if (cancelled || done.current) return;
+      const root = ref.current;
+      const loading = !root || root.querySelector(".animate-pulse") ||
+        [...root.querySelectorAll("img")].some((i) => !i.complete);
+      if (loading && Date.now() - start < 4000) {
+        setTimeout(tick, 150);
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 200));
+      if (cancelled || !root) return;
+      const { sectionsFromDom } = await import("./importCodedObject");
+      done.current = true;
+      onDone(sectionsFromDom(root));
+    };
+    setTimeout(tick, 300);
+    return () => { cancelled = true; };
+  }, [codedKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const C = objectRegistry[codedKey].component as React.ComponentType;
+  return createPortal(
+    <div
+      ref={ref}
+      className="import-probe bg-background"
+      style={{ position: "fixed", left: -20000, top: 0, width, pointerEvents: "none" }}
+    >
+      <Suspense fallback={<div className="animate-pulse h-10" />}>
+        <C />
+      </Suspense>
+    </div>,
+    document.body,
   );
 }

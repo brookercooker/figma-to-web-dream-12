@@ -247,3 +247,10 @@
   animation: none !important;
   transition: none !important;
 }
+
+/* Off-screen render used when turning a coded object into editable blocks */
+.import-probe *, .import-probe *::before, .import-probe *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition: none !important;
+}
