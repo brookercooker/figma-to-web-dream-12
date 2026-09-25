@@ -41,7 +41,18 @@ import {
   type RowVAlign, type ImageHeight, type PartVAlign,
   type TextColor, type TextFont, type TextSize, type TextStyle,
   ContainedBgContext,
+  bgColorCss,
 } from "@/components/ObjectSections";
+
+/** Paints a block's own background inside its editor frame. */
+function blockBgStyle(s: { bg?: unknown; bgImage?: string }): React.CSSProperties | undefined {
+  const bg = (s as { bg?: Parameters<typeof bgColorCss>[0] }).bg;
+  if (!bg && !s.bgImage) return undefined;
+  return {
+    ...(bg ? { backgroundColor: bgColorCss(bg) } : {}),
+    ...(s.bgImage ? { backgroundImage: `url(${s.bgImage})`, backgroundSize: "cover", backgroundPosition: "center" } : {}),
+  };
+}
 
 /** Icon shown on the icon-only "add item" row inside an image editor. */
 const IMAGE_TEXT_ICONS: Record<ImageTextKind, LucideIcon> = {
@@ -3917,6 +3928,7 @@ export default function ObjectDesignPage() {
                     className={`rounded-lg border-2 bg-background transition-shadow ${
                       active ? "border-primary/50 shadow-lg" : "border-border shadow-sm hover:border-primary/25"
                     }`}
+                    style={blockBgStyle(s)}
                   >
                     <div className={`flex items-center gap-2.5 rounded-t-md border-b-2 px-3 py-3 ${active ? "border-primary/40 bg-primary/10" : "border-foreground/15 bg-muted"}`}>
                       <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold tabular-nums ${active ? "bg-primary text-primary-foreground" : "bg-foreground text-background"}`}>
