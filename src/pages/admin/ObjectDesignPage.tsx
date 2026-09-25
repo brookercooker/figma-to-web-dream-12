@@ -3464,6 +3464,13 @@ export default function ObjectDesignPage() {
 
   const Inspector = ({ section }: { section: Section }) => {
     switch (section.type) {
+      case "locked":
+        return (
+          <div className="rounded-md border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">{section.title} — not editable here</p>
+            <p className="mt-1">{section.note} It stays exactly as it was built. You can move or delete it.</p>
+          </div>
+        );
       case "free":
         return freeInspector(section);
       case "carousel":
