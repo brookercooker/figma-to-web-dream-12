@@ -374,8 +374,6 @@ export function imageGroupPart(key: number): string {
 /** Display settings that each image grid inside a block can set on its own. */
 export interface FreeImageGroupSettings {
   gallery?: "grid" | "carousel";
-  /** Pictures per row in a grid; extra pictures wrap onto new rows. */
-  imagesPerRow?: number;
   perView?: number;
   imageHeight?: ImageHeight;
   imageHeightPx?: number;
@@ -1043,6 +1041,8 @@ export interface FreeSection {
   layout: "stacked" | "beside" | "behind";
   imageSide: "left" | "right";
   gallery: "grid" | "carousel";
+  /** Pictures per row in a grid; extra pictures wrap onto new rows. */
+  imagesPerRow?: number;
   columns: 1 | 2 | 3 | 4;
   /** how many images show at once in carousel mode */
   perView?: number;
