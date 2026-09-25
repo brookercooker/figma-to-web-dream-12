@@ -467,7 +467,11 @@ export function sectionPadStyle(section: {
  * Full-bleed background layer for a block: paints the block's colour or image
  * edge-to-edge across the page while the content stays inside the container.
  */
+/** When true (the editor), block backgrounds stay inside the block instead of bleeding edge to edge. */
+export const ContainedBgContext = React.createContext(false);
+
 export function SectionBg({ section }: { section: { bg?: TextColor; bgImage?: string } }) {
+  const contained = React.useContext(ContainedBgContext);
   if (!section.bg && !section.bgImage) return null;
   return (
     <div
@@ -476,8 +480,8 @@ export function SectionBg({ section }: { section: { bg?: TextColor; bgImage?: st
         position: "absolute",
         top: 0,
         bottom: 0,
-        left: "calc(50% - 50vw)",
-        width: "100vw",
+        left: contained ? 0 : "calc(50% - 50vw)",
+        width: contained ? "100%" : "100vw",
         zIndex: -1,
         ...(section.bg ? { backgroundColor: bgColorCss(section.bg) } : {}),
         ...(section.bgImage
