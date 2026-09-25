@@ -34,6 +34,8 @@ export interface ObjectBlock {
   objectId: string;
   name?: string;
   align: BlockAlign;
+  /** full-bleed section converted from a coded page */
+  wide?: boolean;
 }
 
 export interface VideoBlock {
@@ -59,6 +61,8 @@ export function embedSrc(url: string): string | null {
 
 export const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? `b-${Math.random().toString(36).slice(2)}`;
+
+export const hasWideBlocks = (blocks: Block[]) => blocks.some((b) => b.type === "object" && b.wide);
 
 export function parseBlocks(value: unknown): Block[] {
   if (Array.isArray(value)) return value as Block[];
@@ -107,7 +111,7 @@ const widthClass: Record<ImageBlock["width"], string> = {
 
 export function BlockView({ block }: { block: Block }) {
   if (block.type === "object") {
-    return <ObjectBlockView objectId={block.objectId} name={block.name} />;
+    return <ObjectBlockView objectId={block.objectId} name={block.name} flush={block.wide} />;
   }
 
   if (block.type === "video") {
@@ -183,7 +187,7 @@ export function BlockView({ block }: { block: Block }) {
 export default function PageBlocks({ blocks }: { blocks: Block[] }) {
   if (!blocks.length) return null;
   return (
-    <div className="max-w-3xl">
+    <div className={blocks.some((b) => b.type === "object" && b.wide) ? "" : "max-w-3xl"}>
       {blocks.map((b) => (
         <BlockView key={b.id} block={b} />
       ))}

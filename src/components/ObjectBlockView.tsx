@@ -7,7 +7,7 @@ import ObjectSections, { parseSections, type Section } from "@/components/Object
  * Renders a saved object by reference, so a page always shows the object's
  * latest design — editing it in the Objects tab updates every page using it.
  */
-export default function ObjectBlockView({ objectId, name }: { objectId: string; name?: string }) {
+export default function ObjectBlockView({ objectId, name, flush }: { objectId: string; name?: string; flush?: boolean }) {
   const [row, setRow] = useState<any | null>(null);
   const [missing, setMissing] = useState(false);
 
@@ -49,7 +49,7 @@ export default function ObjectBlockView({ objectId, name }: { objectId: string; 
     );
   }
 
-  if (designed.length) return <div className="my-6"><ObjectSections sections={designed} /></div>;
+  if (designed.length) return <div className={flush ? "" : "my-6"}><ObjectSections sections={designed} /></div>;
 
   return (
     <div className="my-6 rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
