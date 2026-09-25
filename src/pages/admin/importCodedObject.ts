@@ -64,7 +64,6 @@ function declaredColumns(item: Element | null | undefined, stop: Element): numbe
     if (el.children.length < 2) continue;
     const n = tracksOf(el);
     if (n >= 2) return n;
-    if (n === 1 && el.children.length >= 2) return 1;
   }
   return 0;
 }
