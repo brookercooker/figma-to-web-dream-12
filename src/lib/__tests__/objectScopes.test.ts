@@ -15,7 +15,7 @@ function setup() {
   a.append(inner);
   const host = (el: HTMLElement, child?: any) => ({ stateNode: el, child, type: el.tagName.toLowerCase() });
   const nestedInA = { type: ObjB, child: host(inner) }; // nested object: should be ignored
-  const fiberA = { type: ObjA, child: host(a, nestedInA) };
+  const fiberA: any = { type: ObjA, child: host(a, nestedInA) };
   const fiberB = { type: { type: ObjB }, child: host(b) }; // memo-wrapped
   fiberA.sibling = { type: Other, child: fiberB } as any;
   (root as any)["__reactFiber$test"] = { child: fiberA };
