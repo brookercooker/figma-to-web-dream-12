@@ -25,10 +25,12 @@ export async function seedCloudIfEmpty() {
       if (t === "pages") {
         c.page_type = c.page_type === "Landing page" || String(c.path).startsWith("/landing/") ? "landing" : "static";
         c.status = c.page_type === "landing" ? "published" : "draft";
+        c.slug_id = null;
       }
       if (t === "videos") c.source_type = "youtube";
       return c;
     }).filter((r: any) => {
+      if (t === "images") return !String(r.web_url).startsWith("/src/");
       if (t === "object_page_usages") return ids.pages?.has(r.page_id) && ids.object_registry?.has(r.object_registry_id);
       if (t === "image_page_usages") return ids.pages?.has(r.page_id) && ids.images?.has(r.image_id);
       return true;
@@ -44,5 +46,5 @@ export async function seedCloudIfEmpty() {
     if (e) console.warn(`[seed] ${t}:`, e.message);
     else ids[t] = new Set(rows.map((r: any) => r.id));
   }
-  window.location.reload();
+  if (ids.pages?.size) window.location.reload();
 }
