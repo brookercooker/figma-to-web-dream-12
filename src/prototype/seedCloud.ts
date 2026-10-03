@@ -18,14 +18,31 @@ export async function seedCloudIfEmpty() {
   const { count, error } = await sb.from("pages").select("id", { count: "exact", head: true });
   if (error || (count ?? 0) > 0) return;
   seedPrototypeData();
+  const ids: Record<string, Set<string>> = {};
   for (const t of ORDER) {
     const rows = (db[t] ?? []).map((r) => {
-      const { ...copy } = r;
-      return copy;
+      const c: any = { ...r };
+      if (t === "pages") {
+        c.page_type = c.page_type === "Landing page" || String(c.path).startsWith("/landing/") ? "landing" : "static";
+        c.status = c.page_type === "landing" ? "published" : "draft";
+      }
+      if (t === "videos") c.source_type = "youtube";
+      return c;
+    }).filter((r: any) => {
+      if (t === "object_page_usages") return ids.pages?.has(r.page_id) && ids.object_registry?.has(r.object_registry_id);
+      if (t === "image_page_usages") return ids.pages?.has(r.page_id) && ids.images?.has(r.image_id);
+      return true;
     });
     if (!rows.length) continue;
+    const { count: existing } = await sb.from(t).select("*", { count: "exact", head: true });
+    if ((existing ?? 0) > 0 && !t.endsWith("usages")) {
+      const { data } = await sb.from(t).select("id");
+      ids[t] = new Set((data ?? []).map((r: any) => r.id));
+      continue;
+    }
     const { error: e } = await sb.from(t).insert(rows);
     if (e) console.warn(`[seed] ${t}:`, e.message);
+    else ids[t] = new Set(rows.map((r: any) => r.id));
   }
   window.location.reload();
 }
