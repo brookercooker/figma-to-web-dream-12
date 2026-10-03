@@ -12,3 +12,5 @@
 - [x] Larger fold icon; open shared object in object editor; font picker; colour/style on selected words; select & edit dividers
 - [x] Object editor: edit only chosen section, convert parts on demand
 - [x] Page editor: drag text/pictures, highlight-only styling, button/link icons, edge lines editable
+- [ ] Before launch: turn on admin sign-in and drop temporary open-access rules
+- [ ] Re-enable uploads/publish features that still require sign-in (storage, publish-assets, users)
