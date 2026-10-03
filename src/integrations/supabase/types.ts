@@ -384,6 +384,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          inline_edits: Json
           intended_pages: string[]
           labels: string[]
           name: string
@@ -401,6 +402,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          inline_edits?: Json
           intended_pages?: string[]
           labels?: string[]
           name: string
@@ -418,6 +420,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          inline_edits?: Json
           intended_pages?: string[]
           labels?: string[]
           name?: string
@@ -434,6 +437,7 @@ export type Database = {
       objects: {
         Row: {
           archived_at: string | null
+          content: Json | null
           created_at: string
           description: string | null
           id: string
@@ -446,6 +450,7 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
+          content?: Json | null
           created_at?: string
           description?: string | null
           id?: string
@@ -458,6 +463,7 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
+          content?: Json | null
           created_at?: string
           description?: string | null
           id?: string
@@ -539,10 +545,12 @@ export type Database = {
         Row: {
           archived_at: string | null
           build_status: string
+          content: Json | null
           created_at: string
           description: string | null
           end_at: string | null
           id: string
+          inline_edits: Json
           name: string
           notes: string | null
           page_type: string
@@ -561,10 +569,12 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           build_status?: string
+          content?: Json | null
           created_at?: string
           description?: string | null
           end_at?: string | null
           id?: string
+          inline_edits?: Json
           name: string
           notes?: string | null
           page_type?: string
@@ -583,10 +593,12 @@ export type Database = {
         Update: {
           archived_at?: string | null
           build_status?: string
+          content?: Json | null
           created_at?: string
           description?: string | null
           end_at?: string | null
           id?: string
+          inline_edits?: Json
           name?: string
           notes?: string | null
           page_type?: string
