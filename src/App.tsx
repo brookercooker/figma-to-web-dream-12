@@ -106,6 +106,7 @@ const AppShell = () => {
             <Route path="/manage/objects/workspace/:slugId" element={<ObjectWorkspace />} />
             <Route path="/manage/images" element={<AdminIndex />} />
             <Route path="/manage/videos" element={<AdminIndex />} />
+            <Route path="/manage/chat" element={<AdminIndex />} />
             <Route path="/manage/capture" element={<CapturePage />} />
             <Route path="/manage/*" element={<Navigate to="/manage/pages" replace />} />
 
