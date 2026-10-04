@@ -1,16 +1,14 @@
 /**
- * PROTOTYPE MODE — drop-in replacement for the Supabase clients.
+ * Data clients used by every screen.
  *
- * Every screen imports `supabase` from here. There is no network call, no
- * login and no database: reads come from the in-memory demo dataset and writes
- * update it for the length of the browser session.
+ * `supabase` is the real Lovable Cloud client — all reads and writes persist.
+ * `adminCatalog` still uses the in-memory demo catalog because the product
+ * catalog lives in a separate project that is not connected yet.
  */
 
+import { supabase as cloud } from "@/integrations/supabase/client";
 import { createPrototypeClient, db, uid } from "./engine";
-import { seedPrototypeData } from "./seed";
 import { products } from "@/data/products";
-
-seedPrototypeData();
 
 /** Product catalog rows (shape of the former `catalog` view). */
 if (!db.catalog) {
@@ -34,9 +32,8 @@ if (!db.catalog) {
   }));
 }
 
-export const supabase = createPrototypeClient() as any;
+export const supabase = cloud as any;
 
-/** The product catalog used to live in a separate read-only project. */
 export const adminCatalog = createPrototypeClient() as any;
 
 export { db, uid };

@@ -32,6 +32,54 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_requests: {
+        Row: {
+          claude_notes: string | null
+          created_at: string
+          created_by: string | null
+          draft_branch: string | null
+          draft_commit_sha: string | null
+          error_message: string | null
+          fidelity_notes: string | null
+          id: string
+          lovable_commit_sha: string | null
+          preview_url: string | null
+          prompt: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          claude_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft_branch?: string | null
+          draft_commit_sha?: string | null
+          error_message?: string | null
+          fidelity_notes?: string | null
+          id?: string
+          lovable_commit_sha?: string | null
+          preview_url?: string | null
+          prompt: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          claude_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft_branch?: string | null
+          draft_commit_sha?: string | null
+          error_message?: string | null
+          fidelity_notes?: string | null
+          id?: string
+          lovable_commit_sha?: string | null
+          preview_url?: string | null
+          prompt?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       collection_mappings: {
         Row: {
           created_at: string
@@ -59,6 +107,33 @@ export type Database = {
           parent_category?: string | null
           shopify_collection_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      design_messages: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          relayed_at: string | null
+          sender: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          relayed_at?: string | null
+          sender: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          relayed_at?: string | null
+          sender?: string
         }
         Relationships: []
       }
@@ -309,6 +384,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          inline_edits: Json
           intended_pages: string[]
           labels: string[]
           name: string
@@ -326,6 +402,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          inline_edits?: Json
           intended_pages?: string[]
           labels?: string[]
           name: string
@@ -343,6 +420,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          inline_edits?: Json
           intended_pages?: string[]
           labels?: string[]
           name?: string
@@ -359,6 +437,7 @@ export type Database = {
       objects: {
         Row: {
           archived_at: string | null
+          content: Json | null
           created_at: string
           description: string | null
           id: string
@@ -371,6 +450,7 @@ export type Database = {
         }
         Insert: {
           archived_at?: string | null
+          content?: Json | null
           created_at?: string
           description?: string | null
           id?: string
@@ -383,6 +463,7 @@ export type Database = {
         }
         Update: {
           archived_at?: string | null
+          content?: Json | null
           created_at?: string
           description?: string | null
           id?: string
@@ -464,10 +545,12 @@ export type Database = {
         Row: {
           archived_at: string | null
           build_status: string
+          content: Json | null
           created_at: string
           description: string | null
           end_at: string | null
           id: string
+          inline_edits: Json
           name: string
           notes: string | null
           page_type: string
@@ -486,10 +569,12 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           build_status?: string
+          content?: Json | null
           created_at?: string
           description?: string | null
           end_at?: string | null
           id?: string
+          inline_edits?: Json
           name: string
           notes?: string | null
           page_type?: string
@@ -508,10 +593,12 @@ export type Database = {
         Update: {
           archived_at?: string | null
           build_status?: string
+          content?: Json | null
           created_at?: string
           description?: string | null
           end_at?: string | null
           id?: string
+          inline_edits?: Json
           name?: string
           notes?: string | null
           page_type?: string

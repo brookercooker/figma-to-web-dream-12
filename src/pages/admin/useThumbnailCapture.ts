@@ -47,6 +47,10 @@ export class RouteNotResolvedError extends Error {
 }
 
 async function captureOne(c: ThumbCandidate, force = false): Promise<void> {
+  // Screenshot capture needs a signed-in admin; while the Site Manager is open
+  // (no sign-in) skip quietly so it never surfaces as an error.
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new RouteNotResolvedError("Thumbnail capture needs sign-in — skipped.");
   const { data, error } = await supabase.functions.invoke("capture-thumbnail", {
     body: {
       kind: c.kind,
