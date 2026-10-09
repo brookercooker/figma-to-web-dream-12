@@ -28,6 +28,7 @@ const LightingTipsPage = lazyRetry(() => import("./pages/ObjectsLightingTips.tsx
 const NotFound = lazyRetry(() => import("./pages/NotFound.tsx"));
 const ObjectRoute = lazyRetry(() => import("./pages/ObjectRoute.tsx"));
 const ObjectsFlyer = lazyRetry(() => import("./pages/ObjectsFlyer.tsx"));
+const BrandHighlightPage = lazyRetry(() => import("./pages/BrandHighlightPage.tsx"));
 const AdminGate = lazyRetry(() => import("./pages/admin/AdminGate.tsx"));
 const AdminIndex = lazyRetry(() => import("./pages/admin/AdminIndex.tsx"));
 const AdminUsersPage = lazyRetry(() => import("./pages/admin/UsersPage.tsx"));
@@ -127,6 +128,7 @@ const AppShell = () => {
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/terms-conditions" element={<TermsConditionsPage />} />
             <Route path="/objects-flyer" element={<ObjectsFlyer />} />
+            <Route path="/brand-highlight" element={<BrandHighlightPage />} />
 
             {/* Coming Soon — Supernova CC placeholder + redirects for retired catalog/brand/product routes. */}
             <Route path="/coming-soon" element={<ComingSoonPage />} />
