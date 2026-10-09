@@ -1,1 +1,4 @@
 project_id = "wafcxgahvjnwiknzlxbw"
+
+[functions.lovable-embed-url]
+verify_jwt = false
