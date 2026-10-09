@@ -19,6 +19,7 @@ export const codedPages: Record<string, LazyExoticComponent<ComponentType>> = {
   "/privacy-policy": lazy(() => import("@/pages/PrivacyPolicyPage.tsx")),
   "/terms-conditions": lazy(() => import("@/pages/TermsConditionsPage.tsx")),
   "/objects-flyer": lazy(() => import("@/pages/ObjectsFlyer.tsx")),
+  "/brand-highlight": lazy(() => import("@/pages/BrandHighlightPage.tsx")),
   "/coming-soon": lazy(() => import("@/pages/ComingSoonPage.tsx")),
 };
 
