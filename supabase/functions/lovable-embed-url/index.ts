@@ -21,8 +21,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return json({ error: "method not allowed" }, 405);
 
-  const apiKey = Deno.env.get("LOVABLE_EMBED_API_KEY");
-  const projectId = Deno.env.get("LOVABLE_PROJECT_ID");
+  const apiKey = Deno.env.get("EMBED_API_KEY");
+  const projectId = Deno.env.get("EMBED_PROJECT_ID");
   if (!apiKey || !projectId || allowed.length === 0) return json({ error: "Server configuration error" }, 500);
 
   if (Deno.env.get("EMBED_ALLOW_UNAUTHENTICATED") !== "1") {
