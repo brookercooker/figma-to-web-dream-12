@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Star } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Lamp } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import SiteManagerLogo from "./SiteManagerLogo";
 
@@ -22,7 +22,7 @@ const TABS: { key: TabKey; label: string; Icon: typeof FileText }[] = [
   { key: "objects", label: "Objects", Icon: Box },
   { key: "images",  label: "Images",  Icon: ImageIcon },
   { key: "videos",  label: "Videos",  Icon: VideoLucide },
-  { key: "design-chat", label: "Design Chat", Icon: Star },
+  { key: "design-chat", label: "Design Chat", Icon: Lamp },
 ];
 
 function TabSkeleton() {
