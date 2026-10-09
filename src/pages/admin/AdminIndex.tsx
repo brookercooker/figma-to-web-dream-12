@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, MessageSquare } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import SiteManagerLogo from "./SiteManagerLogo";
 
@@ -13,14 +13,16 @@ const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
 const ImagesTab = lazy(() => import("./ImagesTab"));
 const VideoTab = lazy(() => import("./VideoTab"));
+const DesignChatTab = lazy(() => import("./DesignChatTab"));
 
-type TabKey = "pages" | "objects" | "images" | "videos";
+type TabKey = "pages" | "objects" | "images" | "videos" | "design-chat";
 
 const TABS: { key: TabKey; label: string; Icon: typeof FileText }[] = [
   { key: "pages",   label: "Pages",   Icon: FileText },
   { key: "objects", label: "Objects", Icon: Box },
   { key: "images",  label: "Images",  Icon: ImageIcon },
   { key: "videos",  label: "Videos",  Icon: VideoLucide },
+  { key: "design-chat", label: "Design Chat", Icon: MessageSquare },
 ];
 
 function TabSkeleton() {
@@ -41,7 +43,7 @@ export default function AdminIndex() {
   const navigate = useNavigate();
   const tab: TabKey = useMemo(() => {
     const seg = location.pathname.split("/")[2];
-    if (seg === "objects" || seg === "images" || seg === "videos") return seg as TabKey;
+    if (seg === "objects" || seg === "images" || seg === "videos" || seg === "design-chat") return seg as TabKey;
     return "pages";
   }, [location.pathname]);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -164,6 +166,7 @@ export default function AdminIndex() {
           {tab === "objects" && <ObjectsTab />}
           {tab === "images" && <ImagesTab />}
           {tab === "videos" && <VideoTab />}
+          {tab === "design-chat" && <DesignChatTab />}
         </Suspense>
       </main>
     </div>
