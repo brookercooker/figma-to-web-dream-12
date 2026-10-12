@@ -236,8 +236,8 @@ export default function TagsPanel({
   };
 
   return (
-    <aside className={bare ? "w-full" : "w-40 xl:w-56 shrink-0 sticky top-16 self-start max-h-[calc(100vh-5rem)]"}>
-      <div className={bare ? "flex flex-col max-h-[45vh]" : "border rounded-lg bg-muted/20 flex flex-col max-h-[calc(100vh-5rem)]"}>
+    <aside className={bare ? "w-full" : "w-40 xl:w-56 shrink-0 sticky top-0 self-start max-h-[calc(100vh-9rem)]"}>
+      <div className={bare ? "flex flex-col max-h-[45vh]" : "border rounded-lg bg-muted/20 flex flex-col max-h-[calc(100vh-9rem)]"}>
         {!bare && (
           <div className="px-3 pt-3 pb-2 flex items-center gap-2">
             <Tag className="w-4 h-4 text-[hsl(38_31%_45%)]" />

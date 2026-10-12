@@ -13,7 +13,8 @@ import TagsPanel from "./TagsPanel";
 import InlineEdit from "./InlineEdit";
 import ConfirmDialog from "./ConfirmDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
-import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, Pencil } from "lucide-react";
+import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, Pencil, MessageSquare } from "lucide-react";
+import { useDesignChatOptional } from "./designChat/DesignChatContext";
 import { CopyRefButton, buildPageRef } from "./copyReference";
 import { clearAllRouteSnapshots } from "./routeSnapshot";
 import { reservedPrefixFor } from "./reservedPaths";
@@ -83,6 +84,7 @@ const openLive = (path: string) => {
 
 export default function PagesTab() {
   const navigate = useNavigate();
+  const designChat = useDesignChatOptional(); // present inside the Site Manager, where the chat is on the right
   const [pages, setPages] = useState<Page[]>([]);
   const [q, setQ] = useState("");
   const [searchField, setSearchField] = useState<Field>("all");
@@ -496,6 +498,7 @@ export default function PagesTab() {
           <col style={{ width: 90 }} />
           <col style={{ width: 48 }} />
           <col style={{ width: 48 }} />
+          <col style={{ width: 48 }} />
         </colgroup>
 
         <thead>
@@ -507,6 +510,7 @@ export default function PagesTab() {
             <th className="px-3 py-3 text-center truncate">Copy</th>
             <th className="px-3 py-3 text-left truncate">Labels</th>
             <th className="px-3 py-3 text-left truncate">Last Mod</th>
+            <th className="px-2 py-3 text-center truncate"><span className="sr-only">Chat</span></th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">Edit</span></th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">Open</span></th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">More</span></th>
@@ -516,7 +520,7 @@ export default function PagesTab() {
         <tbody>
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={9} className="px-3 py-10 text-center text-muted-foreground text-sm">
+              <td colSpan={10} className="px-3 py-10 text-center text-muted-foreground text-sm">
                 {timeRange === "hour" ? "No pages modified in the last hour."
                 : timeRange === "day" ? "No pages modified in the last 24 hours."
                 : timeRange === "week" ? "No pages modified in the last 7 days."
@@ -609,6 +613,23 @@ export default function PagesTab() {
                 </td>
                 <td className="px-2 py-3 text-xs text-muted-foreground whitespace-nowrap leading-tight" title={fmtDateTimeFull(p.updated_at)}>
                   {fmtDateTime(p.updated_at) || "—"}
+                </td>
+                <td className="px-1 py-3 text-center">
+                  {designChat && (() => {
+                    const pagePath = p.path.startsWith("/") ? p.path : `/${p.path}`;
+                    const chosen = designChat.workingPage?.path === pagePath;
+                    return (
+                      <button
+                        onClick={() => { designChat.selectPage({ name: p.name, path: pagePath }); navigate("/manage/preview"); }}
+                        aria-label={`Work on ${p.name} with the chat`}
+                        aria-pressed={chosen}
+                        title={chosen ? "The chat is working on this page" : "Work on this page with the chat"}
+                        className={`p-1.5 rounded border inline-flex ${chosen ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted"}`}
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </button>
+                    );
+                  })()}
                 </td>
                 <td className="px-1 py-3 text-center">
                   <button

@@ -19,7 +19,7 @@ export default function SelectionBar({ count, itemLabel = "item", onClear, child
   if (count <= 0) return null;
   const plural = count === 1 ? itemLabel : `${itemLabel}s`;
   return (
-    <div className="sticky top-14 z-20 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 backdrop-blur px-3 py-2 shadow-sm">
+    <div className="sticky top-0 z-20 flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 backdrop-blur px-3 py-2 shadow-sm">
       <div className="flex items-center gap-2 pr-3 border-r border-primary/20">
         <CheckSquare className="w-4 h-4 text-primary" />
         <span className="text-sm font-medium tabular-nums">
