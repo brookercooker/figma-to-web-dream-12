@@ -29,8 +29,9 @@ import Footer from "@/components/Footer";
 import InsertGap, { type InsertType } from "./InsertGap";
 import InlineEditSurface, { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
 import InlineStylePanel from "./InlineStylePanel";
+import { ACCESS_NOTE, pageAccess, type PageAccess } from "./pagePolicy";
 
-interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null }
+interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; page_type?: string | null }
 
 /**
  * Shows the real site header / footer around the editable page content so the
@@ -249,7 +250,7 @@ export default function DesignTab() {
   const load = async () => {
     const { data } = await (supabase as any)
       .from("pages")
-      .select("id,name,path,content,updated_at,tags,inline_edits")
+      .select("id,name,path,content,updated_at,tags,inline_edits,page_type")
       .is("archived_at", null)
       .order("name", { ascending: true });
     setPages(data ?? []);
@@ -259,6 +260,14 @@ export default function DesignTab() {
   useEffect(() => { load(); }, []);
 
   const page = useMemo(() => pages.find((p) => p.id === selectedId) ?? null, [pages, selectedId]);
+  // Landing pages are edited fully. Main-site pages can only be tweaked here (colours, sizes, pictures); anything bigger
+  // goes through the chat. See pagePolicy.ts.
+  const access: PageAccess = page ? pageAccess(page, { tweakable: hasExisting && !!codedPages[previewSrc(page.path)] }) : "full";
+  useEffect(() => {
+    if (access === "full") return;
+    setShowLive(true); // never the section editor
+    if (access === "view") setQuick(false);
+  }, [access, showLive, page?.id]);
   // Entering Edit on a coded page converts it into editable sections automatically.
   const autoTried = useRef(new Set<string>());
   useEffect(() => {
@@ -636,9 +645,7 @@ export default function DesignTab() {
       ) : (
       <aside className="space-y-3">
         <div className="flex items-center gap-2">
-          <Button className="flex-1 gap-2" onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4" /> New page
-          </Button>
+          <span className="flex-1 text-sm font-medium">Pages</span>
           <Button variant="outline" size="icon" title="Hide pages" onClick={() => setListOpen(false)}>
             <PanelLeftClose className="w-4 h-4" />
           </Button>
@@ -701,12 +708,14 @@ export default function DesignTab() {
                 </div>
               )}
               </div>
+              {pageAccess(p) === "full" && (
               <span role="button" tabIndex={0} title="Delete page"
                 onClick={(e) => { e.stopPropagation(); setDeleting(p); }}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setDeleting(p); } }}
                 className="shrink-0 rounded p-1 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive focus:opacity-100">
                 <Trash2 className="w-4 h-4" />
               </span>
+              )}
               </div>
             </button>
           ))}
@@ -744,7 +753,7 @@ export default function DesignTab() {
                   {page.path} <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
-              <div className="inline-flex rounded-md border overflow-hidden mr-1">
+              <div className={`${access === "view" ? "hidden" : "inline-flex"} rounded-md border overflow-hidden mr-1`}>
                 <button
                   type="button"
                   onClick={() => { setShowLive(true); setQuick(false); }}
@@ -757,7 +766,7 @@ export default function DesignTab() {
                   onClick={() => { setListOpen(false); if (hasExisting && codedPages[previewSrc(page.path)]) { setShowLive(true); setQuick(true); } else { setShowLive(false); setQuick(false); } }}
                   className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${!showLive || quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
                 >
-                  <Pencil className="w-3.5 h-3.5" /> Edit
+                  <Pencil className="w-3.5 h-3.5" /> {access === "full" ? "Edit" : "Tweak"}
                 </button>
               </div>
               <div className="inline-flex rounded-md border overflow-hidden mr-1" role="group" aria-label="Screen size">
@@ -776,6 +785,7 @@ export default function DesignTab() {
                 ))}
               </div>
               <span ref={toolbarRef} className="inline-flex" />
+              {access === "full" && (<>
               <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
                 <Boxes className="w-4 h-4" /> Object
               </Button>
@@ -785,7 +795,12 @@ export default function DesignTab() {
               <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video")}>
                 <Film className="w-4 h-4" /> Video
               </Button>
+              </>)}
             </div>
+
+            {access !== "full" && (
+              <p className="mb-3 rounded-md border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">{ACCESS_NOTE[access]}</p>
+            )}
 
             {showLive && hasExisting && codedPages[previewSrc(page.path)] && (quick || device === "desktop") ? (
               <div className="border rounded-lg overflow-hidden bg-background" style={deviceStyle}>
@@ -1133,7 +1148,7 @@ export default function DesignTab() {
       {page && importing && codedPages[previewSrc(page.path)] && (
         <PageImportProbe path={previewSrc(page.path)} onDone={finishImport} />
       )}
-      {page && toolbarHidden && (
+      {page && access === "full" && toolbarHidden && (
         <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 flex items-center gap-2 rounded-full border bg-background/95 px-3 py-2 shadow-lg backdrop-blur animate-in fade-in slide-in-from-bottom-2">
           <span className="px-1 text-xs text-muted-foreground">Add</span>
           <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={() => setObjectFor("new")}>

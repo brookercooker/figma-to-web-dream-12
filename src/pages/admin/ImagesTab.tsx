@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { formatBytes } from "@/lib/imageOptimize";
-import { uploadImageFile } from "@/lib/captureUpload";
+import { uploadImageFile } from "./captureUpload";
 import TagsPanel from "./TagsPanel";
 import { Copy, Trash2, Search, Archive, ArchiveRestore, AlertTriangle, RefreshCw, Download, Globe, Lock } from "lucide-react";
 import { GATED_BUCKET, clearAssetUrlCache } from "@/lib/assetUrl";
@@ -23,6 +23,7 @@ import LabelPicker from "./LabelPicker";
 import SelectionBar from "./SelectionBar";
 import FilterBar, { type TimeRange as UITimeRange } from "./FilterBar";
 import { useImagePageUsages } from "./useAssetPageUsages";
+import InUseWarning from "./InUseWarning";
 import UsedOnChip, { UsedOnList } from "./UsedOnChip";
 import type { AssetUsage } from "./assetUsages";
 import { toAbsoluteUrl } from "@/lib/absoluteUrl";
@@ -980,7 +981,12 @@ export default function ImagesTab() {
               : `Delete ${confirmDelete.imgs.length} images?`
             : ""
         }
-        description="Files and label associations will be removed. You have 5 seconds to undo before it's permanent."
+        description={
+          <>
+            {confirmDelete && <InUseWarning items={confirmDelete.imgs.map((i) => ({ label: i.filename, usages: usagesFor(i.id) }))} />}
+            <p>Files and label associations will be removed. You have 5 seconds to undo before it's permanent.</p>
+          </>
+        }
         confirmLabel="Delete"
         onConfirm={() => confirmDelete && doDeleteImages(confirmDelete.imgs)}
       />

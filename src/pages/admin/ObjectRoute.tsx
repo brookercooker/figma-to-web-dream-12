@@ -2,9 +2,9 @@ import { Suspense, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { objectRegistry } from "@/components/objects/registry";
-import { findObjectUsages, type ObjectUsage } from "@/pages/admin/objectUsages";
-import { regenerateThumbnail } from "@/pages/admin/useThumbnailCapture";
-import { CopyRefButton, buildObjectRef } from "@/pages/admin/copyReference";
+import { findObjectUsages, type ObjectUsage } from "./objectUsages";
+import { regenerateThumbnail } from "./useThumbnailCapture";
+import { CopyRefButton, buildObjectRef } from "./copyReference";
 import { Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -120,7 +120,7 @@ export default function ObjectRoute() {
         }).catch(() => {/* non-fatal */});
       }
 
-      const usages = row.component_key ? await findObjectUsages(row.component_key) : [];
+      const usages = row.component_key ? await findObjectUsages(row.component_key).catch(() => []) : [];
       for (const u of usages) {
         if (!u.pageId) continue;
         regenerateThumbnail({

@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from "react";
-import { supabase } from "@/prototype/client";
+import { supabase } from "@/lib/db";
 import { objectRegistry } from "@/components/objects/registry";
 import ObjectSections, { parseSections, type Section } from "@/components/ObjectSections";
 

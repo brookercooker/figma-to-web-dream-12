@@ -15,7 +15,7 @@ import LabelPicker from "./LabelPicker";
 import { colorFor } from "./labelColors";
 import { leafOf } from "./labelPath";
 import { usePages } from "./useAdminData";
-import { uploadImageFile, uploadVideoFile, attachPageUsages, uniqueName } from "@/lib/captureUpload";
+import { uploadImageFile, uploadVideoFile, attachPageUsages, uniqueName } from "./captureUpload";
 import { formatBytes } from "@/lib/imageOptimize";
 
 type Kind = "image" | "video";

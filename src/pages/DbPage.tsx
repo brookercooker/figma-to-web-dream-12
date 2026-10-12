@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "@/prototype/client";
+import { supabase } from "@/lib/db";
 import SimplePage from "./SimplePage";
 import NotFound from "./NotFound";
 import PageBlocks, { parseBlocks, type Block } from "@/components/PageBlocks";

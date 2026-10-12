@@ -26,10 +26,11 @@ import {
 import { SignedThumbImg, usePageThumbSrc } from "./signedThumb";
 import { useResolvedAssetUrl } from "@/hooks/useResolvedAssetUrl";
 import { useVideoPageUsages } from "./useAssetPageUsages";
+import InUseWarning from "./InUseWarning";
 import UsedOnChip, { UsedOnList } from "./UsedOnChip";
 import type { AssetUsage } from "./assetUsages";
 import { toAbsoluteUrl } from "@/lib/absoluteUrl";
-import { POSTER_BUCKET, videoBucketFor } from "@/lib/captureUpload";
+import { POSTER_BUCKET, videoBucketFor } from "./captureUpload";
 import { VIDEO_GATED_BUCKET, clearAssetUrlCache, resolveAssetUrl } from "@/lib/assetUrl";
 
 interface Vid {
@@ -1061,7 +1062,12 @@ export default function VideoTab() {
                 : `Delete ${confirmDelete.vids.length} videos?`
               : ""
           }
-          description="Uploaded files will be removed from storage. External links only remove the registry entry. You have 5 seconds to undo."
+          description={
+            <>
+              {confirmDelete && <InUseWarning items={confirmDelete.vids.map((v) => ({ label: v.name, usages: usagesFor(v.id) }))} />}
+              <p>Uploaded files will be removed from storage. External links only remove the registry entry. You have 5 seconds to undo.</p>
+            </>
+          }
           confirmLabel="Delete"
           onConfirm={() => confirmDelete && doDelete(confirmDelete.vids)}
         />

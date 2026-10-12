@@ -9,8 +9,8 @@
 // publish-assets edge function). Originals always stay private.
 import { supabase } from "@/prototype/client";
 import { optimizeImagePair } from "@/lib/imageOptimize";
-import { extractAndPersistExif } from "@/pages/admin/imageExif";
-import { probeVideoFile } from "@/pages/admin/videoHelpers";
+import { extractAndPersistExif } from "./imageExif";
+import { probeVideoFile } from "./videoHelpers";
 import { GATED_BUCKET, VIDEO_GATED_BUCKET, VIDEO_PUBLIC_BUCKET } from "@/lib/assetUrl";
 
 export const SIGN_EXPIRY = 60 * 60 * 24 * 365 * 10;

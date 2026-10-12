@@ -17,6 +17,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { supabase } from "@/prototype/client";
 import { findAllObjectUsages, type ObjectUsage } from "./objectUsages";
+import { codePagePaths, loadSiteManifest } from "./siteManifest";
 
 const QUERY_KEY = ["admin", "object_page_usages"] as const;
 
@@ -64,6 +65,14 @@ async function fetchLiveUsages(): Promise<UsageMap> {
       a.type !== b.type ? (a.type === "static" ? -1 : 1) : a.name.localeCompare(b.name)));
   }
   return map;
+}
+
+/** Ids (among `pageIds`) of pages whose path the scan covers. */
+async function coveredPageIds(coveredPaths: Set<string>, pageIds: string[]): Promise<Set<string>> {
+  const ids = Array.from(new Set(pageIds));
+  if (ids.length === 0) return new Set();
+  const { data } = await (supabase as any).from("pages").select("id,path").in("id", ids);
+  return new Set<string>((data ?? []).filter((p: any) => coveredPaths.has(p.path)).map((p: any) => p.id));
 }
 
 /**
@@ -117,10 +126,13 @@ export async function reconcileObjectPageUsages(
     const [object_registry_id, page_id] = k.split("::");
     toInsert.push({ object_registry_id, page_id });
   }
+  // The scan only knows pages that exist as code. Links to pages kept in the database are left alone.
+  const covered = await coveredPageIds(codePagePaths(await loadSiteManifest()), (currentRows ?? []).map((r: any) => r.page_id));
   const toDelete: Array<{ object_registry_id: string; page_id: string }> = [];
   for (const k of current) {
     if (desired.has(k)) continue;
     const [object_registry_id, page_id] = k.split("::");
+    if (!covered.has(page_id)) continue;
     toDelete.push({ object_registry_id, page_id });
   }
 

@@ -2,7 +2,7 @@
 import JSZip from "jszip";
 import { supabase } from "@/prototype/client";
 import { toast } from "sonner";
-import { videoBucketFor } from "@/lib/captureUpload";
+import { videoBucketFor } from "./captureUpload";
 
 const SIGN_EXPIRY = 60 * 60; // 1 hour is plenty for a download
 

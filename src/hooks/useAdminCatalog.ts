@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { adminCatalog } from "@/prototype/client";
+import { adminCatalog } from "@/lib/db";
 import type { Product } from "@/data/products";
 
 // Shape of public.catalog (the 16-column contract view)

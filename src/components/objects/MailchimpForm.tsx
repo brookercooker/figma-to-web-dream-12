@@ -1,5 +1,5 @@
 import { useState, FormEvent } from "react";
-import { supabase } from "@/prototype/client";
+import { supabase } from "@/lib/db";
 import { toast } from "@/hooks/use-toast";
 
 /**

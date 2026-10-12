@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/prototype/client";
 import { toRouteSlug } from "./slug";
-import { localDateToIso } from "./landingDates";
+import { localDateToIso } from "@/lib/landingDates";
 
 
 /**

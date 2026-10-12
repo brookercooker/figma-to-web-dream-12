@@ -26,7 +26,7 @@ const TeamPage = lazyRetry(() => import("./pages/TeamPage.tsx"));
 const InspirationGalleryPage = lazyRetry(() => import("./pages/InspirationGalleryPage.tsx"));
 const LightingTipsPage = lazyRetry(() => import("./pages/ObjectsLightingTips.tsx"));
 const NotFound = lazyRetry(() => import("./pages/NotFound.tsx"));
-const ObjectRoute = lazyRetry(() => import("./pages/ObjectRoute.tsx"));
+const ObjectRoute = lazyRetry(() => import("./pages/admin/ObjectRoute.tsx"));
 const ObjectsFlyer = lazyRetry(() => import("./pages/ObjectsFlyer.tsx"));
 const BrandHighlightPage = lazyRetry(() => import("./pages/BrandHighlightPage.tsx"));
 const AdminGate = lazyRetry(() => import("./pages/admin/AdminGate.tsx"));

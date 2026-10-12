@@ -32,7 +32,7 @@ import { PUBLIC_LANDING_HOST } from "@/lib/publicHost";
 import { customLandingSlugs } from "../landing/customLandingPages";
 
 import { toRouteSlug } from "./slug";
-import { formatSchedule, formatScheduleShort, isoToLocalParts, localDateToIso } from "./landingDates";
+import { formatSchedule, formatScheduleShort, isoToLocalParts, localDateToIso } from "@/lib/landingDates";
 import { useAutoCaptureThumbnails, regenerateThumbnail } from "./useThumbnailCapture";
 
 interface Landing {

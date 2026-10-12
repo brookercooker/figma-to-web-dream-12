@@ -15,7 +15,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { ChevronDown, ChevronRight, ExternalLink, GripVertical, icons } from "lucide-react";
 import DOMPurify from "dompurify";
 import { findObjectRoots, loadObjectComponents, objectComponentsNow, type ObjectRoot } from "@/lib/objectScopes";
-import { pageChunks, chunkName } from "@/pages/admin/codedPages";
+import { pageChunks, chunkName } from "@/lib/pageChunks";
 
 export type InlineEdits = Record<string, string>;
 /** "page" or the registry key of a shared object. */

@@ -7,7 +7,7 @@ import {
   WorkStatus, workBadgeClass, workLabel,
   scheduleStatus, scheduleBadgeClass, scheduleLabel,
 } from "./workStatus";
-import { formatSchedule, isoToLocalParts, localDateToIso } from "./landingDates";
+import { formatSchedule, isoToLocalParts, localDateToIso } from "@/lib/landingDates";
 
 interface Props {
   value: {

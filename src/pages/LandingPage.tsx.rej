@@ -1,0 +1,11 @@
+--- src/pages/LandingPage.tsx	2026-10-12 19:46:48.519309699 +0000
++++ src/pages/LandingPage.tsx	2026-10-12 19:46:48.523309699 +0000
+@@ -1,7 +1,7 @@
+ import { inEditorPreview } from "@/lib/editorPreview";
+ import { useEffect, useState } from "react";
+ import { Link, Navigate, useParams } from "react-router-dom";
+-import { supabase } from "@/prototype/client";
++import { supabase } from "@/lib/db";
+ import { formatSchedule } from "@/lib/landingDates";
+ import NotFound from "./NotFound";
+ import { isPublicLandingHost } from "@/lib/publicHost";

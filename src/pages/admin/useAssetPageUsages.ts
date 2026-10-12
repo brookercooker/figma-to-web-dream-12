@@ -18,6 +18,7 @@ import {
   type ImageAssetLike,
   type VideoAssetLike,
 } from "./assetUsages";
+import { codePagePaths, loadSiteManifest } from "./siteManifest";
 
 const IMG_QUERY_KEY = ["admin", "image_page_usages"] as const;
 const VID_QUERY_KEY = ["admin", "video_page_usages"] as const;
@@ -101,10 +102,19 @@ async function reconcile(
     const [assetId, pageId] = k.split("::");
     toInsert.push({ [cfg.assetIdCol]: assetId, page_id: pageId });
   }
+  // The scan only knows pages that exist as code. Links to pages kept in the database, or added by hand, are left alone.
+  const pageIds = Array.from(new Set<string>((current ?? []).map((r: any) => r.page_id)));
+  const covered = new Set<string>();
+  if (pageIds.length > 0) {
+    const paths = codePagePaths(await loadSiteManifest());
+    const { data: pg } = await (supabase as any).from("pages").select("id,path").in("id", pageIds);
+    for (const p of pg ?? []) if (paths.has(p.path)) covered.add(p.id);
+  }
   const toDelete: Array<{ a: string; p: string }> = [];
   for (const k of existing) {
     if (desired.has(k)) continue;
     const [a, p] = k.split("::");
+    if (!covered.has(p)) continue;
     toDelete.push({ a, p });
   }
 

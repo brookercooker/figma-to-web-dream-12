@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { supabase } from "@/prototype/client";
+import { supabase } from "@/lib/db";
 import InlineEditSurface, { type InlineEdits } from "@/components/InlineEditSurface";
 
 /** Shows in-place edits made in the page editor on the public site. */

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Star } from "lucide-react";
-import { supabase } from "@/prototype/client";
+import { supabase } from "@/lib/db";
 import {
   Carousel,
   CarouselContent,

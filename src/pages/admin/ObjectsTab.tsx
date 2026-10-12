@@ -49,6 +49,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAutoCaptureThumbnails, regenerateThumbnail, isStale } from "./useThumbnailCapture";
 import { type ObjectUsage } from "./objectUsages";
 import { useObjectPageUsages, OBJECT_PAGE_USAGES_QUERY_KEY } from "./useObjectPageUsages";
+import InUseWarning from "./InUseWarning";
 import { toRouteSlug } from "./slug";
 
 type StatusFilter = "all" | "Ready" | "Draft";
@@ -753,6 +754,7 @@ export default function ObjectsTab() {
           description={
             confirmDelete && (
               <div className="space-y-2">
+                <InUseWarning items={[{ label: confirmDelete.name, usages: usagesForObject(confirmDelete) }]} />
                 <p className="flex items-start gap-2 text-destructive font-medium">
                   <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                   <span>This cannot be undone. No archive fallback, no undo toast.</span>
