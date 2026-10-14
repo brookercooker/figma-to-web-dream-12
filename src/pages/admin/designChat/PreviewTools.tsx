@@ -6,15 +6,10 @@ import { useDesignChat, type Device } from "./DesignChatContext";
 
 /**
  * The buttons in the Site Manager's top bar that belong to the design chat: while the Preview tab is open, the size buttons
- * and Full screen; always, a link to the published site and Submit for review (changes can be waiting whichever tab is open).
+ * and Full screen; always, a link to the published site. Submit for review lives in the chat column's header (SubmitButton).
  */
 export default function PreviewTools({ showViewControls, tight = false }: { showViewControls: boolean; tight?: boolean }) {
-  const { state, refreshSoon, device, setDevice, inFull, toggleFull } = useDesignChat();
-
-  const p = state?.publish ?? { ok: true, open: 0 };
-  const reviewOn = state?.review?.enabled;
-  const submitDisabled = !state || state.busy || p.open === 0 || (!p.ok && !p.willReview);
-  const submit = async () => { await postToHelper("/publish"); refreshSoon(); };
+  const { state, device, setDevice, inFull, toggleFull } = useDesignChat();
 
   return (
     <div className="flex shrink-0 items-center gap-2">
@@ -39,9 +34,20 @@ export default function PreviewTools({ showViewControls, tight = false }: { show
           </a>
         </Button>
       )}
-      <Button type="button" size="sm" disabled={submitDisabled} onClick={submit}>
-        {reviewOn === false ? "Publish" : "Submit for review"}
-      </Button>
     </div>
+  );
+}
+
+/** Submit for review (or Publish, when review is off): changes can be waiting whichever tab is open. */
+export function SubmitButton() {
+  const { state, refreshSoon } = useDesignChat();
+  const p = state?.publish ?? { ok: true, open: 0 };
+  const reviewOn = state?.review?.enabled;
+  const submitDisabled = !state || state.busy || p.open === 0 || (!p.ok && !p.willReview);
+  const submit = async () => { await postToHelper("/publish"); refreshSoon(); };
+  return (
+    <Button type="button" size="sm" disabled={submitDisabled} onClick={submit}>
+      {reviewOn === false ? "Publish" : "Submit for review"}
+    </Button>
   );
 }
