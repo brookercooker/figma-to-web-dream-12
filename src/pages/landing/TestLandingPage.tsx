@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/lib/db";
 import { Button } from "@/components/ui/button";
-import { formatSchedule } from "@/pages/admin/landingDates";
+import { formatSchedule } from "@/lib/landingDates";
 import NotFound from "@/pages/NotFound";
 
 const ROUTE = "/landing/test-landing-page";
