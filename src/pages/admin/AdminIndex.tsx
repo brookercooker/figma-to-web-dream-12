@@ -42,8 +42,9 @@ function TabSkeleton() {
 }
 
 /**
- * The Site Manager: the design chat column always on the left (topped by the logo, Submit for review and the account menu),
- * and next to it the tabs along the top (the preview of the site, then Pages, Objects, Images and Videos, each its own screen). Choosing a page in the Pages tab points the chat at it. The chat and the
+ * The Site Manager: the design chat column always on the left (topped by the logo and Submit for review),
+ * and next to it the tabs along the top (the preview of the site, then Pages, Objects, Images and Videos, each its own screen),
+ * with the account menu at the right end of the top bar. Choosing a page in the Pages tab points the chat at it. The chat and the
  * preview are kept alive while another tab is open, so nothing restarts when someone switches.
  */
 export default function AdminIndex() {
@@ -112,7 +113,7 @@ export default function AdminIndex() {
   return (
     <DesignChatProvider>
       <div className="flex h-screen flex-col overflow-hidden bg-background lg:flex-row">
-        {/* Right: the top bar (tabs, preview tools, Capture) and whichever tab is open. */}
+        {/* Right: the top bar (tabs, preview tools, Capture, account menu) and whichever tab is open. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <header className="z-30 w-full shrink-0 border-b bg-background">
             <div ref={rowRef} className="flex w-full items-center gap-3 px-4 py-2.5">
@@ -147,6 +148,30 @@ export default function AdminIndex() {
                   <Camera className="w-4 h-4" />
                 </Link>
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="shrink-0 gap-2" aria-label="Account menu">
+                    <UserCircle2 className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate("/admin/users")}>
+                        <Shield className="w-4 h-4 mr-2" /> Admin
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem onClick={() => setPwOpen(true)}>
+                    <KeyRound className="w-4 h-4 mr-2" /> Change password
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => supabase.auth.signOut()}>
+                    <LogOut className="w-4 h-4 mr-2" /> Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
 
@@ -173,7 +198,7 @@ export default function AdminIndex() {
           </main>
         </div>
 
-        {/* Left: the chat column, on every tab, with its own header (logo, Submit for review, account menu). */}
+        {/* Left: the chat column, on every tab, with its own header (logo, Submit for review); the account menu sits at the right end of the top bar. */}
         <aside className="flex h-[45vh] shrink-0 flex-col border-t lg:order-first lg:h-screen lg:w-[clamp(320px,26vw,400px)] lg:border-r lg:border-t-0" aria-label="Chat">
           <div className="flex shrink-0 items-center gap-2 border-b bg-background px-3 py-2.5">
             <h1 className="whitespace-nowrap">
@@ -181,30 +206,6 @@ export default function AdminIndex() {
             </h1>
             <div className="flex-1" />
             <SubmitButton />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="shrink-0 gap-2" aria-label="Account menu">
-                  <UserCircle2 className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {isAdmin && (
-                  <>
-                    <DropdownMenuItem onClick={() => navigate("/admin/users")}>
-                      <Shield className="w-4 h-4 mr-2" /> Admin
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                <DropdownMenuItem onClick={() => setPwOpen(true)}>
-                  <KeyRound className="w-4 h-4 mr-2" /> Change password
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => supabase.auth.signOut()}>
-                  <LogOut className="w-4 h-4 mr-2" /> Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
           <div className="min-h-0 flex-1">
             <ChatPanel />
