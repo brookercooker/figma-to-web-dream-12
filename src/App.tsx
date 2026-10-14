@@ -100,16 +100,16 @@ const AppShell = () => {
 
             {/* Site Manager routes — each tab has its own URL. */}
             <Route path="/manage" element={<Navigate to="/manage/pages" replace />} />
-            <Route path="/manage/pages" element={<AdminIndex />} />
-            <Route path="/manage/design" element={<PageDesignPage />} />
-            <Route path="/manage/objects" element={<AdminIndex />} />
-            <Route path="/manage/objects/design" element={<ObjectDesignPage />} />
-            <Route path="/manage/objects/workspace/:slugId" element={<ObjectWorkspace />} />
-            <Route path="/manage/images" element={<AdminIndex />} />
-            <Route path="/manage/videos" element={<AdminIndex />} />
-            <Route path="/manage/preview" element={<AdminIndex />} />
+            <Route path="/manage/pages" element={<AdminGate><AdminIndex /></AdminGate>} />
+            <Route path="/manage/design" element={<AdminGate><PageDesignPage /></AdminGate>} />
+            <Route path="/manage/objects" element={<AdminGate><AdminIndex /></AdminGate>} />
+            <Route path="/manage/objects/design" element={<AdminGate><ObjectDesignPage /></AdminGate>} />
+            <Route path="/manage/objects/workspace/:slugId" element={<AdminGate><ObjectWorkspace /></AdminGate>} />
+            <Route path="/manage/images" element={<AdminGate><AdminIndex /></AdminGate>} />
+            <Route path="/manage/videos" element={<AdminGate><AdminIndex /></AdminGate>} />
+            <Route path="/manage/preview" element={<AdminGate><AdminIndex /></AdminGate>} />
             <Route path="/manage/design-chat" element={<Navigate to="/manage/preview" replace />} />
-            <Route path="/manage/capture" element={<CapturePage />} />
+            <Route path="/manage/capture" element={<AdminGate><CapturePage /></AdminGate>} />
             <Route path="/manage/*" element={<Navigate to="/manage/pages" replace />} />
 
             {/* Public site */}
@@ -157,7 +157,7 @@ const AppShell = () => {
 
             {/* Admin */}
             <Route path="/admin" element={<Navigate to="/manage/pages" replace />} />
-            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/users" element={<AdminGate><AdminUsersPage /></AdminGate>} />
 
             {/* Iframe-only preview surface for generating Object thumbnails. */}
             <Route path="/preview/object/:key" element={<ObjectPreview />} />
@@ -212,9 +212,7 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <Suspense fallback={<div className="min-h-screen" aria-hidden="true" />}>
-              <AdminGate>
-                <AppShell />
-              </AdminGate>
+              <AppShell />
             </Suspense>
           </BrowserRouter>
         </TooltipProvider>
