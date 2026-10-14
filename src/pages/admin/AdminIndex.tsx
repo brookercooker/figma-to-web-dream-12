@@ -2,10 +2,11 @@ import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState }
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import SiteManagerLogo from "./SiteManagerLogo";
 import ChatPanel from "./designChat/ChatPanel";
@@ -42,7 +43,8 @@ function TabSkeleton() {
 }
 
 /**
- * The Site Manager: the design chat column always on the left (topped by the logo and Submit for review),
+ * The Site Manager: the design chat column always on the left (topped by the logo and Submit for review; it can be collapsed
+ * to a thin rail, which moves Submit for review into the top bar),
  * and next to it the tabs along the top (the preview of the site, then Pages, Objects, Images and Videos, each its own screen),
  * with the account menu at the right end of the top bar. Choosing a page in the Pages tab points the chat at it. The chat and the
  * preview are kept alive while another tab is open, so nothing restarts when someone switches.
@@ -58,6 +60,13 @@ export default function AdminIndex() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [email, setEmail] = useState<string>("");
   const [pwOpen, setPwOpen] = useState(false);
+  // The chat column can be collapsed to a thin rail; remembered in this browser (without storage it just starts expanded).
+  const [chatCollapsed, setChatCollapsed] = useState<boolean>(() => {
+    try { return localStorage.getItem("siteManager:chatCollapsed") === "true"; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("siteManager:chatCollapsed", String(chatCollapsed)); } catch { /* no storage: ignore */ }
+  }, [chatCollapsed]);
   const checkedFor = useRef<string | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -143,6 +152,7 @@ export default function AdminIndex() {
               <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />
 
               <div aria-hidden className="h-9 w-px bg-border shrink-0" />
+              {chatCollapsed && <SubmitButton />}
               <Button asChild variant="outline" size="icon" className="h-9 w-9 shrink-0">
                 <Link to="/manage/capture" aria-label="Capture" title="Capture">
                   <Camera className="w-4 h-4" />
@@ -198,16 +208,33 @@ export default function AdminIndex() {
           </main>
         </div>
 
-        {/* Left: the chat column, on every tab, with its own header (logo, Submit for review); the account menu sits at the right end of the top bar. */}
-        <aside className="flex h-[45vh] shrink-0 flex-col border-t lg:order-first lg:h-screen lg:w-[clamp(320px,26vw,400px)] lg:border-r lg:border-t-0" aria-label="Chat">
-          <div className="flex shrink-0 items-center gap-2 border-b bg-background px-3 py-2.5">
+        {/* Left: the chat column, on every tab, with its own header (logo, Submit for review, collapse); the account menu sits at the right end of the top bar.
+            Collapsed, it shrinks to a thin rail with an expand button; the chat stays mounted (hidden) so typed text and attachments survive. */}
+        <aside
+          className={cn(
+            "flex shrink-0 flex-col border-t lg:order-first lg:h-screen lg:border-r lg:border-t-0 lg:transition-[width] lg:duration-200",
+            chatCollapsed ? "h-auto lg:w-12" : "h-[45vh] lg:w-[clamp(320px,26vw,400px)]",
+          )}
+          aria-label="Chat"
+        >
+          {chatCollapsed && (
+            <div className="flex shrink-0 justify-start p-1.5 lg:justify-center">
+              <Button type="button" variant="ghost" size="icon" className="h-9 w-9" aria-label="Expand chat" title="Expand chat" aria-expanded={false} onClick={() => setChatCollapsed(false)}>
+                <PanelLeftOpen className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          <div className={cn("flex shrink-0 items-center gap-2 border-b bg-background px-3 py-2.5", chatCollapsed && "hidden")}>
             <h1 className="whitespace-nowrap">
               <SiteManagerLogo />
             </h1>
             <div className="flex-1" />
             <SubmitButton />
+            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse chat" title="Collapse chat" aria-expanded={true} onClick={() => setChatCollapsed(true)}>
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
           </div>
-          <div className="min-h-0 flex-1">
+          <div className={cn("min-h-0 flex-1", chatCollapsed && "hidden")}>
             <ChatPanel />
           </div>
         </aside>
