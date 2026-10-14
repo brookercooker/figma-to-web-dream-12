@@ -30,46 +30,21 @@ Deno.serve(async (req) => {
     const uid = userData.user.id;
     const email = userData.user.email;
 
-    // Always ensure a base 'user' role.
-    await admin.from("user_roles").upsert(
-      { user_id: uid, role: "user" },
-      { onConflict: "user_id,role", ignoreDuplicates: true },
-    );
-
-    // Is this email in admin_emails?
+    // Only emails listed in admin_emails get a role; everyone else gets nothing.
     const { data: match } = await admin
       .from("admin_emails")
       .select("email")
       .ilike("email", email)
       .maybeSingle();
 
-    let bootstrapped = false;
-    if (match) {
-      await admin.from("user_roles").upsert(
-        { user_id: uid, role: "admin" },
-        { onConflict: "user_id,role", ignoreDuplicates: true },
-      );
-      bootstrapped = true;
-    } else {
-      // First-user bootstrap: if no admins anywhere, promote this user.
-      const { count: adminCount } = await admin
-        .from("user_roles")
-        .select("*", { count: "exact", head: true })
-        .eq("role", "admin");
-      const { count: emailCount } = await admin
-        .from("admin_emails")
-        .select("*", { count: "exact", head: true });
-      if ((adminCount ?? 0) === 0 && (emailCount ?? 0) === 0) {
-        await admin.from("admin_emails").insert({ email }).select().maybeSingle();
-        await admin.from("user_roles").upsert(
-          { user_id: uid, role: "admin" },
-          { onConflict: "user_id,role", ignoreDuplicates: true },
-        );
-        bootstrapped = true;
-      }
-    }
+    if (!match) return json({ ok: true, bootstrapped: false });
 
-    return json({ ok: true, bootstrapped, email });
+    await admin.from("user_roles").upsert(
+      { user_id: uid, role: "admin" },
+      { onConflict: "user_id,role", ignoreDuplicates: true },
+    );
+
+    return json({ ok: true, bootstrapped: true, email });
   } catch (e) {
     return json({ error: String(e) }, 500);
   }
