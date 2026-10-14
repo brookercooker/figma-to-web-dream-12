@@ -181,30 +181,30 @@ export default function AdminIndex() {
             </h1>
             <div className="flex-1" />
             <SubmitButton />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="shrink-0 gap-2" aria-label="Account menu">
-                    <UserCircle2 className="w-5 h-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuItem onClick={() => navigate("/admin/users")}>
-                        <Shield className="w-4 h-4 mr-2" /> Admin
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem onClick={() => setPwOpen(true)}>
-                    <KeyRound className="w-4 h-4 mr-2" /> Change password
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => supabase.auth.signOut()}>
-                    <LogOut className="w-4 h-4 mr-2" /> Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="shrink-0 gap-2" aria-label="Account menu">
+                  <UserCircle2 className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {isAdmin && (
+                  <>
+                    <DropdownMenuItem onClick={() => navigate("/admin/users")}>
+                      <Shield className="w-4 h-4 mr-2" /> Admin
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem onClick={() => setPwOpen(true)}>
+                  <KeyRound className="w-4 h-4 mr-2" /> Change password
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => supabase.auth.signOut()}>
+                  <LogOut className="w-4 h-4 mr-2" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div className="min-h-0 flex-1">
             <ChatPanel />
