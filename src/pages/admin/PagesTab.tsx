@@ -329,10 +329,6 @@ export default function PagesTab() {
     });
     list = [...list].sort((a, b) => {
       if (sort === "name" || sort === "name_desc") {
-        // Draft first, then Ready, each sorted by name
-        const sa = a.build_status === "draft" ? 0 : 1;
-        const sb = b.build_status === "draft" ? 0 : 1;
-        if (sa !== sb) return sa - sb;
         return sort === "name_desc" ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
       }
       const da = new Date(a.updated_at).getTime(), db = new Date(b.updated_at).getTime();
@@ -404,6 +400,11 @@ export default function PagesTab() {
 
 
       <div className="flex-1 min-w-0 space-y-3">
+      <div className="flex justify-end">
+        <Button onClick={() => setCreating(true)} className="gap-1.5">
+          <Plus className="w-4 h-4" /> Add page
+        </Button>
+      </div>
       <div className="flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
         <div className="flex items-center pl-4 pr-2 text-muted-foreground">
           <Search className="w-5 h-5" />
@@ -413,12 +414,12 @@ export default function PagesTab() {
           aria-label="Search pages"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className="flex-1 border-0 rounded-none h-14 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2"
+          className="flex-1 border-0 rounded-none h-10 text-base focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2"
         />
         <select
           value={searchField}
           onChange={(e) => setSearchField(e.target.value as Field)}
-          className="text-sm px-3 border-l bg-muted/40 h-14"
+          className="text-sm px-3 border-l bg-muted/40 h-10"
           title="Search field"
           aria-label="Search field"
         >
@@ -453,15 +454,6 @@ export default function PagesTab() {
         onShowArchivedChange={setShowArchived}
         archivedCount={archivedCount}
       />
-
-      <div className="flex items-center gap-3 py-2">
-        <button type="button" onClick={() => navigate("/manage/design")}
-          className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] border border-transparent shadow-md transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
-          <Pencil className="w-[18px] h-[18px] opacity-80" />
-          <span className="text-[15px] font-medium tracking-wide uppercase">Edit Pages</span>
-        </button>
-        <AddButtonRow subtle text="Add new page" label="Page" onClick={() => setCreating(true)} />
-      </div>
 
 
 
@@ -498,7 +490,23 @@ export default function PagesTab() {
           <col style={{ width: 80 }} />
           <col style={{ width: 48 }} />
         </colgroup>
-REPLACE_THEAD
+        <thead>
+          <tr className="border-b bg-muted/30">
+            <th className="px-3 py-3 text-left"></th>
+            <th className="px-3 py-3 text-left truncate">Preview</th>
+            <th className="px-3 py-3 text-left truncate">Name &amp; Path</th>
+            <th className="px-3 py-3 text-center truncate">Status</th>
+            <th className="px-3 py-3 text-left truncate">Labels</th>
+            <th className="px-3 py-3 text-left truncate">Last Mod</th>
+            <th className="px-2 py-3 text-center truncate"><span className="sr-only">Edit</span></th>
+            <th className="px-2 py-3 text-center truncate"><span className="sr-only">More</span></th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {filtered.length === 0 && (
+            <tr>
+              <td colSpan={8} className="px-3 py-10 text-center text-muted-foreground text-sm">
                 {timeRange === "hour" ? "No pages modified in the last hour."
                 : timeRange === "day" ? "No pages modified in the last 24 hours."
                 : timeRange === "week" ? "No pages modified in the last 7 days."
