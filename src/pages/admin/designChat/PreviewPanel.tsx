@@ -10,13 +10,12 @@ const WIDTH: Record<Device, string> = { mobile: "390px", tablet: "820px", deskto
  * screen, submit) are in the top bar, see PreviewTools.tsx.
  */
 export default function PreviewPanel() {
-  const { state, preview, device, boxRef, inFull, coverFull, toggleFull } = useDesignChat();
-  const waiting = (state?.publish?.open ?? 0) > 0; // the preview shows changes visitors can't see yet
+  const { preview, device, boxRef, inFull, coverFull, toggleFull } = useDesignChat();
 
   return (
     <section className="h-full min-h-0" aria-label="Preview">
       <div ref={boxRef} className={cn("relative h-full min-h-0 bg-muted flex justify-center", coverFull && "fixed inset-0 z-50 bg-background")}>
-        {waiting && <span className="absolute left-0 top-0 z-20 rounded-br-lg bg-amber-500 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-950 pointer-events-none">Draft · not published</span>}
+
 
         <div className={cn("relative h-full max-w-full overflow-hidden bg-white")}
           style={{ width: WIDTH[device] }}>
