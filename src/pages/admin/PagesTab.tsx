@@ -56,17 +56,19 @@ function fmtDate(iso: string) {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
-function fmtDateTime(iso: string) {
-  if (!iso) return null;
+function fmtShortDate(iso: string) {
+  if (!iso) return "";
   const d = new Date(iso);
-  const date = d.toLocaleDateString(undefined, { month: "2-digit", day: "2-digit", year: "numeric" });
-  const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-  return (
-    <>
-      <div>{date}</div>
-      <div>{time}</div>
-    </>
-  );
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString(undefined, sameYear
+    ? { month: "short", day: "numeric" }
+    : { month: "short", day: "numeric", year: "numeric" });
+}
+async function copyPageRef(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Reference copied");
+  } catch { toast.error("Copy failed"); }
 }
 function fmtDateTimeFull(iso: string) {
   if (!iso) return "";
