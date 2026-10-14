@@ -70,7 +70,19 @@ async function captureOne(c: ThumbCandidate, force = false): Promise<void> {
   if (payload?.skipped === "object_not_ready") {
     throw new RouteNotResolvedError("Object is not marked Ready yet — thumbnail skipped.");
   }
-  if (error) throw error;
+  if (error) {
+    // Screenshot service not configured (missing/placeholder Cloudflare
+    // credentials) — skip quietly instead of surfacing a crash.
+    let text = "";
+    try {
+      const ctx = (error as any)?.context;
+      text = typeof ctx?.text === "function" ? await ctx.clone().text() : JSON.stringify(payload ?? "");
+    } catch { /* ignore */ }
+    if (/Cloudflare|PLACEHOLDER|SCREENSHOTONE/i.test(text + String((error as any)?.message ?? ""))) {
+      throw new RouteNotResolvedError("Thumbnail service not configured — skipped.");
+    }
+    throw error;
+  }
 }
 
 /** Auto-trigger capture for any stale candidates, one at a time. */
