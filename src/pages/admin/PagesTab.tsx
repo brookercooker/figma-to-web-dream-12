@@ -13,9 +13,9 @@ import TagsPanel from "./TagsPanel";
 import InlineEdit from "./InlineEdit";
 import ConfirmDialog from "./ConfirmDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
-import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, Pencil, MessageSquare } from "lucide-react";
+import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, Pencil, MessageSquare, Plus, Check } from "lucide-react";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
-import { CopyRefButton, buildPageRef } from "./copyReference";
+import { buildPageRef } from "./copyReference";
 import { clearAllRouteSnapshots } from "./routeSnapshot";
 import { reservedPrefixFor } from "./reservedPaths";
 import CreatePageDialog from "./CreatePageDialog";
@@ -56,17 +56,19 @@ function fmtDate(iso: string) {
   if (!iso) return "";
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
-function fmtDateTime(iso: string) {
-  if (!iso) return null;
+function fmtShortDate(iso: string) {
+  if (!iso) return "";
   const d = new Date(iso);
-  const date = d.toLocaleDateString(undefined, { month: "2-digit", day: "2-digit", year: "numeric" });
-  const time = d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
-  return (
-    <>
-      <div>{date}</div>
-      <div>{time}</div>
-    </>
-  );
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString(undefined, sameYear
+    ? { month: "short", day: "numeric" }
+    : { month: "short", day: "numeric", year: "numeric" });
+}
+async function copyPageRef(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast.success("Reference copied");
+  } catch { toast.error("Copy failed"); }
 }
 function fmtDateTimeFull(iso: string) {
   if (!iso) return "";
@@ -329,10 +331,6 @@ export default function PagesTab() {
     });
     list = [...list].sort((a, b) => {
       if (sort === "name" || sort === "name_desc") {
-        // Draft first, then Ready, each sorted by name
-        const sa = a.build_status === "draft" ? 0 : 1;
-        const sb = b.build_status === "draft" ? 0 : 1;
-        if (sa !== sb) return sa - sb;
         return sort === "name_desc" ? b.name.localeCompare(a.name) : a.name.localeCompare(b.name);
       }
       const da = new Date(a.updated_at).getTime(), db = new Date(b.updated_at).getTime();
@@ -404,6 +402,11 @@ export default function PagesTab() {
 
 
       <div className="flex-1 min-w-0 space-y-3">
+      <div className="flex justify-end">
+        <Button onClick={() => setCreating(true)} className="gap-1.5">
+          <Plus className="w-4 h-4" /> Add page
+        </Button>
+      </div>
       <div className="flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
         <div className="flex items-center pl-4 pr-2 text-muted-foreground">
           <Search className="w-5 h-5" />
@@ -413,12 +416,12 @@ export default function PagesTab() {
           aria-label="Search pages"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className="flex-1 border-0 rounded-none h-14 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2"
+          className="flex-1 border-0 rounded-none h-10 text-base focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2"
         />
         <select
           value={searchField}
           onChange={(e) => setSearchField(e.target.value as Field)}
-          className="text-sm px-3 border-l bg-muted/40 h-14"
+          className="text-sm px-3 border-l bg-muted/40 h-10"
           title="Search field"
           aria-label="Search field"
         >
@@ -454,15 +457,6 @@ export default function PagesTab() {
         archivedCount={archivedCount}
       />
 
-      <div className="flex items-center gap-3 py-2">
-        <button type="button" onClick={() => navigate("/manage/design")}
-          className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] border border-transparent shadow-md transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
-          <Pencil className="w-[18px] h-[18px] opacity-80" />
-          <span className="text-[15px] font-medium tracking-wide uppercase">Edit Pages</span>
-        </button>
-        <AddButtonRow subtle text="Add new page" label="Page" onClick={() => setCreating(true)} />
-      </div>
-
 
 
       <SelectionBar
@@ -492,27 +486,21 @@ export default function PagesTab() {
           <col style={{ width: 40 }} />
           <col style={{ width: 116 }} />
           <col style={{ minWidth: 200 }} />
-          <col style={{ width: 110 }} />
           <col style={{ width: 150 }} />
-          <col style={{ width: 100 }} />
+          <col style={{ width: 150 }} />
           <col style={{ width: 90 }} />
-          <col style={{ width: 48 }} />
-          <col style={{ width: 48 }} />
+          <col style={{ width: 80 }} />
           <col style={{ width: 48 }} />
         </colgroup>
-
         <thead>
           <tr className="border-b bg-muted/30">
             <th className="px-3 py-3 text-left"></th>
             <th className="px-3 py-3 text-left truncate">Preview</th>
             <th className="px-3 py-3 text-left truncate">Name &amp; Path</th>
             <th className="px-3 py-3 text-center truncate">Status</th>
-            <th className="px-3 py-3 text-center truncate">Copy</th>
             <th className="px-3 py-3 text-left truncate">Labels</th>
             <th className="px-3 py-3 text-left truncate">Last Mod</th>
-            <th className="px-2 py-3 text-center truncate"><span className="sr-only">Chat</span></th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">Edit</span></th>
-            <th className="px-2 py-3 text-center truncate"><span className="sr-only">Open</span></th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">More</span></th>
           </tr>
         </thead>
@@ -520,7 +508,7 @@ export default function PagesTab() {
         <tbody>
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={10} className="px-3 py-10 text-center text-muted-foreground text-sm">
+              <td colSpan={8} className="px-3 py-10 text-center text-muted-foreground text-sm">
                 {timeRange === "hour" ? "No pages modified in the last hour."
                 : timeRange === "day" ? "No pages modified in the last 24 hours."
                 : timeRange === "week" ? "No pages modified in the last 7 days."
@@ -531,13 +519,6 @@ export default function PagesTab() {
           )}
           {filtered.slice(pager.start, pager.end).map((p, i) => { const idx = pager.start + i;
             const on = selected.has(p.id);
-            const pageType = getPageType(p.path, p.name);
-            const typeClass =
-              pageType === "System"
-                ? "bg-sky-500/10 text-sky-700 border-sky-500/30"
-                : pageType === "Supernova CC"
-                ? "bg-brass/20 text-brass border-brass/40"
-                : "bg-emerald-500/10 text-emerald-700 border-emerald-500/30";
             return (
               <tr
                 key={p.id}
@@ -562,16 +543,22 @@ export default function PagesTab() {
                     <PageMiniPreview name={p.name} path={p.path} content={(p as any).content} />
                   </button>
                 </td>
-                <td className="px-3 py-3 min-w-0" title={p.name}>
+                <td className="px-3 py-3 min-w-0">
                   <div className="flex flex-col gap-0.5 min-w-0 items-start">
-                    <a
-                      href={p.path.startsWith("/") ? p.path : `/${p.path}`}
-                      className="text-sm truncate max-w-full block text-left hover:underline focus:outline-none focus:underline"
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/manage/design?page=${p.id}`)}
+                      className="text-sm font-medium truncate max-w-full block text-left hover:underline focus:outline-none focus:underline"
                       title={p.name}
                     >
                       {p.name}
-                    </a>
-                    <span className="font-mono text-[10px] text-muted-foreground truncate max-w-full" title={p.path}>
+                    </button>
+                    {p.description && (
+                      <span className="text-xs text-muted-foreground truncate max-w-full" title={p.description}>
+                        {p.description}
+                      </span>
+                    )}
+                    <span className="font-mono text-xs text-muted-foreground truncate max-w-full" title={p.path}>
                       {p.path}
                     </span>
                   </div>
@@ -579,28 +566,21 @@ export default function PagesTab() {
                 <td className="px-2 py-3">
                   <div className="flex flex-col items-center">
                     <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
+                      className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
                         p.build_status === "ready"
                           ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/40"
                           : "bg-amber-400/20 text-amber-800 border-amber-500/40"
                       }`}
-                      title={p.build_status === "ready" ? "Ready" : "Draft"}
+                      title={p.build_status === "ready"
+                        ? "Ready pages are included the next time changes are submitted for review."
+                        : "Draft pages are never shown on the public site."}
                     >
-                      {p.build_status === "ready" ? "Ready" : "Draft"}
+                      {p.build_status === "ready" ? "Public (Ready)" : "Not public (Draft)"}
                     </span>
                     <WorkStatusPopover
                       value={p.build_status === "ready" ? "ready" : "draft"}
                       onSave={(next) => setBuildStatus(p.id, next)}
                       disabled={!!p.archived_at}
-                    />
-                  </div>
-                </td>
-                <td className="px-2 py-3">
-                  <div className="flex justify-center">
-                    <CopyRefButton
-                      reference={buildPageRef({ id: p.slug_id, name: p.name, path: p.path })}
-                      id={p.slug_id}
-                      label="Copy Reference"
                     />
                   </div>
                 </td>
@@ -611,45 +591,15 @@ export default function PagesTab() {
                     itemName={p.name}
                   />
                 </td>
-                <td className="px-2 py-3 text-xs text-muted-foreground whitespace-nowrap leading-tight" title={fmtDateTimeFull(p.updated_at)}>
-                  {fmtDateTime(p.updated_at) || "—"}
+                <td className="px-2 py-3 text-xs text-muted-foreground whitespace-nowrap" title={fmtDateTimeFull(p.updated_at)}>
+                  {fmtShortDate(p.updated_at) || "—"}
                 </td>
                 <td className="px-1 py-3 text-center">
-                  {designChat && (() => {
-                    const pagePath = p.path.startsWith("/") ? p.path : `/${p.path}`;
-                    const chosen = designChat.workingPage?.path === pagePath;
-                    return (
-                      <button
-                        onClick={() => { designChat.selectPage({ name: p.name, path: pagePath }); navigate("/manage/preview"); }}
-                        aria-label={`Work on ${p.name} with the chat`}
-                        aria-pressed={chosen}
-                        title={chosen ? "The chat is working on this page" : "Work on this page with the chat"}
-                        className={`p-1.5 rounded border inline-flex ${chosen ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted"}`}
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                      </button>
-                    );
-                  })()}
-                </td>
-                <td className="px-1 py-3 text-center">
-                  <button
+                  <Button size="sm" variant="outline" className="h-8 gap-1.5 px-2.5"
                     onClick={() => navigate(`/manage/design?page=${p.id}`)}
-                    aria-label="Edit design"
-                    title="Edit design"
-                    className="p-1.5 rounded border hover:bg-muted inline-flex"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                </td>
-                <td className="px-1 py-3 text-center">
-                  <button
-                    onClick={() => openLive(p.path)}
-                    aria-label="Open in new tab"
-                    title="Open in new tab"
-                    className="p-1.5 rounded border hover:bg-muted inline-flex"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
+                    aria-label={`Edit ${p.name}`}>
+                    <Pencil className="w-3.5 h-3.5" /> Edit
+                  </Button>
                 </td>
                 <td className="px-1 py-3 text-center">
                   <DropdownMenu>
@@ -663,6 +613,28 @@ export default function PagesTab() {
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-80">
+                      {designChat && (() => {
+                        const pagePath = p.path.startsWith("/") ? p.path : `/${p.path}`;
+                        const chosen = designChat.workingPage?.path === pagePath;
+                        return (
+                          <DropdownMenuItem
+                            aria-selected={chosen}
+                            onSelect={() => { designChat.selectPage({ name: p.name, path: pagePath }); navigate("/manage/preview"); }}
+                          >
+                            <MessageSquare className="w-4 h-4 mr-2" />
+                            Work on this page with the chat
+                            {chosen && <Check className="w-4 h-4 ml-auto" aria-label="(chat is working on this page)" />}
+                          </DropdownMenuItem>
+                        );
+                      })()}
+                      <DropdownMenuItem onSelect={() => openLive(p.path)}>
+                        <ExternalLink className="w-4 h-4 mr-2" /> Open live page
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => copyPageRef(buildPageRef({ id: p.slug_id, name: p.name, path: p.path }))}>
+                        <Copy className="w-4 h-4 mr-2" /> Copy reference
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+
                       <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
                         Description
                       </DropdownMenuLabel>
