@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/prototype/client";
-import { formatSchedule } from "@/pages/admin/landingDates";
+import { formatSchedule } from "@/lib/landingDates";
 import NotFound from "@/pages/NotFound";
 
 const ROUTE = "/landing/jason-test";

@@ -2,7 +2,7 @@ import { inEditorPreview } from "@/lib/editorPreview";
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
-import { formatSchedule } from "@/pages/admin/landingDates";
+import { formatSchedule } from "@/lib/landingDates";
 import NotFound from "./NotFound";
 import { isPublicLandingHost } from "@/lib/publicHost";
 import LandingScaffold from "@/components/landing/LandingScaffold";
