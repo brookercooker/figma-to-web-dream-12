@@ -492,35 +492,13 @@ export default function PagesTab() {
           <col style={{ width: 40 }} />
           <col style={{ width: 116 }} />
           <col style={{ minWidth: 200 }} />
-          <col style={{ width: 110 }} />
           <col style={{ width: 150 }} />
-          <col style={{ width: 100 }} />
+          <col style={{ width: 150 }} />
           <col style={{ width: 90 }} />
-          <col style={{ width: 48 }} />
-          <col style={{ width: 48 }} />
+          <col style={{ width: 80 }} />
           <col style={{ width: 48 }} />
         </colgroup>
-
-        <thead>
-          <tr className="border-b bg-muted/30">
-            <th className="px-3 py-3 text-left"></th>
-            <th className="px-3 py-3 text-left truncate">Preview</th>
-            <th className="px-3 py-3 text-left truncate">Name &amp; Path</th>
-            <th className="px-3 py-3 text-center truncate">Status</th>
-            <th className="px-3 py-3 text-center truncate">Copy</th>
-            <th className="px-3 py-3 text-left truncate">Labels</th>
-            <th className="px-3 py-3 text-left truncate">Last Mod</th>
-            <th className="px-2 py-3 text-center truncate"><span className="sr-only">Chat</span></th>
-            <th className="px-2 py-3 text-center truncate"><span className="sr-only">Edit</span></th>
-            <th className="px-2 py-3 text-center truncate"><span className="sr-only">Open</span></th>
-            <th className="px-2 py-3 text-center truncate"><span className="sr-only">More</span></th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {filtered.length === 0 && (
-            <tr>
-              <td colSpan={10} className="px-3 py-10 text-center text-muted-foreground text-sm">
+REPLACE_THEAD
                 {timeRange === "hour" ? "No pages modified in the last hour."
                 : timeRange === "day" ? "No pages modified in the last 24 hours."
                 : timeRange === "week" ? "No pages modified in the last 7 days."
@@ -531,13 +509,6 @@ export default function PagesTab() {
           )}
           {filtered.slice(pager.start, pager.end).map((p, i) => { const idx = pager.start + i;
             const on = selected.has(p.id);
-            const pageType = getPageType(p.path, p.name);
-            const typeClass =
-              pageType === "System"
-                ? "bg-sky-500/10 text-sky-700 border-sky-500/30"
-                : pageType === "Supernova CC"
-                ? "bg-brass/20 text-brass border-brass/40"
-                : "bg-emerald-500/10 text-emerald-700 border-emerald-500/30";
             return (
               <tr
                 key={p.id}
@@ -562,16 +533,22 @@ export default function PagesTab() {
                     <PageMiniPreview name={p.name} path={p.path} content={(p as any).content} />
                   </button>
                 </td>
-                <td className="px-3 py-3 min-w-0" title={p.name}>
+                <td className="px-3 py-3 min-w-0">
                   <div className="flex flex-col gap-0.5 min-w-0 items-start">
-                    <a
-                      href={p.path.startsWith("/") ? p.path : `/${p.path}`}
-                      className="text-sm truncate max-w-full block text-left hover:underline focus:outline-none focus:underline"
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/manage/design?page=${p.id}`)}
+                      className="text-sm font-medium truncate max-w-full block text-left hover:underline focus:outline-none focus:underline"
                       title={p.name}
                     >
                       {p.name}
-                    </a>
-                    <span className="font-mono text-[10px] text-muted-foreground truncate max-w-full" title={p.path}>
+                    </button>
+                    {p.description && (
+                      <span className="text-xs text-muted-foreground truncate max-w-full" title={p.description}>
+                        {p.description}
+                      </span>
+                    )}
+                    <span className="font-mono text-xs text-muted-foreground truncate max-w-full" title={p.path}>
                       {p.path}
                     </span>
                   </div>
@@ -579,28 +556,21 @@ export default function PagesTab() {
                 <td className="px-2 py-3">
                   <div className="flex flex-col items-center">
                     <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
+                      className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
                         p.build_status === "ready"
                           ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/40"
                           : "bg-amber-400/20 text-amber-800 border-amber-500/40"
                       }`}
-                      title={p.build_status === "ready" ? "Ready" : "Draft"}
+                      title={p.build_status === "ready"
+                        ? "Ready pages are included the next time changes are submitted for review."
+                        : "Draft pages are never shown on the public site."}
                     >
-                      {p.build_status === "ready" ? "Ready" : "Draft"}
+                      {p.build_status === "ready" ? "Public (Ready)" : "Not public (Draft)"}
                     </span>
                     <WorkStatusPopover
                       value={p.build_status === "ready" ? "ready" : "draft"}
                       onSave={(next) => setBuildStatus(p.id, next)}
                       disabled={!!p.archived_at}
-                    />
-                  </div>
-                </td>
-                <td className="px-2 py-3">
-                  <div className="flex justify-center">
-                    <CopyRefButton
-                      reference={buildPageRef({ id: p.slug_id, name: p.name, path: p.path })}
-                      id={p.slug_id}
-                      label="Copy Reference"
                     />
                   </div>
                 </td>
@@ -611,45 +581,15 @@ export default function PagesTab() {
                     itemName={p.name}
                   />
                 </td>
-                <td className="px-2 py-3 text-xs text-muted-foreground whitespace-nowrap leading-tight" title={fmtDateTimeFull(p.updated_at)}>
-                  {fmtDateTime(p.updated_at) || "—"}
+                <td className="px-2 py-3 text-xs text-muted-foreground whitespace-nowrap" title={fmtDateTimeFull(p.updated_at)}>
+                  {fmtShortDate(p.updated_at) || "—"}
                 </td>
                 <td className="px-1 py-3 text-center">
-                  {designChat && (() => {
-                    const pagePath = p.path.startsWith("/") ? p.path : `/${p.path}`;
-                    const chosen = designChat.workingPage?.path === pagePath;
-                    return (
-                      <button
-                        onClick={() => { designChat.selectPage({ name: p.name, path: pagePath }); navigate("/manage/preview"); }}
-                        aria-label={`Work on ${p.name} with the chat`}
-                        aria-pressed={chosen}
-                        title={chosen ? "The chat is working on this page" : "Work on this page with the chat"}
-                        className={`p-1.5 rounded border inline-flex ${chosen ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted"}`}
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                      </button>
-                    );
-                  })()}
-                </td>
-                <td className="px-1 py-3 text-center">
-                  <button
+                  <Button size="sm" variant="outline" className="h-8 gap-1.5 px-2.5"
                     onClick={() => navigate(`/manage/design?page=${p.id}`)}
-                    aria-label="Edit design"
-                    title="Edit design"
-                    className="p-1.5 rounded border hover:bg-muted inline-flex"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                </td>
-                <td className="px-1 py-3 text-center">
-                  <button
-                    onClick={() => openLive(p.path)}
-                    aria-label="Open in new tab"
-                    title="Open in new tab"
-                    className="p-1.5 rounded border hover:bg-muted inline-flex"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </button>
+                    aria-label={`Edit ${p.name}`}>
+                    <Pencil className="w-3.5 h-3.5" /> Edit
+                  </Button>
                 </td>
                 <td className="px-1 py-3 text-center">
                   <DropdownMenu>
@@ -663,6 +603,28 @@ export default function PagesTab() {
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-80">
+                      {designChat && (() => {
+                        const pagePath = p.path.startsWith("/") ? p.path : `/${p.path}`;
+                        const chosen = designChat.workingPage?.path === pagePath;
+                        return (
+                          <DropdownMenuItem
+                            aria-selected={chosen}
+                            onSelect={() => { designChat.selectPage({ name: p.name, path: pagePath }); navigate("/manage/preview"); }}
+                          >
+                            <MessageSquare className="w-4 h-4 mr-2" />
+                            Work on this page with the chat
+                            {chosen && <Check className="w-4 h-4 ml-auto" aria-label="(chat is working on this page)" />}
+                          </DropdownMenuItem>
+                        );
+                      })()}
+                      <DropdownMenuItem onSelect={() => openLive(p.path)}>
+                        <ExternalLink className="w-4 h-4 mr-2" /> Open live page
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => copyPageRef(buildPageRef({ id: p.slug_id, name: p.name, path: p.path }))}>
+                        <Copy className="w-4 h-4 mr-2" /> Copy reference
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+
                       <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
                         Description
                       </DropdownMenuLabel>
