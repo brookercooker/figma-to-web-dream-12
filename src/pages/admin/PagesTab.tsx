@@ -18,12 +18,13 @@ import { useDesignChatOptional } from "./designChat/DesignChatContext";
 import { CopyRefButton, buildPageRef } from "./copyReference";
 import { clearAllRouteSnapshots } from "./routeSnapshot";
 import { reservedPrefixFor } from "./reservedPaths";
-import { pageAccess } from "./pagePolicy";
+import CreatePageDialog from "./CreatePageDialog";
 import LinkAuditView from "./LinkAuditView";
 import { isComingSoonPath, getPageType, PAGE_TYPES, type PageType } from "./routeTable";
 import LabelsCell from "./LabelsCell";
 import SelectionBar from "./SelectionBar";
 import FilterBar, { type TimeRange } from "./FilterBar";
+import AddButtonRow from "./AddButtonRow";
 import LandingPagesView from "./LandingPagesView";
 import PagePreviewDialog from "./PagePreviewDialog";
 import { useAutoCaptureThumbnails, regenerateThumbnail } from "./useThumbnailCapture";
@@ -457,13 +458,10 @@ export default function PagesTab() {
         <button type="button" onClick={() => navigate("/manage/design")}
           className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] border border-transparent shadow-md transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
           <Pencil className="w-[18px] h-[18px] opacity-80" />
-          <span className="text-[15px] font-medium tracking-wide uppercase">Tweak Pages</span>
+          <span className="text-[15px] font-medium tracking-wide uppercase">Edit Pages</span>
         </button>
+        <AddButtonRow subtle text="Add new page" label="Page" onClick={() => setCreating(true)} />
       </div>
-      <p className="max-w-3xl text-xs text-muted-foreground">
-        Main-site pages are changed with the chat (the chat button on each row). Use the pencil for small changes: colours, sizes and pictures.
-        Landing pages are yours to create and edit, on the Landing Pages tab.
-      </p>
 
 
 
@@ -472,12 +470,18 @@ export default function PagesTab() {
         itemLabel="page"
         onClear={() => setSelected(new Set())}
       >
-        {/* Main-site pages can't be archived or deleted from the Site Manager; a page archived earlier can still be restored. */}
-        {showArchived && (
+        {showArchived ? (
           <Button size="sm" variant="outline" onClick={() => unarchive([...selected])}>
             <ArchiveRestore className="w-3.5 h-3.5 mr-1.5" /> Restore
           </Button>
+        ) : (
+          <Button size="sm" variant="outline" onClick={() => archive([...selected])}>
+            <Archive className="w-3.5 h-3.5 mr-1.5" /> Archive
+          </Button>
         )}
+        <Button size="sm" variant="destructive" onClick={() => setConfirmState({ kind: "delete-bulk", ids: [...selected] })}>
+          <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
+        </Button>
       </SelectionBar>
 
       
@@ -628,16 +632,14 @@ export default function PagesTab() {
                   })()}
                 </td>
                 <td className="px-1 py-3 text-center">
-                  {pageAccess(p as any) === "tweak" && (
                   <button
                     onClick={() => navigate(`/manage/design?page=${p.id}`)}
-                    aria-label="Tweak design"
-                    title="Change colours, sizes and pictures"
+                    aria-label="Edit design"
+                    title="Edit design"
                     className="p-1.5 rounded border hover:bg-muted inline-flex"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
-                  )}
                 </td>
                 <td className="px-1 py-3 text-center">
                   <button
@@ -672,16 +674,25 @@ export default function PagesTab() {
                         <InlineEdit value={p.description ?? ""} onSave={(v) => updateDescription(p.id, v)} />
                       </div>
                       <DropdownMenuSeparator />
-                      {p.archived_at && (
-                        <>
-                          <DropdownMenuItem onSelect={() => unarchive([p.id])}>
-                            <ArchiveRestore className="w-4 h-4 mr-2" /> Restore from archive
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                        </>
+                      {p.archived_at ? (
+                        <DropdownMenuItem onSelect={() => unarchive([p.id])}>
+                          <ArchiveRestore className="w-4 h-4 mr-2" /> Restore from archive
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onSelect={() => archive([p.id])}>
+                          <Archive className="w-4 h-4 mr-2" /> Archive
+                        </DropdownMenuItem>
                       )}
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onSelect={() => regenerateOne(p)}>
                         <RefreshCw className="w-4 h-4 mr-2" /> Regenerate thumbnail
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onSelect={() => requestDelete(p)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" /> Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -742,6 +753,7 @@ export default function PagesTab() {
     </div>
     )}
 
+      <CreatePageDialog open={creating} onOpenChange={setCreating} onCreated={() => load()} />
     </div>
   );
 }
