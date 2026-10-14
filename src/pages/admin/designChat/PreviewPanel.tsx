@@ -15,10 +15,10 @@ export default function PreviewPanel() {
 
   return (
     <section className="h-full min-h-0" aria-label="Preview">
-      <div ref={boxRef} className={cn("relative h-full min-h-0 bg-muted p-3 flex justify-center", coverFull && "fixed inset-0 z-50 bg-background p-0")}>
-        {waiting && <span className="absolute left-3 top-3 z-20 rounded-br-lg bg-amber-500 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-950 pointer-events-none">Draft · not published</span>}
+      <div ref={boxRef} className={cn("relative h-full min-h-0 bg-muted flex justify-center", coverFull && "fixed inset-0 z-50 bg-background")}>
+        {waiting && <span className="absolute left-0 top-0 z-20 rounded-br-lg bg-amber-500 px-2.5 py-0.5 text-[11px] font-extrabold uppercase tracking-wide text-amber-950 pointer-events-none">Draft · not published</span>}
 
-        <div className={cn("relative h-full max-w-full overflow-hidden bg-white", inFull ? "" : "rounded-md border", waiting && !inFull && "border-[3px] border-amber-500")}
+        <div className={cn("relative h-full max-w-full overflow-hidden bg-white")}
           style={{ width: WIDTH[device] }}>
           {preview.frames.map((f) => (
             <iframe
@@ -33,13 +33,13 @@ export default function PreviewPanel() {
         </div>
 
         {!preview.loaded && (
-          <div className="absolute inset-3 z-10 grid place-items-center rounded-md border bg-background p-6 text-center text-sm text-muted-foreground">
+          <div className="absolute inset-0 z-10 grid place-items-center bg-background p-6 text-center text-sm text-muted-foreground">
             {preview.error ?? "Starting the preview…"}
           </div>
         )}
 
         {preview.updating && preview.loaded && (
-          <div className="pointer-events-none absolute inset-3 z-10 grid place-items-center rounded-md bg-background/50" role="status" aria-live="polite">
+          <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center bg-background/50" role="status" aria-live="polite">
             <div className="flex max-w-[min(92%,420px)] items-center gap-3 rounded-xl border bg-background px-4 py-3.5 shadow-lg">
               <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" aria-hidden="true" />
               <div>
