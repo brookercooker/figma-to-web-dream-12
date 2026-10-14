@@ -43,7 +43,7 @@ function TabSkeleton() {
 
 /**
  * The Site Manager: tabs along the top (the preview of the site, then Pages, Objects, Images and Videos, each its own
- * screen), and the design chat always on the right. Choosing a page in the Pages tab points the chat at it. The chat and the
+ * screen), and the design chat always on the left. Choosing a page in the Pages tab points the chat at it. The chat and the
  * preview are kept alive while another tab is open, so nothing restarts when someone switches.
  */
 export default function AdminIndex() {
@@ -202,8 +202,8 @@ export default function AdminIndex() {
           </main>
         </div>
 
-        {/* Right: the chat, on every tab. */}
-        <aside className="h-[45vh] shrink-0 border-t lg:h-screen lg:w-[clamp(320px,26vw,400px)] lg:border-l lg:border-t-0" aria-label="Chat">
+        {/* Left: the chat, on every tab. */}
+        <aside className="h-[45vh] shrink-0 border-t lg:order-first lg:h-screen lg:w-[clamp(320px,26vw,400px)] lg:border-r lg:border-t-0" aria-label="Chat">
           <ChatPanel />
         </aside>
       </div>
