@@ -346,7 +346,7 @@ function AdminShell() {
                   </button>
                 </div>
                 <div className="flex shrink-0 flex-col gap-1.5">
-                  <Button type="button" size="sm" disabled={finishing} onClick={() => void saveChanges()}>{finishing ? "Saving…" : "Save changes"}</Button>
+                  <Button type="button" size="sm" disabled={finishing} onClick={() => void saveChanges()}>{finishing ? "Saving…" : "Finish Editing"}</Button>
                   <Button type="button" size="sm" variant="outline" disabled={finishing} onClick={discardEditing}>Discard changes</Button>
                 </div>
               </div>
