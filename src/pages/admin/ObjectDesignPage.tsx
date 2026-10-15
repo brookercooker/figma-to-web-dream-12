@@ -3058,7 +3058,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     ];
     return (
       <div key={key} data-inspector-part={part} className="relative scroll-mt-24">
-        <ToolHeader icon={Icon} title={title} subtitle="Selected item" menu={menu} />
+        <ToolHeader icon={Icon} title={title} menu={menu} />
         {order.map((g, gi) => buckets[g]?.length ? (
           <ToolGroup key={g} title={isImages || isVideos ? g : `${g === "Content" ? "Text content" : "Text style"}`} defaultOpen={gi === 0}>
             {buckets[g]}
@@ -4072,6 +4072,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   /** Header for the selected block's options: name, type, and the block's actions in a "…" menu. */
   const panelHeader = (s: Section, title: string) => {
     const i = sections.findIndex((x) => x.id === s.id);
+    if (title !== "Block") return <p className="pb-2 text-xs text-muted-foreground">Section {i + 1} · {SECTION_LABEL[s.type]}</p>;
     return (
       <ToolHeader
         icon={LayoutGrid}
@@ -4080,8 +4081,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         menu={[
           ...(i > 0 ? [{ label: "Move up", icon: ArrowUp, onSelect: () => move(s.id, -1) }] : []),
           ...(i < sections.length - 1 ? [{ label: "Move down", icon: ArrowDown, onSelect: () => move(s.id, 1) }] : []),
-          { label: "Duplicate block", icon: Copy, onSelect: () => duplicateSection(s.id) },
-          { label: "Delete block", icon: Trash2, onSelect: () => remove(s.id), destructive: true },
+          { label: "Duplicate section", icon: Copy, onSelect: () => duplicateSection(s.id) },
+          { label: "Delete section", icon: Trash2, onSelect: () => remove(s.id), destructive: true },
         ]}
       />
     );
