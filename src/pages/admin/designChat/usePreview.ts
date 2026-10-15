@@ -34,6 +34,9 @@ export function usePreview(state: RelayState | null, path: string | null = null)
   const alive = useRef(true);
   const pathRef = useRef<string | null>(path);
   pathRef.current = path;
+  /** Where the visitor has gone inside the preview, used for the next fresh copy instead of `path`. */
+  const remembered = useRef<string | null>(null);
+  const rememberPath = useCallback((p: string | null) => { remembered.current = p; }, []);
   const reloadAfter = useRef(false); // the page changed while an address was being fetched: fetch once more
   const expiry = useRef<ReturnType<typeof setTimeout>>();
   const swapTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
@@ -82,7 +85,7 @@ export function usePreview(state: RelayState | null, path: string | null = null)
       if (!res.ok || !data.embed_url) throw new Error(data.error || "Couldn't load the preview.");
       if (!alive.current) return;
       const id = ++seq.current;
-      setFrames((fs) => [...fs, { id, url: withPath(data.embed_url, pathRef.current) }]);
+      setFrames((fs) => [...fs, { id, url: withPath(data.embed_url, remembered.current ?? pathRef.current) }]);
       swapTimers.current[id] = setTimeout(() => finish(id), SWAP_TIMEOUT_MS);
       const wait = Math.max(30_000, new Date(data.expires_at).getTime() - Date.now() - REFRESH_MARGIN_MS);
       expiry.current = setTimeout(loadPreview, wait);
@@ -133,6 +136,7 @@ export function usePreview(state: RelayState | null, path: string | null = null)
   const firstPath = useRef(true);
   useEffect(() => {
     if (firstPath.current) { firstPath.current = false; return; }
+    remembered.current = null; // a page was picked on purpose
     if (loading.current) reloadAfter.current = true; // an address is being fetched for the old page; fetch again when it's done
     else loadPreview();
   }, [path, loadPreview]);
@@ -153,5 +157,5 @@ export function usePreview(state: RelayState | null, path: string | null = null)
     lastBuiltAt.current = builtAt ?? 0;
   }, [builtAt, state === null]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { frames, shownId, loaded, updating, error, finish, lastReloadAt };
+  return { frames, shownId, loaded, updating, error, finish, lastReloadAt, rememberPath };
 }

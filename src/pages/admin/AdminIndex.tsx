@@ -63,8 +63,21 @@ export default function AdminIndex() {
 
 function AdminShell() {
   const designChat = useDesignChat();
-  const { workingPage, editing, startEditing, stopEditing, clearWorkingPage } = designChat;
-  const { setSlot } = useEditorSlot();
+  const { workingPage, editing, startEditing, stopEditing, clearWorkingPage, selectPage, previewLocation, previewPage } = designChat;
+  const { setSlot, saveAll } = useEditorSlot();
+  // Saves the editor's held changes, then leaves edit mode; on a failed save it stays in edit mode.
+  const [finishing, setFinishing] = useState(false);
+  const finishingRef = useRef(false);
+  const finishEditing = async (thenClear = false) => {
+    if (finishingRef.current) return false;
+    finishingRef.current = true;
+    setFinishing(true);
+    try {
+      const ok = await saveAll();
+      if (ok) { stopEditing(); if (thenClear) clearWorkingPage(); }
+      return ok;
+    } finally { finishingRef.current = false; setFinishing(false); }
+  };
   const location = useLocation();
   const navigate = useNavigate();
   const tab: TabKey = useMemo(() => {
@@ -83,7 +96,7 @@ function AdminShell() {
     try { localStorage.setItem("siteManager:chatCollapsed", String(chatCollapsed)); } catch { /* no storage: ignore */ }
   }, [chatCollapsed]);
   // Editing only exists on the Preview tab.
-  useEffect(() => { if (tab !== "preview") stopEditing(); }, [tab, stopEditing]);
+  useEffect(() => { if (tab !== "preview" && editing) void finishEditing(); }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
   // Entering edit mode opens a collapsed chat column; leaving it puts it back the way it was.
   const collapsedBeforeEdit = useRef<boolean | null>(null);
   useEffect(() => {
@@ -97,10 +110,15 @@ function AdminShell() {
       collapsedBeforeEdit.current = null;
     }
   }, [editing]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The page the button edits: the one the visitor is on in the preview, or, before the preview reports, the working page.
+  const editTarget = previewLocation ? previewPage : workingPage?.id ? workingPage : null;
+  const noPageHere = !!previewLocation && !previewPage;
+  const showEditButton = (tab === "preview" || editing) && (!!editTarget || noPageHere);
   const toggleEditing = () => {
-    if (editing) { stopEditing(); return; }
+    if (editing) { void finishEditing(); return; }
+    if (!editTarget?.id) return;
+    selectPage({ id: editTarget.id, name: editTarget.name, path: editTarget.path });
     startEditing();
-    if (tab !== "preview") navigate("/manage/preview");
   };
   const checkedFor = useRef<string | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -123,7 +141,7 @@ function AdminShell() {
     if (nav && nav.scrollWidth - nav.clientWidth > 1 && squeeze < 3) setSqueeze(squeeze + 1);
     else needsMeasure.current = false;
   });
-  useLayoutEffect(() => { remeasure(); }, [tab, isAdmin, !!workingPage?.id, editing]);
+  useLayoutEffect(() => { remeasure(); }, [tab, isAdmin, showEditButton, editing]);
   useEffect(() => {
     const row = rowRef.current;
     if (!row) return;
@@ -184,15 +202,17 @@ function AdminShell() {
                 })}
               </nav>
 
-              {workingPage?.id && (
+              {showEditButton && (
                 <Button
                   type="button"
                   variant={editing ? "default" : "outline"}
                   size="sm"
-                  className={cn("h-9 shrink-0 gap-2", squeeze >= 2 && "w-9 px-0")}
+                  className={cn("h-9 shrink-0 gap-2", squeeze >= 2 && "w-9 px-0", !editing && !editTarget && "cursor-not-allowed opacity-50")}
                   aria-pressed={editing}
                   aria-label={editing ? "Editing" : "Edit page"}
-                  title={editing ? `Editing ${workingPage.name} — press to return to the chat` : `Edit ${workingPage.name}`}
+                  title={editing ? `Editing ${workingPage?.name ?? ""} — press to save and return to the chat` : editTarget ? `Edit ${editTarget.name}` : "This address isn't a page in the Site Manager."}
+                  disabled={editing && finishing}
+                  aria-disabled={!editing && !editTarget}
                   onClick={toggleEditing}
                 >
                   <Pencil className="h-4 w-4" />
@@ -300,11 +320,11 @@ function AdminShell() {
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground">Editing</p>
                   <p className="truncate text-sm font-medium" title={workingPage.name}>{workingPage.name}</p>
-                  <button type="button" onClick={clearWorkingPage} className="mt-0.5 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+                  <button type="button" disabled={finishing} onClick={() => void finishEditing(true)} className="mt-0.5 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
                     Stop working on this page
                   </button>
                 </div>
-                <Button type="button" size="sm" className="shrink-0" onClick={stopEditing}>Done</Button>
+                <Button type="button" size="sm" className="shrink-0" disabled={finishing} onClick={() => void finishEditing()}>{finishing ? "Saving…" : "Done"}</Button>
               </div>
               <div ref={setSlot} aria-label="Page editing options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
             </div>
