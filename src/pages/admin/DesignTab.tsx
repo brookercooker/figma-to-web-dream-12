@@ -1,3 +1,5 @@
+import { createPortal } from "react-dom";
+import { useEditorSlot } from "./designChat/EditorSlot";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { codedPages, pageChunks, chunkName } from "./codedPages";
@@ -155,10 +157,12 @@ function PageImportProbe({ path, onDone }: { path: string; onDone: (parts: { nam
   );
 }
 
-export default function DesignTab() {
+export default function DesignTab({ embedded = false, pageId }: { embedded?: boolean; pageId?: string } = {}) {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const selectedId = params.get("page") ?? "";
+  // Embedded in the Site Manager's edit mode, the page comes from the working page, not the address.
+  const selectedId = embedded ? pageId ?? "" : params.get("page") ?? "";
+  const { slot } = useEditorSlot();
 
   const [pages, setPages] = useState<PageRow[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -279,11 +283,12 @@ export default function DesignTab() {
     setDirty(false);
     // Pages open in Preview unless the link asks for Edit (e.g. returning from the object editor).
     const qs = new URLSearchParams(window.location.search);
-    const wantEdit = qs.get("mode") === "edit";
+    // Embedded, the page always opens ready to edit.
+    const wantEdit = embedded || qs.get("mode") === "edit";
     const inPlace = !parsed.length && !!page && !!codedPages[previewSrc(page.path)];
     // Coded pages are edited in place, so they stay on the page view.
     setShowLive(!wantEdit || inPlace);
-    if (qs.has("mode")) {
+    if (!embedded && qs.has("mode")) {
       // Only the first page opened from that link starts in Edit.
       qs.delete("mode");
       window.history.replaceState(window.history.state, "", `${window.location.pathname}?${qs}`);
@@ -333,7 +338,7 @@ export default function DesignTab() {
   const deletePage = async (pg: PageRow) => {
     await (supabase as any).from("pages").delete().eq("id", pg.id);
     setPages((cur) => cur.filter((x) => x.id !== pg.id));
-    if (pg.id === selectedId) {
+    if (pg.id === selectedId && !embedded) {
       const next = new URLSearchParams(params);
       next.delete("page");
       setParams(next, { replace: true });
@@ -342,6 +347,7 @@ export default function DesignTab() {
   };
 
   const select = (id: string) => {
+    if (embedded) return;
     const next = new URLSearchParams(params);
     next.set("page", id);
     setParams(next, { replace: true });
