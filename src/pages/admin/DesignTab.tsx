@@ -888,7 +888,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         <p className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">This page can't be edited here.</p>
       ) : quick && showLive ? (
         <>
-          
           {Object.keys(inlineEdits).length > 0 && (
             <Button variant="outline" size="sm" className="self-start" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
           )}
@@ -1158,7 +1157,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                   })()}
                 </div>
                 {quick && !embedded && (
-                  <aside className={`${h70} overflow-y-auto border-l bg-background p-4">
+                  <aside className={`${h70} overflow-y-auto border-l bg-background p-4`}>
                     {stylePanel}
                   </aside>
                 )}
