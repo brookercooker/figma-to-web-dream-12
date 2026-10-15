@@ -338,11 +338,16 @@ function AdminShell() {
           </div>
           {editing && workingPage && (
             <div className={cn("flex min-h-0 flex-1 flex-col", chatCollapsed && "hidden")}>
-              {objectOpen && (
-                <button type="button" aria-label="Back to page" disabled={finishing} onClick={() => void backToPage()} className="inline-flex items-center gap-1.5 self-start px-3 pt-2 text-xs text-muted-foreground hover:text-foreground">
-                  <ArrowLeft className="h-3 w-3" aria-hidden />Back to page
+              <div className="flex items-center justify-between px-3 pt-2">
+                {objectOpen && (
+                  <button type="button" aria-label="Back to page" disabled={finishing} onClick={() => void backToPage()} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                    <ArrowLeft className="h-3 w-3" aria-hidden />Back to page
+                  </button>
+                )}
+                <button type="button" aria-label="Return to preview" disabled={finishing} onClick={() => void finishEditing()} className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                  <Eye className="h-3 w-3" aria-hidden />Return to preview
                 </button>
-              )}
+              </div>
               <div className="flex shrink-0 flex-col gap-2 border-b px-3 py-3">
                 <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Editing</p>
