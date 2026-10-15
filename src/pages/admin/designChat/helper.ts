@@ -75,14 +75,24 @@ export type RelayState = {
   approval?: Approval | null;
 };
 
+export type ApprovalField = {
+  key: string;
+  label: string;
+  kind: "text" | "longtext" | "number" | "yesno" | "choice";
+  options?: string[];
+  required: boolean;
+  help?: string;
+};
 export type Approval = {
   id: string;
-  title: string;                       // plain-words summary, e.g. "Change the site's database"
-  detail: string;                      // what exactly is proposed, plain text, may be long
-  rule: "ok" | "editor" | "never";     // ok = can be answered here; editor = secrets/keys, never answered here; never = publishing, decline only
-  editorUrl: string | null;            // link to the builder's own editor (only for rule "editor")
+  title: string;                       // plain-words summary, e.g. "Review the builder's plan"
+  detail: string;                      // for a plan: the plan text; otherwise what exactly is proposed. Plain text, may be long
+  kind: "plan" | "action";
+  rule: "ok" | "editor" | "never";     // ok = can be answered here; editor = can only be answered in the builder's own editor (secrets/keys, forms this chat can't show); never = publishing, decline only
+  editorUrl: string | null;
+  fields: ApprovalField[] | null;      // values the builder wants typed in, if any
   createdAt: number;
-  deciding: boolean;                   // an answer is being sent right now
+  deciding: boolean;
 };
 
 /** Used until the helper has said what it accepts (these match the helper's own rules). */
