@@ -17,6 +17,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import { elementAtPath } from "@/components/CodedChunk";
 import { supabase } from "@/prototype/client";
 import { notifyContentEdited } from "./designChat/contentSync";
+import { useEditorSlot } from "./designChat/EditorSlot";
+import { useDesignChatOptional } from "./designChat/DesignChatContext";
+import EmbeddedBox from "./designChat/EmbeddedBox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1029,9 +1032,14 @@ function BlockCanvas({
 }
 
 
-export default function ObjectDesignPage() {
+export default function ObjectDesignPage({ embedded = false, objectId, focusSection, onBack }: { embedded?: boolean; objectId?: string; focusSection?: string; onBack?: () => void } = {}) {
   const [params, setParams] = useSearchParams();
-  const selectedId = params.get("object") ?? "";
+  // Embedded in the Site Manager's edit view, the object comes from the props, never the address.
+  const selectedId = embedded ? objectId ?? "" : params.get("object") ?? "";
+  const returnPage = embedded ? "embedded" : params.get("returnPage");
+  const { slot, registerSave } = useEditorSlot();
+  const chat = useDesignChatOptional();
+  const frameCls = embedded ? "" : "border rounded-lg";
 
   const [objects, setObjects] = useState<ObjectRow[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
@@ -1043,11 +1051,11 @@ export default function ObjectDesignPage() {
   /** One not-yet-converted part being turned into blocks. */
   const [converting, setConverting] = useState<{ id: string; chunk: string } | null>(null);
   /** Opened from a page section: show just that part until "Show full object". */
-  const [focusChunk, setFocusChunk] = useState<string | null>(() => new URLSearchParams(window.location.search).get("section"));
+  const [focusChunk, setFocusChunk] = useState<string | null>(() => embedded ? focusSection ?? null : new URLSearchParams(window.location.search).get("section"));
   const canvasRef = useRef<HTMLElement>(null);
   const inlineSel = useInlineSelection();
   const [viewport, setViewport] = useState<ViewportKey>("desktop");
-  const viewportWidth = VIEWPORTS.find((v) => v.key === viewport)?.width;
+  const viewportWidth = embedded ? undefined : VIEWPORTS.find((v) => v.key === viewport)?.width;
   const [createOpen, setCreateOpen] = useState(false);
   const [q, setQ] = useState("");
   const [libraryOpen, setLibraryOpen] = useState(!selectedId);
@@ -1438,6 +1446,7 @@ export default function ObjectDesignPage() {
   useEffect(() => {
     if (!loaded || !selectedId) return;
     if (objects.some((o) => o.id === selectedId)) return;
+    if (embedded) { toast.error("That object couldn't be found."); return; }
     toast.error("That object couldn't be found. Pick one from the list.");
     const next = new URLSearchParams(params);
     next.delete("object");
@@ -1457,12 +1466,12 @@ export default function ObjectDesignPage() {
     if (parsed.length) {
       setSections(parsed);
       setActiveId("");
-      setPreview(!params.get("returnPage"));
+      setPreview(!returnPage);
     } else if (object?.component_key && objectRegistry[object.component_key]) {
       // Built in code: show it as it is today until the user makes it editable.
       setSections([]);
       setActiveId("");
-      setPreview(!params.get("returnPage"));
+      setPreview(!returnPage);
     } else {
       // Nothing designed yet: open straight into an editable block.
       const s = makeSection("free");
@@ -2193,9 +2202,35 @@ export default function ObjectDesignPage() {
     }
   };
 
+  // Embedded: no auto-save; the Site Manager saves through this when leaving (Back to page, Done, tab switch).
+  const saveHeldRef = useRef<() => Promise<boolean>>(async () => true);
+  saveHeldRef.current = async () => {
+    if (!dirty || !object) return true;
+    const id = object.id;
+    const content = sections;
+    const updated_at = new Date().toISOString();
+    const { error } = await (supabase as any).from("object_registry").update({ content, updated_at }).eq("id", id);
+    if (error) { toast.error(error.message ?? "Could not save this object"); return false; }
+    notifyContentEdited();
+    setObjects((cur) => cur.map((o) => (o.id === id ? ({ ...o, content, updated_at } as any) : o)));
+    setSections((cur) => { if (cur === content) setDirty(false); return cur; });
+    return true;
+  };
+  useEffect(() => {
+    if (!embedded) return;
+    registerSave(() => saveHeldRef.current());
+    return () => registerSave(null);
+  }, [embedded, registerSave]);
+  useEffect(() => {
+    if (!embedded || !dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [embedded, dirty]);
+
   // Auto-save: quietly store changes shortly after the user stops editing.
   useEffect(() => {
-    if (!dirty || !object) return;
+    if (embedded || !dirty || !object) return;
     const id = object.id;
     const content = sections;
     const t = window.setTimeout(async () => {
@@ -4259,8 +4294,83 @@ export default function ObjectDesignPage() {
     }
   };
 
+  // Embedded: the editing options, drawn in the Site Manager's left column.
+  const embeddedSel = !preview ? sections.find((x) => x.id === activeId) : undefined;
+  const embeddedTools = !embedded ? null : (
+    <div className="flex flex-col gap-5 p-3 text-sm">
+      <div className="space-y-1.5">
+        <Button type="button" variant="outline" className="w-full gap-2" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" /> Back to page
+        </Button>
+        {object && <p className="truncate text-xs text-muted-foreground" title={object.name}>{object.name}</p>}
+      </div>
+      {object && (
+        <div className="inline-flex self-start rounded-md border overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setPreview(true)}
+            className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 ${preview ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+          >
+            <Eye className="w-3.5 h-3.5" /> Preview
+          </button>
+          <button
+            type="button"
+            onClick={() => enterEdit()}
+            className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 ${!preview ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+          >
+            <Pencil className="w-3.5 h-3.5" /> Edit
+          </button>
+        </div>
+      )}
+      {object && preview && (
+        <p className="text-xs text-muted-foreground">
+          {!sections.length && codedKey ? "This object was built in code and can't be changed here." : "This is how the object looks. Switch to Edit to change it."}
+        </p>
+      )}
+      {object && !preview && !importing && !converting && (
+        <>
+          <div className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Add</p>
+            <div className="flex flex-wrap gap-2">
+              {ADD_ITEMS.map((item) => (
+                <Button key={item.kind} type="button" variant="outline" size="sm" className="gap-2" title={`Add ${item.label.toLowerCase()}`} onClick={() => addElement(item.kind)}>
+                  <item.icon className="h-4 w-4" /> {item.label}
+                </Button>
+              ))}
+            </div>
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => add("free")}>
+              <Plus className="w-4 h-4" /> Add another section
+            </Button>
+          </div>
+          {focusMatches && (
+            <div className="space-y-2 rounded-md border bg-muted/40 p-3 text-xs">
+              <p className="text-muted-foreground">Showing only the section you chose. Changes save to this object and apply everywhere it's used.</p>
+              <Button variant="outline" size="sm" onClick={() => setFocusChunk(null)}>Show full object</Button>
+            </div>
+          )}
+          {embeddedSel ? (() => {
+            const s = embeddedSel;
+            const showToolbar = s.type === "free" && optionsFor === s.id && !focusPart;
+            const title = showToolbar ? "Block" : partTypeLabel(s, focusPart);
+            return (
+              <div className="-mx-3 border-t">
+                <p className="border-b bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
+                {inlineSel && <SelectionStylePanel />}
+                {showToolbar && <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s as FreeSection)}</div>}
+                <div data-inspector-section={s.id} className="inspector-flush p-4">{Inspector({ section: s })}</div>
+              </div>
+            );
+          })() : (
+            <p className="text-xs text-muted-foreground">Click a block to change its options.</p>
+          )}
+        </>
+      )}
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className={embedded ? "h-full min-h-0 bg-background" : "min-h-screen bg-background"}>
+      {!embedded && (
       <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
         <div className="flex flex-wrap items-center gap-3 px-4 py-3">
           <Button asChild variant="ghost" size="sm" className="gap-1.5">
@@ -4320,8 +4430,9 @@ export default function ObjectDesignPage() {
           )}
         </div>
       </header>
+      )}
 
-      {params.get("returnPage") && (
+      {!embedded && params.get("returnPage") && (
         <div className="px-4 pt-4">
           <Link
             to={`/manage/design?page=${params.get("returnPage")}&mode=edit`}
@@ -4342,11 +4453,11 @@ export default function ObjectDesignPage() {
       />
 
       <main
-        className={`grid grid-cols-1 gap-6 px-4 py-6 ${
+        className={embedded ? "h-full min-h-0" : `grid grid-cols-1 gap-6 px-4 py-6 ${
           libraryOpen ? "lg:grid-cols-[260px_1fr_auto]" : "lg:grid-cols-[44px_1fr_auto]"
         }`}
       >
-        {!libraryOpen ? (
+        {embedded ? null : !libraryOpen ? (
           <aside className="lg:sticky lg:top-4 lg:self-start">
             <Button
               variant="outline"
@@ -4407,9 +4518,10 @@ export default function ObjectDesignPage() {
         </aside>
         )}
 
+        <EmbeddedBox chat={embedded ? chat : null}>
         <section
           ref={canvasRef}
-          className="min-w-0 w-full mx-auto transition-[max-width]"
+          className={embedded ? "min-w-0 w-full" : "min-w-0 w-full mx-auto transition-[max-width]"}
           style={viewportWidth ? { maxWidth: viewportWidth } : undefined}
         >
           {!object ? (
@@ -4417,7 +4529,7 @@ export default function ObjectDesignPage() {
               Pick an object on the left to design it, or create a new one.
             </div>
           ) : importing && codedKey ? (
-            <div className="border rounded-lg p-12 text-center text-sm text-muted-foreground">
+            <div className={`${frameCls} p-12 text-center text-sm text-muted-foreground`}>
               Turning this object into editable blocks…
               <CodedImportProbe
                 codedKey={codedKey}
@@ -4428,7 +4540,7 @@ export default function ObjectDesignPage() {
               />
             </div>
           ) : converting && codedKey ? (
-            <div className="border rounded-lg p-12 text-center text-sm text-muted-foreground">
+            <div className={`${frameCls} p-12 text-center text-sm text-muted-foreground`}>
               Turning this section into editable blocks…
               <CodedImportProbe
                 codedKey={codedKey}
@@ -4438,12 +4550,14 @@ export default function ObjectDesignPage() {
               />
             </div>
           ) : preview ? (
-            <div className="border rounded-lg bg-background overflow-hidden">
+            <div className={`${frameCls} bg-background overflow-hidden`}>
+              {!embedded && (
               <div className="flex flex-wrap items-center justify-between gap-2 border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
                 {!sections.length && codedKey
                   ? "This object was built in code and can't be changed here."
                   : "This is how the object looks. Switch to Edit to change it."}
               </div>
+              )}
               <div className="p-4">
                 {sections.length ? (
                   <SectionFlowList sections={shown} />
@@ -4464,15 +4578,17 @@ export default function ObjectDesignPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-8">
+            <div className={embedded ? "space-y-8 p-4" : "space-y-8"}>
+              {!embedded && (
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => add("free")}>
                   <Plus className="w-4 h-4" /> Add another section
                 </Button>
               </div>
+              )}
 
 
-              {focusMatches && (
+              {focusMatches && !embedded && (
                 <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/40 px-4 py-2 text-sm">
                   <span className="text-muted-foreground">Showing only the section you chose. Changes save to this object and apply everywhere it's used.</span>
                   <Button variant="outline" size="sm" onClick={() => setFocusChunk(null)}>Show full object</Button>
@@ -4634,6 +4750,7 @@ export default function ObjectDesignPage() {
               })}
 </ContainedBgContext.Provider>
 
+              {!embedded && (
               <div className="sticky bottom-4 z-40 flex justify-center">
                 <div className="flex w-full flex-wrap items-center gap-3 rounded-2xl border bg-background/95 px-5 py-4 shadow-lg backdrop-blur">
                   <span className="pl-1 pr-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -4653,11 +4770,13 @@ export default function ObjectDesignPage() {
                   ))}
                 </div>
               </div>
+              )}
             </div>
           )}
         </section>
+        </EmbeddedBox>
 
-        {object && !preview && (() => {
+        {!embedded && object && !preview && (() => {
           const s = sections.find((x) => x.id === activeId);
           if (!s) return null;
           const showToolbar = s.type === "free" && optionsFor === s.id && !focusPart;
@@ -4678,6 +4797,7 @@ export default function ObjectDesignPage() {
           );
         })()}
       </main>
+      {embedded && slot && createPortal(embeddedTools, slot)}
 
       {toolbar && (() => {
         const sec = sections.find((s) => s.id === toolbar.sectionId) as FreeSection | undefined;
