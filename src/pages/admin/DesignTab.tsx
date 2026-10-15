@@ -7,7 +7,6 @@ import type { Section } from "@/components/ObjectSections";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
 import EmbeddedBox from "./designChat/EmbeddedBox";
 import { Input } from "@/components/ui/input";
