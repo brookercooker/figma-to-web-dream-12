@@ -763,6 +763,78 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     </>
   );
 
+  // Embedded: the editing options are drawn in the Site Manager's left column instead of around the canvas.
+  const notEditable = !!page && hasExisting && !codedPages[previewSrc(page.path)];
+  const blockLabel = (b: Block) =>
+    b.type === "object" ? `Object: ${b.name ?? "Saved object"}`
+    : b.type === "image" ? "Image"
+    : b.type === "video" ? "Video"
+    : `${b.type === "heading" ? "Heading" : "Text"}: ${(b as TextBlock).text}`;
+  const slotTools = !embedded ? null : (
+    <div className="flex flex-col gap-5 p-3 text-sm">
+      {!page ? (
+        <p className="text-xs text-muted-foreground">Opening the page…</p>
+      ) : notEditable ? (
+        <p className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">This page can't be edited here.</p>
+      ) : quick && showLive ? (
+        <>
+          <p className="text-xs text-muted-foreground">
+            Click any wording to type over it, or select wording or a picture to change its style on the left. Changes save on their own.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">{modeAndDevice}</div>
+          {Object.keys(inlineEdits).length > 0 && (
+            <Button variant="outline" size="sm" className="self-start" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
+          )}
+          <div>{stylePanel}</div>
+        </>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center gap-2">{modeAndDevice}</div>
+          <div className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Add a section</p>
+            <div className="flex flex-wrap gap-2">{addButtons}</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" disabled={saving || !dirty} onClick={save}>{saving ? "Saving…" : "Save"}</Button>
+            <span className="text-xs text-muted-foreground">{dirty ? "Unsaved changes" : "All changes saved"}</span>
+          </div>
+          {!!blocks.length && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Sections</p>
+              <ol className="divide-y rounded-md border">
+                {blocks.map((b, i) => (
+                  <li key={b.id} className={`flex items-center gap-1 px-2 py-1.5 ${b.id === activeId ? "bg-muted" : ""}`}>
+                    <button type="button" className="min-w-0 flex-1 truncate text-left text-xs" title={blockLabel(b)}
+                      onClick={() => { setActiveId(b.id); setShowLive(false); document.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>
+                      {blockLabel(b)}
+                    </button>
+                    {(i > 0 || (hasExisting && currentFirst)) && (
+                      <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
+                    )}
+                    {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
+                      <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                    )}
+                    <ToolButton title="Delete block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+          {(() => {
+            const i = blocks.findIndex((b) => b.id === activeId);
+            if (i < 0 || showLive) return null;
+            return (
+              <div className="space-y-2">
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Selected section</p>
+                <div className="flex flex-wrap items-center gap-1 rounded-md border p-2">{blockTools(blocks[i], i)}</div>
+              </div>
+            );
+          })()}
+        </>
+      )}
+    </div>
+  );
+
   const existingCard = page ? (
     <div key="current-page-section">
       {addRow(currentFirst ? 0 : blocks.length, "Add a section above")}
@@ -803,9 +875,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
 
 
   return (
-    <div className={`grid grid-cols-1 gap-6 ${listOpen ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[auto_1fr]"}`}>
-      {/* Page list */}
-      {!listOpen ? (
+    <div className={embedded ? "min-w-0" : `grid grid-cols-1 gap-6 ${listOpen ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[auto_1fr]"}`}>
+      {/* Page list (not when embedded in the Site Manager's edit mode) */}
+      {embedded ? null : !listOpen ? (
         <aside className="lg:sticky lg:top-4 lg:self-start">
           <Button variant="outline" size="icon" title="Show pages" onClick={() => setListOpen(true)}>
             <PanelLeftOpen className="w-4 h-4" />
@@ -1178,6 +1250,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         </div>
       )}
 
+      {embedded && slot && createPortal(slotTools, slot)}
       <CreatePageDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
