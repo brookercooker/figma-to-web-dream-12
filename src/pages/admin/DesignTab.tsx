@@ -1134,8 +1134,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     )}
                   </div>
                 )}
-                <div className={quick && !embedded ? "grid grid-cols-[1fr_260px]" : ""}>
-                <div className="h-[70vh] overflow-y-auto bg-background">
+                <div className={quick && !embedded ? "grid grid-cols-[1fr_260px]" : embedded ? "h-full" : ""}>
+                <div className={`${h70} overflow-y-auto bg-background`}>
                   {(() => {
                     const C = codedPages[previewSrc(page.path)];
                     return (
@@ -1173,7 +1173,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     </div>
                   ) : (
                     <div className="bg-muted/40 py-4">
-                      <DeviceFrame title={`${page.name} preview`} className="block h-[70vh] border bg-background shadow-sm" style={deviceStyle}>
+                      <DeviceFrame title={`${page.name} preview`} className={`block ${h70} border bg-background shadow-sm`} style={deviceStyle}>
                         <InlinePagePreview name={page.name} blocks={savedBlocks} />
                       </DeviceFrame>
                     </div>
@@ -1418,6 +1418,26 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
           setPickerFor(null);
         }}
       />
+    </div>
+  );
+}
+
+const EMBED_WIDTH: Record<"mobile" | "tablet" | "desktop", string> = { mobile: "390px", tablet: "820px", desktop: "100%" };
+
+/** Embedded: the box the Site Manager's size buttons and Full screen act on. Standalone: just the children. */
+function EmbeddedBox({ chat, children }: { chat: ReturnType<typeof useDesignChatOptional>; children: React.ReactNode }) {
+  if (!chat) return <>{children}</>;
+  const { device, coverFull, toggleFull, editBoxRef } = chat;
+  return (
+    <div ref={editBoxRef} className={cn("relative flex h-full min-h-0 justify-center bg-muted", coverFull && "fixed inset-0 z-50 bg-background")}>
+      <div className="h-full max-w-full overflow-y-auto bg-background" style={{ width: EMBED_WIDTH[device] }}>
+        {children}
+      </div>
+      {coverFull && (
+        <Button type="button" size="sm" className="absolute right-4 top-4 z-30 gap-2 bg-foreground/80" onClick={toggleFull}>
+          <Minimize2 className="h-4 w-4" /> Exit full screen
+        </Button>
+      )}
     </div>
   );
 }
