@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { RelayState } from "./helper";
 import { useHelperState } from "./useHelperState";
 import { usePreview } from "./usePreview";
@@ -11,7 +11,25 @@ import { usePreview } from "./usePreview";
 export type Device = "mobile" | "tablet" | "desktop";
 
 /** A page the person picked in the Pages tab for the chat to work on. */
-export type WorkingPage = { name: string; path: string };
+export type WorkingPage = { id?: string; name: string; path: string };
+
+/** The working page and whether it is open in the editor. Kept pure so the rules can be tested. */
+export type WorkingState = { workingPage: WorkingPage | null; editing: boolean };
+export type WorkingAction =
+  | { type: "select"; page: WorkingPage }
+  | { type: "clear" }
+  | { type: "start" }
+  | { type: "stop" };
+
+export function workingReducer(s: WorkingState, a: WorkingAction): WorkingState {
+  switch (a.type) {
+    // Picking a different page while editing keeps editing on; the editor switches to it.
+    case "select": return { workingPage: a.page, editing: s.editing && !!a.page.id };
+    case "clear": return { workingPage: null, editing: false };
+    case "start": return s.workingPage?.id ? { ...s, editing: true } : s;
+    case "stop": return s.editing ? { ...s, editing: false } : s;
+  }
+}
 
 export type DesignChat = {
   state: RelayState | null;
@@ -31,6 +49,11 @@ export type DesignChat = {
   selectPage: (page: WorkingPage) => void;
   /** Stop focusing the chat on a page (the preview stays where it is). */
   clearWorkingPage: () => void;
+  /** The working page is open in the page editor (on the Preview tab), with its options in the left column. */
+  editing: boolean;
+  /** Open the working page in the editor. Does nothing without a working page that has an id. */
+  startEditing: () => void;
+  stopEditing: () => void;
 };
 
 const Ctx = createContext<DesignChat | null>(null);
@@ -44,7 +67,6 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   });
 
   const [previewPath, setPreviewPath] = useState<string | null>(null);
-  const [workingPage, setWorkingPage] = useState<WorkingPage | null>(null);
   const preview = usePreview(state, previewPath);
   lastReload.current = preview.lastReloadAt;
 
@@ -67,16 +89,22 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     try { await boxRef.current?.requestFullscreen(); } catch { setCoverFull(true); }
   }, [coverFull]);
 
+  const [work, dispatch] = useReducer(workingReducer, { workingPage: null, editing: false });
+  const workingPage = work.workingPage;
+  const editing = work.editing;
   const selectPage = useCallback((page: WorkingPage) => {
-    setWorkingPage(page);
+    dispatch({ type: "select", page });
     setPreviewPath(page.path);
   }, []);
-  const clearWorkingPage = useCallback(() => setWorkingPage(null), []);
+  const clearWorkingPage = useCallback(() => dispatch({ type: "clear" }), []);
+  const startEditing = useCallback(() => dispatch({ type: "start" }), []);
+  const stopEditing = useCallback(() => dispatch({ type: "stop" }), []);
 
   const value = useMemo<DesignChat>(() => ({
     state, offline, refreshSoon, preview, device, setDevice, boxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
-  }), [state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage]);
+    editing, startEditing, stopEditing,
+  }), [state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
