@@ -6,18 +6,20 @@ import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Pencil } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import SiteManagerLogo from "./SiteManagerLogo";
 import ChatPanel from "./designChat/ChatPanel";
 import PreviewTools, { SubmitButton } from "./designChat/PreviewTools";
-import { DesignChatProvider } from "./designChat/DesignChatContext";
+import { DesignChatProvider, useDesignChat } from "./designChat/DesignChatContext";
+import { EditorSlotProvider, useEditorSlot } from "./designChat/EditorSlot";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
 const ImagesTab = lazy(() => import("./ImagesTab"));
 const VideoTab = lazy(() => import("./VideoTab"));
 const PreviewTab = lazy(() => import("./DesignChatTab"));
+const DesignTab = lazy(() => import("./DesignTab"));
 
 type TabKey = "preview" | "pages" | "objects" | "images" | "videos";
 
@@ -50,6 +52,19 @@ function TabSkeleton() {
  * preview are kept alive while another tab is open, so nothing restarts when someone switches.
  */
 export default function AdminIndex() {
+  return (
+    <DesignChatProvider>
+      <EditorSlotProvider>
+        <AdminShell />
+      </EditorSlotProvider>
+    </DesignChatProvider>
+  );
+}
+
+function AdminShell() {
+  const designChat = useDesignChat();
+  const { workingPage, editing, startEditing, stopEditing, clearWorkingPage } = designChat;
+  const { setSlot } = useEditorSlot();
   const location = useLocation();
   const navigate = useNavigate();
   const tab: TabKey = useMemo(() => {
@@ -67,6 +82,26 @@ export default function AdminIndex() {
   useEffect(() => {
     try { localStorage.setItem("siteManager:chatCollapsed", String(chatCollapsed)); } catch { /* no storage: ignore */ }
   }, [chatCollapsed]);
+  // Editing only exists on the Preview tab.
+  useEffect(() => { if (tab !== "preview") stopEditing(); }, [tab, stopEditing]);
+  // Entering edit mode opens a collapsed chat column; leaving it puts it back the way it was.
+  const collapsedBeforeEdit = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (editing) {
+      if (collapsedBeforeEdit.current === null) {
+        collapsedBeforeEdit.current = chatCollapsed;
+        if (chatCollapsed) setChatCollapsed(false);
+      }
+    } else if (collapsedBeforeEdit.current !== null) {
+      setChatCollapsed(collapsedBeforeEdit.current);
+      collapsedBeforeEdit.current = null;
+    }
+  }, [editing]); // eslint-disable-line react-hooks/exhaustive-deps
+  const toggleEditing = () => {
+    if (editing) { stopEditing(); return; }
+    startEditing();
+    if (tab !== "preview") navigate("/manage/preview");
+  };
   const checkedFor = useRef<string | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -88,7 +123,7 @@ export default function AdminIndex() {
     if (nav && nav.scrollWidth - nav.clientWidth > 1 && squeeze < 3) setSqueeze(squeeze + 1);
     else needsMeasure.current = false;
   });
-  useLayoutEffect(() => { remeasure(); }, [tab, isAdmin]);
+  useLayoutEffect(() => { remeasure(); }, [tab, isAdmin, !!workingPage?.id, editing]);
   useEffect(() => {
     const row = rowRef.current;
     if (!row) return;
@@ -120,7 +155,7 @@ export default function AdminIndex() {
   }, []);
 
   return (
-    <DesignChatProvider>
+    <>
       <div className="flex h-screen flex-col overflow-hidden bg-background lg:flex-row">
         {/* Right: the top bar (tabs, preview tools, Capture, account menu) and whichever tab is open. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -149,7 +184,22 @@ export default function AdminIndex() {
                 })}
               </nav>
 
-              <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />
+              {workingPage?.id && (
+                <Button
+                  type="button"
+                  variant={editing ? "default" : "outline"}
+                  size="sm"
+                  className={cn("h-9 shrink-0 gap-2", squeeze >= 2 && "w-9 px-0")}
+                  aria-pressed={editing}
+                  aria-label={editing ? "Editing" : "Edit page"}
+                  title={editing ? `Editing ${workingPage.name} — press to return to the chat` : `Edit ${workingPage.name}`}
+                  onClick={toggleEditing}
+                >
+                  <Pencil className="h-4 w-4" />
+                  {squeeze < 2 && <span>{editing ? "Editing" : "Edit page"}</span>}
+                </Button>
+              )}
+              <PreviewTools showViewControls={tab === "preview" && !editing} tight={squeeze >= 2} />
 
               <div aria-hidden className="h-9 w-px bg-border shrink-0" />
               {chatCollapsed && <SubmitButton />}
@@ -189,9 +239,16 @@ export default function AdminIndex() {
 
           <main className="relative min-h-0 flex-1 overflow-y-auto">
             {previewOpened && (
-              <div className={tab === "preview" ? "h-full" : "hidden"}>
+              <div className={tab === "preview" && !editing ? "h-full" : "hidden"}>
                 <Suspense fallback={null}>
                   <PreviewTab />
+                </Suspense>
+              </div>
+            )}
+            {tab === "preview" && editing && workingPage?.id && (
+              <div className="h-full w-full px-6 py-6">
+                <Suspense fallback={<TabSkeleton />}>
+                  <DesignTab embedded pageId={workingPage.id} />
                 </Suspense>
               </div>
             )}
@@ -234,11 +291,26 @@ export default function AdminIndex() {
               <PanelLeftClose className="h-4 w-4" />
             </Button>
           </div>
-          <div className={cn("min-h-0 flex-1", chatCollapsed && "hidden")}>
+          <div className={cn("min-h-0 flex-1", (chatCollapsed || editing) && "hidden")}>
             <ChatPanel />
           </div>
+          {editing && workingPage && (
+            <div className={cn("flex min-h-0 flex-1 flex-col", chatCollapsed && "hidden")}>
+              <div className="flex shrink-0 items-start gap-2 border-b px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">Editing</p>
+                  <p className="truncate text-sm font-medium" title={workingPage.name}>{workingPage.name}</p>
+                  <button type="button" onClick={clearWorkingPage} className="mt-0.5 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+                    Stop working on this page
+                  </button>
+                </div>
+                <Button type="button" size="sm" className="shrink-0" onClick={stopEditing}>Done</Button>
+              </div>
+              <div ref={setSlot} aria-label="Page editing options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
+            </div>
+          )}
         </aside>
       </div>
-    </DesignChatProvider>
+    </>
   );
 }

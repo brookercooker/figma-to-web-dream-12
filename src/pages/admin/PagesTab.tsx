@@ -620,7 +620,7 @@ export default function PagesTab() {
                     const chosen = designChat.workingPage?.path === pagePath;
                     return (
                       <button
-                        onClick={() => { designChat.selectPage({ name: p.name, path: pagePath }); navigate("/manage/preview"); }}
+                        onClick={() => { designChat.selectPage({ id: p.id, name: p.name, path: pagePath }); navigate("/manage/preview"); }}
                         aria-label={`Work on ${p.name} with the chat`}
                         aria-pressed={chosen}
                         title={chosen ? "The chat is working on this page" : "Work on this page with the chat"}

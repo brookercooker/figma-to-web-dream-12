@@ -1,3 +1,4 @@
+import { useEditorSlot } from "./designChat/EditorSlot";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { codedPages, pageChunks, chunkName } from "./codedPages";
@@ -155,10 +156,12 @@ function PageImportProbe({ path, onDone }: { path: string; onDone: (parts: { nam
   );
 }
 
-export default function DesignTab() {
+export default function DesignTab({ embedded = false, pageId }: { embedded?: boolean; pageId?: string } = {}) {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const selectedId = params.get("page") ?? "";
+  // Embedded in the Site Manager's edit mode, the page comes from the working page, not the address.
+  const selectedId = embedded ? pageId ?? "" : params.get("page") ?? "";
+  const { slot } = useEditorSlot();
 
   const [pages, setPages] = useState<PageRow[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -279,11 +282,12 @@ export default function DesignTab() {
     setDirty(false);
     // Pages open in Preview unless the link asks for Edit (e.g. returning from the object editor).
     const qs = new URLSearchParams(window.location.search);
-    const wantEdit = qs.get("mode") === "edit";
+    // Embedded, the page always opens ready to edit.
+    const wantEdit = embedded || qs.get("mode") === "edit";
     const inPlace = !parsed.length && !!page && !!codedPages[previewSrc(page.path)];
     // Coded pages are edited in place, so they stay on the page view.
     setShowLive(!wantEdit || inPlace);
-    if (qs.has("mode")) {
+    if (!embedded && qs.has("mode")) {
       // Only the first page opened from that link starts in Edit.
       qs.delete("mode");
       window.history.replaceState(window.history.state, "", `${window.location.pathname}?${qs}`);
@@ -333,7 +337,7 @@ export default function DesignTab() {
   const deletePage = async (pg: PageRow) => {
     await (supabase as any).from("pages").delete().eq("id", pg.id);
     setPages((cur) => cur.filter((x) => x.id !== pg.id));
-    if (pg.id === selectedId) {
+    if (pg.id === selectedId && !embedded) {
       const next = new URLSearchParams(params);
       next.delete("page");
       setParams(next, { replace: true });
@@ -342,6 +346,7 @@ export default function DesignTab() {
   };
 
   const select = (id: string) => {
+    if (embedded) return;
     const next = new URLSearchParams(params);
     next.set("page", id);
     setParams(next, { replace: true });
@@ -585,6 +590,250 @@ export default function DesignTab() {
     toast.success(`${page.name} is now ${made.length} editable sections.`);
   };
 
+  const modeAndDevice = page ? (
+    <>
+              <div className="inline-flex rounded-md border overflow-hidden mr-1">
+                <button
+                  type="button"
+                  onClick={() => { setShowLive(true); setQuick(false); }}
+                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors ${showLive && !quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                >
+                  <Eye className="w-3.5 h-3.5" /> Preview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setListOpen(false); if (hasExisting && codedPages[previewSrc(page.path)]) { setShowLive(true); setQuick(true); } else { setShowLive(false); setQuick(false); } }}
+                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${!showLive || quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Edit
+                </button>
+              </div>
+              <div className="inline-flex rounded-md border overflow-hidden mr-1" role="group" aria-label="Screen size">
+                {([["desktop", Monitor, "Desktop"], ["tablet", Tablet, "Tablet"], ["phone", Smartphone, "Phone"]] as const).map(([d, Icon, label]) => (
+                  <button
+                    key={d}
+                    type="button"
+                    title={label}
+                    aria-label={label}
+                    aria-pressed={device === d}
+                    onClick={() => setDevice(d)}
+                    className={`px-2.5 py-1.5 transition-colors ${device === d ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </button>
+                ))}
+              </div>
+    </>
+  ) : null;
+  const addButtons = (
+    <>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
+                <Boxes className="w-4 h-4" /> Object
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image")}>
+                <ImageIcon className="w-4 h-4" /> Image
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video")}>
+                <Film className="w-4 h-4" /> Video
+              </Button>
+    </>
+  );
+
+  const stylePanel = (
+    <>
+                    {inlineSel && inlineSel.scope !== "page" && (
+                      <p className="mb-4 rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+                        Part of the shared object <span className="font-medium text-foreground">{inlineSel.scope}</span>. Changes apply everywhere it's used.
+                      </p>
+                    )}
+                    <InlineStylePanel
+                      sel={inlineSel}
+                      edits={inlineSel ? scopeEdits(inlineSel.scope) : inlineEdits}
+                      onChange={(next) => changeScope(inlineSel?.scope ?? "page", next)}
+                      onReplaceImage={async () => {
+                        if (!inlineSel) return;
+                        const url = await pickImage();
+                        if (url) changeScope(inlineSel.scope, { ...scopeEdits(inlineSel.scope), [`img:${inlineSel.key}`]: url });
+                      }}
+                    />
+    </>
+  );
+  const blockTools = (b: Block, i: number) => (
+    <>
+                          {b.type === "object" ? (
+                            <>
+                              <button
+                                type="button"
+                                title={collapsed[b.id] ? "Expand object" : "Collapse object"}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
+                                }}
+                                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+                              >
+                                {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                <span>Object: {b.name ?? "Saved object"}</span>
+                              </button>
+                              <ToolButton title="Replace" onClick={() => setObjectFor(b.id)}>
+                                <Boxes className="w-4 h-4" />
+                                <span className="ml-1 text-xs">Replace</span>
+                              </ToolButton>
+                              <ToolButton
+                                title="Edit"
+                                onClick={() => navigate(`/manage/objects/design?object=${b.objectId}&returnPage=${selectedId}`)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                                <span className="ml-1 text-xs">Edit</span>
+                              </ToolButton>
+                            </>
+                          ) : b.type === "heading" || b.type === "text" ? (
+                            <>
+                              <ToolButton
+                                title={b.type === "heading" ? "Turn into text" : "Turn into heading"}
+                                active={b.type === "heading"}
+                                onClick={() => update(b.id, { type: b.type === "heading" ? "text" : "heading" } as Partial<Block>)}
+                              >
+                                <Heading className="w-4 h-4" />
+                              </ToolButton>
+                              <ToolButton title="Bold" active={!!b.bold} onClick={() => update(b.id, { bold: !b.bold } as Partial<Block>)}>
+                                <Bold className="w-4 h-4" />
+                              </ToolButton>
+                              <ToolButton title="Italic" active={!!b.italic} onClick={() => update(b.id, { italic: !b.italic } as Partial<Block>)}>
+                                <Italic className="w-4 h-4" />
+                              </ToolButton>
+                              <span className="mx-1 h-5 w-px bg-border" />
+                              {SIZES.map((s) => (
+                                <ToolButton key={s} title={`Size ${SIZE_LABEL[s]}`} active={b.size === s} onClick={() => update(b.id, { size: s } as Partial<Block>)}>
+                                  {SIZE_LABEL[s]}
+                                </ToolButton>
+                              ))}
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                title={collapsed[b.id] ? "Expand" : "Collapse"}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
+                                }}
+                                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+                              >
+                                {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                <span>{b.type === "video" ? "Video" : "Image"}</span>
+                              </button>
+                              {b.type === "video" ? (
+                                <ToolButton title="Replace video" onClick={() => setVideoFor(b.id)}>
+                                  <Film className="w-4 h-4" />
+                                  <span className="ml-1 text-xs">Replace</span>
+                                </ToolButton>
+                              ) : (
+                                <ToolButton title="Replace image" onClick={() => setPickerFor(b.id)}>
+                                  <ImageIcon className="w-4 h-4" />
+                                  <span className="ml-1 text-xs">Replace</span>
+                                </ToolButton>
+                              )}
+                              <span className="mx-1 h-5 w-px bg-border" />
+                              {([50, 75, 100] as const).map((w) => (
+                                <ToolButton key={w} title={`Width ${w}%`} active={(b as ImageBlock).width === w} onClick={() => update(b.id, { width: w } as Partial<Block>)}>
+                                  {w}%
+                                </ToolButton>
+                              ))}
+                            </>
+                          )}
+                          {b.type !== "object" && (
+                            <>
+                              <span className="mx-1 h-5 w-px bg-border" />
+                              {(["left", "center", "right"] as BlockAlign[]).map((a) => (
+                                <ToolButton key={a} title={`Align ${a}`} active={b.align === a} onClick={() => update(b.id, { align: a } as Partial<Block>)}>
+                                  {a === "left" ? <AlignLeft className="w-4 h-4" /> : a === "center" ? <AlignCenter className="w-4 h-4" /> : <AlignRight className="w-4 h-4" />}
+                                </ToolButton>
+                              ))}
+                            </>
+                          )}
+                          <span className="mx-1 h-5 w-px bg-border" />
+                          {(i > 0 || (hasExisting && currentFirst)) && (
+                            <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
+                          )}
+                          {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
+                            <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                          )}
+                          <ToolButton title="Delete block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
+    </>
+  );
+
+  // Embedded: the editing options are drawn in the Site Manager's left column instead of around the canvas.
+  const notEditable = !!page && hasExisting && !codedPages[previewSrc(page.path)];
+  const blockLabel = (b: Block) =>
+    b.type === "object" ? `Object: ${b.name ?? "Saved object"}`
+    : b.type === "image" ? "Image"
+    : b.type === "video" ? "Video"
+    : `${b.type === "heading" ? "Heading" : "Text"}: ${(b as TextBlock).text}`;
+  const slotTools = !embedded ? null : (
+    <div className="flex flex-col gap-5 p-3 text-sm">
+      {!page ? (
+        <p className="text-xs text-muted-foreground">Opening the page…</p>
+      ) : notEditable ? (
+        <p className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">This page can't be edited here.</p>
+      ) : quick && showLive ? (
+        <>
+          <p className="text-xs text-muted-foreground">
+            Click any wording to type over it, or select wording or a picture to change its style on the left. Changes save on their own.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">{modeAndDevice}</div>
+          {Object.keys(inlineEdits).length > 0 && (
+            <Button variant="outline" size="sm" className="self-start" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
+          )}
+          <div>{stylePanel}</div>
+        </>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center gap-2">{modeAndDevice}</div>
+          <div className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Add a section</p>
+            <div className="flex flex-wrap gap-2">{addButtons}</div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="sm" disabled={saving || !dirty} onClick={save}>{saving ? "Saving…" : "Save"}</Button>
+            <span className="text-xs text-muted-foreground">{dirty ? "Unsaved changes" : "All changes saved"}</span>
+          </div>
+          {!!blocks.length && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Sections</p>
+              <ol className="divide-y rounded-md border">
+                {blocks.map((b, i) => (
+                  <li key={b.id} className={`flex items-center gap-1 px-2 py-1.5 ${b.id === activeId ? "bg-muted" : ""}`}>
+                    <button type="button" className="min-w-0 flex-1 truncate text-left text-xs" title={blockLabel(b)}
+                      onClick={() => { setActiveId(b.id); setShowLive(false); document.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>
+                      {blockLabel(b)}
+                    </button>
+                    {(i > 0 || (hasExisting && currentFirst)) && (
+                      <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
+                    )}
+                    {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
+                      <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                    )}
+                    <ToolButton title="Delete block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+          {(() => {
+            const i = blocks.findIndex((b) => b.id === activeId);
+            if (i < 0 || showLive) return null;
+            return (
+              <div className="space-y-2">
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Selected section</p>
+                <div className="flex flex-wrap items-center gap-1 rounded-md border p-2">{blockTools(blocks[i], i)}</div>
+              </div>
+            );
+          })()}
+        </>
+      )}
+    </div>
+  );
+
   const existingCard = page ? (
     <div key="current-page-section">
       {addRow(currentFirst ? 0 : blocks.length, "Add a section above")}
@@ -625,9 +874,9 @@ export default function DesignTab() {
 
 
   return (
-    <div className={`grid grid-cols-1 gap-6 ${listOpen ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[auto_1fr]"}`}>
-      {/* Page list */}
-      {!listOpen ? (
+    <div className={embedded ? "min-w-0" : `grid grid-cols-1 gap-6 ${listOpen ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[auto_1fr]"}`}>
+      {/* Page list (not when embedded in the Site Manager's edit mode) */}
+      {embedded ? null : !listOpen ? (
         <aside className="lg:sticky lg:top-4 lg:self-start">
           <Button variant="outline" size="icon" title="Show pages" onClick={() => setListOpen(true)}>
             <PanelLeftOpen className="w-4 h-4" />
@@ -732,6 +981,7 @@ export default function DesignTab() {
           </div>
         ) : (
           <>
+            {!embedded && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <div className="mr-auto">
                 <h2 className="text-lg font-medium">{page.name}</h2>
@@ -744,52 +994,15 @@ export default function DesignTab() {
                   {page.path} <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
-              <div className="inline-flex rounded-md border overflow-hidden mr-1">
-                <button
-                  type="button"
-                  onClick={() => { setShowLive(true); setQuick(false); }}
-                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors ${showLive && !quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-                >
-                  <Eye className="w-3.5 h-3.5" /> Preview
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setListOpen(false); if (hasExisting && codedPages[previewSrc(page.path)]) { setShowLive(true); setQuick(true); } else { setShowLive(false); setQuick(false); } }}
-                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${!showLive || quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-                >
-                  <Pencil className="w-3.5 h-3.5" /> Edit
-                </button>
-              </div>
-              <div className="inline-flex rounded-md border overflow-hidden mr-1" role="group" aria-label="Screen size">
-                {([["desktop", Monitor, "Desktop"], ["tablet", Tablet, "Tablet"], ["phone", Smartphone, "Phone"]] as const).map(([d, Icon, label]) => (
-                  <button
-                    key={d}
-                    type="button"
-                    title={label}
-                    aria-label={label}
-                    aria-pressed={device === d}
-                    onClick={() => setDevice(d)}
-                    className={`px-2.5 py-1.5 transition-colors ${device === d ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </button>
-                ))}
-              </div>
+              {modeAndDevice}
               <span ref={toolbarRef} className="inline-flex" />
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
-                <Boxes className="w-4 h-4" /> Object
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image")}>
-                <ImageIcon className="w-4 h-4" /> Image
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video")}>
-                <Film className="w-4 h-4" /> Video
-              </Button>
+              {addButtons}
             </div>
+            )}
 
             {showLive && hasExisting && codedPages[previewSrc(page.path)] && (quick || device === "desktop") ? (
               <div className="border rounded-lg overflow-hidden bg-background" style={deviceStyle}>
-                {quick && (
+                {quick && !embedded && (
                   <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
                     <p className="text-xs text-muted-foreground">
                       Click any wording to type over it, or select wording or a picture to change its style on the right. Changes save on their own.
@@ -799,7 +1012,7 @@ export default function DesignTab() {
                     )}
                   </div>
                 )}
-                <div className={quick ? "grid grid-cols-[1fr_260px]" : ""}>
+                <div className={quick && !embedded ? "grid grid-cols-[1fr_260px]" : ""}>
                 <div className="h-[70vh] overflow-y-auto bg-background">
                   {(() => {
                     const C = codedPages[previewSrc(page.path)];
@@ -822,23 +1035,9 @@ export default function DesignTab() {
                     );
                   })()}
                 </div>
-                {quick && (
+                {quick && !embedded && (
                   <aside className="h-[70vh] overflow-y-auto border-l bg-background p-4">
-                    {inlineSel && inlineSel.scope !== "page" && (
-                      <p className="mb-4 rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
-                        Part of the shared object <span className="font-medium text-foreground">{inlineSel.scope}</span>. Changes apply everywhere it's used.
-                      </p>
-                    )}
-                    <InlineStylePanel
-                      sel={inlineSel}
-                      edits={inlineSel ? scopeEdits(inlineSel.scope) : inlineEdits}
-                      onChange={(next) => changeScope(inlineSel?.scope ?? "page", next)}
-                      onReplaceImage={async () => {
-                        if (!inlineSel) return;
-                        const url = await pickImage();
-                        if (url) changeScope(inlineSel.scope, { ...scopeEdits(inlineSel.scope), [`img:${inlineSel.key}`]: url });
-                      }}
-                    />
+                    {stylePanel}
                   </aside>
                 )}
                 </div>
@@ -921,7 +1120,7 @@ export default function DesignTab() {
                       >
                         <GripVertical className="h-4 w-4" />
                       </button>
-                      {active && (
+                      {active && !embedded && (
                         <div
                           title="Drag to move"
                           onMouseDown={(e) => {
@@ -931,105 +1130,7 @@ export default function DesignTab() {
                           }}
                           className="sticky top-16 z-10 -mx-3 mb-2 flex flex-wrap items-center gap-1 border-b bg-background/95 px-3 py-2 backdrop-blur cursor-grab active:cursor-grabbing"
                         >
-                          {b.type === "object" ? (
-                            <>
-                              <button
-                                type="button"
-                                title={collapsed[b.id] ? "Expand object" : "Collapse object"}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
-                                }}
-                                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
-                              >
-                                {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                <span>Object: {b.name ?? "Saved object"}</span>
-                              </button>
-                              <ToolButton title="Replace" onClick={() => setObjectFor(b.id)}>
-                                <Boxes className="w-4 h-4" />
-                                <span className="ml-1 text-xs">Replace</span>
-                              </ToolButton>
-                              <ToolButton
-                                title="Edit"
-                                onClick={() => navigate(`/manage/objects/design?object=${b.objectId}&returnPage=${selectedId}`)}
-                              >
-                                <Pencil className="w-4 h-4" />
-                                <span className="ml-1 text-xs">Edit</span>
-                              </ToolButton>
-                            </>
-                          ) : b.type === "heading" || b.type === "text" ? (
-                            <>
-                              <ToolButton
-                                title={b.type === "heading" ? "Turn into text" : "Turn into heading"}
-                                active={b.type === "heading"}
-                                onClick={() => update(b.id, { type: b.type === "heading" ? "text" : "heading" } as Partial<Block>)}
-                              >
-                                <Heading className="w-4 h-4" />
-                              </ToolButton>
-                              <ToolButton title="Bold" active={!!b.bold} onClick={() => update(b.id, { bold: !b.bold } as Partial<Block>)}>
-                                <Bold className="w-4 h-4" />
-                              </ToolButton>
-                              <ToolButton title="Italic" active={!!b.italic} onClick={() => update(b.id, { italic: !b.italic } as Partial<Block>)}>
-                                <Italic className="w-4 h-4" />
-                              </ToolButton>
-                              <span className="mx-1 h-5 w-px bg-border" />
-                              {SIZES.map((s) => (
-                                <ToolButton key={s} title={`Size ${SIZE_LABEL[s]}`} active={b.size === s} onClick={() => update(b.id, { size: s } as Partial<Block>)}>
-                                  {SIZE_LABEL[s]}
-                                </ToolButton>
-                              ))}
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                title={collapsed[b.id] ? "Expand" : "Collapse"}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
-                                }}
-                                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
-                              >
-                                {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                <span>{b.type === "video" ? "Video" : "Image"}</span>
-                              </button>
-                              {b.type === "video" ? (
-                                <ToolButton title="Replace video" onClick={() => setVideoFor(b.id)}>
-                                  <Film className="w-4 h-4" />
-                                  <span className="ml-1 text-xs">Replace</span>
-                                </ToolButton>
-                              ) : (
-                                <ToolButton title="Replace image" onClick={() => setPickerFor(b.id)}>
-                                  <ImageIcon className="w-4 h-4" />
-                                  <span className="ml-1 text-xs">Replace</span>
-                                </ToolButton>
-                              )}
-                              <span className="mx-1 h-5 w-px bg-border" />
-                              {([50, 75, 100] as const).map((w) => (
-                                <ToolButton key={w} title={`Width ${w}%`} active={(b as ImageBlock).width === w} onClick={() => update(b.id, { width: w } as Partial<Block>)}>
-                                  {w}%
-                                </ToolButton>
-                              ))}
-                            </>
-                          )}
-                          {b.type !== "object" && (
-                            <>
-                              <span className="mx-1 h-5 w-px bg-border" />
-                              {(["left", "center", "right"] as BlockAlign[]).map((a) => (
-                                <ToolButton key={a} title={`Align ${a}`} active={b.align === a} onClick={() => update(b.id, { align: a } as Partial<Block>)}>
-                                  {a === "left" ? <AlignLeft className="w-4 h-4" /> : a === "center" ? <AlignCenter className="w-4 h-4" /> : <AlignRight className="w-4 h-4" />}
-                                </ToolButton>
-                              ))}
-                            </>
-                          )}
-                          <span className="mx-1 h-5 w-px bg-border" />
-                          {(i > 0 || (hasExisting && currentFirst)) && (
-                            <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
-                          )}
-                          {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
-                            <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
-                          )}
-                          <ToolButton title="Delete block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
+                          {blockTools(b, i)}
                         </div>
                       )}
 
@@ -1148,6 +1249,7 @@ export default function DesignTab() {
         </div>
       )}
 
+      {embedded && slot && createPortal(slotTools, slot)}
       <CreatePageDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
