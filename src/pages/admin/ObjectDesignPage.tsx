@@ -1057,7 +1057,7 @@ function BlockCanvas({
 }
 
 
-export default function ObjectDesignPage({ embedded = false, objectId, focusSection, onBack }: { embedded?: boolean; objectId?: string; focusSection?: string; onBack?: () => void } = {}) {
+export default function ObjectDesignPage({ embedded = false, objectId, focusSection }: { embedded?: boolean; objectId?: string; focusSection?: string; onBack?: () => void } = {}) {
   const [params, setParams] = useSearchParams();
   // Embedded in the Site Manager's edit view, the object comes from the props, never the address.
   const selectedId = embedded ? objectId ?? "" : params.get("object") ?? "";
@@ -4352,9 +4352,6 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   const embeddedTools = !embedded ? null : (
     <div className="flex flex-col gap-5 p-3 text-sm">
       <div className="space-y-1.5">
-        <Button type="button" variant="outline" className="w-full gap-2" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4" /> Back to page
-        </Button>
         {object && <p className="truncate text-xs text-muted-foreground" title={object.name}>{object.name}</p>}
       </div>
       {object && (
