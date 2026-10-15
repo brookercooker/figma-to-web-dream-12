@@ -591,6 +591,55 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     toast.success(`${page.name} is now ${made.length} editable sections.`);
   };
 
+  const modeAndDevice = page ? (
+    <>
+              <div className="inline-flex rounded-md border overflow-hidden mr-1">
+                <button
+                  type="button"
+                  onClick={() => { setShowLive(true); setQuick(false); }}
+                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors ${showLive && !quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                >
+                  <Eye className="w-3.5 h-3.5" /> Preview
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setListOpen(false); if (hasExisting && codedPages[previewSrc(page.path)]) { setShowLive(true); setQuick(true); } else { setShowLive(false); setQuick(false); } }}
+                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${!showLive || quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Edit
+                </button>
+              </div>
+              <div className="inline-flex rounded-md border overflow-hidden mr-1" role="group" aria-label="Screen size">
+                {([["desktop", Monitor, "Desktop"], ["tablet", Tablet, "Tablet"], ["phone", Smartphone, "Phone"]] as const).map(([d, Icon, label]) => (
+                  <button
+                    key={d}
+                    type="button"
+                    title={label}
+                    aria-label={label}
+                    aria-pressed={device === d}
+                    onClick={() => setDevice(d)}
+                    className={`px-2.5 py-1.5 transition-colors ${device === d ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </button>
+                ))}
+              </div>
+    </>
+  ) : null;
+  const addButtons = (
+    <>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
+                <Boxes className="w-4 h-4" /> Object
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image")}>
+                <ImageIcon className="w-4 h-4" /> Image
+              </Button>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video")}>
+                <Film className="w-4 h-4" /> Video
+              </Button>
+    </>
+  );
+
   const existingCard = page ? (
     <div key="current-page-section">
       {addRow(currentFirst ? 0 : blocks.length, "Add a section above")}
@@ -738,6 +787,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
           </div>
         ) : (
           <>
+            {!embedded && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <div className="mr-auto">
                 <h2 className="text-lg font-medium">{page.name}</h2>
@@ -750,48 +800,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                   {page.path} <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
-              <div className="inline-flex rounded-md border overflow-hidden mr-1">
-                <button
-                  type="button"
-                  onClick={() => { setShowLive(true); setQuick(false); }}
-                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors ${showLive && !quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-                >
-                  <Eye className="w-3.5 h-3.5" /> Preview
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setListOpen(false); if (hasExisting && codedPages[previewSrc(page.path)]) { setShowLive(true); setQuick(true); } else { setShowLive(false); setQuick(false); } }}
-                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${!showLive || quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-                >
-                  <Pencil className="w-3.5 h-3.5" /> Edit
-                </button>
-              </div>
-              <div className="inline-flex rounded-md border overflow-hidden mr-1" role="group" aria-label="Screen size">
-                {([["desktop", Monitor, "Desktop"], ["tablet", Tablet, "Tablet"], ["phone", Smartphone, "Phone"]] as const).map(([d, Icon, label]) => (
-                  <button
-                    key={d}
-                    type="button"
-                    title={label}
-                    aria-label={label}
-                    aria-pressed={device === d}
-                    onClick={() => setDevice(d)}
-                    className={`px-2.5 py-1.5 transition-colors ${device === d ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </button>
-                ))}
-              </div>
+              {modeAndDevice}
               <span ref={toolbarRef} className="inline-flex" />
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
-                <Boxes className="w-4 h-4" /> Object
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image")}>
-                <ImageIcon className="w-4 h-4" /> Image
-              </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video")}>
-                <Film className="w-4 h-4" /> Video
-              </Button>
+              {addButtons}
             </div>
+            )}
 
             {showLive && hasExisting && codedPages[previewSrc(page.path)] && (quick || device === "desktop") ? (
               <div className="border rounded-lg overflow-hidden bg-background" style={deviceStyle}>
