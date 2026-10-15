@@ -9,6 +9,7 @@ import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
+import EmbeddedBox from "./designChat/EmbeddedBox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -16,7 +17,7 @@ import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
   AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
   ChevronDown, ChevronRight, GripVertical, Film,
-PanelLeftOpen, PanelLeftClose, Monitor, Tablet, Smartphone, Eye, Minimize2 } from "lucide-react";
+PanelLeftOpen, PanelLeftClose, Monitor, Tablet, Smartphone, Eye } from "lucide-react";
 import { DeviceFrame, DEVICE_WIDTH, type Device } from "@/components/DeviceFrame";
 import CreatePageDialog from "./CreatePageDialog";
 import ConfirmDialog from "./ConfirmDialog";
@@ -164,7 +165,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [params, setParams] = useSearchParams();
   // Embedded in the Site Manager's edit mode, the page comes from the working page, not the address.
   const selectedId = embedded ? pageId ?? "" : params.get("page") ?? "";
-  const { slot, registerSave } = useEditorSlot();
+  const { slot, registerSave, saveAll } = useEditorSlot();
   // Embedded, nothing auto-saves: changes are held here until the Site Manager's Done saves them all.
   const pendingInline = useRef<{ pageId: string; next: InlineEdits } | null>(null);
   const pendingObjects = useRef<Record<string, InlineEdits>>({});
@@ -791,7 +792,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                               </ToolButton>
                               <ToolButton
                                 title="Edit"
-                                onClick={() => navigate(`/manage/objects/design?object=${b.objectId}&returnPage=${selectedId}`)}
+                                onClick={async () => { if (embedded) { if (await saveAll()) chat?.openObject(b.objectId); return; } navigate(`/manage/objects/design?object=${b.objectId}&returnPage=${selectedId}`); }}
                               >
                                 <Pencil className="w-4 h-4" />
                                 <span className="ml-1 text-xs">Edit</span>
@@ -1149,7 +1150,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                         collapsed={foldedChunks}
                         onToggleCollapse={(k) => setFoldedChunks((cur) => { const n = new Set(cur); if (n.has(k)) n.delete(k); else n.add(k); return n; })}
                         onReorder={reorderChunks}
-                        onOpenObject={(k, section) => { const id = objectRows.current[k]; if (id) navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`); }}
+                        onOpenObject={async (k, section) => { const id = objectRows.current[k]; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, section); return; } navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`); }}
                       >
                         <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense>
                       </InlineEditSurface>
@@ -1421,22 +1422,3 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   );
 }
 
-const EMBED_WIDTH: Record<"mobile" | "tablet" | "desktop", string> = { mobile: "390px", tablet: "820px", desktop: "100%" };
-
-/** Embedded: the box the Site Manager's size buttons and Full screen act on. Standalone: just the children. */
-function EmbeddedBox({ chat, children }: { chat: ReturnType<typeof useDesignChatOptional>; children: React.ReactNode }) {
-  if (!chat) return <>{children}</>;
-  const { device, coverFull, toggleFull, editBoxRef } = chat;
-  return (
-    <div ref={editBoxRef} className={cn("relative flex h-full min-h-0 justify-center bg-muted", coverFull && "fixed inset-0 z-50 bg-background")}>
-      <div className="h-full max-w-full overflow-y-auto bg-background" style={{ width: EMBED_WIDTH[device] }}>
-        {children}
-      </div>
-      {coverFull && (
-        <Button type="button" size="sm" className="absolute right-4 top-4 z-30 gap-2 bg-foreground/80" onClick={toggleFull}>
-          <Minimize2 className="h-4 w-4" /> Exit full screen
-        </Button>
-      )}
-    </div>
-  );
-}
