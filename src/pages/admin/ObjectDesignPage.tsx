@@ -2019,10 +2019,25 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     if (hit) convertChunk(hit.id);
   }, [object?.id, preview, sections, importing, converting, focusChunk]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const originOf = (x: Section) => (x as { origin?: string }).origin;
-  /** Sections shown: only the chosen part when opened from a page, unless none match. */
-  const focusMatches = focusChunk != null && sections.some((x) => originOf(x) === focusChunk);
-  const shown = focusMatches ? sections.filter((x) => originOf(x) === focusChunk) : sections;
+  /** Jump once per opening to the section chosen on the page (all sections stay shown). */
+  const jumpedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!object || preview || importing || converting || focusChunk == null) return;
+    if (jumpedRef.current === object.id) return;
+    const hit = sections.find((x) => (x as { origin?: string }).origin === focusChunk)
+      ?? sections.find((x) => x.type === "locked" && x.chunk === focusChunk);
+    if (!hit) return;
+    // A matching locked part is being turned into blocks by the effect above; wait for those blocks.
+    if (hit.type === "locked" && codedKey) return;
+    jumpedRef.current = object.id;
+    setActiveId(hit.id);
+    const id = hit.id;
+    window.setTimeout(() => requestAnimationFrame(() => {
+      document.querySelector(`[data-block-id="${id}"]`)?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }), 50);
+  }, [object?.id, preview, sections, importing, converting, focusChunk]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const shown = sections;
 
   const add = (type: SectionType) => {
     const s = makeSection(type);
@@ -4346,12 +4361,6 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               <Plus className="w-4 h-4" /> Add another section
             </Button>
           </div>
-          {focusMatches && (
-            <div className="space-y-2 rounded-md border bg-muted/40 p-3 text-xs">
-              <p className="text-muted-foreground">Showing only the section you chose. Changes save to this object and apply everywhere it's used.</p>
-              <Button variant="outline" size="sm" onClick={() => setFocusChunk(null)}>Show full object</Button>
-            </div>
-          )}
           {embeddedSel ? (() => {
             const s = embeddedSel;
             const showToolbar = s.type === "free" && optionsFor === s.id && !focusPart;
@@ -4592,14 +4601,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               )}
 
 
-              {focusMatches && !embedded && (
-                <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/40 px-4 py-2 text-sm">
-                  <span className="text-muted-foreground">Showing only the section you chose. Changes save to this object and apply everywhere it's used.</span>
-                  <Button variant="outline" size="sm" onClick={() => setFocusChunk(null)}>Show full object</Button>
-                </div>
-              )}
 <ContainedBgContext.Provider value={!preview}>
-              {groupByFlow(sections.map((s, i) => [s, i] as const).filter(([s]) => !focusMatches || originOf(s) === focusChunk), ([s]) => s.flow).map((grp) => {
+              {groupByFlow(sections.map((s, i) => [s, i] as const), ([s]) => s.flow).map((grp) => {
                 const cards = grp.map(([s, i]) => {
                 const active = s.id === activeId;
                 return (
