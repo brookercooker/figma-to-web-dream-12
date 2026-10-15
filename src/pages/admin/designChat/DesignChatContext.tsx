@@ -57,6 +57,10 @@ export type DesignChat = {
   /** Open the working page in the editor. Does nothing without a working page that has an id. */
   startEditing: () => void;
   stopEditing: () => void;
+  /** An object opened from the page editor, shown in its place while editing. */
+  objectOpen: { id: string; section?: string } | null;
+  openObject: (id: string, section?: string) => void;
+  closeObject: () => void;
   /** The address the visitor is on inside the preview (null until the site reports one). */
   previewLocation: { path: string; search: string } | null;
   /** The Site Manager page at that address, if any. */
@@ -110,10 +114,14 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const selectPage = useCallback((page: WorkingPage) => {
     dispatch({ type: "select", page });
     setPreviewPath(page.path);
+    setObjectOpen(null);
   }, []);
-  const clearWorkingPage = useCallback(() => dispatch({ type: "clear" }), []);
+  const clearWorkingPage = useCallback(() => { dispatch({ type: "clear" }); setObjectOpen(null); }, []);
   const startEditing = useCallback(() => dispatch({ type: "start" }), []);
-  const stopEditing = useCallback(() => dispatch({ type: "stop" }), []);
+  const stopEditing = useCallback(() => { dispatch({ type: "stop" }); setObjectOpen(null); }, []);
+  const [objectOpen, setObjectOpen] = useState<{ id: string; section?: string } | null>(null);
+  const openObject = useCallback((id: string, section?: string) => { if (editing) setObjectOpen({ id, section }); }, [editing]);
+  const closeObject = useCallback(() => setObjectOpen(null), []);
 
   const [previewLocation, setPreviewLocation] = useState<{ path: string; search: string } | null>(null);
   const rememberPath = preview.rememberPath;
@@ -135,8 +143,8 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const value = useMemo<DesignChat>(() => ({
     state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
-    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading,
-  }), [previewLocation, previewPage, previewPageLoading, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing]);
+    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, objectOpen, openObject, closeObject,
+  }), [objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

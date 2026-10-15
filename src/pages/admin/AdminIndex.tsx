@@ -20,6 +20,7 @@ const ImagesTab = lazy(() => import("./ImagesTab"));
 const VideoTab = lazy(() => import("./VideoTab"));
 const PreviewTab = lazy(() => import("./DesignChatTab"));
 const DesignTab = lazy(() => import("./DesignTab"));
+const ObjectDesignPage = lazy(() => import("./ObjectDesignPage"));
 
 type TabKey = "preview" | "pages" | "objects" | "images" | "videos";
 
@@ -63,7 +64,7 @@ export default function AdminIndex() {
 
 function AdminShell() {
   const designChat = useDesignChat();
-  const { workingPage, editing, startEditing, stopEditing, clearWorkingPage, selectPage, previewLocation, previewPage } = designChat;
+  const { workingPage, editing, startEditing, stopEditing, clearWorkingPage, selectPage, previewLocation, previewPage, objectOpen, closeObject } = designChat;
   const { setSlot, saveAll } = useEditorSlot();
   // Saves the editor's held changes, then leaves edit mode; on a failed save it stays in edit mode.
   const [finishing, setFinishing] = useState(false);
@@ -268,7 +269,17 @@ function AdminShell() {
             {tab === "preview" && editing && workingPage?.id && (
               <div className="h-full w-full">
                 <Suspense fallback={<TabSkeleton />}>
-                  <DesignTab embedded pageId={workingPage.id} />
+                  {objectOpen ? (
+                    <ObjectDesignPage
+                      key={objectOpen.id}
+                      embedded
+                      objectId={objectOpen.id}
+                      focusSection={objectOpen.section}
+                      onBack={async () => { const ok = await saveAll(); if (ok) closeObject(); }}
+                    />
+                  ) : (
+                    <DesignTab embedded pageId={workingPage.id} />
+                  )}
                 </Suspense>
               </div>
             )}
