@@ -207,11 +207,12 @@ function AdminShell() {
                   type="button"
                   variant={editing ? "default" : "outline"}
                   size="sm"
-                  className={cn("h-9 shrink-0 gap-2", squeeze >= 2 && "w-9 px-0")}
+                  className={cn("h-9 shrink-0 gap-2", squeeze >= 2 && "w-9 px-0", !editing && !editTarget && "cursor-not-allowed opacity-50")}
                   aria-pressed={editing}
                   aria-label={editing ? "Editing" : "Edit page"}
                   title={editing ? `Editing ${workingPage?.name ?? ""} — press to save and return to the chat` : editTarget ? `Edit ${editTarget.name}` : "This address isn't a page in the Site Manager."}
-                  disabled={editing ? finishing : !editTarget}
+                  disabled={editing && finishing}
+                  aria-disabled={!editing && !editTarget}
                   onClick={toggleEditing}
                 >
                   <Pencil className="h-4 w-4" />
