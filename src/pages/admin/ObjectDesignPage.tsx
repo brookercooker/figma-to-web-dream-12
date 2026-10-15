@@ -1,5 +1,5 @@
 import ConfirmDialog from "./ConfirmDialog";
-import { Fragment, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Children, Fragment, isValidElement, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 /** Wording without inline formatting tags, for plain text boxes. */
@@ -36,6 +36,7 @@ import {
   Sparkles, AlignStartHorizontal, AlignCenterHorizontal, AlignEndHorizontal,
   type LucideIcon,
 } from "lucide-react";
+import { ToolHeader, ToolGroup, ToolNote } from "./designChat/ToolPanel";
 import CreateObjectDialog from "./CreateObjectDialog";
 
 const ICON_LABEL_SIDES: { value: "before" | "after" | "above" | "below"; label: string; icon: LucideIcon }[] = [
@@ -259,6 +260,29 @@ interface ObjectRow {
   updated_at: string;
 }
 
+
+/** Sorting the selected item's options into tool groups: finds the first field label inside an element. */
+const IMG_BORDER_LABELS = new Set(["Shade over image", "Shade strength (%)", "Shadow", "Line", "Thickness (px)", "Corner radius (px)", "Inner spacing (px)"]);
+const IMG_LAYOUT_LABELS = new Set(["Carousel controls", "Images sit", "Height", "Text position", "Exact size (px)", "Image position", "Show as", "Show at once"]);
+const TEXT_STYLE_LABELS = new Set(["Button style", "Style preset", "Text sits", "Text lines up"]);
+function firstToolLabel(node: React.ReactNode, depth = 0): string | null {
+  if (depth > 8 || node == null || typeof node === "boolean") return null;
+  if (typeof node === "string") return node.includes("Button background") ? "Button background" : null;
+  if (Array.isArray(node)) { for (const n of node) { const l = firstToolLabel(n, depth + 1); if (l) return l; } return null; }
+  if (!isValidElement(node)) return null;
+  const props = node.props as { label?: unknown; children?: React.ReactNode };
+  if (node.type === Field && typeof props.label === "string") return props.label;
+  if (node.type === TextStyleFields || node.type === ColorSwatches) return "__style";
+  return firstToolLabel(props.children, depth + 1);
+}
+function flattenTools(node: React.ReactNode): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  Children.toArray(node).forEach((c) => {
+    if (isValidElement(c) && c.type === Fragment) out.push(...flattenTools((c.props as { children?: React.ReactNode }).children));
+    else out.push(c);
+  });
+  return out;
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -2766,7 +2790,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   const flowField = (section: FreeSection, part: string) => {
     const flow = (section.flows?.[part] ?? "separate") as SectionFlow;
     return (
-      <div className="rounded-md border p-3 space-y-3">
+      <div className="space-y-3">
         <div className="flex flex-wrap items-start gap-4">
           <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Alignment</span>
@@ -3017,41 +3041,34 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         (title === "Videos" && focusPart.startsWith("video:")));
     void blockKey;
     void focused;
-    void Icon;
+    const isImages = title.startsWith("Images");
+    const isVideos = title === "Videos";
+    const buckets: Record<string, React.ReactNode[]> = {};
+    const order = isImages ? ["Images", "Layout", "Border & shadow"] : isVideos ? ["Videos"] : ["Content", "Style"];
+    flattenTools(children).forEach((c) => {
+      const l = firstToolLabel(c);
+      let g = order[0];
+      if (isImages) g = l && (IMG_BORDER_LABELS.has(l) || l.startsWith("Outline each")) ? "Border & shadow" : l && IMG_LAYOUT_LABELS.has(l) ? "Layout" : "Images";
+      else if (!isVideos) g = l && (l === "__style" || l === "Button background" || TEXT_STYLE_LABELS.has(l)) ? "Style" : "Content";
+      (buckets[g] ??= []).push(c);
+    });
+    const menu = [
+      ...(onDuplicate ? [{ label: `Duplicate ${title.toLowerCase()}`, icon: Copy, onSelect: onDuplicate }] : []),
+      ...(onDelete ? [{ label: `Delete ${title.toLowerCase()}`, icon: Trash2, onSelect: onDelete, destructive: true }] : []),
+    ];
     return (
       <div key={key} data-inspector-part={part} className="relative scroll-mt-24">
-        {onDuplicate || onDelete ? (
-          <div className="flex items-center justify-end gap-1 pb-1">
-            {onDuplicate ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={`Duplicate ${title}`}
-                title={`Duplicate ${title}`}
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
-                onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            ) : null}
-            {onDelete ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={`Delete ${title}`}
-                title={`Delete ${title}`}
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            ) : null}
-          </div>
+        <ToolHeader icon={Icon} title={title} subtitle="Selected item" menu={menu} />
+        {order.map((g, gi) => buckets[g]?.length ? (
+          <ToolGroup key={g} title={isImages || isVideos ? g : `${g === "Content" ? "Text content" : "Text style"}`} defaultOpen={gi === 0}>
+            {buckets[g]}
+          </ToolGroup>
+        ) : null)}
+        {flowSection && part ? (
+          <ToolGroup title={isImages ? "Image placement" : isVideos ? "Video placement" : "Text placement"}>
+            {flowField(flowSection, part)}
+          </ToolGroup>
         ) : null}
-        <div className="space-y-3">
-          {flowSection && part ? flowField(flowSection, part) : null}
-          {children}
-        </div>
       </div>
     );
   };
@@ -3060,9 +3077,9 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   const freeToolbar = (section: FreeSection) => {
     const parts = orderablePartsOf(section);
     return (
-        <div className="flex flex-wrap items-start gap-2">
-          <div className="flex flex-wrap items-start gap-4 rounded-lg border bg-background p-2 shadow-sm">
-            <div className="flex flex-col gap-1">
+        <div>
+          <div>
+            <ToolGroup title="Block alignment" defaultOpen>
             <div className="flex flex-wrap items-center gap-1">
             {([
               { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
@@ -3148,9 +3165,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               </label>
             )}
             </div>
-            </div>
-            <div className="flex flex-col gap-1">
-            <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Margins</span>
+            </ToolGroup>
+            <ToolGroup title="Block spacing">
             <div className="flex flex-wrap items-center gap-1">
             {([
               { key: "padY" as const, label: "Space above and below (px)", short: "V" },
@@ -3180,9 +3196,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               </label>
             ))}
             </div>
-            </div>
-            <div className="flex flex-col gap-1">
-            <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Block styling</span>
+            </ToolGroup>
+            <ToolGroup title="Block background">
             <div className="flex flex-wrap items-center gap-1">
             <ColorDropdown
               label="Background"
@@ -3212,10 +3227,9 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               </button>
             ) : null}
             </div>
-            </div>
             {section.type === "free" ? (
               <div className="flex flex-col gap-1">
-                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Frame lines</span>
+                <span className="text-[11px] text-muted-foreground">Frame lines</span>
                 <OutlineControls
                   placement={(section as FreeSection).frame ?? ""}
                   color={(section as FreeSection).frameColor}
@@ -3230,8 +3244,9 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 />
               </div>
             ) : null}
+            </ToolGroup>
           </div>
-          <div className="ml-auto flex gap-2">
+          <div className="flex gap-2 border-t pt-3">
             {parts.length ? (
               <Chip
                 label="Close item"
@@ -3983,15 +3998,14 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             patch(section.id, { cards: Object.keys(cards).length ? cards : undefined });
           };
           return (
-            <div className="rounded-lg border p-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] uppercase tracking-widest text-muted-foreground">Card outline</span>
-                {card ? (
+            <ToolGroup title="Card outline" summary={card ? "On" : "Off"}>
+              {card ? (
+                <div className="flex justify-end">
                   <button type="button" className="text-xs text-muted-foreground underline" onClick={() => setCard(undefined)}>
                     Remove
                   </button>
-                ) : null}
-              </div>
+                </div>
+              ) : null}
               <p className="text-xs text-muted-foreground">
                 {stacked ? "Wraps this item and everything stacked with it." : "Wraps this item."}
               </p>
@@ -4041,7 +4055,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                   </label>
                 </div>
               ) : null}
-            </div>
+            </ToolGroup>
           );
         })() : null}
 
@@ -4052,6 +4066,24 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         )}
 
       </div>
+    );
+  };
+
+  /** Header for the selected block's options: name, type, and the block's actions in a "…" menu. */
+  const panelHeader = (s: Section, title: string) => {
+    const i = sections.findIndex((x) => x.id === s.id);
+    return (
+      <ToolHeader
+        icon={LayoutGrid}
+        title={title}
+        subtitle={`Section ${i + 1} · ${SECTION_LABEL[s.type]}`}
+        menu={[
+          ...(i > 0 ? [{ label: "Move up", icon: ArrowUp, onSelect: () => move(s.id, -1) }] : []),
+          ...(i < sections.length - 1 ? [{ label: "Move down", icon: ArrowDown, onSelect: () => move(s.id, 1) }] : []),
+          { label: "Duplicate block", icon: Copy, onSelect: () => duplicateSection(s.id) },
+          { label: "Delete block", icon: Trash2, onSelect: () => remove(s.id), destructive: true },
+        ]}
+      />
     );
   };
 
@@ -4367,14 +4399,14 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             const title = showToolbar ? "Block" : partTypeLabel(s, focusPart);
             return (
               <div className="-mx-3 border-t">
-                <p className="border-b bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">{title}</p>
+                <div className="px-4 pt-3">{panelHeader(s, title)}</div>
                 {inlineSel && <SelectionStylePanel />}
-                {showToolbar && <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s as FreeSection)}</div>}
+                {showToolbar && <div className="px-4 pb-2">{freeToolbar(s as FreeSection)}</div>}
                 <div data-inspector-section={s.id} className="inspector-flush p-4">{Inspector({ section: s })}</div>
               </div>
             );
           })() : (
-            <p className="text-xs text-muted-foreground">Click a block to change its options.</p>
+            <ToolNote>Click a block to change its options.</ToolNote>
           )}
         </>
       )}
@@ -4795,11 +4827,9 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               <div
                 className="w-full lg:w-[380px] lg:max-h-[calc(100vh-6rem)] overflow-y-auto border bg-background shadow-sm rounded-lg"
               >
-                <p className="border-b bg-muted px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                  {title}
-                </p>
+                <div className="px-4 pt-3">{panelHeader(s, title)}</div>
                 {inlineSel && <SelectionStylePanel />}
-                {showToolbar && <div className="border-b bg-muted/20 px-3 py-2">{freeToolbar(s)}</div>}
+                {showToolbar && <div className="px-4 pb-2">{freeToolbar(s)}</div>}
                 <div data-inspector-section={s.id} className="inspector-flush p-4">{Inspector({ section: s })}</div>
               </div>
             </aside>
