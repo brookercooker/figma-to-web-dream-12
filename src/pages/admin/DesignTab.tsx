@@ -162,7 +162,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [params, setParams] = useSearchParams();
   // Embedded in the Site Manager's edit mode, the page comes from the working page, not the address.
   const selectedId = embedded ? pageId ?? "" : params.get("page") ?? "";
-  const { slot } = useEditorSlot();
+  const { slot, registerSave } = useEditorSlot();
+  // Embedded, nothing auto-saves: changes are held here until the Site Manager's Done saves them all.
+  const pendingInline = useRef<{ pageId: string; next: InlineEdits } | null>(null);
+  const pendingObjects = useRef<Record<string, InlineEdits>>({});
+  const [tweaksPending, setTweaksPending] = useState(false);
 
   const [pages, setPages] = useState<PageRow[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -213,6 +217,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     setObjectEdits((cur) => ({ ...cur, [scope]: next }));
     const id = objectRows.current[scope];
     if (!id) return;
+    if (embedded) { pendingObjects.current[scope] = next; setTweaksPending(true); return; }
     window.clearTimeout(objectTimers.current[scope]);
     objectTimers.current[scope] = window.setTimeout(() => {
       (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id).then(({ error }: any) => { if (!error) notifyContentEdited(); });
@@ -241,6 +246,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const changeInline = (next: InlineEdits) => {
     setInlineEdits(next);
     const id = selectedId;
+    if (embedded) { pendingInline.current = { pageId: id, next }; setTweaksPending(true); return; }
     window.clearTimeout(inlineTimer.current);
     inlineTimer.current = window.setTimeout(async () => {
       const updated_at = new Date().toISOString();
@@ -535,6 +541,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     const pageId = page.id;
     const snapshot = blocks;
     pendingSave.current = { pageId, snapshot };
+    if (embedded) return;
     const t = setTimeout(async () => {
       setSaving(true);
       const { error } = await (supabase as any)
@@ -551,16 +558,80 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     return () => clearTimeout(t);
   }, [blocks, dirty, page?.id]);
 
-  // On unmount or page change, save any pending block changes right away.
+  // On unmount or page change, save any pending changes right away (a safety net; embedded, Done normally saves first).
   useEffect(() => {
     return () => {
       const p = pendingSave.current;
-      if (!p) return;
+      const inl = pendingInline.current;
+      const objs = pendingObjects.current;
       pendingSave.current = null;
-      (supabase as any).from("pages").update({ content: p.snapshot }).eq("id", p.pageId)
-        .then(({ error }: any) => { if (!error) notifyContentEdited(); });
+      pendingInline.current = null;
+      pendingObjects.current = {};
+      const writes: Promise<any>[] = [];
+      if (p) writes.push((supabase as any).from("pages").update({ content: p.snapshot }).eq("id", p.pageId));
+      if (inl) writes.push((supabase as any).from("pages").update({ inline_edits: inl.next, updated_at: new Date().toISOString() }).eq("id", inl.pageId));
+      Object.entries(objs).forEach(([scope, next]) => {
+        const id = objectRows.current[scope];
+        if (id) writes.push((supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id));
+      });
+      if (!writes.length) return;
+      Promise.all(writes).then((rs) => { if (rs.some((x: any) => !x?.error)) notifyContentEdited(); });
     };
   }, [page?.id]);
+
+  /** Embedded: write everything held in memory. False (after a message) if any write failed; failed parts stay held. */
+  const saveAllRef = useRef<() => Promise<boolean>>(async () => true);
+  saveAllRef.current = async () => {
+    let wrote = false;
+    let failed: string | null = null;
+    const p = pendingSave.current;
+    if (p) {
+      const { error } = await (supabase as any).from("pages").update({ content: p.snapshot }).eq("id", p.pageId);
+      if (error) failed = error.message ?? "Could not save the page";
+      else {
+        wrote = true;
+        if (pendingSave.current === p) pendingSave.current = null;
+        setPages((cur) => cur.map((x) => (x.id === p.pageId ? { ...x, content: p.snapshot, updated_at: new Date().toISOString() } as any : x)));
+        setBlocks((cur) => { if (cur === p.snapshot) setDirty(false); return cur; });
+      }
+    }
+    const inl = pendingInline.current;
+    if (inl) {
+      const updated_at = new Date().toISOString();
+      const { error } = await (supabase as any).from("pages").update({ inline_edits: inl.next, updated_at }).eq("id", inl.pageId);
+      if (error) failed = failed ?? (error.message ?? "Could not save your changes");
+      else {
+        wrote = true;
+        if (pendingInline.current === inl) pendingInline.current = null;
+        setPages((cur) => cur.map((x) => (x.id === inl.pageId ? { ...x, inline_edits: inl.next, updated_at } : x)));
+      }
+    }
+    for (const [scope, next] of Object.entries(pendingObjects.current)) {
+      const id = objectRows.current[scope];
+      if (!id) { delete pendingObjects.current[scope]; continue; }
+      const { error } = await (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id);
+      if (error) failed = failed ?? (error.message ?? "Could not save the shared section");
+      else { wrote = true; if (pendingObjects.current[scope] === next) delete pendingObjects.current[scope]; }
+    }
+    setTweaksPending(!!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
+    if (wrote) notifyContentEdited();
+    if (failed) { toast.error(failed); return false; }
+    return true;
+  };
+  useEffect(() => {
+    if (!embedded) return;
+    registerSave(() => saveAllRef.current());
+    return () => registerSave(null);
+  }, [embedded, registerSave]);
+
+  // Embedded: ask before the browser leaves while changes are still held.
+  const hasUnsaved = embedded && (dirty || tweaksPending);
+  useEffect(() => {
+    if (!hasUnsaved) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [hasUnsaved]);
 
   const setBuildStatus = async (status: "draft" | "ready") => {
     if (!page?.id || page.build_status === status) return;
@@ -811,9 +882,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       ) : quick && showLive ? (
         <>
           <p className="text-xs text-muted-foreground">
-            Click any wording to type over it, or select wording or a picture to change its style on the left. Changes save on their own.
+            Click any wording to type over it, or select wording or a picture to change its style on the left. Changes save when you press Done.
           </p>
-          <div className="flex flex-wrap items-center gap-2">{modeAndDevice}</div>
           {Object.keys(inlineEdits).length > 0 && (
             <Button variant="outline" size="sm" className="self-start" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
           )}
@@ -821,14 +891,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         </>
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-2">{modeAndDevice}</div>
           <div className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Add a section</p>
             <div className="flex flex-wrap gap-2">{addButtons}</div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" disabled={saving || !dirty} onClick={save}>{saving ? "Saving…" : "Save"}</Button>
-            <span className="text-xs text-muted-foreground">{dirty ? "Unsaved changes" : "All changes saved"}</span>
           </div>
           {page.id && (
             <div className="space-y-1">
