@@ -352,9 +352,6 @@ function AdminShell() {
                   <Button type="button" size="sm" className="flex-1 gap-1.5" disabled={finishing} onClick={() => void saveChanges()}><Check className="h-4 w-4" aria-hidden />{finishing ? "Saving…" : "Finish Editing"}</Button>
                   <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing} onClick={discardEditing}><Undo2 className="h-4 w-4" aria-hidden />Discard changes</Button>
                 </div>
-                <button type="button" disabled={finishing} onClick={() => void finishEditing(true)} className="inline-flex items-center gap-1.5 self-start text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
-                  <ArrowLeft className="h-3 w-3" aria-hidden />Stop working on this page
-                </button>
               </div>
               <div ref={setSlot} aria-label="Page editing options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
             </div>
