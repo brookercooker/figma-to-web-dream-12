@@ -640,6 +640,129 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     </>
   );
 
+  const stylePanel = (
+    <>
+                    {inlineSel && inlineSel.scope !== "page" && (
+                      <p className="mb-4 rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+                        Part of the shared object <span className="font-medium text-foreground">{inlineSel.scope}</span>. Changes apply everywhere it's used.
+                      </p>
+                    )}
+                    <InlineStylePanel
+                      sel={inlineSel}
+                      edits={inlineSel ? scopeEdits(inlineSel.scope) : inlineEdits}
+                      onChange={(next) => changeScope(inlineSel?.scope ?? "page", next)}
+                      onReplaceImage={async () => {
+                        if (!inlineSel) return;
+                        const url = await pickImage();
+                        if (url) changeScope(inlineSel.scope, { ...scopeEdits(inlineSel.scope), [`img:${inlineSel.key}`]: url });
+                      }}
+                    />
+    </>
+  );
+  const blockTools = (b: Block, i: number) => (
+    <>
+                          {b.type === "object" ? (
+                            <>
+                              <button
+                                type="button"
+                                title={collapsed[b.id] ? "Expand object" : "Collapse object"}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
+                                }}
+                                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+                              >
+                                {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                <span>Object: {b.name ?? "Saved object"}</span>
+                              </button>
+                              <ToolButton title="Replace" onClick={() => setObjectFor(b.id)}>
+                                <Boxes className="w-4 h-4" />
+                                <span className="ml-1 text-xs">Replace</span>
+                              </ToolButton>
+                              <ToolButton
+                                title="Edit"
+                                onClick={() => navigate(`/manage/objects/design?object=${b.objectId}&returnPage=${selectedId}`)}
+                              >
+                                <Pencil className="w-4 h-4" />
+                                <span className="ml-1 text-xs">Edit</span>
+                              </ToolButton>
+                            </>
+                          ) : b.type === "heading" || b.type === "text" ? (
+                            <>
+                              <ToolButton
+                                title={b.type === "heading" ? "Turn into text" : "Turn into heading"}
+                                active={b.type === "heading"}
+                                onClick={() => update(b.id, { type: b.type === "heading" ? "text" : "heading" } as Partial<Block>)}
+                              >
+                                <Heading className="w-4 h-4" />
+                              </ToolButton>
+                              <ToolButton title="Bold" active={!!b.bold} onClick={() => update(b.id, { bold: !b.bold } as Partial<Block>)}>
+                                <Bold className="w-4 h-4" />
+                              </ToolButton>
+                              <ToolButton title="Italic" active={!!b.italic} onClick={() => update(b.id, { italic: !b.italic } as Partial<Block>)}>
+                                <Italic className="w-4 h-4" />
+                              </ToolButton>
+                              <span className="mx-1 h-5 w-px bg-border" />
+                              {SIZES.map((s) => (
+                                <ToolButton key={s} title={`Size ${SIZE_LABEL[s]}`} active={b.size === s} onClick={() => update(b.id, { size: s } as Partial<Block>)}>
+                                  {SIZE_LABEL[s]}
+                                </ToolButton>
+                              ))}
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                title={collapsed[b.id] ? "Expand" : "Collapse"}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
+                                }}
+                                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
+                              >
+                                {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                <span>{b.type === "video" ? "Video" : "Image"}</span>
+                              </button>
+                              {b.type === "video" ? (
+                                <ToolButton title="Replace video" onClick={() => setVideoFor(b.id)}>
+                                  <Film className="w-4 h-4" />
+                                  <span className="ml-1 text-xs">Replace</span>
+                                </ToolButton>
+                              ) : (
+                                <ToolButton title="Replace image" onClick={() => setPickerFor(b.id)}>
+                                  <ImageIcon className="w-4 h-4" />
+                                  <span className="ml-1 text-xs">Replace</span>
+                                </ToolButton>
+                              )}
+                              <span className="mx-1 h-5 w-px bg-border" />
+                              {([50, 75, 100] as const).map((w) => (
+                                <ToolButton key={w} title={`Width ${w}%`} active={(b as ImageBlock).width === w} onClick={() => update(b.id, { width: w } as Partial<Block>)}>
+                                  {w}%
+                                </ToolButton>
+                              ))}
+                            </>
+                          )}
+                          {b.type !== "object" && (
+                            <>
+                              <span className="mx-1 h-5 w-px bg-border" />
+                              {(["left", "center", "right"] as BlockAlign[]).map((a) => (
+                                <ToolButton key={a} title={`Align ${a}`} active={b.align === a} onClick={() => update(b.id, { align: a } as Partial<Block>)}>
+                                  {a === "left" ? <AlignLeft className="w-4 h-4" /> : a === "center" ? <AlignCenter className="w-4 h-4" /> : <AlignRight className="w-4 h-4" />}
+                                </ToolButton>
+                              ))}
+                            </>
+                          )}
+                          <span className="mx-1 h-5 w-px bg-border" />
+                          {(i > 0 || (hasExisting && currentFirst)) && (
+                            <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
+                          )}
+                          {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
+                            <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                          )}
+                          <ToolButton title="Delete block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
+    </>
+  );
+
   const existingCard = page ? (
     <div key="current-page-section">
       {addRow(currentFirst ? 0 : blocks.length, "Add a section above")}
@@ -808,7 +931,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
 
             {showLive && hasExisting && codedPages[previewSrc(page.path)] && (quick || device === "desktop") ? (
               <div className="border rounded-lg overflow-hidden bg-background" style={deviceStyle}>
-                {quick && (
+                {quick && !embedded && (
                   <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
                     <p className="text-xs text-muted-foreground">
                       Click any wording to type over it, or select wording or a picture to change its style on the right. Changes save on their own.
@@ -818,7 +941,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     )}
                   </div>
                 )}
-                <div className={quick ? "grid grid-cols-[1fr_260px]" : ""}>
+                <div className={quick && !embedded ? "grid grid-cols-[1fr_260px]" : ""}>
                 <div className="h-[70vh] overflow-y-auto bg-background">
                   {(() => {
                     const C = codedPages[previewSrc(page.path)];
@@ -841,23 +964,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     );
                   })()}
                 </div>
-                {quick && (
+                {quick && !embedded && (
                   <aside className="h-[70vh] overflow-y-auto border-l bg-background p-4">
-                    {inlineSel && inlineSel.scope !== "page" && (
-                      <p className="mb-4 rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
-                        Part of the shared object <span className="font-medium text-foreground">{inlineSel.scope}</span>. Changes apply everywhere it's used.
-                      </p>
-                    )}
-                    <InlineStylePanel
-                      sel={inlineSel}
-                      edits={inlineSel ? scopeEdits(inlineSel.scope) : inlineEdits}
-                      onChange={(next) => changeScope(inlineSel?.scope ?? "page", next)}
-                      onReplaceImage={async () => {
-                        if (!inlineSel) return;
-                        const url = await pickImage();
-                        if (url) changeScope(inlineSel.scope, { ...scopeEdits(inlineSel.scope), [`img:${inlineSel.key}`]: url });
-                      }}
-                    />
+                    {stylePanel}
                   </aside>
                 )}
                 </div>
@@ -940,7 +1049,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                       >
                         <GripVertical className="h-4 w-4" />
                       </button>
-                      {active && (
+                      {active && !embedded && (
                         <div
                           title="Drag to move"
                           onMouseDown={(e) => {
@@ -950,105 +1059,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                           }}
                           className="sticky top-16 z-10 -mx-3 mb-2 flex flex-wrap items-center gap-1 border-b bg-background/95 px-3 py-2 backdrop-blur cursor-grab active:cursor-grabbing"
                         >
-                          {b.type === "object" ? (
-                            <>
-                              <button
-                                type="button"
-                                title={collapsed[b.id] ? "Expand object" : "Collapse object"}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
-                                }}
-                                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
-                              >
-                                {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                <span>Object: {b.name ?? "Saved object"}</span>
-                              </button>
-                              <ToolButton title="Replace" onClick={() => setObjectFor(b.id)}>
-                                <Boxes className="w-4 h-4" />
-                                <span className="ml-1 text-xs">Replace</span>
-                              </ToolButton>
-                              <ToolButton
-                                title="Edit"
-                                onClick={() => navigate(`/manage/objects/design?object=${b.objectId}&returnPage=${selectedId}`)}
-                              >
-                                <Pencil className="w-4 h-4" />
-                                <span className="ml-1 text-xs">Edit</span>
-                              </ToolButton>
-                            </>
-                          ) : b.type === "heading" || b.type === "text" ? (
-                            <>
-                              <ToolButton
-                                title={b.type === "heading" ? "Turn into text" : "Turn into heading"}
-                                active={b.type === "heading"}
-                                onClick={() => update(b.id, { type: b.type === "heading" ? "text" : "heading" } as Partial<Block>)}
-                              >
-                                <Heading className="w-4 h-4" />
-                              </ToolButton>
-                              <ToolButton title="Bold" active={!!b.bold} onClick={() => update(b.id, { bold: !b.bold } as Partial<Block>)}>
-                                <Bold className="w-4 h-4" />
-                              </ToolButton>
-                              <ToolButton title="Italic" active={!!b.italic} onClick={() => update(b.id, { italic: !b.italic } as Partial<Block>)}>
-                                <Italic className="w-4 h-4" />
-                              </ToolButton>
-                              <span className="mx-1 h-5 w-px bg-border" />
-                              {SIZES.map((s) => (
-                                <ToolButton key={s} title={`Size ${SIZE_LABEL[s]}`} active={b.size === s} onClick={() => update(b.id, { size: s } as Partial<Block>)}>
-                                  {SIZE_LABEL[s]}
-                                </ToolButton>
-                              ))}
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                title={collapsed[b.id] ? "Expand" : "Collapse"}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
-                                }}
-                                className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
-                              >
-                                {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                <span>{b.type === "video" ? "Video" : "Image"}</span>
-                              </button>
-                              {b.type === "video" ? (
-                                <ToolButton title="Replace video" onClick={() => setVideoFor(b.id)}>
-                                  <Film className="w-4 h-4" />
-                                  <span className="ml-1 text-xs">Replace</span>
-                                </ToolButton>
-                              ) : (
-                                <ToolButton title="Replace image" onClick={() => setPickerFor(b.id)}>
-                                  <ImageIcon className="w-4 h-4" />
-                                  <span className="ml-1 text-xs">Replace</span>
-                                </ToolButton>
-                              )}
-                              <span className="mx-1 h-5 w-px bg-border" />
-                              {([50, 75, 100] as const).map((w) => (
-                                <ToolButton key={w} title={`Width ${w}%`} active={(b as ImageBlock).width === w} onClick={() => update(b.id, { width: w } as Partial<Block>)}>
-                                  {w}%
-                                </ToolButton>
-                              ))}
-                            </>
-                          )}
-                          {b.type !== "object" && (
-                            <>
-                              <span className="mx-1 h-5 w-px bg-border" />
-                              {(["left", "center", "right"] as BlockAlign[]).map((a) => (
-                                <ToolButton key={a} title={`Align ${a}`} active={b.align === a} onClick={() => update(b.id, { align: a } as Partial<Block>)}>
-                                  {a === "left" ? <AlignLeft className="w-4 h-4" /> : a === "center" ? <AlignCenter className="w-4 h-4" /> : <AlignRight className="w-4 h-4" />}
-                                </ToolButton>
-                              ))}
-                            </>
-                          )}
-                          <span className="mx-1 h-5 w-px bg-border" />
-                          {(i > 0 || (hasExisting && currentFirst)) && (
-                            <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
-                          )}
-                          {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
-                            <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
-                          )}
-                          <ToolButton title="Delete block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
+                          {blockTools(b, i)}
                         </div>
                       )}
 
