@@ -42,14 +42,15 @@ export function ToolHeader({ icon: Icon, title, subtitle, menu }: {
 
 const groupOpen = new Map<string, boolean>();
 
-export function ToolGroup({ title, defaultOpen = false, summary, children }: {
-  title: string; defaultOpen?: boolean; summary?: ReactNode; children: ReactNode;
+export function ToolGroup({ title, icon: Icon, defaultOpen = false, summary, children }: {
+  title: string; icon?: LucideIcon; defaultOpen?: boolean; summary?: ReactNode; children: ReactNode;
 }) {
   const [open, setOpen] = useState(() => groupOpen.get(title) ?? defaultOpen);
   const flip = () => setOpen((o) => { groupOpen.set(title, !o); return !o; });
   return (
     <div className="border-t">
       <button type="button" aria-expanded={open} onClick={flip} className="flex w-full items-center gap-2 py-2.5 text-left">
+        {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />}
         <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
         <span className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">{!open && summary}</span>
         <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform", !open && "-rotate-90")} />
