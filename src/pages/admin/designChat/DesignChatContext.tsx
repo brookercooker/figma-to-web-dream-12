@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer,
 import type { RelayState } from "./helper";
 import { useHelperState } from "./useHelperState";
 import { usePreview } from "./usePreview";
+import { usePreviewPage, type PreviewPage } from "./usePreviewPage";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview
@@ -54,6 +55,11 @@ export type DesignChat = {
   /** Open the working page in the editor. Does nothing without a working page that has an id. */
   startEditing: () => void;
   stopEditing: () => void;
+  /** The address the visitor is on inside the preview (null until the site reports one). */
+  previewLocation: { path: string; search: string } | null;
+  /** The Site Manager page at that address, if any. */
+  previewPage: PreviewPage | null;
+  previewPageLoading: boolean;
 };
 
 const Ctx = createContext<DesignChat | null>(null);
@@ -100,11 +106,28 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const startEditing = useCallback(() => dispatch({ type: "start" }), []);
   const stopEditing = useCallback(() => dispatch({ type: "stop" }), []);
 
+  const [previewLocation, setPreviewLocation] = useState<{ path: string; search: string } | null>(null);
+  const rememberPath = preview.rememberPath;
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const d = event.data;
+      if (!d || typeof d !== "object" || d.source !== "nova-site" || d.type !== "location") return;
+      if (typeof d.path !== "string" || !d.path.startsWith("/") || d.path.length > 300) return;
+      if (!event.source || !Array.from(document.querySelectorAll("iframe")).some((f) => f.contentWindow === event.source)) return;
+      const search = typeof d.search === "string" && d.search.length <= 300 ? d.search : "";
+      setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search ? cur : { path: d.path, search }));
+      rememberPath(d.path + search);
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [rememberPath]);
+  const { page: previewPage, loading: previewPageLoading } = usePreviewPage(previewLocation?.path ?? null);
+
   const value = useMemo<DesignChat>(() => ({
     state, offline, refreshSoon, preview, device, setDevice, boxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
-    editing, startEditing, stopEditing,
-  }), [state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing]);
+    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading,
+  }), [previewLocation, previewPage, previewPageLoading, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
