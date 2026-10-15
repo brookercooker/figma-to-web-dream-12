@@ -233,7 +233,7 @@ function AdminShell() {
               <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />
 
               <div aria-hidden className="h-9 w-px bg-border shrink-0" />
-              {chatCollapsed && <SubmitButton />}
+              {chatCollapsed && !editing && <SubmitButton />}
               <Button asChild variant="outline" size="icon" className="h-9 w-9 shrink-0">
                 <Link to="/manage/capture" aria-label="Capture" title="Capture">
                   <Camera className="w-4 h-4" />
@@ -327,7 +327,7 @@ function AdminShell() {
               <SiteManagerLogo />
             </h1>
             <div className="flex-1" />
-            <SubmitButton />
+            {!editing && <SubmitButton />}
             <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse chat" title="Collapse chat" aria-expanded={true} onClick={() => setChatCollapsed(true)}>
               <PanelLeftClose className="h-4 w-4" />
             </Button>
@@ -337,18 +337,18 @@ function AdminShell() {
           </div>
           {editing && workingPage && (
             <div className={cn("flex min-h-0 flex-1 flex-col", chatCollapsed && "hidden")}>
-              <div className="flex shrink-0 items-start gap-2 border-b px-3 py-2.5">
-                <div className="min-w-0 flex-1">
+              <div className="flex shrink-0 flex-col gap-2 border-b px-3 py-3">
+                <div className="min-w-0">
                   <p className="text-xs text-muted-foreground">Editing</p>
-                  <p className="truncate text-sm font-medium" title={workingPage.name}>{workingPage.name}</p>
-                  <button type="button" disabled={finishing} onClick={() => void finishEditing(true)} className="mt-0.5 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
-                    Stop working on this page
-                  </button>
+                  <p className="truncate text-lg font-semibold leading-tight" title={workingPage.name}>{workingPage.name}</p>
                 </div>
-                <div className="flex shrink-0 flex-col gap-1.5">
-                  <Button type="button" size="sm" disabled={finishing} onClick={() => void saveChanges()}>{finishing ? "Saving…" : "Finish Editing"}</Button>
-                  <Button type="button" size="sm" variant="outline" disabled={finishing} onClick={discardEditing}>Discard changes</Button>
+                <div className="flex gap-1.5">
+                  <Button type="button" size="sm" className="flex-1" disabled={finishing} onClick={() => void saveChanges()}>{finishing ? "Saving…" : "Finish Editing"}</Button>
+                  <Button type="button" size="sm" variant="outline" className="flex-1" disabled={finishing} onClick={discardEditing}>Discard changes</Button>
                 </div>
+                <button type="button" disabled={finishing} onClick={() => void finishEditing(true)} className="self-start text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+                  Stop working on this page
+                </button>
               </div>
               <div ref={setSlot} aria-label="Page editing options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
             </div>
