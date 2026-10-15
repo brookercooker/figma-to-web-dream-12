@@ -381,6 +381,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           component_key: string | null
+          content: Json | null
           created_at: string
           description: string | null
           id: string
@@ -399,6 +400,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           component_key?: string | null
+          content?: Json | null
           created_at?: string
           description?: string | null
           id?: string
@@ -417,6 +419,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           component_key?: string | null
+          content?: Json | null
           created_at?: string
           description?: string | null
           id?: string
