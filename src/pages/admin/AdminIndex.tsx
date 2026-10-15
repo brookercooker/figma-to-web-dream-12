@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Pencil } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Pencil, Check, Undo2, ArrowLeft } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import SiteManagerLogo from "./SiteManagerLogo";
 import ChatPanel from "./designChat/ChatPanel";
@@ -343,11 +343,11 @@ function AdminShell() {
                   <p className="truncate text-lg font-semibold leading-tight" title={workingPage.name}>{workingPage.name}</p>
                 </div>
                 <div className="flex gap-1.5">
-                  <Button type="button" size="sm" className="flex-1" disabled={finishing} onClick={() => void saveChanges()}>{finishing ? "Saving…" : "Finish Editing"}</Button>
-                  <Button type="button" size="sm" variant="outline" className="flex-1" disabled={finishing} onClick={discardEditing}>Discard changes</Button>
+                  <Button type="button" size="sm" className="flex-1 gap-1.5" disabled={finishing} onClick={() => void saveChanges()}><Check className="h-4 w-4" aria-hidden />{finishing ? "Saving…" : "Finish Editing"}</Button>
+                  <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing} onClick={discardEditing}><Undo2 className="h-4 w-4" aria-hidden />Discard changes</Button>
                 </div>
-                <button type="button" disabled={finishing} onClick={() => void finishEditing(true)} className="self-start text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
-                  Stop working on this page
+                <button type="button" disabled={finishing} onClick={() => void finishEditing(true)} className="inline-flex items-center gap-1.5 self-start text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+                  <ArrowLeft className="h-3 w-3" aria-hidden />Stop working on this page
                 </button>
               </div>
               <div ref={setSlot} aria-label="Page editing options" role="region" className="min-h-0 flex-1 overflow-y-auto" />

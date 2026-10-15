@@ -37,6 +37,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ToolHeader, ToolGroup, ToolNote } from "./designChat/ToolPanel";
+import { Type as TypeIcon, Palette, Move, Frame, MoveVertical, PaintBucket, RectangleHorizontal } from "lucide-react";
 import CreateObjectDialog from "./CreateObjectDialog";
 
 const ICON_LABEL_SIDES: { value: "before" | "after" | "above" | "below"; label: string; icon: LucideIcon }[] = [
@@ -3060,12 +3061,12 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
       <div key={key} data-inspector-part={part} className="relative scroll-mt-24">
         <ToolHeader icon={Icon} title={title} menu={menu} />
         {order.map((g, gi) => buckets[g]?.length ? (
-          <ToolGroup key={g} title={isImages || isVideos ? g : `${g === "Content" ? "Text content" : "Text style"}`} defaultOpen={gi === 0}>
+          <ToolGroup key={g} icon={g === "Images" ? ImageIcon : g === "Layout" ? LayoutGrid : g === "Border & shadow" ? Frame : g === "Videos" ? VideoIcon : g === "Content" ? TypeIcon : Palette} title={isImages || isVideos ? g : `${g === "Content" ? "Text content" : "Text style"}`} defaultOpen={gi === 0}>
             {buckets[g]}
           </ToolGroup>
         ) : null)}
         {flowSection && part ? (
-          <ToolGroup title={isImages ? "Image placement" : isVideos ? "Video placement" : "Text placement"}>
+          <ToolGroup icon={Move} title={isImages ? "Image placement" : isVideos ? "Video placement" : "Text placement"}>
             {flowField(flowSection, part)}
           </ToolGroup>
         ) : null}
@@ -3079,7 +3080,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     return (
         <div>
           <div>
-            <ToolGroup title="Block alignment" defaultOpen>
+            <ToolGroup title="Block alignment" icon={AlignCenter} defaultOpen>
             <div className="flex flex-wrap items-center gap-1">
             {([
               { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
@@ -3166,7 +3167,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             )}
             </div>
             </ToolGroup>
-            <ToolGroup title="Block spacing">
+            <ToolGroup title="Block spacing" icon={MoveVertical}>
             <div className="flex flex-wrap items-center gap-1">
             {([
               { key: "padY" as const, label: "Space above and below (px)", short: "V" },
@@ -3197,7 +3198,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             ))}
             </div>
             </ToolGroup>
-            <ToolGroup title="Block background">
+            <ToolGroup title="Block background" icon={PaintBucket}>
             <div className="flex flex-wrap items-center gap-1">
             <ColorDropdown
               label="Background"
@@ -3998,7 +3999,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             patch(section.id, { cards: Object.keys(cards).length ? cards : undefined });
           };
           return (
-            <ToolGroup title="Card outline" summary={card ? "On" : "Off"}>
+            <ToolGroup title="Card outline" icon={RectangleHorizontal} summary={card ? "On" : "Off"}>
               {card ? (
                 <div className="flex justify-end">
                   <button type="button" className="text-xs text-muted-foreground underline" onClick={() => setCard(undefined)}>

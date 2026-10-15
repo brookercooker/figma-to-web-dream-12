@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw, Underline, Eraser, Minus, Type, Eye, EyeOff, icons } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, icons } from "lucide-react";
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { LINK_ICONS, readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
 
@@ -92,7 +92,7 @@ export default function InlineStylePanel({
           { label: "Reset", icon: RotateCcw, onSelect: reset },
           { label: hidden ? "Show line" : "Hide line", icon: hidden ? Eye : EyeOff, onSelect: () => set(`border-${side}-style`, hidden ? "" : "none") },
         ]} />
-        <ToolGroup title="Line" defaultOpen>
+        <ToolGroup title="Line" icon={Minus} defaultOpen>
           <ToolField label="Thickness (px)">
             <Input type="number" min={1} max={12} placeholder={num(cs.getPropertyValue(`border-${side}-width`)) || "1"}
               value={num(style[`border-${side}-width`])} onChange={(e) => set(`border-${side}-width`, px(e.target.value))} />
@@ -106,7 +106,7 @@ export default function InlineStylePanel({
             </ToolSegment>
           </ToolField>
         </ToolGroup>
-        <ToolGroup title="Colour" defaultOpen>
+        <ToolGroup title="Colour" icon={Palette} defaultOpen>
           {swatches(col, (v) => set(`border-${side}-color`, col === v ? "" : v))}
         </ToolGroup>
       </div>
@@ -122,7 +122,7 @@ export default function InlineStylePanel({
           { label: "Reset", icon: RotateCcw, onSelect: reset },
           { label: style.visibility ? "Show line" : "Hide line", icon: style.visibility ? Eye : EyeOff, onSelect: () => set("visibility", style.visibility ? "" : "hidden") },
         ]} />
-        <ToolGroup title="Line" defaultOpen>
+        <ToolGroup title="Line" icon={Minus} defaultOpen>
           <ToolGrid>
             <ToolField label={`${vertical ? "Height" : "Length"} (px)`}>
               <Input type="number" min={4} placeholder={String(Math.round(vertical ? r.height : r.width))}
@@ -134,10 +134,10 @@ export default function InlineStylePanel({
             </ToolField>
           </ToolGrid>
         </ToolGroup>
-        <ToolGroup title="Colour" defaultOpen>
+        <ToolGroup title="Colour" icon={Palette} defaultOpen>
           {swatches(style["background-color"], (v) => set("background-color", style["background-color"] === v ? "" : v))}
         </ToolGroup>
-        <ToolGroup title="Spacing">
+        <ToolGroup title="Spacing" icon={MoveVertical}>
           <ToolField label="Space above and below (px)">
             <Input type="number" min={0} placeholder="Default" value={num(style["margin-top"])}
               onChange={(e) => { const v = px(e.target.value); const next = { ...style }; if (v) { next["margin-top"] = v; next["margin-bottom"] = v; } else { delete next["margin-top"]; delete next["margin-bottom"]; } const out = { ...edits }; if (Object.keys(next).length) out[styleKey(sel.key)] = JSON.stringify(next); else delete out[styleKey(sel.key)]; onChange(out); }} />
@@ -151,7 +151,7 @@ export default function InlineStylePanel({
     return (
       <div>
         <ToolHeader icon={ImageIcon} title="Picture" menu={[{ label: "Reset picture size", icon: RotateCcw, onSelect: reset }]} />
-        <ToolGroup title="Picture" defaultOpen>
+        <ToolGroup title="Picture" icon={ImageIcon} defaultOpen>
           <Button variant="outline" size="sm" className="w-full gap-2" onClick={onReplaceImage}>
             <ImageIcon className="w-4 h-4" /> Replace picture
           </Button>
@@ -164,7 +164,7 @@ export default function InlineStylePanel({
             </ToolSegment>
           </ToolField>
         </ToolGroup>
-        <ToolGroup title="Size">
+        <ToolGroup title="Size" icon={Maximize2}>
           <ToolGrid>
             <ToolField label="Width (px)">
               <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().width))}
@@ -176,7 +176,7 @@ export default function InlineStylePanel({
             </ToolField>
           </ToolGrid>
         </ToolGroup>
-        <ToolGroup title="Corners">
+        <ToolGroup title="Corners" icon={SquareDashed}>
           <ToolField label="Rounded corners (px)">
             <Input type="number" min={0} placeholder={num(computed.borderRadius) || "0"}
               value={num(style["border-radius"])} onChange={(e) => set("border-radius", px(e.target.value))} />
@@ -234,7 +234,7 @@ export default function InlineStylePanel({
           </ToolNote>
         </div>
       ) : null}
-      <ToolGroup title="Text" defaultOpen summary={`${fontName} · ${sizeNow}px`}>
+      <ToolGroup title="Text" icon={Type} defaultOpen summary={`${fontName} · ${sizeNow}px`}>
         <div className="flex flex-wrap gap-2">
           <ToolSegment onMouseDown={(e) => e.preventDefault()}>
             <Button size="icon" variant={bold ? "default" : "ghost"} title="Bold" onClick={() => apply("font-weight", bold ? "400" : "700")}><Bold className="w-4 h-4" /></Button>
@@ -266,10 +266,10 @@ export default function InlineStylePanel({
           </ToolField>
         </ToolGrid>
       </ToolGroup>
-      <ToolGroup title="Colour" defaultOpen>
+      <ToolGroup title="Colour" icon={Palette} defaultOpen>
         {swatches(style.color, (v) => apply("color", highlighted ? v : style.color === v ? "" : v), true)}
       </ToolGroup>
-      <ToolGroup title="Spacing">
+      <ToolGroup title="Spacing" icon={MoveVertical}>
         <ToolGrid>
           <ToolField label="Letter spacing">
             <Input type="number" step={0.05} placeholder="0" value={num(style["letter-spacing"])} onChange={(e) => apply("letter-spacing", e.target.value ? `${e.target.value}em` : "")} />
@@ -280,7 +280,7 @@ export default function InlineStylePanel({
         </ToolGrid>
       </ToolGroup>
       {linkEl && (
-        <ToolGroup title="Icon">
+        <ToolGroup title="Icon" icon={Smile}>
           <div className="grid grid-cols-6 gap-1">
             <button type="button" title="No icon" aria-pressed={iconNow === "none"}
               onClick={() => onChange({ ...edits, [`icon:${sel.key}`]: "none" })}
