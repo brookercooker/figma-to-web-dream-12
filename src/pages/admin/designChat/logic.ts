@@ -1,7 +1,7 @@
 /**
  * The rules for what the Design Chat shows. Plain functions (no React) so they can be tested on their own.
  */
-import type { Entry, Finding, Job, RelayState, UploadRules } from "./helper";
+import type { Approval, Entry, Finding, Job, RelayState, UploadRules } from "./helper";
 
 export const IDLE_HINT = "Enter to send · Shift+Enter for a new line";
 
@@ -13,16 +13,17 @@ export const fmtDur = (ms: number) => {
 export const fmtSize = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
 // ---- the chat history: only what the person can use ------------------------------------------
-const NOTES: [RegExp, () => string][] = [
-  [/paused waiting for an approval/i, () => "This change is paused and needs an approval that can't be given from here. Try rewording the request."],
+const NOTES: [RegExp, (text: string) => string][] = [
+  [/paused for a check-in/i, () => "This change is paused for a check-in that only an admin can answer in the builder's own editor. Ask an admin, or try rewording the request."],
   [/taking longer than 15 minutes/i, () => "This is taking longer than usual. It may still finish. You can press Submit for review later to put your changes live."],
   [/^The draft is published/i, () => "Your changes are live."],
+  [/^Approval (granted|declined)/i, (t) => t],
 ];
 
 /** The text to show for a history entry, or null to hide it (internal notes stay out). */
 export function visibleText(entry: Entry): string | null {
   if (entry.role === "note") {
-    for (const [re, out] of NOTES) if (re.test(entry.text)) return out();
+    for (const [re, out] of NOTES) if (re.test(entry.text)) return out(entry.text);
     return null;
   }
   if (entry.role === "error") return `${entry.text}\nTry sending it again in a moment.`;
@@ -32,6 +33,7 @@ export function visibleText(entry: Entry): string | null {
 // ---- the live "working on it" line ------------------------------------------------------------
 export function workLabel(job: Job): string {
   const st = job.status;
+  if (st === "approval") return "Waiting for an approval…";
   if (job.kind === "change") return st === "working" ? "Making your change…" : "Sending your request…";
   if (job.kind === "dev") return "Updating the page…";
   if (st === "publishing") return "Going live…";
@@ -47,7 +49,25 @@ export function workHint(job: Job, s: RelayState, now: number): string {
   return "";
 }
 
-export const isWorking = (s: RelayState | null) => Boolean(s && s.job && (s.busy || s.job.status === "queued"));
+export const isWorking = (s: RelayState | null) =>
+  Boolean(s && s.job && s.job.status !== "approval" && (s.busy || s.job.status === "queued"));
+
+// ---- approvals ---------------------------------------------------------------------------------
+export function approvalView(a: Approval, isAdmin: boolean): { title: string; canApprove: boolean; canDecline: boolean; note: string; editorUrl: string | null } {
+  return {
+    title: a.title,
+    canApprove: isAdmin && a.rule === "ok" && !a.deciding,
+    canDecline: isAdmin && !a.deciding,
+    note: !isAdmin
+      ? "Waiting for an admin to decide. Only admins can approve or decline this."
+      : a.rule === "editor"
+        ? "This involves a secret or key, so it can only be answered in the builder's own editor, never in this chat. You can open it there, or decline."
+        : a.rule === "never"
+          ? "Publishing can't be approved here. Decline this, then use Submit for review."
+          : "",
+    editorUrl: isAdmin && a.rule === "editor" ? a.editorUrl : null,
+  };
+}
 
 // ---- problems after a review stops the changes ------------------------------------------------
 const DEV_FIX = /^(an? developer|have an? developer|ask an? developer)/i;
