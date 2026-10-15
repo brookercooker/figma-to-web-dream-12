@@ -4591,7 +4591,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               </div>
             </div>
           ) : (
-            <div className={embedded ? "space-y-8 p-4" : "space-y-8"}>
+            <div className={embedded ? "space-y-8 pl-10 pr-4 py-4" : "space-y-8 pl-8"}>
               {!embedded && (
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => add("free")}>
@@ -4610,24 +4610,22 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     key={s.id}
                     data-block-id={s.id}
                     data-block-row={grp.length > 1 ? "1" : undefined}
-                    className={`relative rounded-lg border-2 bg-background transition-shadow ${dragBlock === s.id ? "opacity-50" : ""} ${
-                      active ? "border-primary/50 shadow-lg" : "border-border shadow-sm hover:border-primary/25"
-                    }`}
+                    className={`group relative rounded-lg transition-shadow ${dragBlock === s.id ? "opacity-50" : ""} ${
+                      active ? "ring-2 ring-primary/40" : "hover:ring-1 hover:ring-primary/20"
+                    } ${blockDrop?.id === s.id
+                      ? (grp.length > 1
+                          ? (blockDrop.before ? "shadow-[-2px_0_0_hsl(var(--primary))]" : "shadow-[2px_0_0_hsl(var(--primary))]")
+                          : (blockDrop.before ? "shadow-[0_-2px_0_hsl(var(--primary))]" : "shadow-[0_2px_0_hsl(var(--primary))]"))
+                      : ""}`}
                     style={blockBgStyle(s)}
                   >
-                    {blockDrop?.id === s.id && (
-                      <div
-                        className={`pointer-events-none absolute z-30 rounded-full bg-primary ${
-                          grp.length > 1
-                            ? `inset-y-0 w-1 ${blockDrop.before ? "-left-2" : "-right-2"}`
-                            : `inset-x-0 h-1 ${blockDrop.before ? "-top-3" : "-bottom-3"}`
-                        }`}
-                      />
-                    )}
-                    <div
+                    <button
+                      type="button"
+                      title="Drag to move"
+                      aria-label="Drag to move"
                       onMouseDown={(e) => {
-                        if ((e.target as HTMLElement).closest("button,input,select,textarea,[contenteditable=true]")) return;
                         if (e.button !== 0) return;
+                        e.preventDefault();
                         const x0 = e.clientX, y0 = e.clientY;
                         const mv = (ev: MouseEvent) => {
                           if (Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 5) return;
@@ -4639,46 +4637,50 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                         window.addEventListener("mousemove", mv);
                         window.addEventListener("mouseup", () => window.removeEventListener("mousemove", mv), { once: true });
                       }}
-                      title="Drag to move this block"
-                      className={`flex cursor-grab items-center gap-2.5 active:cursor-grabbing ${collapsedBlocks[s.id] ? "rounded-md" : "rounded-t-md border-b-2"} px-3 py-3 ${active ? "border-primary/40 bg-background bg-[linear-gradient(hsl(var(--primary)/0.1),hsl(var(--primary)/0.1))]" : "border-foreground/15 bg-muted"}`}>
-                      <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <button
-                        type="button"
-                        title={collapsedBlocks[s.id] ? "Expand block" : "Collapse block"}
-                        aria-label={collapsedBlocks[s.id] ? "Expand block" : "Collapse block"}
-                        aria-expanded={!collapsedBlocks[s.id]}
-                        onClick={() => setCollapsedBlocks((c) => ({ ...c, [s.id]: !c[s.id] }))}
-                        className="rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
-                      >
-                        <ChevronDown className={`h-4 w-4 transition-transform ${collapsedBlocks[s.id] ? "-rotate-90" : ""}`} />
-                      </button>
-                      <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold tabular-nums ${active ? "bg-primary text-primary-foreground" : "bg-foreground text-background"}`}>
-                        {i + 1}
-                      </span>
-                      <span className="text-sm font-bold uppercase tracking-[0.14em] text-foreground">{SECTION_LABEL[s.type]}</span>
-                      <BlockHeaderControls
-                        active={active}
-                        onToggle={() => setActiveId(active ? "" : s.id)}
-                        actions={[
-                          { label: "Move up", icon: ArrowUp, disabled: i === 0, onClick: () => move(s.id, -1) },
-                          { label: "Move down", icon: ArrowDown, disabled: i === sections.length - 1, onClick: () => move(s.id, 1) },
-                          ...(s.type === "free"
-                            ? [{
-                                label: "Block options",
-                                icon: Pencil,
-                                selected: optionsFor === s.id,
-                                onClick: () => {
-                                  setActiveId(s.id);
-                                  setFocusPart("");
-                                  setOptionsFor(optionsFor === s.id ? "" : s.id);
-                                },
-                              }]
-                            : []),
-                          { label: "Duplicate block", icon: Copy, onClick: () => duplicateSection(s.id) },
-                          { label: "Delete block", icon: Trash2, onClick: () => remove(s.id) },
-                        ]}
-                      />
+                      className={`absolute -left-7 top-2 z-20 cursor-grab rounded p-1 text-muted-foreground hover:bg-muted active:cursor-grabbing ${active ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                    >
+                      <GripVertical className="h-4 w-4" />
+                    </button>
+                    <div className={`absolute right-2 top-2 z-20 ${active ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 bg-background/80" aria-label="Block options menu" title="More">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem disabled={i === 0} onSelect={() => move(s.id, -1)} className="gap-2"><ArrowUp className="h-4 w-4" /> Move up</DropdownMenuItem>
+                          <DropdownMenuItem disabled={i === sections.length - 1} onSelect={() => move(s.id, 1)} className="gap-2"><ArrowDown className="h-4 w-4" /> Move down</DropdownMenuItem>
+                          {s.type === "free" && (
+                            <DropdownMenuItem
+                              className="gap-2"
+                              onSelect={() => { setActiveId(s.id); setFocusPart(""); setOptionsFor(optionsFor === s.id ? "" : s.id); }}
+                            ><Pencil className="h-4 w-4" /> Block options</DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onSelect={() => duplicateSection(s.id)} className="gap-2"><Copy className="h-4 w-4" /> Duplicate block</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => remove(s.id)} className="gap-2"><Trash2 className="h-4 w-4" /> Delete block</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => setCollapsedBlocks((c) => ({ ...c, [s.id]: !c[s.id] }))} className="gap-2">
+                            <ChevronDown className={`h-4 w-4 ${collapsedBlocks[s.id] ? "" : "rotate-180"}`} /> {collapsedBlocks[s.id] ? "Expand block" : "Collapse block"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
+                    {collapsedBlocks[s.id] && (
+                      <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 pr-12 text-sm" onClick={() => setActiveId(s.id)}>
+                        <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <button
+                          type="button"
+                          title="Expand block"
+                          aria-label="Expand block"
+                          aria-expanded={false}
+                          onClick={(e) => { e.stopPropagation(); setCollapsedBlocks((c) => ({ ...c, [s.id]: false })); }}
+                          className="rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
+                        >
+                          <ChevronDown className="h-4 w-4 -rotate-90" />
+                        </button>
+                        <span className="truncate text-muted-foreground">Section {i + 1} · {SECTION_LABEL[s.type]}</span>
+                      </div>
+                    )}
 
                     {!collapsedBlocks[s.id] && (<>
                     {s.type === "locked" && s.chunk !== undefined ? (
