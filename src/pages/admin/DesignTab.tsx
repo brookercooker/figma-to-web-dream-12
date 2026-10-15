@@ -243,16 +243,12 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     window.clearTimeout(inlineTimer.current);
     inlineTimer.current = window.setTimeout(async () => {
       const updated_at = new Date().toISOString();
-      await (supabase as any).from("pages").update({ inline_edits: next, updated_at }).eq("id", id);
+      const { error } = await (supabase as any).from("pages").update({ inline_edits: next, updated_at }).eq("id", id);
+      if (!error) notifyContentEdited();
       setPages((cur) => cur.map((x) => (x.id === id ? { ...x, inline_edits: next, updated_at } : x)));
     }, 800);
   };
 
-
-  const load = async () => {
-    const { data } = await (supabase as any)
-      .from("pages")
-      .select("id,name,path,content,updated_at,tags,inline_edits")
       .is("archived_at", null)
       .order("name", { ascending: true });
     setPages(data ?? []);
@@ -511,9 +507,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     try {
       const { error } = await (supabase as any)
         .from("pages")
-        .update({ content: blocks, build_status: "ready" })
+        .update({ content: blocks })
         .eq("id", page.id);
       if (error) throw error;
+      pendingSave.current = null;
+      notifyContentEdited();
       await load();
       setDirty(false);
       toast.success(`Saved — your page is live at ${page.path}`);
@@ -522,24 +520,53 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     } finally { setSaving(false); }
   };
 
+  // Unsaved block changes waiting for auto-save; flushed if the editor closes or the page changes.
+  const pendingSave = useRef<{ pageId: string; snapshot: Block[] } | null>(null);
+
   // Auto-save: quietly store changes shortly after the user stops editing.
   useEffect(() => {
     if (!dirty || !page) return;
     const pageId = page.id;
     const snapshot = blocks;
+    pendingSave.current = { pageId, snapshot };
     const t = setTimeout(async () => {
       setSaving(true);
       const { error } = await (supabase as any)
         .from("pages")
-        .update({ content: snapshot, build_status: "ready" })
+        .update({ content: snapshot })
         .eq("id", pageId);
       setSaving(false);
       if (error) { toast.error(error.message ?? "Could not save the page"); return; }
+      if (pendingSave.current?.snapshot === snapshot) pendingSave.current = null;
+      notifyContentEdited();
       setPages((cur) => cur.map((x) => (x.id === pageId ? { ...x, content: snapshot, updated_at: new Date().toISOString() } as any : x)));
       setBlocks((cur) => { if (cur === snapshot) setDirty(false); return cur; });
     }, 800);
     return () => clearTimeout(t);
   }, [blocks, dirty, page?.id]);
+
+  // On unmount or page change, save any pending block changes right away.
+  useEffect(() => {
+    return () => {
+      const p = pendingSave.current;
+      if (!p) return;
+      pendingSave.current = null;
+      (supabase as any).from("pages").update({ content: p.snapshot }).eq("id", p.pageId)
+        .then(({ error }: any) => { if (!error) notifyContentEdited(); });
+    };
+  }, [page?.id]);
+
+  const setBuildStatus = async (status: "draft" | "ready") => {
+    if (!page?.id || page.build_status === status) return;
+    const id = page.id;
+    const { error } = await (supabase as any).from("pages").update({ build_status: status }).eq("id", id);
+    if (error) { toast.error(error.message ?? "Could not change the status"); return; }
+    setPages((cur) => cur.map((x) => (x.id === id ? { ...x, build_status: status } : x)));
+    notifyContentEdited();
+    toast.success(status === "ready"
+      ? "Marked Ready. It will be included the next time you submit for review."
+      : "Marked Draft. It will not be published.");
+  };
 
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const [toolbarHidden, setToolbarHidden] = useState(false);
@@ -797,6 +824,25 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
             <Button size="sm" disabled={saving || !dirty} onClick={save}>{saving ? "Saving…" : "Save"}</Button>
             <span className="text-xs text-muted-foreground">{dirty ? "Unsaved changes" : "All changes saved"}</span>
           </div>
+          {page.id && (
+            <div className="space-y-1">
+              <div role="radiogroup" aria-label="Page status" className="inline-flex rounded-md border p-0.5">
+                {(["draft", "ready"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    role="radio"
+                    aria-checked={page.build_status === s}
+                    onClick={() => setBuildStatus(s)}
+                    className={`rounded px-3 py-1 text-xs ${page.build_status === s ? "bg-muted font-medium" : "text-muted-foreground"}`}
+                  >
+                    {s === "draft" ? "Draft" : "Ready"}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">Only Ready pages are published.</p>
+            </div>
+          )}
           {!!blocks.length && (
             <div className="space-y-2">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Sections</p>
