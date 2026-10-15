@@ -219,7 +219,7 @@ function AdminShell() {
                   {squeeze < 2 && <span>{editing ? "Editing" : "Edit page"}</span>}
                 </Button>
               )}
-              <PreviewTools showViewControls={tab === "preview" && !editing} tight={squeeze >= 2} />
+              <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />
 
               <div aria-hidden className="h-9 w-px bg-border shrink-0" />
               {chatCollapsed && <SubmitButton />}
@@ -266,7 +266,7 @@ function AdminShell() {
               </div>
             )}
             {tab === "preview" && editing && workingPage?.id && (
-              <div className="h-full w-full px-6 py-6">
+              <div className="h-full w-full">
                 <Suspense fallback={<TabSkeleton />}>
                   <DesignTab embedded pageId={workingPage.id} />
                 </Suspense>

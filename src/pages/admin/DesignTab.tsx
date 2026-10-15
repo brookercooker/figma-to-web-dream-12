@@ -7,6 +7,8 @@ import type { Section } from "@/components/ObjectSections";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useDesignChatOptional } from "./designChat/DesignChatContext";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -14,7 +16,7 @@ import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
   AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
   ChevronDown, ChevronRight, GripVertical, Film,
-PanelLeftOpen, PanelLeftClose, Monitor, Tablet, Smartphone, Eye } from "lucide-react";
+PanelLeftOpen, PanelLeftClose, Monitor, Tablet, Smartphone, Eye, Minimize2 } from "lucide-react";
 import { DeviceFrame, DEVICE_WIDTH, type Device } from "@/components/DeviceFrame";
 import CreatePageDialog from "./CreatePageDialog";
 import ConfirmDialog from "./ConfirmDialog";
@@ -416,8 +418,13 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   // working, and the page scrolls near the top or bottom edge.
   const grabRef = useRef({ x: 0, y: 0 });
   const dropRef = useRef<{ id: string; before: boolean } | null>(null);
-  const [device, setDevice] = useState<Device>("desktop");
-  const deviceStyle = DEVICE_WIDTH[device] ? { width: DEVICE_WIDTH[device]!, maxWidth: "100%", margin: "0 auto" } : undefined;
+  const [localDevice, setDevice] = useState<Device>("desktop");
+  // Embedded, the Site Manager's size buttons size the wrapper around the editor; inside it everything fills at full width.
+  const chat = useDesignChatOptional();
+  const device: Device = embedded ? "desktop" : localDevice;
+  const deviceStyle = !embedded && DEVICE_WIDTH[device] ? { width: DEVICE_WIDTH[device]!, maxWidth: "100%", margin: "0 auto" } : undefined;
+  const h70 = embedded ? "h-full" : "h-[70vh]";
+  const frame = embedded ? "h-full overflow-hidden bg-background" : "border rounded-lg overflow-hidden bg-background";
   const startDrag = (e: React.MouseEvent, id: string) => {
     if (e.button !== 0) return;
     const x0 = e.clientX, y0 = e.clientY;
@@ -881,9 +888,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         <p className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">This page can't be edited here.</p>
       ) : quick && showLive ? (
         <>
-          <p className="text-xs text-muted-foreground">
-            Click any wording to type over it, or select wording or a picture to change its style on the left. Changes save when you press Done.
-          </p>
+          
           {Object.keys(inlineEdits).length > 0 && (
             <Button variant="outline" size="sm" className="self-start" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
           )}
@@ -991,7 +996,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
 
 
   return (
-    <div className={embedded ? "min-w-0" : `grid grid-cols-1 gap-6 ${listOpen ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[auto_1fr]"}`}>
+    <div className={embedded ? "h-full min-h-0 min-w-0" : `grid grid-cols-1 gap-6 ${listOpen ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[auto_1fr]"}`}>
       {/* Page list (not when embedded in the Site Manager's edit mode) */}
       {embedded ? null : !listOpen ? (
         <aside className="lg:sticky lg:top-4 lg:self-start">
@@ -1091,13 +1096,13 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       />
 
       {/* Editor */}
-      <section className="min-w-0">
+      <section className={embedded ? "h-full min-h-0 min-w-0" : "min-w-0"}>
         {!page ? (
           <div className="border rounded-lg p-12 text-center text-muted-foreground">
             Pick a page on the left to design it, or create a new one.
           </div>
         ) : (
-          <>
+          <EmbeddedBox chat={embedded ? chat : null}>
             {!embedded && (
             <div className="flex flex-wrap items-center gap-2 mb-4">
               <div className="mr-auto">
@@ -1118,7 +1123,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
             )}
 
             {showLive && hasExisting && codedPages[previewSrc(page.path)] && (quick || device === "desktop") ? (
-              <div className="border rounded-lg overflow-hidden bg-background" style={deviceStyle}>
+              <div className={frame} style={deviceStyle}>
                 {quick && !embedded && (
                   <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
                     <p className="text-xs text-muted-foreground">
@@ -1153,17 +1158,17 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                   })()}
                 </div>
                 {quick && !embedded && (
-                  <aside className="h-[70vh] overflow-y-auto border-l bg-background p-4">
+                  <aside className={`${h70} overflow-y-auto border-l bg-background p-4">
                     {stylePanel}
                   </aside>
                 )}
                 </div>
               </div>
             ) : showLive ? (
-              <div className="border rounded-lg overflow-hidden bg-background">
+              <div className={frame}>
                 {savedBlocks.length || !canIframe(page.path) ? (
                   device === "desktop" ? (
-                    <div className="h-[70vh] overflow-y-auto bg-background">
+                    <div className={`${h70} overflow-y-auto bg-background`}>
                       <InlinePagePreview name={page.name} blocks={savedBlocks} />
                     </div>
                   ) : (
@@ -1178,13 +1183,13 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     key={`${page.id}-${page.updated_at}`}
                     src={previewSrc(page.path)}
                     title={`${page.name} preview`}
-                    className="w-full h-[70vh] bg-background"
+                    className={`w-full ${h70} bg-background`}
                     style={deviceStyle}
                   />
                 )}
               </div>
             ) : (
-            <div className="rounded-lg border bg-background overflow-hidden" style={deviceStyle}>
+            <div className={embedded ? "bg-background" : "rounded-lg border bg-background overflow-hidden"} style={deviceStyle}>
               {!hasExisting && (
                 <ChromePreview label="Site header">
                   <Header />
@@ -1344,7 +1349,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
               )}
             </div>
             )}
-          </>
+          </EmbeddedBox>
         )}
       </section>
 

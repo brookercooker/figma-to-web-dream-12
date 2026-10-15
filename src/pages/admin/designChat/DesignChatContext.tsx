@@ -41,6 +41,8 @@ export type DesignChat = {
   setDevice: (d: Device) => void;
   /** The element the preview sits in (what "Full screen" expands). Set by the preview. */
   boxRef: RefObject<HTMLDivElement>;
+  /** The element the page editor sits in while editing (what "Full screen" expands then). */
+  editBoxRef: RefObject<HTMLDivElement>;
   inFull: boolean;
   /** Full screen was done by covering the window, because the browser wouldn't do it. */
   coverFull: boolean;
@@ -80,6 +82,9 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const [full, setFull] = useState(false); // full screen done by the browser
   const [coverFull, setCoverFull] = useState(false); // or, if it won't, by covering the window
   const boxRef = useRef<HTMLDivElement>(null);
+  const editBoxRef = useRef<HTMLDivElement>(null);
+  const [work, dispatch] = useReducer(workingReducer, { workingPage: null, editing: false });
+  const editing = work.editing;
 
   useEffect(() => {
     const sync = () => setFull(Boolean(document.fullscreenElement));
@@ -92,12 +97,16 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const toggleFull = useCallback(async () => {
     if (document.fullscreenElement) { await document.exitFullscreen().catch(() => {}); return; }
     if (coverFull) { setCoverFull(false); return; }
-    try { await boxRef.current?.requestFullscreen(); } catch { setCoverFull(true); }
-  }, [coverFull]);
+    try { await (editing ? editBoxRef.current : boxRef.current)?.requestFullscreen(); } catch { setCoverFull(true); }
+  }, [coverFull, editing]);
+  // Leaving edit mode leaves full screen too.
+  useEffect(() => {
+    if (editing) return;
+    if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+    setCoverFull(false);
+  }, [editing]);
 
-  const [work, dispatch] = useReducer(workingReducer, { workingPage: null, editing: false });
   const workingPage = work.workingPage;
-  const editing = work.editing;
   const selectPage = useCallback((page: WorkingPage) => {
     dispatch({ type: "select", page });
     setPreviewPath(page.path);
@@ -124,7 +133,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const { page: previewPage, loading: previewPageLoading } = usePreviewPage(previewLocation?.path ?? null);
 
   const value = useMemo<DesignChat>(() => ({
-    state, offline, refreshSoon, preview, device, setDevice, boxRef,
+    state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
     editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading,
   }), [previewLocation, previewPage, previewPageLoading, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing]);
