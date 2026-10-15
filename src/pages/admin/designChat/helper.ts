@@ -72,6 +72,17 @@ export type RelayState = {
   liveUrl?: string | null;
   embedEnabled?: boolean;
   uploads?: UploadRules;
+  approval?: Approval | null;
+};
+
+export type Approval = {
+  id: string;
+  title: string;                       // plain-words summary, e.g. "Change the site's database"
+  detail: string;                      // what exactly is proposed, plain text, may be long
+  rule: "ok" | "editor" | "never";     // ok = can be answered here; editor = secrets/keys, never answered here; never = publishing, decline only
+  editorUrl: string | null;            // link to the builder's own editor (only for rule "editor")
+  createdAt: number;
+  deciding: boolean;                   // an answer is being sent right now
 };
 
 /** Used until the helper has said what it accepts (these match the helper's own rules). */

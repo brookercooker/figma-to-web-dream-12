@@ -3,6 +3,7 @@ import { FileText, Loader2, Mic, Paperclip, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import ApprovalCard from "./ApprovalCard";
 import { DEFAULT_UPLOADS, postToHelper } from "./helper";
 import { useDesignChat } from "./DesignChatContext";
 import { fmtDur, fmtSize, isWorking, problemsModel, visibleText, workHint, workLabel } from "./logic";
@@ -64,7 +65,7 @@ export default function ChatPanel() {
   useLayoutEffect(() => {
     const el = logRef.current;
     if (el && stick.current) el.scrollTop = el.scrollHeight;
-  }, [messages.length, working, problems?.title]);
+  }, [messages.length, working, problems?.title, state?.approval?.id]);
 
   // The box grows as the person types, up to half the window.
   useLayoutEffect(() => {
@@ -137,6 +138,8 @@ export default function ChatPanel() {
             {hintForWork && <span className="col-span-3 text-xs text-muted-foreground">{hintForWork}</span>}
           </div>
         )}
+
+        {state?.approval && <ApprovalCard approval={state.approval} onAnswered={refreshSoon} />}
 
         {problems && (
           <div className="self-stretch rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2">
