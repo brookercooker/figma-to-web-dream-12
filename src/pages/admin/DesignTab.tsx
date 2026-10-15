@@ -1,4 +1,5 @@
 import { useEditorSlot } from "./designChat/EditorSlot";
+import { notifyContentEdited } from "./designChat/contentSync";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { codedPages, pageChunks, chunkName } from "./codedPages";
@@ -31,7 +32,7 @@ import InsertGap, { type InsertType } from "./InsertGap";
 import InlineEditSurface, { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
 import InlineStylePanel from "./InlineStylePanel";
 
-interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null }
+interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
 
 /**
  * Shows the real site header / footer around the editable page content so the
@@ -214,7 +215,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     if (!id) return;
     window.clearTimeout(objectTimers.current[scope]);
     objectTimers.current[scope] = window.setTimeout(() => {
-      (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id).then(() => {});
+      (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id).then(({ error }: any) => { if (!error) notifyContentEdited(); });
     }, 800);
   };
   const scopeEdits = (scope: InlineScope) => (scope === "page" ? inlineEdits : objectEdits[scope] ?? {});
@@ -249,6 +250,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     }, 800);
   };
 
+
+  const load = async () => {
+    const { data } = await (supabase as any)
+      .from("pages")
+      .select("id,name,path,content,updated_at,tags,inline_edits,build_status")
       .is("archived_at", null)
       .order("name", { ascending: true });
     setPages(data ?? []);

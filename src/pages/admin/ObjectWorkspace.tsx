@@ -23,6 +23,7 @@ import {
 import { CopyRefButton, buildObjectRef } from "./copyReference";
 import ObjectSections, { parseSections } from "@/components/ObjectSections";
 import { regenerateThumbnail } from "./useThumbnailCapture";
+import { notifyContentEdited } from "./designChat/contentSync";
 
 /**
  * Full-page workspace for a single object.
@@ -93,6 +94,7 @@ export default function ObjectWorkspace() {
       if (chosenStatus !== obj.status) {
         await setStatus.mutateAsync({ id: obj.id, status: chosenStatus });
       }
+      notifyContentEdited();
       toast.success(`Saved "${obj.name}" as ${chosenStatus}`);
       // Fire off thumbnail regeneration only when a component exists; don't block.
       if (obj.component_key) {
