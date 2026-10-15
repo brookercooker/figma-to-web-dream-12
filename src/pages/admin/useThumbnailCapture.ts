@@ -39,7 +39,15 @@ export function isStale(c: ThumbCandidate): boolean {
 // browser sees Lovable's login screen instead of the app.
 const CAPTURE_ORIGIN = "https://novalightingsandbox.lovable.app";
 
-let captureServiceUnavailable = false;
+// Remembered in this browser for an hour, so reloads don't keep hitting an unconfigured service.
+const UNAVAILABLE_KEY = "siteManager:thumbServiceUnavailableUntil";
+let captureServiceUnavailable = (() => {
+  try { return Number(localStorage.getItem(UNAVAILABLE_KEY) ?? 0) > Date.now(); } catch { return false; }
+})();
+function markUnavailable() {
+  captureServiceUnavailable = true;
+  try { localStorage.setItem(UNAVAILABLE_KEY, String(Date.now() + 60 * 60 * 1000)); } catch { /* ignore */ }
+}
 
 export class RouteNotResolvedError extends Error {
   constructor(msg = "Captured render is the app's 404 page — publish/build first, then regenerate.") {
@@ -84,7 +92,7 @@ async function captureOne(c: ThumbCandidate, force = false): Promise<void> {
       text = typeof ctx?.text === "function" ? await ctx.clone().text() : JSON.stringify(payload ?? "");
     } catch { /* ignore */ }
     if (/Cloudflare|PLACEHOLDER|SCREENSHOTONE/i.test(text + String((error as any)?.message ?? ""))) {
-      captureServiceUnavailable = true;
+      markUnavailable();
       throw new RouteNotResolvedError("Thumbnail service not configured — skipped.");
     }
     throw error;
