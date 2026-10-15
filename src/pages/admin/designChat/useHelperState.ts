@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RELAY, type RelayState } from "./helper";
+import { RELAY, relayHeaders, type RelayState } from "./helper";
 
 /**
  * Follows the design helper: asks for its state again and again (often while something is happening, rarely when idle).
@@ -17,7 +17,7 @@ export function useHelperState(delayFor: (s: RelayState | null) => number) {
   const refresh = useCallback(async () => {
     clearTimeout(timer.current);
     try {
-      const res = await fetch(`${RELAY}/api/state`, { cache: "no-store" });
+      const res = await fetch(`${RELAY}/api/state`, { cache: "no-store", headers: await relayHeaders() });
       if (!res.ok) throw new Error("not ok");
       const s: RelayState = await res.json();
       if (!alive.current) return;
