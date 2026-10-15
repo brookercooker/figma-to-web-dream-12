@@ -20,5 +20,7 @@ export default function InlineEditsLayer({ path, children }: { path: string; chi
       .then(({ data }: any) => { if (live) setEdits(data?.inline_edits ?? {}); });
     return () => { live = false; };
   }, [path]);
-  return <InlineEditSurface key={path} edits={edits} objectEdits={objectEdits}>{children}</InlineEditSurface>;
+  // One stable key for all Site Manager routes so the manager (and its chat state) survives tab changes.
+  const surfaceKey = path.startsWith("/manage") || path.startsWith("/admin") ? "manager" : path;
+  return <InlineEditSurface key={surfaceKey} edits={edits} objectEdits={objectEdits}>{children}</InlineEditSurface>;
 }
