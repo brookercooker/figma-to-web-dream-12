@@ -39,6 +39,8 @@ export function isStale(c: ThumbCandidate): boolean {
 // browser sees Lovable's login screen instead of the app.
 const CAPTURE_ORIGIN = "https://novalightingsandbox.lovable.app";
 
+let captureServiceUnavailable = false;
+
 export class RouteNotResolvedError extends Error {
   constructor(msg = "Captured render is the app's 404 page — publish/build first, then regenerate.") {
     super(msg);
@@ -51,6 +53,9 @@ async function captureOne(c: ThumbCandidate, force = false): Promise<void> {
   // (no sign-in) skip quietly so it never surfaces as an error.
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new RouteNotResolvedError("Thumbnail capture needs sign-in — skipped.");
+  // Once the screenshot service is known to be unconfigured, stop calling it
+  // for the rest of the session so it doesn't keep failing.
+  if (captureServiceUnavailable) throw new RouteNotResolvedError("Thumbnail service not configured — skipped.");
   const { data, error } = await supabase.functions.invoke("capture-thumbnail", {
     body: {
       kind: c.kind,
@@ -79,6 +84,7 @@ async function captureOne(c: ThumbCandidate, force = false): Promise<void> {
       text = typeof ctx?.text === "function" ? await ctx.clone().text() : JSON.stringify(payload ?? "");
     } catch { /* ignore */ }
     if (/Cloudflare|PLACEHOLDER|SCREENSHOTONE/i.test(text + String((error as any)?.message ?? ""))) {
+      captureServiceUnavailable = true;
       throw new RouteNotResolvedError("Thumbnail service not configured — skipped.");
     }
     throw error;
