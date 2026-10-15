@@ -1037,7 +1037,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   // Embedded in the Site Manager's edit view, the object comes from the props, never the address.
   const selectedId = embedded ? objectId ?? "" : params.get("object") ?? "";
   const returnPage = embedded ? "embedded" : params.get("returnPage");
-  const { slot, registerSave } = useEditorSlot();
+  const { slot, registerSave, registerDiscard, registerHasChanges } = useEditorSlot();
   const chat = useDesignChatOptional();
   const frameCls = embedded ? "" : "border rounded-lg";
 
@@ -2202,7 +2202,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     }
   };
 
-  // Embedded: no auto-save; the Site Manager saves through this when leaving (Back to page, Done, tab switch).
+  // Embedded: no auto-save; the Site Manager saves through this when leaving (Back to page, Save changes, tab switch).
   const saveHeldRef = useRef<() => Promise<boolean>>(async () => true);
   saveHeldRef.current = async () => {
     if (!dirty || !object) return true;
@@ -2216,11 +2216,15 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     setSections((cur) => { if (cur === content) setDirty(false); return cur; });
     return true;
   };
+  const dirtyRef = useRef(false);
+  dirtyRef.current = dirty;
   useEffect(() => {
     if (!embedded) return;
     registerSave(() => saveHeldRef.current());
-    return () => registerSave(null);
-  }, [embedded, registerSave]);
+    registerDiscard(() => setDirty(false));
+    registerHasChanges(() => dirtyRef.current);
+    return () => { registerSave(null); registerDiscard(null); registerHasChanges(null); };
+  }, [embedded, registerSave, registerDiscard, registerHasChanges]);
   useEffect(() => {
     if (!embedded || !dirty) return;
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };

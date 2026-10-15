@@ -164,8 +164,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [params, setParams] = useSearchParams();
   // Embedded in the Site Manager's edit mode, the page comes from the working page, not the address.
   const selectedId = embedded ? pageId ?? "" : params.get("page") ?? "";
-  const { slot, registerSave, saveAll } = useEditorSlot();
-  // Embedded, nothing auto-saves: changes are held here until the Site Manager's Done saves them all.
+  const { slot, registerSave, saveAll, registerDiscard, registerHasChanges } = useEditorSlot();
+  // Embedded, nothing auto-saves: changes are held here until the Site Manager's Save changes saves them all.
   const pendingInline = useRef<{ pageId: string; next: InlineEdits } | null>(null);
   const pendingObjects = useRef<Record<string, InlineEdits>>({});
   const [tweaksPending, setTweaksPending] = useState(false);
@@ -565,7 +565,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     return () => clearTimeout(t);
   }, [blocks, dirty, page?.id]);
 
-  // On unmount or page change, save any pending changes right away (a safety net; embedded, Done normally saves first).
+  // On unmount or page change, save any pending changes right away (a safety net; embedded, Save changes normally saves first).
   useEffect(() => {
     return () => {
       const p = pendingSave.current;
@@ -625,11 +625,21 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     if (failed) { toast.error(failed); return false; }
     return true;
   };
+  const hasChangesRef = useRef<() => boolean>(() => false);
+  hasChangesRef.current = () => dirty || tweaksPending || !!pendingSave.current || !!pendingInline.current || Object.keys(pendingObjects.current).length > 0;
   useEffect(() => {
     if (!embedded) return;
     registerSave(() => saveAllRef.current());
-    return () => registerSave(null);
-  }, [embedded, registerSave]);
+    registerDiscard(() => {
+      pendingSave.current = null;
+      pendingInline.current = null;
+      pendingObjects.current = {};
+      setTweaksPending(false);
+      setDirty(false);
+    });
+    registerHasChanges(() => hasChangesRef.current());
+    return () => { registerSave(null); registerDiscard(null); registerHasChanges(null); };
+  }, [embedded, registerSave, registerDiscard, registerHasChanges]);
 
   // Embedded: ask before the browser leaves while changes are still held.
   const hasUnsaved = embedded && (dirty || tweaksPending);

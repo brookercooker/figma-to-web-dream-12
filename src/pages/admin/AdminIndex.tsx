@@ -13,6 +13,8 @@ import ChatPanel from "./designChat/ChatPanel";
 import PreviewTools, { SubmitButton } from "./designChat/PreviewTools";
 import { DesignChatProvider, useDesignChat } from "./designChat/DesignChatContext";
 import { EditorSlotProvider, useEditorSlot } from "./designChat/EditorSlot";
+import ConfirmDialog from "./ConfirmDialog";
+import { toast } from "sonner";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -65,7 +67,7 @@ export default function AdminIndex() {
 function AdminShell() {
   const designChat = useDesignChat();
   const { workingPage, editing, startEditing, stopEditing, clearWorkingPage, selectPage, previewLocation, previewPage, objectOpen, closeObject } = designChat;
-  const { setSlot, saveAll } = useEditorSlot();
+  const { setSlot, saveAll, discardAll, hasChanges } = useEditorSlot();
   // Saves the editor's held changes, then leaves edit mode; on a failed save it stays in edit mode.
   const [finishing, setFinishing] = useState(false);
   const finishingRef = useRef(false);
@@ -79,6 +81,14 @@ function AdminShell() {
       return ok;
     } finally { finishingRef.current = false; setFinishing(false); }
   };
+  const saveChanges = async () => {
+    const had = hasChanges();
+    const ok = await finishEditing();
+    if (ok && had) toast.success("Changes saved.");
+  };
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const doDiscard = () => { discardAll(); stopEditing(); toast("Changes discarded."); };
+  const discardEditing = () => { if (!hasChanges()) doDiscard(); else setConfirmDiscard(true); };
   const location = useLocation();
   const navigate = useNavigate();
   const tab: TabKey = useMemo(() => {
@@ -211,7 +221,7 @@ function AdminShell() {
                   className={cn("h-9 shrink-0 gap-2", squeeze >= 2 && "w-9 px-0", !editing && !editTarget && "cursor-not-allowed opacity-50")}
                   aria-pressed={editing}
                   aria-label={editing ? "Editing" : "Edit page"}
-                  title={editing ? `Editing ${workingPage?.name ?? ""} — press to save and return to the chat` : editTarget ? `Edit ${editTarget.name}` : "This address isn't a page in the Site Manager."}
+                  title={editing ? `Editing ${workingPage?.name ?? ""} — press to save your changes and return to the chat` : editTarget ? `Edit ${editTarget.name}` : "This address isn't a page in the Site Manager."}
                   disabled={editing && finishing}
                   aria-disabled={!editing && !editTarget}
                   onClick={toggleEditing}
@@ -335,13 +345,24 @@ function AdminShell() {
                     Stop working on this page
                   </button>
                 </div>
-                <Button type="button" size="sm" className="shrink-0" disabled={finishing} onClick={() => void finishEditing()}>{finishing ? "Saving…" : "Done"}</Button>
+                <div className="flex shrink-0 flex-col gap-1.5">
+                  <Button type="button" size="sm" disabled={finishing} onClick={() => void saveChanges()}>{finishing ? "Saving…" : "Save changes"}</Button>
+                  <Button type="button" size="sm" variant="outline" disabled={finishing} onClick={discardEditing}>Discard changes</Button>
+                </div>
               </div>
               <div ref={setSlot} aria-label="Page editing options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
             </div>
           )}
         </aside>
       </div>
+      <ConfirmDialog
+        open={confirmDiscard}
+        onOpenChange={setConfirmDiscard}
+        title="Discard your changes?"
+        description="Everything you changed since your last save in this editor will be lost. This can't be undone."
+        confirmLabel="Discard changes"
+        onConfirm={() => { setConfirmDiscard(false); doDiscard(); }}
+      />
     </>
   );
 }
