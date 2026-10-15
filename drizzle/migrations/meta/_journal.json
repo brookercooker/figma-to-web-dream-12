@@ -8,6 +8,13 @@
       "when": 1790994069288,
       "tag": "0000_open_site_manager_while_building",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792030875923,
+      "tag": "0001_add_object_registry_content",
+      "breakpoints": true
     }
   ]
 }
