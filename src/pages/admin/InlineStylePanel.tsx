@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw, Underline, Eraser, icons } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw, Underline, Eraser, Minus, Type, Eye, EyeOff, icons } from "lucide-react";
+import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { LINK_ICONS, readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
 
 const COLOURS = [
@@ -44,9 +45,9 @@ export default function InlineStylePanel({
 
   if (!sel) {
     return (
-      <p className="text-xs text-muted-foreground leading-relaxed">
+      <ToolNote>
         Click any wording or picture on the page to change it. Wording can be typed over directly.
-      </p>
+      </ToolNote>
     );
   }
   const style = readStyle(edits, sel.key);
@@ -65,48 +66,49 @@ export default function InlineStylePanel({
     delete out[styleKey(sel.key)];
     onChange(out);
   };
-  const label = "text-[11px] font-medium uppercase tracking-wide text-muted-foreground";
+  const swatches = (cur: string | undefined, pick: (v: string) => void, keepFocus = false) => (
+    <div className="flex gap-2">
+      {COLOURS.map(([l, c]) => {
+        const v = `hsl(var(--nova-${c}))`;
+        return (
+          <button key={c} type="button" title={l} aria-label={l} aria-pressed={cur === v}
+            onMouseDown={keepFocus ? (e) => e.preventDefault() : undefined}
+            onClick={() => pick(v)}
+            className={`h-7 w-7 rounded-full border ${cur === v ? "ring-2 ring-ring ring-offset-2" : ""}`}
+            style={{ background: v }} />
+        );
+      })}
+    </div>
+  );
 
   if (sel.kind === "divider" && sel.side) {
     const side = sel.side;
     const cs = getComputedStyle(sel.el);
     const col = style[`border-${side}-color`];
+    const hidden = style[`border-${side}-style`] === "none";
     return (
-      <div className="space-y-4">
-        <p className="text-sm font-medium">Line</p>
-        <label className="space-y-1 block"><span className={label}>Thickness (px)</span>
-          <Input type="number" min={1} max={12} placeholder={num(cs.getPropertyValue(`border-${side}-width`)) || "1"}
-            value={num(style[`border-${side}-width`])} onChange={(e) => set(`border-${side}-width`, px(e.target.value))} />
-        </label>
-        <div className="space-y-1">
-          <span className={label}>Colour</span>
-          <div className="flex gap-2">
-            {COLOURS.map(([l, c]) => {
-              const v = `hsl(var(--nova-${c}))`;
-              return (
-                <button key={c} type="button" title={l} aria-label={l} aria-pressed={col === v}
-                  onClick={() => set(`border-${side}-color`, col === v ? "" : v)}
-                  className={`h-7 w-7 rounded-full border ${col === v ? "ring-2 ring-ring ring-offset-2" : ""}`}
-                  style={{ background: v }} />
-              );
-            })}
-          </div>
-        </div>
-        <div className="space-y-1">
-          <span className={label}>Style</span>
-          <div className="flex gap-1">
-            {([["Solid", "solid"], ["Dashed", "dashed"], ["Dotted", "dotted"]] as const).map(([l, v]) => (
-              <Button key={v} size="sm" variant={(style[`border-${side}-style`] ?? cs.getPropertyValue(`border-${side}-style`)) === v ? "default" : "outline"}
-                className="flex-1" onClick={() => set(`border-${side}-style`, v)}>{l}</Button>
-            ))}
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => set(`border-${side}-style`, style[`border-${side}-style`] === "none" ? "" : "none")}>
-            {style[`border-${side}-style`] === "none" ? "Show line" : "Hide line"}
-          </Button>
-          <Button variant="ghost" size="sm" className="gap-2" onClick={reset}><RotateCcw className="w-4 h-4" /> Reset</Button>
-        </div>
+      <div>
+        <ToolHeader icon={Minus} title="Line" menu={[
+          { label: "Reset", icon: RotateCcw, onSelect: reset },
+          { label: hidden ? "Show line" : "Hide line", icon: hidden ? Eye : EyeOff, onSelect: () => set(`border-${side}-style`, hidden ? "" : "none") },
+        ]} />
+        <ToolGroup title="Line" defaultOpen>
+          <ToolField label="Thickness (px)">
+            <Input type="number" min={1} max={12} placeholder={num(cs.getPropertyValue(`border-${side}-width`)) || "1"}
+              value={num(style[`border-${side}-width`])} onChange={(e) => set(`border-${side}-width`, px(e.target.value))} />
+          </ToolField>
+          <ToolField label="Style">
+            <ToolSegment className="flex w-full">
+              {([["Solid", "solid"], ["Dashed", "dashed"], ["Dotted", "dotted"]] as const).map(([l, v]) => (
+                <Button key={v} size="sm" variant={(style[`border-${side}-style`] ?? cs.getPropertyValue(`border-${side}-style`)) === v ? "default" : "ghost"}
+                  className="flex-1" onClick={() => set(`border-${side}-style`, v)}>{l}</Button>
+              ))}
+            </ToolSegment>
+          </ToolField>
+        </ToolGroup>
+        <ToolGroup title="Colour" defaultOpen>
+          {swatches(col, (v) => set(`border-${side}-color`, col === v ? "" : v))}
+        </ToolGroup>
       </div>
     );
   }
@@ -115,77 +117,71 @@ export default function InlineStylePanel({
     const r = sel.el.getBoundingClientRect();
     const vertical = r.height > r.width;
     return (
-      <div className="space-y-4">
-        <p className="text-sm font-medium">Divider line</p>
-        <div className="grid grid-cols-2 gap-2">
-          <label className="space-y-1"><span className={label}>{vertical ? "Height" : "Length"} (px)</span>
-            <Input type="number" min={4} placeholder={String(Math.round(vertical ? r.height : r.width))}
-              value={num(style[vertical ? "height" : "width"])} onChange={(e) => set(vertical ? "height" : "width", px(e.target.value))} />
-          </label>
-          <label className="space-y-1"><span className={label}>Thickness (px)</span>
-            <Input type="number" min={1} max={12} placeholder={String(Math.max(1, Math.round(vertical ? r.width : r.height)))}
-              value={num(style[vertical ? "width" : "height"])} onChange={(e) => set(vertical ? "width" : "height", px(e.target.value))} />
-          </label>
-        </div>
-        <div className="space-y-1">
-          <span className={label}>Colour</span>
-          <div className="flex gap-2">
-            {COLOURS.map(([l, c]) => {
-              const v = `hsl(var(--nova-${c}))`;
-              return (
-                <button key={c} type="button" title={l} aria-label={l} aria-pressed={style["background-color"] === v}
-                  onClick={() => set("background-color", style["background-color"] === v ? "" : v)}
-                  className={`h-7 w-7 rounded-full border ${style["background-color"] === v ? "ring-2 ring-ring ring-offset-2" : ""}`}
-                  style={{ background: v }} />
-              );
-            })}
-          </div>
-        </div>
-        <label className="space-y-1 block"><span className={label}>Space above and below (px)</span>
-          <Input type="number" min={0} placeholder="Default" value={num(style["margin-top"])}
-            onChange={(e) => { const v = px(e.target.value); const next = { ...style }; if (v) { next["margin-top"] = v; next["margin-bottom"] = v; } else { delete next["margin-top"]; delete next["margin-bottom"]; } const out = { ...edits }; if (Object.keys(next).length) out[styleKey(sel.key)] = JSON.stringify(next); else delete out[styleKey(sel.key)]; onChange(out); }} />
-        </label>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => set("visibility", style.visibility ? "" : "hidden")}>
-            {style.visibility ? "Show line" : "Hide line"}
-          </Button>
-          <Button variant="ghost" size="sm" className="gap-2" onClick={reset}><RotateCcw className="w-4 h-4" /> Reset</Button>
-        </div>
+      <div>
+        <ToolHeader icon={Minus} title="Divider line" menu={[
+          { label: "Reset", icon: RotateCcw, onSelect: reset },
+          { label: style.visibility ? "Show line" : "Hide line", icon: style.visibility ? Eye : EyeOff, onSelect: () => set("visibility", style.visibility ? "" : "hidden") },
+        ]} />
+        <ToolGroup title="Line" defaultOpen>
+          <ToolGrid>
+            <ToolField label={`${vertical ? "Height" : "Length"} (px)`}>
+              <Input type="number" min={4} placeholder={String(Math.round(vertical ? r.height : r.width))}
+                value={num(style[vertical ? "height" : "width"])} onChange={(e) => set(vertical ? "height" : "width", px(e.target.value))} />
+            </ToolField>
+            <ToolField label="Thickness (px)">
+              <Input type="number" min={1} max={12} placeholder={String(Math.max(1, Math.round(vertical ? r.width : r.height)))}
+                value={num(style[vertical ? "width" : "height"])} onChange={(e) => set(vertical ? "width" : "height", px(e.target.value))} />
+            </ToolField>
+          </ToolGrid>
+        </ToolGroup>
+        <ToolGroup title="Colour" defaultOpen>
+          {swatches(style["background-color"], (v) => set("background-color", style["background-color"] === v ? "" : v))}
+        </ToolGroup>
+        <ToolGroup title="Spacing">
+          <ToolField label="Space above and below (px)">
+            <Input type="number" min={0} placeholder="Default" value={num(style["margin-top"])}
+              onChange={(e) => { const v = px(e.target.value); const next = { ...style }; if (v) { next["margin-top"] = v; next["margin-bottom"] = v; } else { delete next["margin-top"]; delete next["margin-bottom"]; } const out = { ...edits }; if (Object.keys(next).length) out[styleKey(sel.key)] = JSON.stringify(next); else delete out[styleKey(sel.key)]; onChange(out); }} />
+          </ToolField>
+        </ToolGroup>
       </div>
     );
   }
 
   if (sel.kind === "image") {
     return (
-      <div className="space-y-4">
-        <p className="text-sm font-medium">Picture</p>
-        <Button variant="outline" size="sm" className="w-full gap-2" onClick={onReplaceImage}>
-          <ImageIcon className="w-4 h-4" /> Replace picture
-        </Button>
-        <div className="grid grid-cols-2 gap-2">
-          <label className="space-y-1"><span className={label}>Width (px)</span>
-            <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().width))}
-              value={num(style.width)} onChange={(e) => set("width", px(e.target.value))} />
-          </label>
-          <label className="space-y-1"><span className={label}>Height (px)</span>
-            <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().height))}
-              value={num(style.height)} onChange={(e) => set("height", px(e.target.value))} />
-          </label>
-        </div>
-        <div className="space-y-1">
-          <span className={label}>Fit</span>
-          <div className="flex gap-1">
-            {([["Fill", "cover"], ["Whole picture", "contain"]] as const).map(([l, v]) => (
-              <Button key={v} size="sm" variant={(style["object-fit"] ?? computed.objectFit) === v ? "default" : "outline"}
-                className="flex-1" onClick={() => set("object-fit", v)}>{l}</Button>
-            ))}
-          </div>
-        </div>
-        <label className="space-y-1 block"><span className={label}>Rounded corners (px)</span>
-          <Input type="number" min={0} placeholder={num(computed.borderRadius) || "0"}
-            value={num(style["border-radius"])} onChange={(e) => set("border-radius", px(e.target.value))} />
-        </label>
-        <Button variant="ghost" size="sm" className="gap-2" onClick={reset}><RotateCcw className="w-4 h-4" /> Reset picture size</Button>
+      <div>
+        <ToolHeader icon={ImageIcon} title="Picture" menu={[{ label: "Reset picture size", icon: RotateCcw, onSelect: reset }]} />
+        <ToolGroup title="Picture" defaultOpen>
+          <Button variant="outline" size="sm" className="w-full gap-2" onClick={onReplaceImage}>
+            <ImageIcon className="w-4 h-4" /> Replace picture
+          </Button>
+          <ToolField label="Fit">
+            <ToolSegment className="flex w-full">
+              {([["Fill", "cover"], ["Whole picture", "contain"]] as const).map(([l, v]) => (
+                <Button key={v} size="sm" variant={(style["object-fit"] ?? computed.objectFit) === v ? "default" : "ghost"}
+                  className="flex-1" onClick={() => set("object-fit", v)}>{l}</Button>
+              ))}
+            </ToolSegment>
+          </ToolField>
+        </ToolGroup>
+        <ToolGroup title="Size">
+          <ToolGrid>
+            <ToolField label="Width (px)">
+              <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().width))}
+                value={num(style.width)} onChange={(e) => set("width", px(e.target.value))} />
+            </ToolField>
+            <ToolField label="Height (px)">
+              <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().height))}
+                value={num(style.height)} onChange={(e) => set("height", px(e.target.value))} />
+            </ToolField>
+          </ToolGrid>
+        </ToolGroup>
+        <ToolGroup title="Corners">
+          <ToolField label="Rounded corners (px)">
+            <Input type="number" min={0} placeholder={num(computed.borderRadius) || "0"}
+              value={num(style["border-radius"])} onChange={(e) => set("border-radius", px(e.target.value))} />
+          </ToolField>
+        </ToolGroup>
       </div>
     );
   }
@@ -221,66 +217,70 @@ export default function InlineStylePanel({
   const upper = hs ? hs.textTransform === "uppercase" : (style["text-transform"] ?? computed.textTransform) === "uppercase";
   const under = hs ? hs.textDecoration.includes("underline") : (style["text-decoration"] ?? computed.textDecorationLine).includes("underline");
   const align = style["text-align"] ?? computed.textAlign;
+  const fontName = (FONTS.find(([, v]) => v === style["font-family"])?.[0] ?? "Default").split(" · ")[0];
+  const sizeNow = num(style["font-size"]) || num(computed.fontSize);
+  const textPreview = (sel.el.textContent ?? "").trim().replace(/\s+/g, " ");
   return (
-    <div className="space-y-4">
-      <p className="text-sm font-medium">Text style</p>
+    <div>
+      <ToolHeader icon={Type} title="Text" subtitle={textPreview.length > 40 ? `${textPreview.slice(0, 40)}…` : textPreview || undefined}
+        menu={[{ label: "Reset text style", icon: RotateCcw, onSelect: reset }]} />
       {highlighted ? (
-        <div className="flex items-center justify-between gap-2 rounded-md bg-muted px-3 py-2 text-xs">
-          <span>Changes apply to the highlighted words only.</span>
-          <button type="button" className="underline" onMouseDown={(e) => e.preventDefault()} onClick={clearWords} title="Remove styles from these words"><Eraser className="inline h-3.5 w-3.5" /> Clear</button>
+        <div className="pb-3">
+          <ToolNote>
+            <span className="flex items-center justify-between gap-2">
+              <span>Changes apply to the highlighted words only.</span>
+              <button type="button" className="underline" onMouseDown={(e) => e.preventDefault()} onClick={clearWords} title="Remove styles from these words"><Eraser className="inline h-3.5 w-3.5" /> Clear</button>
+            </span>
+          </ToolNote>
         </div>
       ) : null}
-      <div className="flex gap-1" onMouseDown={(e) => e.preventDefault()}>
-        <Button size="icon" variant={bold ? "default" : "outline"} title="Bold" onClick={() => apply("font-weight", bold ? "400" : "700")}><Bold className="w-4 h-4" /></Button>
-        <Button size="icon" variant={italic ? "default" : "outline"} title="Italic" onClick={() => (highlighted ? apply("font-style", italic ? "normal" : "italic") : toggle("font-style", "italic", italic))}><Italic className="w-4 h-4" /></Button>
-        <Button size="icon" variant={under ? "default" : "outline"} title="Underline" onClick={() => apply("text-decoration", under ? "none" : "underline")}><Underline className="w-4 h-4" /></Button>
-        <Button size="icon" variant={upper ? "default" : "outline"} title="Capitals" onClick={() => apply("text-transform", upper ? "none" : "uppercase")}><CaseUpper className="w-4 h-4" /></Button>
-        <span className="w-2" />
-        {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Icon]) => (
-          <Button key={a} size="icon" variant={align === a ? "default" : "outline"} title={`Align ${a}`} onClick={() => set("text-align", a)}><Icon className="w-4 h-4" /></Button>
-        ))}
-      </div>
-      <label className="space-y-1 block"><span className={label}>Font</span>
-        <select className="h-10 w-full rounded-md border bg-background px-2 text-sm" value={style["font-family"] ?? ""} onChange={(e) => apply("font-family", e.target.value)}>
-          <option value="">Default</option>
-          {FONTS.map(([l, v]) => <option key={l} value={v}>{l}</option>)}
-        </select>
-      </label>
-      <div className="grid grid-cols-2 gap-2">
-        <label className="space-y-1"><span className={label}>Size (px)</span>
-          <Input type="number" min={8} placeholder={num(computed.fontSize)} value={num(style["font-size"])} onChange={(e) => apply("font-size", px(e.target.value))} />
-        </label>
-        <label className="space-y-1"><span className={label}>Letter spacing</span>
-          <Input type="number" step={0.05} placeholder="0" value={num(style["letter-spacing"])} onChange={(e) => apply("letter-spacing", e.target.value ? `${e.target.value}em` : "")} />
-        </label>
-        <label className="space-y-1"><span className={label}>Line height</span>
-          <Input type="number" step={0.1} min={0.8} placeholder={(parseFloat(computed.lineHeight) / parseFloat(computed.fontSize) || 1.4).toFixed(1)} value={style["line-height"] ?? ""} onChange={(e) => apply("line-height", e.target.value)} />
-        </label>
-        <label className="space-y-1"><span className={label}>Weight</span>
-          <select className="h-10 w-full rounded-md border bg-background px-2 text-sm" value={style["font-weight"] ?? ""} onChange={(e) => apply("font-weight", e.target.value)}>
-            <option value="">Default</option>
-            {WEIGHTS.map(([l, v]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-        </label>
-      </div>
-      <div className="space-y-1">
-        <span className={label}>Colour</span>
-        <div className="flex gap-2">
-          {COLOURS.map(([l, c]) => {
-            const v = `hsl(var(--nova-${c}))`;
-            return (
-              <button key={c} type="button" title={l} aria-label={l} aria-pressed={style.color === v}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => apply("color", highlighted ? v : style.color === v ? "" : v)}
-                className={`h-7 w-7 rounded-full border ${style.color === v ? "ring-2 ring-ring ring-offset-2" : ""}`}
-                style={{ background: v }} />
-            );
-          })}
+      <ToolGroup title="Text" defaultOpen summary={`${fontName} · ${sizeNow}px`}>
+        <div className="flex flex-wrap gap-2">
+          <ToolSegment onMouseDown={(e) => e.preventDefault()}>
+            <Button size="icon" variant={bold ? "default" : "ghost"} title="Bold" onClick={() => apply("font-weight", bold ? "400" : "700")}><Bold className="w-4 h-4" /></Button>
+            <Button size="icon" variant={italic ? "default" : "ghost"} title="Italic" onClick={() => (highlighted ? apply("font-style", italic ? "normal" : "italic") : toggle("font-style", "italic", italic))}><Italic className="w-4 h-4" /></Button>
+            <Button size="icon" variant={under ? "default" : "ghost"} title="Underline" onClick={() => apply("text-decoration", under ? "none" : "underline")}><Underline className="w-4 h-4" /></Button>
+            <Button size="icon" variant={upper ? "default" : "ghost"} title="Capitals" onClick={() => apply("text-transform", upper ? "none" : "uppercase")}><CaseUpper className="w-4 h-4" /></Button>
+          </ToolSegment>
+          <ToolSegment onMouseDown={(e) => e.preventDefault()}>
+            {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Icon]) => (
+              <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a}`} onClick={() => set("text-align", a)}><Icon className="w-4 h-4" /></Button>
+            ))}
+          </ToolSegment>
         </div>
-      </div>
+        <ToolField label="Font">
+          <select className="h-9 w-full rounded-md border bg-background px-2 text-sm" value={style["font-family"] ?? ""} onChange={(e) => apply("font-family", e.target.value)}>
+            <option value="">Default</option>
+            {FONTS.map(([l, v]) => <option key={l} value={v}>{l}</option>)}
+          </select>
+        </ToolField>
+        <ToolGrid>
+          <ToolField label="Size (px)">
+            <Input type="number" min={8} placeholder={num(computed.fontSize)} value={num(style["font-size"])} onChange={(e) => apply("font-size", px(e.target.value))} />
+          </ToolField>
+          <ToolField label="Weight">
+            <select className="h-10 w-full rounded-md border bg-background px-2 text-sm" value={style["font-weight"] ?? ""} onChange={(e) => apply("font-weight", e.target.value)}>
+              <option value="">Default</option>
+              {WEIGHTS.map(([l, v]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </ToolField>
+        </ToolGrid>
+      </ToolGroup>
+      <ToolGroup title="Colour" defaultOpen>
+        {swatches(style.color, (v) => apply("color", highlighted ? v : style.color === v ? "" : v), true)}
+      </ToolGroup>
+      <ToolGroup title="Spacing">
+        <ToolGrid>
+          <ToolField label="Letter spacing">
+            <Input type="number" step={0.05} placeholder="0" value={num(style["letter-spacing"])} onChange={(e) => apply("letter-spacing", e.target.value ? `${e.target.value}em` : "")} />
+          </ToolField>
+          <ToolField label="Line height">
+            <Input type="number" step={0.1} min={0.8} placeholder={(parseFloat(computed.lineHeight) / parseFloat(computed.fontSize) || 1.4).toFixed(1)} value={style["line-height"] ?? ""} onChange={(e) => apply("line-height", e.target.value)} />
+          </ToolField>
+        </ToolGrid>
+      </ToolGroup>
       {linkEl && (
-        <div className="space-y-2 border-t pt-4">
-          <span className={label}>Icon</span>
+        <ToolGroup title="Icon">
           <div className="grid grid-cols-6 gap-1">
             <button type="button" title="No icon" aria-pressed={iconNow === "none"}
               onClick={() => onChange({ ...edits, [`icon:${sel.key}`]: "none" })}
@@ -299,9 +299,8 @@ export default function InlineStylePanel({
           {iconNow && (
             <button type="button" className="text-xs underline text-muted-foreground" onClick={() => { const o = { ...edits }; delete o[`icon:${sel.key}`]; onChange(o); }}>Use original icon</button>
           )}
-        </div>
+        </ToolGroup>
       )}
-      <Button variant="ghost" size="sm" className="gap-2" onClick={reset}><RotateCcw className="w-4 h-4" /> Reset text style</Button>
     </div>
   );
 }
