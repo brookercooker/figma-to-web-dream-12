@@ -2027,6 +2027,11 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     const hit = sections.find((x) => (x as { origin?: string }).origin === focusChunk)
       ?? sections.find((x) => x.type === "locked" && x.chunk === focusChunk);
     if (!hit) return;
+    // A matching locked part is being turned into blocks by the effect above; wait for those blocks.
+    if (hit.type === "locked" && !(hit as { origin?: string }).origin) {
+      const t = window.setTimeout(() => {}, 0); window.clearTimeout(t);
+      if (sections.some((x) => x.type === "locked" && x.chunk === focusChunk) && codedKey) return;
+    }
     jumpedRef.current = object.id;
     setActiveId(hit.id);
     const id = hit.id;
