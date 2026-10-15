@@ -3,7 +3,42 @@
  * The helper runs on the computer being used for now; its address can be changed with VITE_DESIGN_RELAY_URL.
  */
 
-export const RELAY = (import.meta.env.VITE_DESIGN_RELAY_URL as string | undefined)?.replace(/\/$/, "") || "http://127.0.0.1:4321/__prototyper";
+function storedRelay(): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    const v = window.localStorage.getItem("designRelayUrl");
+    return typeof v === "string" && v.trim() !== "" ? v : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+const envRelay = import.meta.env.VITE_DESIGN_RELAY_URL as string | undefined;
+export const RELAY = (storedRelay() || envRelay || "").replace(/\/$/, "") || "http://127.0.0.1:4321/__prototyper";
+
+/** True only for an https address that isn't this computer. */
+export function isHostedRelay(url: string): boolean {
+  if (typeof url !== "string" || !url.startsWith("https://")) return false;
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  if (!host) return false;
+  if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]") return false;
+  if (host.endsWith(".localhost")) return false;
+  return true;
+}
+
+export const RELAY_IS_HOSTED = isHostedRelay(RELAY);
+
+/** Sign-in header for a hosted helper; nothing for the local one. */
+export async function relayHeaders(): Promise<Record<string, string>> {
+  if (!RELAY_IS_HOSTED) return {};
+  const { relayAuthHeader } = await import("./relayAuth");
+  return relayAuthHeader();
+}
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 export const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined;
 export const EMBED_FN = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/lovable-embed-url` : "";
@@ -51,11 +86,16 @@ export async function postToHelper(path: string, body?: unknown): Promise<{ ok: 
   try {
     const res = await fetch(`${RELAY}/api${path}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await relayHeaders()) },
       body: JSON.stringify(body ?? {}),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) return { ok: false, error: data.error || "That didn't go through. Try again.", data };
+    if (!res.ok) {
+      const fallback = res.status === 401 || res.status === 403
+        ? "You need to be signed in to use the design service."
+        : "That didn't go through. Try again.";
+      return { ok: false, error: data.error || fallback, data };
+    }
     return { ok: true, data };
   } catch {
     return { ok: false, error: "Can't reach the design service right now. Try again in a moment." };
