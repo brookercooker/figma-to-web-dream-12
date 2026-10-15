@@ -16,6 +16,7 @@ function plainText(text?: string | null): string {
 import { Link, useSearchParams } from "react-router-dom";
 import { elementAtPath } from "@/components/CodedChunk";
 import { supabase } from "@/prototype/client";
+import { notifyContentEdited } from "./designChat/contentSync";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1480,7 +1481,8 @@ export default function ObjectDesignPage() {
 
   const [deletingObj, setDeletingObj] = useState<ObjectRow | null>(null);
   const deleteObject = async (o: ObjectRow) => {
-    await (supabase as any).from("object_registry").delete().eq("id", o.id);
+    const { error: delError } = await (supabase as any).from("object_registry").delete().eq("id", o.id);
+    if (!delError) notifyContentEdited();
     setObjects((cur) => cur.filter((x) => x.id !== o.id));
     if (o.id === selectedId) {
       const next = new URLSearchParams(params);
@@ -2205,6 +2207,7 @@ export default function ObjectDesignPage() {
         .eq("id", id);
       setSaving(false);
       if (error) { toast.error(error.message ?? "Could not save this object"); return; }
+      notifyContentEdited();
       setObjects((cur) => cur.map((o) => (o.id === id ? ({ ...o, content, updated_at } as any) : o)));
       setDirty(false);
     }, 800);
