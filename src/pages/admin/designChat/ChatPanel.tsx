@@ -79,6 +79,11 @@ export default function ChatPanel() {
     const message = text.trim();
     if (busy || offline) return;
     const hasDrawing = drawing.strokes.length > 0;
+    // A service that hasn't been updated would drop the drawing and send the words alone, so don't send it at all.
+    if (hasDrawing && state?.drawing !== true) {
+      setHint("The design service hasn't been updated to take drawings yet, so this would be sent without your drawing. Ask whoever runs the service to update it, or remove the drawing and send again.", true);
+      return;
+    }
     if (!message) {
       if (hasDrawing) setHint("Say what you'd like done with your drawing.", true);
       else if (attachments.files.length) setHint(`Say what you'd like done with the attached file${attachments.files.length > 1 ? "s" : ""}.`, true);
@@ -98,7 +103,12 @@ export default function ChatPanel() {
       message, uploadIds: attachments.ids(), ...(workingPage ? { page: workingPage } : {}),
       ...(marks ? { marks } : {}), ...(image ? { image } : {}),
     });
-    if (res.ok) { setText(""); attachments.clear(); drawing.cancel(); setHint(""); } else setHint(res.error, true);
+    if (res.ok) {
+      const took = Number(res.data?.marks ?? 0);
+      const expected = hasDrawing && marks ? (marks as { marks: unknown[] }).marks.length : 0;
+      setText(""); attachments.clear(); drawing.cancel();
+      setHint(expected && took !== expected ? "Your request was sent, but the service didn't take in your drawing." : expected ? `Sent with ${took} ${took === 1 ? "mark" : "marks"}${res.data?.picture ? " and a picture" : ""}.` : "", expected > 0 && took !== expected);
+    } else setHint(res.error, true);
     refreshSoon();
   };
 
