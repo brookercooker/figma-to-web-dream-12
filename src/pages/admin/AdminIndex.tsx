@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Pencil, Check, Undo2, ArrowLeft } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Pencil, Check, Undo2, ArrowLeft, Code } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import SiteManagerLogo from "./SiteManagerLogo";
 import ChatPanel from "./designChat/ChatPanel";
@@ -251,6 +251,9 @@ function AdminShell() {
                     <>
                       <DropdownMenuItem onClick={() => navigate("/admin/users")}>
                         <Shield className="w-4 h-4 mr-2" /> Admin
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/manage/developer")}>
+                        <Code className="w-4 h-4 mr-2" /> Developer review
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                     </>

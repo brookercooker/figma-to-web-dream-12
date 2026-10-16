@@ -37,6 +37,7 @@ const ObjectWorkspace = lazyRetry(() => import("./pages/admin/ObjectWorkspace.ts
 const PageDesignPage = lazyRetry(() => import("./pages/admin/PageDesignPage.tsx"));
 const ObjectDesignPage = lazyRetry(() => import("./pages/admin/ObjectDesignPage.tsx"));
 const CapturePage = lazyRetry(() => import("./pages/admin/CapturePage.tsx"));
+const DeveloperReviewPage = lazyRetry(() => import("./pages/admin/DeveloperReviewPage.tsx"));
 
 const ComingSoonPage = lazyRetry(() => import("./pages/ComingSoonPage.tsx"));
 const DbPage = lazyRetry(() => import("./pages/DbPage.tsx"));
@@ -110,6 +111,7 @@ const AppShell = () => {
             <Route path="/manage/preview" element={<AdminGate><AdminIndex /></AdminGate>} />
             <Route path="/manage/design-chat" element={<Navigate to="/manage/preview" replace />} />
             <Route path="/manage/capture" element={<AdminGate><CapturePage /></AdminGate>} />
+            <Route path="/manage/developer" element={<AdminGate><DeveloperReviewPage /></AdminGate>} />
             <Route path="/manage/*" element={<Navigate to="/manage/pages" replace />} />
 
             {/* Public site */}
