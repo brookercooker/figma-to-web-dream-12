@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Loader2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,7 +13,14 @@ const WIDTH: Record<Device, string> = { mobile: "390px", tablet: "820px", deskto
  * screen, submit) are in the top bar, see PreviewTools.tsx.
  */
 export default function PreviewPanel() {
-  const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing } = useDesignChat();
+  const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing, editing } = useDesignChat();
+  const location = useLocation();
+  const visible = location.pathname.split("/")[2] === "preview" && !editing;
+
+  useEffect(() => {
+    drawing.setAvailable(visible);
+    return () => drawing.setAvailable(false);
+  }, [drawing.setAvailable, visible]);
 
   return (
     <section className="h-full min-h-0" aria-label="Preview">

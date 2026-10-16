@@ -1,4 +1,4 @@
-import { ExternalLink, Maximize2, Minimize2, Monitor, Pencil, Smartphone, Tablet } from "lucide-react";
+import { ExternalLink, Maximize2, Minimize2, Monitor, Smartphone, Tablet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { postToHelper } from "./helper";
@@ -9,19 +9,12 @@ import { useDesignChat, type Device } from "./DesignChatContext";
  * and Full screen; always, a link to the published site. Submit for review lives in the chat column's header (SubmitButton).
  */
 export default function PreviewTools({ showViewControls, tight = false }: { showViewControls: boolean; tight?: boolean }) {
-  const { state, device, setDevice, inFull, toggleFull, drawing, editing, preview } = useDesignChat();
+  const { state, device, setDevice, inFull, toggleFull } = useDesignChat();
 
   return (
     <div className="flex shrink-0 items-center gap-2">
       {showViewControls && (
         <>
-          {!editing && (
-            <Button type="button" variant={drawing.on ? "default" : "outline"} size="icon" className="h-9 w-9" onClick={drawing.toggle}
-              disabled={!preview.loaded} aria-pressed={drawing.on}
-              aria-label={drawing.on ? "Stop drawing" : "Draw on the preview"} title={drawing.on ? "Stop drawing and remove the marks" : "Draw on the preview to show what to change"}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
           {!tight && <ToggleGroup type="single" value={device} onValueChange={(v) => v && setDevice(v as Device)} variant="outline" size="sm"
             className="hidden lg:flex gap-0 [&>button]:rounded-none [&>button:first-child]:rounded-l-md [&>button:last-child]:rounded-r-md [&>button+button]:-ml-px" aria-label="Preview size">
             <ToggleGroupItem value="mobile" aria-label="Mobile preview" title="Mobile preview"><Smartphone className="h-4 w-4" /></ToggleGroupItem>

@@ -24,7 +24,7 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel() {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview } = useDesignChat();
   const [text, setText] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [dragging, setDragging] = useState(false);
@@ -274,6 +274,12 @@ export default function ChatPanel() {
           <Button type="button" variant="outline" size="icon" className="rounded-full shrink-0" title="Attach pictures or documents"
             aria-label="Attach pictures or documents" onClick={() => fileRef.current?.click()}>
             <Paperclip className="h-4 w-4" />
+          </Button>
+          <Button type="button" variant={drawing.on ? "default" : "outline"} size="icon" className="rounded-full shrink-0"
+            onClick={drawing.toggle} disabled={!drawing.available || !preview.loaded || editing} aria-pressed={drawing.on}
+            aria-label={drawing.on ? "Stop drawing and remove the marks" : "Draw on the preview"}
+            title={editing ? "Drawing isn't available while editing a page" : !drawing.available ? "Open the Preview tab to draw on it" : drawing.on ? "Stop drawing and remove the marks" : "Draw on the preview"}>
+            <Pencil className="h-4 w-4" />
           </Button>
           {voice.supported && (
             <Button type="button" variant={voice.listening ? "destructive" : "outline"} size="icon"
