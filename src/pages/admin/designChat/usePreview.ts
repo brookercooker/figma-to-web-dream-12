@@ -15,6 +15,7 @@ import { withPath } from "./logic";
 const RELOAD_AFTER_MS = [6000, 15000, 30000, 60000, 120000]; // after the builder finishes
 const AFTER_BUILD_MS = [4000, 10000, 20000]; // after the helper sees the new build
 const CLEAR_AT_MS = 10000; // the message clears with the reload this long after the new build is seen
+const UPDATING_FALLBACK_MS = 70000; // longest the message stays when no new build is reported (a rebuild shows within about 50 s)
 const REFRESH_MARGIN_MS = 5 * 60 * 1000; // ask for a new preview address this long before the old one expires
 const SWAP_TIMEOUT_MS = 20000; // show a copy even if its load event never comes
 
@@ -103,7 +104,7 @@ export function usePreview(state: RelayState | null, path: string | null = null)
     followTimers.current.forEach(clearTimeout); followTimers.current = [];
     reloadTimers.current.forEach(clearTimeout);
     loadPreview();
-    showUpdating(RELOAD_AFTER_MS[RELOAD_AFTER_MS.length - 1] + 5000);
+    showUpdating(UPDATING_FALLBACK_MS);
     reloadTimers.current = RELOAD_AFTER_MS.map((ms) => setTimeout(loadPreview, ms));
   }, [loadPreview, showUpdating]);
 
