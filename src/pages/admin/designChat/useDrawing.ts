@@ -45,7 +45,7 @@ export function useDrawing(o: { device: string; path: string | null }) {
     camera.current ??= new PreviewCamera();
     camera.current.onEnded = () => { setPictureState(false); setNote("Picture sharing stopped. The drawing will be sent without a picture."); };
     const r = await camera.current.start(area);
-    if ("error" in r) { setPictureState(false); setNote(r.error); } else { setPictureState(true); setNote(null); }
+    if (r.ok) { setPictureState(true); setNote(null); } else { setPictureState(false); setNote((r as { error: string }).error); }
   }, [stopCamera]);
 
   // Anything that changes what is under the strokes ends the drawing: a different size, a different page.
