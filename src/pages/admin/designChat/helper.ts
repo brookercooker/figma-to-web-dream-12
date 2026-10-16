@@ -1,6 +1,7 @@
 /**
- * How the Design Chat tab talks to the design helper (prototyper-local) and to the preview-address function.
- * The helper runs on the computer being used for now; its address can be changed with VITE_DESIGN_RELAY_URL.
+ * How the Design Chat tab talks to the design service and to the preview-address function.
+ * By default it uses the hosted design service. The local helper (prototyper-local) can still be used
+ * by setting "designRelayUrl" in the browser (localStorage) or VITE_DESIGN_RELAY_URL.
  */
 
 function storedRelay(): string | undefined {
@@ -14,7 +15,7 @@ function storedRelay(): string | undefined {
 }
 
 const envRelay = import.meta.env.VITE_DESIGN_RELAY_URL as string | undefined;
-export const RELAY = (storedRelay() || envRelay || "").replace(/\/$/, "") || "http://127.0.0.1:4321/__prototyper";
+export const RELAY = (storedRelay() || envRelay || "").replace(/\/$/, "") || "https://nova-relay.a02392549.workers.dev";
 
 /** True only for an https address that isn't this computer. */
 export function isHostedRelay(url: string): boolean {
