@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { FileText, Loader2, Mic, Paperclip, Send, X } from "lucide-react";
+import { FileText, Loader2, Mic, Paperclip, Pencil, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -24,7 +24,7 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel() {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing } = useDesignChat();
   const [text, setText] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [dragging, setDragging] = useState(false);
@@ -78,11 +78,27 @@ export default function ChatPanel() {
   const send = async () => {
     const message = text.trim();
     if (busy || offline) return;
-    if (!message) { if (attachments.files.length) setHint(`Say what you'd like done with the attached file${attachments.files.length > 1 ? "s" : ""}.`, true); return; }
+    const hasDrawing = drawing.strokes.length > 0;
+    if (!message) {
+      if (hasDrawing) setHint("Say what you'd like done with your drawing.", true);
+      else if (attachments.files.length) setHint(`Say what you'd like done with the attached file${attachments.files.length > 1 ? "s" : ""}.`, true);
+      return;
+    }
     if (attachments.uploading) { setHint("Still uploading your files. One moment."); return; }
     voice.stop();
-    const res = await postToHelper("/send", { message, uploadIds: attachments.ids(), ...(workingPage ? { page: workingPage } : {}) });
-    if (res.ok) { setText(""); attachments.clear(); } else setHint(res.error, true);
+    // The drawing: ask the site what is under it, and take the picture if it was switched on.
+    let marks: unknown;
+    let image: string | null = null;
+    if (hasDrawing) {
+      setHint("Reading your drawing…");
+      const d = await drawing.prepare();
+      if (d) { marks = d.marks; image = d.image; }
+    }
+    const res = await postToHelper("/send", {
+      message, uploadIds: attachments.ids(), ...(workingPage ? { page: workingPage } : {}),
+      ...(marks ? { marks } : {}), ...(image ? { image } : {}),
+    });
+    if (res.ok) { setText(""); attachments.clear(); drawing.cancel(); setHint(""); } else setHint(res.error, true);
     refreshSoon();
   };
 
@@ -183,6 +199,20 @@ export default function ChatPanel() {
               <span className="ml-1.5 font-mono text-muted-foreground">{workingPage.path}</span>
             </span>
             <button type="button" aria-label="Stop working on this page" title="Stop working on this page" onClick={clearWorkingPage}
+              className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-border hover:text-foreground">
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        )}
+
+        {drawing.strokes.length > 0 && (
+          <div className="flex items-center gap-2 rounded-md border bg-muted py-1 pl-2.5 pr-1 text-xs" aria-label="Your drawing on the preview">
+            <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span className="min-w-0 flex-1 truncate">
+              <strong>{drawing.strokes.length} {drawing.strokes.length === 1 ? "mark" : "marks"}</strong>
+              <span className="text-muted-foreground"> on the preview will be sent with this request{drawing.picture ? ", with a picture" : ""}</span>
+            </span>
+            <button type="button" aria-label="Remove the drawing" title="Remove the drawing" onClick={drawing.cancel}
               className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-border hover:text-foreground">
               <X className="h-3 w-3" />
             </button>
