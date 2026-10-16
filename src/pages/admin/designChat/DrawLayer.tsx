@@ -11,7 +11,7 @@ import { MAX_STROKES, MIN_STROKE_PX, addPoint, lengthPx, paintStrokes, thin, typ
  * over what they were drawn on. The drawing is sent with the next request.
  */
 export default function DrawLayer() {
-  const { drawing } = useDesignChat();
+  const { drawing, state } = useDesignChat();
   const { strokes, add, undo, clear, cancel, picture, pictureSupported, setPicture, note, capturing } = drawing;
   const canvas = useRef<HTMLCanvasElement>(null);
   const live = useRef<Stroke | null>(null);
@@ -90,6 +90,8 @@ export default function DrawLayer() {
     else paint();
   };
 
+  const unsupported = state != null && state.drawing !== true;
+
   return (
     <div className="absolute inset-0 z-20" data-draw-layer>
       <canvas
@@ -124,8 +126,10 @@ export default function DrawLayer() {
             <X className="h-4 w-4" />
           </Button>
         </div>
-        <p className="pointer-events-none max-w-[min(100%,26rem)] rounded-md bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm">
-          {note ?? "Scroll the preview first, then draw. Ring what to change, or draw an arrow to where it should go, then say what you want in the chat."}
+        <p className={cn("pointer-events-none max-w-[min(100%,26rem)] rounded-md bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm", unsupported && "text-destructive")}>
+          {unsupported
+            ? "The design service hasn't been updated to take drawings yet, so a drawing can't be sent. Ask whoever runs the service to update it."
+            : (note ?? "Scroll the preview first, then draw. Ring what to change, or draw an arrow to where it should go, then say what you want in the chat.")}
         </p>
       </div>
     </div>
