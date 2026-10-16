@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addPoint, boxOf, buildMarks, lengthPx, thin, type Stroke } from "../drawing";
+import { addPoint, boxOf, buildMarks, lengthPx, shapeOf, thin, type Stroke } from "../drawing";
 
 describe("drawing", () => {
   it("boxOf is the smallest box around a stroke", () => {
@@ -40,5 +40,37 @@ describe("drawing", () => {
     const none = buildMarks({ strokes, width: 900, height: 600, device: "mobile", path: null, reply: null });
     expect(none.scrollY).toBeNull();
     expect(none.marks[0].elements).toEqual([]);
+  });
+
+  it("shapeOf tells a line, a ring, a freehand stroke and a dot apart, and levels a nearly straight line", () => {
+    const W = 1000, H = 600;
+    const wobbly: Stroke = [{ x: 0.1, y: 0.4 }, { x: 0.3, y: 0.405 }, { x: 0.5, y: 0.395 }, { x: 0.7, y: 0.402 }];
+    const h = shapeOf(wobbly, W, H);
+    expect(h.kind).toBe("line");
+    expect(h.direction).toBe("horizontal");
+    expect(h.from.y).toBeCloseTo(h.to.y, 10);
+    expect(h.from.x).toBe(0.1);
+    expect(h.to.x).toBe(0.7);
+    const v = shapeOf([{ x: 0.2, y: 0.1 }, { x: 0.203, y: 0.3 }, { x: 0.199, y: 0.6 }], W, H);
+    expect(v).toMatchObject({ kind: "line", direction: "vertical" });
+    expect(v.from.x).toBeCloseTo(v.to.x, 10);
+    expect(shapeOf([{ x: 0.1, y: 0.1 }, { x: 0.5, y: 0.5 }], W, H)).toMatchObject({ kind: "line", direction: "diagonal" });
+    const ring: Stroke = Array.from({ length: 20 }, (_, i) => ({ x: 0.5 + 0.1 * Math.cos((i / 19) * Math.PI * 2), y: 0.5 + 0.15 * Math.sin((i / 19) * Math.PI * 2) }));
+    expect(shapeOf(ring, W, H).kind).toBe("ring");
+    const zigzag: Stroke = [{ x: 0.1, y: 0.1 }, { x: 0.2, y: 0.4 }, { x: 0.3, y: 0.1 }, { x: 0.4, y: 0.4 }, { x: 0.5, y: 0.1 }];
+    expect(shapeOf(zigzag, W, H).kind).toBe("squiggle");
+    expect(shapeOf([{ x: 0.5, y: 0.5 }, { x: 0.501, y: 0.5 }], W, H).kind).toBe("dot");
+    expect(shapeOf([], W, H).kind).toBe("dot");
+  });
+
+  it("buildMarks carries the shape, and what the site found at the ends and beside a line", () => {
+    const strokes: Stroke[] = [[{ x: 0.1, y: 0.4 }, { x: 0.4, y: 0.4 }, { x: 0.7, y: 0.4 }]];
+    const above = { tag: "h1", text: "Example Header", box: [40, 90, 400, 50] as [number, number, number, number] };
+    const out = buildMarks({
+      strokes, width: 1000, height: 600, device: "desktop", path: "/",
+      reply: { view: { scrollY: 0, pageHeight: 1200, width: 1000, height: 600 }, strokes: [{ elements: [], near: [{ side: "above", element: above }] }] },
+    });
+    expect(out.marks[0]).toMatchObject({ kind: "line", direction: "horizontal", from: { x: 0.1, y: 0.4 }, to: { x: 0.7, y: 0.4 }, near: [{ side: "above", element: above }] });
+    expect(out.marks[0]).not.toHaveProperty("ends");
   });
 });
