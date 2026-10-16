@@ -17,17 +17,28 @@ export const INK_EDGE = "rgba(255,255,255,0.92)";
 /** What the previewed site reports under one stroke (see the site's annotateBridge). */
 export type SiteElement = {
   tag: string; text?: string; selector?: string; component?: string; file?: string; line?: number;
-  alt?: string; href?: string; section?: string;
+  alt?: string; href?: string; section?: string; box?: [number, number, number, number];
 };
 export type SiteReply = {
   view: { scrollY: number; pageHeight: number; width: number; height: number };
-  strokes: { elements: SiteElement[] }[];
+  strokes: {
+    elements: SiteElement[];
+    ends?: { start?: SiteElement; end?: SiteElement };
+    near?: { side: "above" | "below" | "left" | "right"; element: SiteElement }[];
+  }[];
 };
+
+/** What kind of stroke it is and where it starts and ends (0 to 1 across the preview). */
+export type Shape = { kind: "dot" | "line" | "ring" | "squiggle"; direction?: "horizontal" | "vertical" | "diagonal"; from: Pt; to: Pt };
 
 /** What is sent to the design service with a request (it checks every field again). */
 export type MarksPayload = {
   path: string | null; device: string; width: number; height: number; scrollY: number | null; pageHeight: number | null;
-  marks: (Box & { elements: SiteElement[] })[];
+  marks: (Box & Shape & {
+    elements: SiteElement[];
+    ends?: { start?: SiteElement; end?: SiteElement };
+    near?: { side: "above" | "below" | "left" | "right"; element: SiteElement }[];
+  })[];
 };
 
 const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
@@ -36,6 +47,29 @@ export function boxOf(s: Stroke): Box {
   let x0 = 1, y0 = 1, x1 = 0, y1 = 0;
   for (const p of s) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
   return s.length ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : { x: 0, y: 0, w: 0, h: 0 };
+}
+
+/**
+ * What a stroke is, so "move this to the line" can be told from "this heading". `w` and `h` are the preview's size in pixels.
+ * A hand-drawn straight line wobbles, so a line counts as straight when no point strays far from the line between its ends,
+ * and a nearly horizontal (or vertical) one is levelled so both ends report the same height (or distance from the left).
+ */
+export function shapeOf(s: Stroke, w: number, h: number): Shape {
+  const from = s[0] ?? { x: 0, y: 0 };
+  const to = s[s.length - 1] ?? from;
+  const box = boxOf(s);
+  const diag = Math.hypot(box.w * w, box.h * h);
+  if (diag < 12) return { kind: "dot", from, to };
+  const dx = (to.x - from.x) * w, dy = (to.y - from.y) * h;
+  const chord = Math.hypot(dx, dy);
+  if (s.length >= 8 && diag >= 30 && chord < diag * 0.25) return { kind: "ring", from, to };
+  if (chord < 1) return { kind: "squiggle", from, to };
+  let stray = 0;
+  for (const p of s) stray = Math.max(stray, Math.abs(dx * (from.y - p.y) * h - dy * (from.x - p.x) * w) / chord);
+  if (stray > Math.max(6, chord * 0.08)) return { kind: "squiggle", from, to };
+  if (Math.abs(dy) <= Math.abs(dx) * 0.2) { const y = (from.y + to.y) / 2; return { kind: "line", direction: "horizontal", from: { x: from.x, y }, to: { x: to.x, y } }; }
+  if (Math.abs(dx) <= Math.abs(dy) * 0.2) { const x = (from.x + to.x) / 2; return { kind: "line", direction: "vertical", from: { x, y: from.y }, to: { x, y: to.y } }; }
+  return { kind: "line", direction: "diagonal", from, to };
 }
 
 /** Length of a stroke in screen pixels, for telling a drawing from an accidental click. */
@@ -98,7 +132,8 @@ export function askSite(frame: HTMLIFrameElement | null, strokes: readonly Strok
     };
     const timer = setTimeout(() => done(null), timeoutMs);
     window.addEventListener("message", onMessage);
-    try { target.postMessage({ source: "nova-manager", type: "annotate-query", id, strokes: strokes.map((s) => thin(s, 80)) }, origin); }
+    const w = frame.clientWidth, h = frame.clientHeight;
+    try { target.postMessage({ source: "nova-manager", type: "annotate-query", id, strokes: strokes.map((s) => thin(s, 80)), shapes: w && h ? strokes.map((s) => shapeOf(s, w, h)) : undefined }, origin); }
     catch { done(null); }
   });
 }
@@ -109,6 +144,9 @@ export function buildMarks(o: { strokes: readonly Stroke[]; width: number; heigh
   return {
     path: o.path, device: o.device, width: Math.round(o.width), height: Math.round(o.height),
     scrollY: num(o.reply?.view?.scrollY), pageHeight: num(o.reply?.view?.pageHeight),
-    marks: o.strokes.map((s, i) => ({ ...boxOf(s), elements: o.reply?.strokes?.[i]?.elements ?? [] })),
+    marks: o.strokes.map((s, i) => {
+      const r = o.reply?.strokes?.[i];
+      return { ...boxOf(s), ...shapeOf(s, o.width, o.height), elements: r?.elements ?? [], ...(r?.ends ? { ends: r.ends } : {}), ...(r?.near ? { near: r.near } : {}) };
+    }),
   };
 }
