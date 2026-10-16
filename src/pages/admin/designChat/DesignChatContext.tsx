@@ -3,6 +3,7 @@ import type { RelayState } from "./helper";
 import { useHelperState } from "./useHelperState";
 import { usePreview } from "./usePreview";
 import { usePreviewPage, type PreviewPage } from "./usePreviewPage";
+import { useDrawing, type Drawing } from "./useDrawing";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview
@@ -66,6 +67,8 @@ export type DesignChat = {
   /** The Site Manager page at that address, if any. */
   previewPage: PreviewPage | null;
   previewPageLoading: boolean;
+  /** The pencil on the preview: marks drawn over it, sent with the next request. */
+  drawing: Drawing;
 };
 
 const Ctx = createContext<DesignChat | null>(null);
@@ -139,12 +142,13 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("message", onMessage);
   }, [rememberPath]);
   const { page: previewPage, loading: previewPageLoading } = usePreviewPage(previewLocation?.path ?? null);
+  const drawing = useDrawing({ device, path: previewLocation?.path ?? null });
 
   const value = useMemo<DesignChat>(() => ({
     state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
-    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, objectOpen, openObject, closeObject,
-  }), [objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing]);
+    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, drawing, objectOpen, openObject, closeObject,
+  }), [objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

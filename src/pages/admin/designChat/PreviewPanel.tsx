@@ -2,6 +2,7 @@ import { Loader2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDesignChat, type Device } from "./DesignChatContext";
+import DrawLayer from "./DrawLayer";
 
 const WIDTH: Record<Device, string> = { mobile: "390px", tablet: "820px", desktop: "100%" };
 
@@ -10,14 +11,14 @@ const WIDTH: Record<Device, string> = { mobile: "390px", tablet: "820px", deskto
  * screen, submit) are in the top bar, see PreviewTools.tsx.
  */
 export default function PreviewPanel() {
-  const { preview, device, boxRef, inFull, coverFull, toggleFull } = useDesignChat();
+  const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing } = useDesignChat();
 
   return (
     <section className="h-full min-h-0" aria-label="Preview">
       <div ref={boxRef} className={cn("relative h-full min-h-0 bg-muted flex justify-center", coverFull && "fixed inset-0 z-50 bg-background")}>
 
 
-        <div className={cn("relative h-full max-w-full overflow-hidden bg-white")}
+        <div ref={drawing.areaRef} className={cn("relative h-full max-w-full overflow-hidden bg-white")}
           style={{ width: WIDTH[device] }}>
           {preview.frames.map((f) => (
             <iframe
@@ -25,10 +26,12 @@ export default function PreviewPanel() {
               src={f.url}
               title={f.id === preview.shownId || preview.shownId === 0 ? "Design preview" : "Design preview (loading)"}
               referrerPolicy="origin"
+              data-preview-shown={f.id === preview.shownId || preview.shownId === 0 ? "true" : "false"}
               onLoad={() => preview.finish(f.id)}
               className={cn("absolute inset-0 h-full w-full border-0 bg-white", f.id !== preview.shownId && preview.shownId !== 0 && "invisible")}
             />
           ))}
+          {drawing.on && preview.loaded && <DrawLayer />}
         </div>
 
         {!preview.loaded && (
