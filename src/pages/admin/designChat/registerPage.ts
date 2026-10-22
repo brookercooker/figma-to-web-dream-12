@@ -5,6 +5,13 @@ export function normalizePreviewPath(path: string): string {
   return path.length > 1 ? path.replace(/\/+$/, "") || "/" : path;
 }
 
+/** The front page answers at both "/" and "/home". */
+export const isHomePath = (path: string) => { const k = normalizePreviewPath(path); return k === "/" || k === "/home"; };
+/** Every stored path that can mean this address: ["/", "/home"] for the front page, otherwise just the path. */
+export const homeAliases = (path: string): string[] => (isHomePath(path) ? ["/", "/home"] : [normalizePreviewPath(path)]);
+/** One key per page for caches: the front page is always "/". */
+export const pageKey = (path: string) => (isHomePath(path) ? "/" : normalizePreviewPath(path));
+
 export type RegistrablePage = { name: string; path: string };
 
 export function pageRow(candidate: RegistrablePage, type: "static" | "landing" = "static", suffix = "") {
