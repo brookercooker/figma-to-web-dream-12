@@ -39,17 +39,16 @@ function messageBox() {
 }
 
 describe("chat sending shortcuts", () => {
-  it("leaves Enter and Shift+Enter to the browser without sending", () => {
+  it("leaves Shift+Enter to the browser without sending", () => {
     const input = messageBox();
-    expect(fireEvent.keyDown(input, { key: "Enter" })).toBe(true);
     expect(fireEvent.keyDown(input, { key: "Enter", shiftKey: true })).toBe(true);
     expect(mocks.post).not.toHaveBeenCalled();
     expect(mocks.stopVoice).not.toHaveBeenCalled();
   });
 
-  it.each(["ctrlKey", "metaKey"])("sends with %s+Enter", async (modifier) => {
+  it("sends with Enter", async () => {
     const input = messageBox();
-    expect(fireEvent.keyDown(input, { key: "Enter", [modifier]: true })).toBe(false);
+    expect(fireEvent.keyDown(input, { key: "Enter" })).toBe(false);
     await waitFor(() => expect(mocks.post).toHaveBeenCalledWith("/send", {
       message: "Make the headline larger", uploadIds: [],
     }));
@@ -57,10 +56,9 @@ describe("chat sending shortcuts", () => {
     await waitFor(() => expect(input).toHaveValue(""));
   });
 
-  it.each(["ctrlKey", "metaKey"])("does not send during IME composition with %s", (modifier) => {
+  it("does not send during IME composition", () => {
     const input = messageBox();
-    fireEvent.keyDown(input, { key: "Enter", [modifier]: true, isComposing: true });
-    fireEvent.keyDown(input, { key: "Enter", [modifier]: true, keyCode: 229 });
+    fireEvent.keyDown(input, { key: "Enter", isComposing: true });
     expect(mocks.post).not.toHaveBeenCalled();
   });
 

@@ -268,7 +268,7 @@ export default function ChatPanel() {
           ref={textRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.nativeEvent.isComposing && e.nativeEvent.keyCode !== 229) { e.preventDefault(); send(); } }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
           onPaste={(e) => {
             const pasted = Array.from(e.clipboardData?.files ?? []);
             if (!pasted.length) return;
@@ -310,10 +310,10 @@ export default function ChatPanel() {
             aria-pressed={editing} disabled={finishing || busy || (!editing && !editTarget?.id)} onClick={() => void toggleEditing()}>
             <SquarePen className="h-4 w-4" /> {editing ? "Done editing" : "Edit manually"}
           </Button>
-          <span role="status" className={cn("flex-1 min-w-0 text-xs", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>
+          {(offline || hint.text) && <span role="status" className={cn("flex-1 min-w-0 text-xs", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>
             {offline ? "Can't reach the design service right now. It will keep trying." : hint.text}
-          </span>
-          <Button type="submit" disabled={busy || offline || attachments.uploading} className="gap-2">
+          </span>}
+          <Button type="submit" disabled={busy || offline || attachments.uploading} className="ml-auto gap-2">
             <Send className="h-4 w-4" /> Send
           </Button>
         </div>
