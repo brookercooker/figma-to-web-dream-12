@@ -57,7 +57,9 @@ export function useEditorLinkGuard(
     },
     onAuxClickCapture: (event: MouseEvent<HTMLElement>) => { block(event); },
     onKeyDownCapture: (event: KeyboardEvent<HTMLElement>) => {
-      if (event.key === "Enter" || (event.key === " " && !(event.target instanceof HTMLElement && event.target.isContentEditable))) block(event);
+      // Editable wording keeps its Enter-to-commit and Space-to-type handlers; it cannot activate a link.
+      if (event.target instanceof HTMLElement && event.target.isContentEditable) return;
+      if (event.key === "Enter" || event.key === " ") block(event);
     },
     onDragStartCapture: (event: DragEvent<HTMLElement>) => { block(event); },
     onDoubleClickCapture: (event: MouseEvent<HTMLElement>) => {
