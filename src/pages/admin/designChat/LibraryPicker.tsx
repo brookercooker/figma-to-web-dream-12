@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { Box, ExternalLink, Film, Image as ImageIcon, Loader2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -44,6 +44,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [term, setTerm] = useState("");
+  const picked = useRef(false); // after a pick, the chat box keeps focus instead of the tab button
   useEffect(() => {
     if (!open) return;
     setTerm("");
@@ -64,7 +65,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
           {showLabel && <span>{label}</span>}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[min(92vw,24rem)] p-0">
+      <PopoverContent align="start" className="w-[min(92vw,24rem)] p-0" onCloseAutoFocus={(e) => { if (picked.current) { e.preventDefault(); picked.current = false; } }}>
         <Command shouldFilter={false} label={`Pick from ${NOUN[kind]}`}>
           <CommandInput autoFocus value={term} onValueChange={setTerm} placeholder={`Search ${NOUN[kind]} by name or label…`} />
           <CommandList className="max-h-[min(60vh,22rem)] overflow-y-auto">
@@ -73,7 +74,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
             ) : matches.length === 0 ? (
               <p className="p-4 text-sm text-muted-foreground">No {NOUN[kind]} match</p>
             ) : matches.slice(0, SHOWN).map((r) => (
-              <CommandItem key={r.ref.id} value={r.ref.id} onSelect={() => { onPick(r.ref); setOpen(false); }} className="gap-3">
+              <CommandItem key={r.ref.id} value={r.ref.id} onSelect={() => { picked.current = true; onPick(r.ref); setOpen(false); }} className="gap-3">
                 {r.ref.thumb ? <img src={r.ref.thumb} alt="" loading="lazy" className="h-9 w-9 shrink-0 rounded object-cover" />
                   : <span className="grid h-9 w-9 shrink-0 place-items-center rounded bg-muted"><FallbackIcon className="h-4 w-4 text-muted-foreground" /></span>}
                 <span className="min-w-0">
