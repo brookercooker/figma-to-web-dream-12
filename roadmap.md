@@ -23,3 +23,4 @@
 - [x] Page editor: drag text/pictures, highlight-only styling, button/link icons, edge lines editable
 - [ ] Before launch: turn on admin sign-in and drop temporary open-access rules
 - [ ] Re-enable uploads/publish features that still require sign-in (storage, publish-assets, users)
+- [x] Edit manually: no more "Content coming soon" — empty pages open with a heading + text block; unloadable code shows Retry
