@@ -152,18 +152,18 @@ export default function ChatPanel() {
   const hasFiles = (e: React.DragEvent) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
 
   return (
-    <section className="flex h-full flex-col bg-background min-h-0 overflow-hidden" aria-label="Design chat">
+    <section className="flex h-full flex-col bg-background min-h-0 overflow-hidden" aria-label="Design Chat">
       <header className="flex items-center justify-between gap-2 border-b px-3 py-2">
         <span className="text-sm font-medium">Chat</span>
         <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label="Edit this page by hand (without the chat)" title={!editing && !editTarget?.id && !previewRegistrable ? "This address isn't a page that can be edited." : "Edit this page by hand (without the chat)"}
           aria-pressed={editing} disabled={finishing || busy || (!editing && !editTarget?.id && !previewRegistrable)} onClick={() => void toggleEditing()}>
-          <SquarePen className="h-4 w-4" /> {editing ? "Done editing" : "Edit manually"}
+          <SquarePen className="h-4 w-4" /> {editing ? "Done Editing" : "Edit Manually"}
         </Button>
       </header>
       <div ref={logRef} onScroll={onScroll} className={cn("flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 flex flex-col gap-2.5 text-sm", editing && "hidden")} role="log">
         {messages.length === 0 && (
           <div className="text-muted-foreground space-y-2">
-            <p>Describe a change to the site. You'll see it in the Preview tab. To work on one page, pick it in the Pages tab. Nothing goes live until you press Submit for review.</p>
+            <p>Describe a change to the site. You'll see it in the Preview tab. To work on one page, pick it in the Pages tab. Nothing goes live until you press Submit for Review.</p>
             <p>
               {state?.review?.mode === "simulated"
                 ? "Demo mode: your changes are checked once together by fixed rules, not by Claude reading the code, and they go live automatically if the check passes."
@@ -223,7 +223,7 @@ export default function ChatPanel() {
             ))}
             {problems.items.length > 1 && (
               <Button type="button" size="sm" onClick={(ev) => { (ev.currentTarget as HTMLButtonElement).disabled = true; fixIds(problems.items.map((f) => f.id)); }}>
-                Fix all {problems.items.length} for me
+                Fix All {problems.items.length} for me
               </Button>
             )}
             {problems.devNote && <p className="text-xs">{problems.devNote}</p>}
@@ -248,7 +248,7 @@ export default function ChatPanel() {
               <strong>{workingPage.name}</strong>
               <span className="ml-1.5 font-mono text-muted-foreground">{workingPage.path}</span>
             </span>
-            <button type="button" aria-label="Stop working on this page" title="Stop working on this page" onClick={clearWorkingPage}
+            <button type="button" aria-label="Stop Working on This Page" title="Stop Working on This Page" onClick={clearWorkingPage}
               className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-border hover:text-foreground">
               <X className="h-3 w-3" />
             </button>
@@ -289,7 +289,7 @@ export default function ChatPanel() {
         )}
 
         {attachments.files.length > 0 && (
-          <div className="flex flex-wrap gap-1.5" aria-label="Attached files">
+          <div className="flex flex-wrap gap-1.5" aria-label="Attached Files">
             {attachments.files.map((f) => (
               <span key={f.key} className="inline-flex max-w-full items-center gap-1.5 rounded-full border bg-muted py-0.5 pl-2.5 pr-1 text-xs">
                 <span className="max-w-[220px] truncate">{f.name}</span>
@@ -317,7 +317,7 @@ export default function ChatPanel() {
             attachments.addPasted(pasted);
           }}
           placeholder="Describe the change you want, for example: add a contact section with an email address and phone number"
-          aria-label="Describe a change"
+          aria-label="Describe a Change"
           className="min-h-[210px] max-h-[50vh] resize-none overflow-y-auto leading-snug"
         />
 

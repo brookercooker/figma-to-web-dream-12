@@ -62,7 +62,7 @@ beforeEach(() => {
 const open = () => render(<MemoryRouter initialEntries={["/manage/design?page=page"]}><DesignTab embedded pageId="page" /></MemoryRouter>);
 const contentWrites = () => mocks.writes.mock.calls.filter(([v]) => v && "content" in v);
 
-describe("Edit manually on a page without code", () => {
+describe("Edit Manually on a page without code", () => {
   it("opens the block editor with the page name and an empty text block ready to type", async () => {
     const { container } = open();
     await waitFor(() => expect(container.querySelectorAll("[data-page-block]")).toHaveLength(2));
@@ -73,7 +73,7 @@ describe("Edit manually on a page without code", () => {
     expect(screen.queryByText(/Content coming soon/)).toBeNull();
     expect(mocks.hasChanges?.()).toBe(true);
   });
-  it("Discard changes writes nothing", async () => {
+  it("Discard Changes writes nothing", async () => {
     const r = open();
     await waitFor(() => expect(r.container.querySelectorAll("[data-page-block]")).toHaveLength(2));
     act(() => mocks.discard?.());

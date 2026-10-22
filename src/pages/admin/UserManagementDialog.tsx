@@ -49,7 +49,7 @@ export default function UserManagementDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>User management</DialogTitle>
+          <DialogTitle>User Management</DialogTitle>
           <DialogDescription>
             Grant or revoke Admin access. Admins can manage all site content and other users.
           </DialogDescription>
@@ -64,7 +64,7 @@ export default function UserManagementDialog({
                 <tr className="border-b text-left text-xs text-muted-foreground">
                   <th className="py-3 pr-4 text-left">Email</th>
                   <th className="py-3 pr-4 text-left min-w-[140px]">Role</th>
-                  <th className="py-3 pr-4 text-left">Last sign-in</th>
+                  <th className="py-3 pr-4 text-left">Last Sign-In</th>
                   <th className="py-3 pr-4 text-left">Action</th>
                 </tr>
               </thead>

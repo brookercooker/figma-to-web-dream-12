@@ -113,16 +113,16 @@ describe("problemsModel", () => {
     const m = problemsModel({ ...base, publish: { open: 1, status: "error" }, draft: { review: { state: "error", retry: true, headline: "The review service is temporarily busy.", summary } } });
     expect(m?.title).toBe("The review service is temporarily busy.");
     expect(m?.sub.split("Nothing was changed on the live site.")).toHaveLength(2);
-    expect(m?.sub).toBe(summary ? summary.includes("Nothing was changed on the live site.") ? summary : `Nothing was changed on the live site. ${summary}` : "Nothing was changed on the live site. Press Submit for review to try again.");
+    expect(m?.sub).toBe(summary ? summary.includes("Nothing was changed on the live site.") ? summary : `Nothing was changed on the live site. ${summary}` : "Nothing was changed on the live site. Press Submit for Review to try again.");
     expect(m?.devNote).toBeUndefined();
   });
   it.each([false, undefined])("keeps non-retry errors generic and excludes raw details (%s)", (retry) => {
     const m = problemsModel({ ...base, publish: { open: 1, status: "error" }, draft: { review: { state: "error", retry, headline: "GitHub refused commit abc123.", summary: "Missing actions:write on review.yml" } } });
-    expect(m).toEqual({ title: "The review couldn't finish.", sub: "Nothing was changed on the live site. Press Submit for review to try again.", items: [], devNote: "If it keeps happening, a developer can see the details on the Developer review page." });
+    expect(m).toEqual({ title: "The review couldn't finish.", sub: "Nothing was changed on the live site. Press Submit for Review to try again.", items: [], devNote: "If it keeps happening, a developer can see the details on the Developer Review page." });
     expect(JSON.stringify(m)).not.toMatch(/GitHub|abc123|actions:write|review\.yml/);
   });
   it.each([undefined, { state: "error" }, { state: "error", retry: true }])("supports missing review fields (%s)", (review) => {
-    expect(problemsModel({ ...base, publish: { open: 1, status: "error" }, draft: { review } })).toEqual({ title: "The review couldn't finish.", sub: "Nothing was changed on the live site. Press Submit for review to try again.", items: [], devNote: "If it keeps happening, a developer can see the details on the Developer review page." });
+    expect(problemsModel({ ...base, publish: { open: 1, status: "error" }, draft: { review } })).toEqual({ title: "The review couldn't finish.", sub: "Nothing was changed on the live site. Press Submit for Review to try again.", items: [], devNote: "If it keeps happening, a developer can see the details on the Developer Review page." });
   });
 });
 

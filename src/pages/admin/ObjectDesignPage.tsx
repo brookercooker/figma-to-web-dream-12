@@ -100,7 +100,7 @@ function OutlineControls({
     <div className="flex flex-wrap items-center gap-2">
       {showPlacement ? (
         <select
-          aria-label="Frame placement"
+          aria-label="Frame Placement"
           className="h-7 rounded-md border bg-background px-2 text-xs"
           value={placement}
           onChange={(e) => onChange({ placement: e.target.value as BlockFrame | "" })}
@@ -108,7 +108,7 @@ function OutlineControls({
           {FRAME_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       ) : null}
-      <div className="flex items-center gap-1" role="radiogroup" aria-label="Outline colour">
+      <div className="flex items-center gap-1" role="radiogroup" aria-label="Outline Colour">
         {OUTLINE_COLORS.map((c) => {
           const on = (color ?? (showPlacement ? "sand" : "")) === c.value && active;
           return (
@@ -128,7 +128,7 @@ function OutlineControls({
       </div>
       {active ? (
         <select
-          aria-label="Line thickness"
+          aria-label="Line Thickness"
           className="h-7 rounded-md border bg-background px-2 text-xs"
           value={width ?? 1}
           onChange={(e) => onChange({ width: Number(e.target.value) })}
@@ -204,7 +204,7 @@ function SelectionStylePanel() {
   const btn = "h-8 rounded-md border bg-background px-2.5 text-xs hover:bg-muted";
   return (
     <div className="space-y-3 border-b bg-muted/30 px-3 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Highlighted text</p>
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Highlighted Text</p>
       <div className="flex flex-wrap gap-1.5">
         <button type="button" onMouseDown={keep} onClick={() => formatSelection("bold")} className={`${btn} font-bold`}>B</button>
         <button type="button" onMouseDown={keep} onClick={() => formatSelection("italic")} className={`${btn} italic`}>I</button>
@@ -229,7 +229,7 @@ function SelectionStylePanel() {
           />
         ))}
         <button type="button" onMouseDown={keep} onClick={() => styleSelection("data-color", null)} className={btn}>
-          Default colour
+          Default Colour
         </button>
       </div>
     </div>
@@ -349,7 +349,7 @@ const LinkStyleIcon = ((props: { className?: string }) => (
 const BUTTON_STYLE_OPTIONS = [
   { value: "solid" as const, label: "Solid", icon: SolidStyleIcon },
   { value: "outline" as const, label: "Outline", icon: OutlineStyleIcon },
-  { value: "link" as const, label: "Text link", icon: LinkStyleIcon },
+  { value: "link" as const, label: "Text Link", icon: LinkStyleIcon },
 ];
 
 /**
@@ -363,7 +363,7 @@ function CustomColorSwatch({
   const current = custom ? (value as string) : "#212121";
   return (
     <label
-      title="Custom color"
+      title="Custom Color"
       className={`relative inline-flex cursor-pointer items-center justify-center rounded-full border border-border transition-transform hover:scale-110 ${size} ${
         custom ? "ring-2 ring-offset-1 ring-foreground/60" : ""
       }`}
@@ -375,7 +375,7 @@ function CustomColorSwatch({
     >
       <input
         type="color"
-        aria-label="Custom color"
+        aria-label="Custom Color"
         value={current}
         onChange={(e) => onChange(e.target.value)}
         className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
@@ -865,7 +865,7 @@ function ColorDropdown({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[9rem]">
           <div className="px-2 pb-1 pt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-            Brand palette
+            Brand Palette
           </div>
           {options.map((o) => (
             <DropdownMenuItem key={o.value} className="gap-2 text-xs" onSelect={() => onChange(o.value)}>
@@ -879,7 +879,7 @@ function ColorDropdown({
               onChange={(v) => onChange(v as string)}
               size="h-4 w-4"
             />
-            <span className="text-xs">Custom color</span>
+            <span className="text-xs">Custom Color</span>
           </div>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -2332,7 +2332,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
           <Button
             variant="ghost"
             size="sm"
-            title="Duplicate image and its text"
+            title="Duplicate Image and Its Text"
             onClick={() => duplicateImageSlot(section.id, index)}
           >
             <Copy className="w-4 h-4" />
@@ -2342,7 +2342,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
           <Button
             variant="ghost"
             size="sm"
-            title="Delete image"
+            title="Delete Image"
 
             onClick={() => removeImageSlot(section.id, index)}
           >
@@ -2358,12 +2358,12 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               size="sm"
               onClick={() => setPicker({ sectionId: section.id, index })}
             >
-              {image.url ? "Replace" : "Choose image"}
+              {image.url ? "Replace" : "Choose Image"}
             </Button>
             <Button
               variant={image.href || linkOpen[`${section.id}:${index}`] ? "secondary" : "ghost"}
               size="sm"
-              title={image.href ? "Edit link" : "Add link"}
+              title={image.href ? "Edit Link" : "Add Link"}
               onClick={() =>
                 setLinkOpen((s) => ({ ...s, [`${section.id}:${index}`]: !s[`${section.id}:${index}`] }))
               }
@@ -2413,7 +2413,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         </>
       )}
       {imgOpen && (section as any).layout === "behind" && (image.texts ?? []).length > 0 && (
-        <Field label="Text position on picture">
+        <Field label="Text Position on Picture">
           <div>
             <Choice
               value={image.textVAlign ?? (section as any).overlayVAlign ?? "middle"}
@@ -2486,7 +2486,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     setDragText({ sectionId: section.id, index, ti });
                   }}
                   onDragEnd={() => { setDragText(null); setDropText(null); }}
-                  title="Drag to reorder"
+                  title="Drag to Reorder"
                   className="cursor-grab text-muted-foreground active:cursor-grabbing"
                 >
                   <GripVertical className="w-4 h-4" />
@@ -2505,7 +2505,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 <Button
                   variant="ghost"
                   size="sm"
-                  title="Duplicate text"
+                  title="Duplicate Text"
                   onClick={() => duplicateImageText(section.id, index, ti)}
                 >
                   <Copy className="w-4 h-4" />
@@ -2553,7 +2553,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                           <Choice
                             value={typeof t.divider?.widthPct === "number" ? "percent" : (t.divider?.width ?? "full")}
                             options={[
-                              { value: "full" as const, label: "Full width", icon: Minus },
+                              { value: "full" as const, label: "Full Width", icon: Minus },
                               { value: "short" as const, label: "Short", icon: Minus },
                               { value: "percent" as const, label: "Percent", icon: Minus },
                             ]}
@@ -2611,7 +2611,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                           onChange={(e) => patchImageText(section.id, index, ti, { text: e.target.value })}
                         />
                       </Field>
-                      <Field label="Link (optional)">
+                      <Field label="Link (Optional)">
                         <Input
                           value={t.button?.href ?? ""}
                           placeholder="Link (optional)"
@@ -2656,7 +2656,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                         />
                       )}
                       <TextStyleFields
-                        label="Label style"
+                        label="Label Style"
                         value={t.style}
                         defaults={{
                           font: IMAGE_TEXT_DEFAULTS.button.font,
@@ -2704,7 +2704,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                         </Field>
                       )}
                       <TextStyleFields
-                        label="Symbol color"
+                        label="Symbol Color"
                         value={t.style}
                         defaults={{
                           font: IMAGE_TEXT_DEFAULTS.icon.font,
@@ -3072,7 +3072,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
           </ToolGroup>
         ) : null)}
         {flowSection && part ? (
-          <ToolGroup icon={Move} title={isImages ? "Image placement" : isVideos ? "Video placement" : "Text placement"}>
+          <ToolGroup icon={Move} title={isImages ? "Image Placement" : isVideos ? "Video Placement" : "Text Placement"}>
             {flowField(flowSection, part)}
           </ToolGroup>
         ) : null}
@@ -3086,12 +3086,12 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     return (
         <div>
           <div>
-            <ToolGroup title="Block alignment" icon={AlignCenter} defaultOpen>
+            <ToolGroup title="Block Alignment" icon={AlignCenter} defaultOpen>
             <div className="flex flex-wrap items-center gap-1">
             {([
-              { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
-              { value: "center" as SectionAlign, label: "Align center", icon: AlignCenter },
-              { value: "right" as SectionAlign, label: "Align right", icon: AlignRight },
+              { value: "left" as SectionAlign, label: "Align Left", icon: AlignLeft },
+              { value: "center" as SectionAlign, label: "Align Center", icon: AlignCenter },
+              { value: "right" as SectionAlign, label: "Align Right", icon: AlignRight },
             ]).map((o) => (
               <Button
                 key={o.value}
@@ -3173,7 +3173,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             )}
             </div>
             </ToolGroup>
-            <ToolGroup title="Block spacing" icon={MoveVertical}>
+            <ToolGroup title="Block Spacing" icon={MoveVertical}>
             <div className="flex flex-wrap items-center gap-1">
             {([
               { key: "padY" as const, label: "Space above and below (px)", short: "V" },
@@ -3204,7 +3204,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             ))}
             </div>
             </ToolGroup>
-            <ToolGroup title="Block background" icon={PaintBucket}>
+            <ToolGroup title="Block Background" icon={PaintBucket}>
             <div className="flex flex-wrap items-center gap-1">
             <ColorDropdown
               label="Background"
@@ -3218,7 +3218,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               className={`flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs ${
                 (section as FreeSection).bgImage ? "border-foreground/40 bg-muted" : "bg-background"
               }`}
-              title="Background image"
+              title="Background Image"
               onClick={() => setBgPicker(section.id)}
             >
               <ImageIcon className="h-3.5 w-3.5" />
@@ -3230,13 +3230,13 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 className="h-7 rounded-md border bg-background px-2 text-xs"
                 onClick={() => patch(section.id, { bgImage: undefined } as Partial<Section>)}
               >
-                Clear image
+                Clear Image
               </button>
             ) : null}
             </div>
             {section.type === "free" ? (
               <div className="flex flex-col gap-1">
-                <span className="text-[11px] text-muted-foreground">Frame lines</span>
+                <span className="text-[11px] text-muted-foreground">Frame Lines</span>
                 <OutlineControls
                   placement={(section as FreeSection).frame ?? ""}
                   color={(section as FreeSection).frameColor}
@@ -3256,7 +3256,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
           <div className="flex gap-2 border-t pt-3">
             {parts.length ? (
               <Chip
-                label="Close item"
+                label="Close Item"
                 icon={ChevronsDownUp}
                 onClick={() => { setOpenBlocks({}); setFocusPart(""); }}
               />
@@ -3288,7 +3288,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
             </Field>
             <TextStyleFields
-              label="Eyebrow style"
+              label="Eyebrow Style"
               value={withEyebrowDefaults(section.eyebrowStyle)}
               defaults={{ font: "sans", color: "stone", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
@@ -3303,7 +3303,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               <Input value={section.heading ?? ""} onChange={(e) => patch(section.id, { heading: e.target.value })} />
             </Field>
             <TextStyleFields
-              label="Title style"
+              label="Title Style"
               value={section.textStyle}
               defaults={{ font: "serif", color: "ink", size: "xl" }}
               onChange={(v) => patch(section.id, { textStyle: v })}
@@ -3318,7 +3318,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               <Textarea rows={4} value={plainText(section.body)} onChange={(e) => patch(section.id, { body: e.target.value })} />
             </Field>
             <TextStyleFields
-              label="Text style"
+              label="Text Style"
               value={section.bodyStyle}
               defaults={{ font: "sans", color: "stone", size: "md" }}
               onChange={(v) => patch(section.id, { bodyStyle: v })}
@@ -3329,15 +3329,15 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
           <>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Button label">
+              <Field label="Button Label">
                 <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
               </Field>
-              <Field label="Button link">
+              <Field label="Button Link">
                 <Input value={section.buttonHref ?? ""} placeholder="/collections" onChange={(e) => patch(section.id, { buttonHref: e.target.value })} />
               </Field>
             </div>
             <div className="flex flex-wrap gap-4">
-              <Field label="Button style">
+              <Field label="Button Style">
                 <div>
                   <Choice
                     value={section.buttonVariant ?? "solid"}
@@ -3353,14 +3353,14 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               onChange={(n) => patch(section.id, { buttonIcon: n.icon, buttonIconSide: n.iconSide })}
             />
             <TextStyleFields
-              label="Button label style"
+              label="Button Label Style"
               value={section.labelStyle}
               defaults={{ font: "sans", color: (section.buttonVariant ?? "solid") === "solid" ? "cream" : "ink", size: "sm" }}
               onChange={(v) => patch(section.id, { labelStyle: v })}
             />
             {(section.buttonVariant ?? "solid") === "solid" && (
               <div className="rounded-md border p-3 space-y-2">
-                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Button background</p>
+                <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Button Background</p>
                 <ColorSwatches
                   value={section.buttonBg ?? "ink"}
                   onChange={(v) => patch(section.id, { buttonBg: v })}
@@ -3394,7 +3394,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             children: (
               <>
                 {kind !== "button" && (
-                <Field label="Style preset">
+                <Field label="Style Preset">
                   <select
                     className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
                     value={kind}
@@ -3415,14 +3415,14 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 {kind === "button" ? (
                   <>
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label="Button label">
+                      <Field label="Button Label">
                         <Input value={t.text} onChange={(e) => patchExtra(section.id, i, { text: e.target.value })} />
                       </Field>
-                      <Field label="Button link">
+                      <Field label="Button Link">
                         <Input value={t.button?.href ?? ""} placeholder="/collections" onChange={(e) => patchExtra(section.id, i, { button: { ...t.button, href: e.target.value } })} />
                       </Field>
                     </div>
-                    <Field label="Button style">
+                    <Field label="Button Style">
                       <div>
                         <Choice
                           value={t.button?.variant ?? "solid"}
@@ -3531,7 +3531,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     <Choice
                       value={typeof d.widthPct === "number" ? "percent" : (d.width ?? "short")}
                       options={[
-                        { value: "full" as const, label: "Full width", icon: Minus },
+                        { value: "full" as const, label: "Full Width", icon: Minus },
                         { value: "short" as const, label: "Short", icon: Minus },
                         { value: "percent" as const, label: "Percent", icon: Minus },
                       ]}
@@ -3622,7 +3622,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 Applies to all {count === 1 ? "1 image" : `${count} images`} in this group
               </div>
             <div className="flex flex-wrap items-end gap-4">
-              <Field label="Shade over image">
+              <Field label="Shade Over Image">
                 <div>
                   <IconSelect
                     value={eff.imageScrim ?? "none"}
@@ -3632,7 +3632,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 </div>
               </Field>
               {(eff.imageScrim ?? "none") !== "none" && (
-                <Field label="Shade strength (%)">
+                <Field label="Shade Strength (%)">
                   <Input
                     type="number"
                     min={0}
@@ -3653,7 +3653,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 </div>
               </Field>
               {(eff.gallery ?? section.gallery) === "carousel" && (
-                <Field label="Carousel controls">
+                <Field label="Carousel Controls">
                   <div>
                     <Choice
                       value={eff.carouselControls === false ? "off" : "on"}
@@ -3682,7 +3682,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             {eff.imageBorder && (
               <div className="flex flex-wrap items-center gap-4">
                 <ColorDropdown
-                  label="Border color"
+                  label="Border Color"
                   value={eff.imageBorderColor ?? ""}
                   fallback="stone"
                   options={TEXT_COLORS}
@@ -3711,7 +3711,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     className="h-8 w-20"
                   />
                 </Field>
-                <Field label="Corner radius (px)">
+                <Field label="Corner Radius (px)">
                   <Input
                     type="number"
                     min={0}
@@ -3721,7 +3721,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     className="h-8 w-20"
                   />
                 </Field>
-                <Field label="Inner spacing (px)">
+                <Field label="Inner Spacing (px)">
                   <Input
                     type="number"
                     min={0}
@@ -3741,8 +3741,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                   <IconSelect
                     value={section.layout === "behind" ? "behind" : "stacked"}
                     options={[
-                      { value: "stacked" as const, label: "In place", icon: Rows2 },
-                      { value: "behind" as const, label: "Behind text", icon: Layers },
+                      { value: "stacked" as const, label: "In Place", icon: Rows2 },
+                      { value: "behind" as const, label: "Behind Text", icon: Layers },
                     ]}
                     onChange={(v) => patch(section.id, { layout: v })}
                   />
@@ -3764,7 +3764,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 </Field>
               )}
               {section.layout === "behind" && (
-                <Field label="Text position">
+                <Field label="Text Position">
                   <div>
                     <Choice
                       value={section.overlayVAlign ?? "middle"}
@@ -3781,7 +3781,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 </>
               )}
               {section.layout !== "behind" && count > 0 && (
-                <Field label="Exact size (px)">
+                <Field label="Exact Size (px)">
                   <div className="flex items-center gap-2">
                     <label className="flex items-center gap-1 text-xs text-muted-foreground">
                       H
@@ -3819,7 +3819,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 </Field>
               )}
               {section.layout !== "behind" && count > 0 && eff.gallery !== "carousel" && (
-                <Field label="Image position">
+                <Field label="Image Position">
                   <div>
                     <Choice
                       value={eff.imageAlign ?? "left"}
@@ -3875,7 +3875,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             </div>
             <div>
               <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id, groupKey)}>
-                <Plus className="w-4 h-4" /> Add image
+                <Plus className="w-4 h-4" /> Add Image
               </Button>
             </div>
 
@@ -3902,14 +3902,14 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     <Button
                       variant="ghost"
                       size="sm"
-                      title="Duplicate video"
+                      title="Duplicate Video"
                       onClick={() => duplicateVideo(section.id, i)}
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
-                <Field label="Video link">
+                <Field label="Video Link">
                   <Input
                     value={v.url}
                     placeholder="YouTube, Vimeo, or video file link"
@@ -3917,13 +3917,13 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                   />
                 </Field>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Caption (optional)">
+                  <Field label="Caption (Optional)">
                     <Input
                       value={v.caption ?? ""}
                       onChange={(e) => patchVideo(section.id, i, { caption: e.target.value })}
                     />
                   </Field>
-                  <Field label="Cover image link (optional)">
+                  <Field label="Cover Image Link (Optional)">
                     <Input
                       value={v.poster ?? ""}
                       onChange={(e) => patchVideo(section.id, i, { poster: e.target.value })}
@@ -3950,7 +3950,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                       checked={!!v.autoplay}
                       onChange={(e) => patchVideo(section.id, i, { autoplay: e.target.checked })}
                     />
-                    Autoplay (muted)
+                    Autoplay (Muted)
                   </label>
                   <label className="flex items-center gap-2">
                     <input
@@ -3962,7 +3962,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                         patchVideo(section.id, i, on ? { textOnTop: true, autoplay: true, loop: true } : { textOnTop: false });
                       }}
                     />
-                    Show text on top
+                    Show Text on Top
                   </label>
                   <label className="flex items-center gap-2">
                     <input
@@ -3978,13 +3978,13 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                       checked={v.controls !== false}
                       onChange={(e) => patchVideo(section.id, i, { controls: e.target.checked })}
                     />
-                    Show controls
+                    Show Controls
                   </label>
                 </div>
               </div>
             ))}
             <Button variant="outline" size="sm" className="gap-2" onClick={() => addVideoSlot(section.id)}>
-              <Plus className="w-4 h-4" /> Add video
+              <Plus className="w-4 h-4" /> Add Video
             </Button>
           </>
         ) })
@@ -4005,7 +4005,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             patch(section.id, { cards: Object.keys(cards).length ? cards : undefined });
           };
           return (
-            <ToolGroup title="Card outline" icon={RectangleHorizontal} summary={card ? "On" : "Off"}>
+            <ToolGroup title="Card Outline" icon={RectangleHorizontal} summary={card ? "On" : "Off"}>
               {card ? (
                 <div className="flex justify-end">
                   <button type="button" className="text-xs text-muted-foreground underline" onClick={() => setCard(undefined)}>
@@ -4036,7 +4036,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     </select>
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                    Inner space
+                    Inner Space
                     <select
                       className="h-8 rounded-md border bg-background px-2 text-xs text-foreground"
                       value={card.pad ?? 24}
@@ -4056,7 +4056,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     >
                       <option value="">None</option>
                       <option value="cream">White</option>
-                      <option value="sand">Sand tint</option>
+                      <option value="sand">Sand Tint</option>
                       <option value={EMPHASIS_BG}>Emphasis</option>
                     </select>
                   </label>
@@ -4086,10 +4086,10 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         title={title}
         subtitle={`Section ${i + 1} · ${SECTION_LABEL[s.type]}`}
         menu={[
-          ...(i > 0 ? [{ label: "Move up", icon: ArrowUp, onSelect: () => move(s.id, -1) }] : []),
-          ...(i < sections.length - 1 ? [{ label: "Move down", icon: ArrowDown, onSelect: () => move(s.id, 1) }] : []),
-          { label: "Duplicate section", icon: Copy, onSelect: () => duplicateSection(s.id) },
-          { label: "Delete section", icon: Trash2, onSelect: () => remove(s.id), destructive: true },
+          ...(i > 0 ? [{ label: "Move Up", icon: ArrowUp, onSelect: () => move(s.id, -1) }] : []),
+          ...(i < sections.length - 1 ? [{ label: "Move Down", icon: ArrowDown, onSelect: () => move(s.id, 1) }] : []),
+          { label: "Duplicate Section", icon: Copy, onSelect: () => duplicateSection(s.id) },
+          { label: "Delete Section", icon: Trash2, onSelect: () => remove(s.id), destructive: true },
         ]}
       />
     );
@@ -4101,7 +4101,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         if (section.chunk !== undefined) return (
           <div className="space-y-3 rounded-md border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground">
             <p><span className="font-medium text-foreground">{section.title}</span> hasn't been made editable yet, so it shows exactly as built.</p>
-            <Button size="sm" className="gap-1.5" onClick={() => convertChunk(section.id)}><Pencil className="h-3.5 w-3.5" /> Edit this section</Button>
+            <Button size="sm" className="gap-1.5" onClick={() => convertChunk(section.id)}><Pencil className="h-3.5 w-3.5" /> Edit This Section</Button>
           </div>
         );
         return (
@@ -4117,7 +4117,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
       case "captionedImages":
         return (
           <div className="space-y-3">
-            <Field label="Heading (optional)">
+            <Field label="Heading (Optional)">
               <Input
                 value={section.heading ?? ""}
                 onChange={(e) => patch(section.id, { heading: e.target.value })}
@@ -4125,7 +4125,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             </Field>
             {section.heading ? (
               <TextStyleFields
-                label="Heading style"
+                label="Heading Style"
                 value={section.textStyle}
                 defaults={{ font: "serif", color: "ink", size: "md" }}
                 onChange={(v) => patch(section.id, { textStyle: v })}
@@ -4158,14 +4158,14 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             </div>
             {section.type !== "imageRow" && (
               <TextStyleFields
-                label="Caption style"
+                label="Caption Style"
                 value={section.captionStyle}
                 defaults={{ font: "sans", color: section.type === "carousel" ? "cream" : "stone", size: "sm" }}
                 onChange={(v) => patch(section.id, { captionStyle: v })}
               />
             )}
             <Button variant="outline" size="sm" className="gap-2" onClick={() => addImageSlot(section.id)}>
-              <Plus className="w-4 h-4" /> Add image
+              <Plus className="w-4 h-4" /> Add Image
             </Button>
           </div>
         );
@@ -4174,41 +4174,41 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         return (
           <div className="space-y-3">
             {ImageEditor({ section, index: -1, image: section.image })}
-            <Field label="Eyebrow (optional)">
+            <Field label="Eyebrow (Optional)">
               <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
             </Field>
             <Field label="Heading">
               <Input value={section.heading} onChange={(e) => patch(section.id, { heading: e.target.value })} />
             </Field>
-            <Field label="Text (optional)">
+            <Field label="Text (Optional)">
               <Textarea rows={3} value={plainText(section.body)} onChange={(e) => patch(section.id, { body: e.target.value })} />
             </Field>
             <TextStyleFields
-              label="Heading style"
+              label="Heading Style"
               value={section.textStyle}
               defaults={{ font: "serif", color: "cream", size: "xl" }}
               onChange={(v) => patch(section.id, { textStyle: v })}
             />
             <TextStyleFields
-              label="Text style"
+              label="Text Style"
               value={section.bodyStyle}
               defaults={{ font: "sans", color: "cream", size: "md" }}
               onChange={(v) => patch(section.id, { bodyStyle: v })}
             />
             <TextStyleFields
-              label="Eyebrow style"
+              label="Eyebrow Style"
               value={withEyebrowDefaults(section.eyebrowStyle)}
               defaults={{ font: "sans", color: "cream", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
             />
             <TextStyleFields
-              label="Button label style"
+              label="Button Label Style"
               value={section.labelStyle}
               defaults={{ font: "sans", color: "cream", size: "sm" }}
               onChange={(v) => patch(section.id, { labelStyle: v })}
             />
             <div className="flex flex-wrap gap-4">
-              <Field label="Text position">
+              <Field label="Text Position">
                 <div>
                   <Choice
                     value={section.align}
@@ -4236,10 +4236,10 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               </Field>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Button label (optional)">
+              <Field label="Button Label (Optional)">
                 <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
               </Field>
-              <Field label="Button link">
+              <Field label="Button Link">
                 <Input value={section.buttonHref ?? ""} placeholder="/collections" onChange={(e) => patch(section.id, { buttonHref: e.target.value })} />
               </Field>
             </div>
@@ -4250,7 +4250,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         return (
           <div className="space-y-3">
             {ImageEditor({ section, index: -1, image: section.image })}
-            <Field label="Image side">
+            <Field label="Image Side">
               <div>
                 <Choice
                   value={section.imageSide}
@@ -4262,44 +4262,44 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 />
               </div>
             </Field>
-            <Field label="Eyebrow (optional)">
+            <Field label="Eyebrow (Optional)">
               <Input value={section.eyebrow ?? ""} onChange={(e) => patch(section.id, { eyebrow: e.target.value })} />
             </Field>
             <Field label="Heading">
               <Input value={section.heading} onChange={(e) => patch(section.id, { heading: e.target.value })} />
             </Field>
-            <Field label="Text (optional)">
+            <Field label="Text (Optional)">
               <Textarea rows={4} value={plainText(section.body)} onChange={(e) => patch(section.id, { body: e.target.value })} />
             </Field>
             <TextStyleFields
-              label="Heading style"
+              label="Heading Style"
               value={section.textStyle}
               defaults={{ font: "serif", color: "ink", size: "xl" }}
               onChange={(v) => patch(section.id, { textStyle: v })}
             />
             <TextStyleFields
-              label="Text style"
+              label="Text Style"
               value={section.bodyStyle}
               defaults={{ font: "sans", color: "stone", size: "md" }}
               onChange={(v) => patch(section.id, { bodyStyle: v })}
             />
             <TextStyleFields
-              label="Eyebrow style"
+              label="Eyebrow Style"
               value={withEyebrowDefaults(section.eyebrowStyle)}
               defaults={{ font: "sans", color: "stone", size: "sm" }}
               onChange={(v) => patch(section.id, { eyebrowStyle: v })}
             />
             <TextStyleFields
-              label="Button label style"
+              label="Button Label Style"
               value={section.labelStyle}
               defaults={{ font: "sans", color: "ink", size: "sm" }}
               onChange={(v) => patch(section.id, { labelStyle: v })}
             />
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Button label (optional)">
+              <Field label="Button Label (Optional)">
                 <Input value={section.buttonLabel ?? ""} onChange={(e) => patch(section.id, { buttonLabel: e.target.value })} />
               </Field>
-              <Field label="Button link">
+              <Field label="Button Link">
                 <Input value={section.buttonHref ?? ""} placeholder="/collections" onChange={(e) => patch(section.id, { buttonHref: e.target.value })} />
               </Field>
             </div>
@@ -4343,7 +4343,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               </Field>
             </div>
             <TextStyleFields
-              label="Label style"
+              label="Label Style"
               value={section.labelStyle}
               defaults={{ font: "sans", color: section.variant === "solid" ? "cream" : "ink", size: "sm" }}
               onChange={(v) => patch(section.id, { labelStyle: v })}
@@ -4395,7 +4395,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               ))}
             </div>
             <Button variant="outline" size="sm" className="gap-2" onClick={() => add("free")}>
-              <Plus className="w-4 h-4" /> Add another section
+              <Plus className="w-4 h-4" /> Add Another Section
             </Button>
           </div>
           {embeddedSel ? (() => {
@@ -4428,7 +4428,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
           </Button>
           <div className="min-w-0">
             <h1 className="font-serif text-base truncate">
-              {object ? object.name : "Object design"}
+              {object ? object.name : "Object Design"}
             </h1>
             {object && (
               <p className="font-mono text-[11px] text-muted-foreground truncate">/objects/{object.slug_id}</p>
@@ -4488,7 +4488,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             to={`/manage/design?page=${params.get("returnPage")}&mode=edit`}
             className="inline-flex items-center gap-2 rounded-md bg-secondary px-3 py-2 text-sm font-medium text-foreground hover:bg-secondary/80"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to page editor
+            <ArrowLeft className="w-4 h-4" /> Back to Page Editor
           </Link>
         </div>
       )}
@@ -4512,7 +4512,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             <Button
               variant="outline"
               size="icon"
-              title="Show objects"
+              title="Show Objects"
               onClick={() => setLibraryOpen(true)}
             >
               <PanelLeftOpen className="w-4 h-4" />
@@ -4522,9 +4522,9 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         <aside className="space-y-3">
           <div className="flex items-center gap-2">
             <Button className="flex-1 gap-2" onClick={() => setCreateOpen(true)}>
-              <Plus className="w-4 h-4" /> New object
+              <Plus className="w-4 h-4" /> New Object
             </Button>
-            <Button variant="outline" size="icon" title="Hide objects" onClick={() => setLibraryOpen(false)}>
+            <Button variant="outline" size="icon" title="Hide Objects" onClick={() => setLibraryOpen(false)}>
               <PanelLeftClose className="w-4 h-4" />
             </Button>
           </div>
@@ -4546,7 +4546,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                   {parseSections(o.content).length
                     ? `${parseSections(o.content).length} sections`
                     : o.component_key
-                      ? "Built in code"
+                      ? "Built in Code"
                       : "Empty"}
                 </div>
                 </div>
@@ -4633,7 +4633,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               {!embedded && (
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" className="gap-2" onClick={() => add("free")}>
-                  <Plus className="w-4 h-4" /> Add another section
+                  <Plus className="w-4 h-4" /> Add Another Section
                 </Button>
               </div>
               )}
@@ -4659,8 +4659,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                   >
                     <button
                       type="button"
-                      title="Drag to move"
-                      aria-label="Drag to move"
+                      title="Drag to Move"
+                      aria-label="Drag to Move"
                       onMouseDown={(e) => {
                         if (e.button !== 0) return;
                         e.preventDefault();
@@ -4682,23 +4682,23 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     <div className={`absolute right-2 top-2 z-20 ${active ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 bg-background/80" aria-label="Block options menu" title="More">
+                          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 bg-background/80" aria-label="Block Options Menu" title="More">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem disabled={i === 0} onSelect={() => move(s.id, -1)} className="gap-2"><ArrowUp className="h-4 w-4" /> Move up</DropdownMenuItem>
-                          <DropdownMenuItem disabled={i === sections.length - 1} onSelect={() => move(s.id, 1)} className="gap-2"><ArrowDown className="h-4 w-4" /> Move down</DropdownMenuItem>
+                          <DropdownMenuItem disabled={i === 0} onSelect={() => move(s.id, -1)} className="gap-2"><ArrowUp className="h-4 w-4" /> Move Up</DropdownMenuItem>
+                          <DropdownMenuItem disabled={i === sections.length - 1} onSelect={() => move(s.id, 1)} className="gap-2"><ArrowDown className="h-4 w-4" /> Move Down</DropdownMenuItem>
                           {s.type === "free" && (
                             <DropdownMenuItem
                               className="gap-2"
                               onSelect={() => { setActiveId(s.id); setFocusPart(""); setOptionsFor(optionsFor === s.id ? "" : s.id); }}
-                            ><Pencil className="h-4 w-4" /> Block options</DropdownMenuItem>
+                            ><Pencil className="h-4 w-4" /> Block Options</DropdownMenuItem>
                           )}
-                          <DropdownMenuItem onSelect={() => duplicateSection(s.id)} className="gap-2"><Copy className="h-4 w-4" /> Duplicate block</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => remove(s.id)} className="gap-2"><Trash2 className="h-4 w-4" /> Delete block</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => duplicateSection(s.id)} className="gap-2"><Copy className="h-4 w-4" /> Duplicate Block</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => remove(s.id)} className="gap-2"><Trash2 className="h-4 w-4" /> Delete Block</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => setCollapsedBlocks((c) => ({ ...c, [s.id]: !c[s.id] }))} className="gap-2">
-                            <ChevronDown className={`h-4 w-4 ${collapsedBlocks[s.id] ? "" : "rotate-180"}`} /> {collapsedBlocks[s.id] ? "Expand block" : "Collapse block"}
+                            <ChevronDown className={`h-4 w-4 ${collapsedBlocks[s.id] ? "" : "rotate-180"}`} /> {collapsedBlocks[s.id] ? "Expand Block" : "Collapse Block"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -4708,8 +4708,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                         <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                         <button
                           type="button"
-                          title="Expand block"
-                          aria-label="Expand block"
+                          title="Expand Block"
+                          aria-label="Expand Block"
                           aria-expanded={false}
                           onClick={(e) => { e.stopPropagation(); setCollapsedBlocks((c) => ({ ...c, [s.id]: false })); }}
                           className="rounded p-0.5 text-muted-foreground hover:bg-background hover:text-foreground"
@@ -4724,7 +4724,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     {s.type === "locked" && s.chunk !== undefined ? (
                       <div className="flex items-center justify-between gap-3 border-b border-dashed bg-muted/50 px-4 py-2 text-xs text-muted-foreground">
                         <span><span className="font-semibold text-foreground">{s.title}</span> is shown exactly as built. Edit it to change its wording, pictures and layout.</span>
-                        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => convertChunk(s.id)}><Pencil className="h-3.5 w-3.5" /> Edit this section</Button>
+                        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => convertChunk(s.id)}><Pencil className="h-3.5 w-3.5" /> Edit This Section</Button>
                       </div>
                     ) : s.type === "locked" && (
                       <div className="border-b border-dashed bg-muted/50 px-4 py-2 text-xs text-muted-foreground">
@@ -4927,8 +4927,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 label="Sits"
                 value={sec.layout === "behind" ? "behind" : "stacked"}
                 options={[
-                  { value: "stacked", label: "In place", icon: Rows2 },
-                  { value: "behind", label: "Behind text", icon: Layers },
+                  { value: "stacked", label: "In Place", icon: Rows2 },
+                  { value: "behind", label: "Behind Text", icon: Layers },
                 ]}
                 onChange={(v) => patch(sec.id, { layout: v })}
               />
@@ -5084,8 +5084,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               variant="ghost"
               size="sm"
               className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-              title="Delete this item"
-              aria-label="Delete this item"
+              title="Delete This Item"
+              aria-label="Delete This Item"
               onClick={() => {
                 if (imgText) removeImageText(toolbar.sectionId, imgText.img, imgText.t);
                 else if (extraIdx >= 0) removeExtra(toolbar.sectionId, extraIdx);
@@ -5300,7 +5300,7 @@ function BlockHeaderControls({ active, onToggle, actions }: { active: boolean; o
       {hidden.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" title="More" aria-label="More block controls">
+            <Button variant="ghost" size="sm" title="More" aria-label="More Block Controls">
               <MoreHorizontal className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>

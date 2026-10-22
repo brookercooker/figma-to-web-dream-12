@@ -11,10 +11,10 @@ function ReviewErrorDetails() {
   const review = state?.draft?.review;
   if (review?.state !== "error") return null;
   return (
-    <div role="region" aria-label="Review error details" className="border-b px-6 py-4 space-y-2 text-sm">
+    <div role="region" aria-label="Review Error Details" className="border-b px-6 py-4 space-y-2 text-sm">
       <p className="font-medium whitespace-pre-wrap break-words">{review.headline || "No reason was reported by the design service."}</p>
       {review.summary && <p className="whitespace-pre-wrap break-words">{review.summary}</p>}
-      <p className="text-xs text-muted-foreground">{review.retry === true ? "Staff can retry this themselves" : "Needs a developer"}</p>
+      <p className="text-xs text-muted-foreground">{review.retry === true ? "Staff can retry this themselves" : "Needs a Developer"}</p>
     </div>
   );
 }
@@ -64,14 +64,14 @@ export default function DeveloperReviewPage() {
           <Button asChild variant="ghost" size="sm" className="gap-2">
             <Link to="/manage/pages"><ArrowLeft className="w-4 h-4" /> Site Manager</Link>
           </Button>
-          <h1 className="text-base font-medium tracking-tight">Developer review</h1>
+          <h1 className="text-base font-medium tracking-tight">Developer Review</h1>
         </div>
       </header>
       <ReviewErrorDetails />
       {RELAY_IS_HOSTED ? (
         <iframe
           ref={iframeRef}
-          title="Developer review"
+          title="Developer Review"
           referrerPolicy="no-referrer"
           src={`${RELAY}/dev`}
           className="flex-1 w-full border-0"

@@ -49,7 +49,7 @@ export default function PageSaveReminderButton() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save this page</DialogTitle>
+            <DialogTitle>Save This Page</DialogTitle>
           </DialogHeader>
           <div className="text-sm text-ink/80 space-y-2">
             <p>
@@ -63,7 +63,7 @@ export default function PageSaveReminderButton() {
             </p>
           </div>
           <DialogFooter>
-            <Button onClick={() => setOpen(false)}>Got it</Button>
+            <Button onClick={() => setOpen(false)}>Got It</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

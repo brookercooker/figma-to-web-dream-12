@@ -66,15 +66,15 @@ export default function ApprovalCard({ approval, onAnswered }: { approval: Appro
   };
 
   return (
-    <div role="group" aria-label="Approval needed" className="self-stretch rounded-lg border border-amber-300 bg-amber-50 p-3 space-y-2 text-xs text-amber-900">
+    <div role="group" aria-label="Approval Needed" className="self-stretch rounded-lg border border-amber-300 bg-amber-50 p-3 space-y-2 text-xs text-amber-900">
       <h3 className="flex items-center gap-1.5 text-sm font-semibold">
-        <ShieldAlert className="h-4 w-4 shrink-0" aria-hidden="true" /> Approval needed
+        <ShieldAlert className="h-4 w-4 shrink-0" aria-hidden="true" /> Approval Needed
       </h3>
       <p className="font-bold">{view.title}</p>
       <p>{isPlan ? "The builder wrote a plan and is waiting for your go-ahead." : "The builder paused this change and is waiting for a decision."}</p>
       {approval.detail && (isPlan ? (
         <div className="space-y-1">
-          <h4 className="font-semibold">The plan</h4>
+          <h4 className="font-semibold">The Plan</h4>
           <pre className="rounded-md border border-amber-300 bg-background p-2 whitespace-pre-wrap break-words text-xs max-h-64 overflow-auto font-sans">{approval.detail}</pre>
         </div>
       ) : (
@@ -87,7 +87,7 @@ export default function ApprovalCard({ approval, onAnswered }: { approval: Appro
       {view.editorUrl && (
         <Button asChild size="sm" variant="outline" className="gap-1.5">
           <a href={view.editorUrl} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> Open in the builder's editor
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> Open in the Builder's Editor
           </a>
         </Button>
       )}

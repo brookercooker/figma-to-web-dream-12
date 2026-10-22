@@ -767,7 +767,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                   <Pencil className="w-3.5 h-3.5" /> Edit
                 </button>
               </div>
-              <div className="inline-flex rounded-md border overflow-hidden mr-1" role="group" aria-label="Screen size">
+              <div className="inline-flex rounded-md border overflow-hidden mr-1" role="group" aria-label="Screen Size">
                 {([["desktop", Monitor, "Desktop"], ["tablet", Tablet, "Tablet"], ["phone", Smartphone, "Phone"]] as const).map(([d, Icon, label]) => (
                   <button
                     key={d}
@@ -786,20 +786,20 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   ) : null;
   const addButtons = (
     <>
-              <Button variant="outline" size="sm" className="gap-2" title="Add an object" onClick={() => insertAt("object", pageInsertPosition(blocks, activeId))}>
+              <Button variant="outline" size="sm" className="gap-2" title="Add an Object" onClick={() => insertAt("object", pageInsertPosition(blocks, activeId))}>
                 <Boxes className="w-4 h-4" /> Object
               </Button>
-              <Button variant="outline" size="sm" className="gap-2" title="Add an image" onClick={() => addBlock("image")}>
+              <Button variant="outline" size="sm" className="gap-2" title="Add an Image" onClick={() => addBlock("image")}>
                 <ImageIcon className="w-4 h-4" /> Image
               </Button>
-              <Button variant="outline" size="sm" className="gap-2" title="Add a video" onClick={() => addBlock("video")}>
+              <Button variant="outline" size="sm" className="gap-2" title="Add a Video" onClick={() => addBlock("video")}>
                 <Film className="w-4 h-4" /> Video
               </Button>
     </>
   );
 
   const quickAddBar = embedded ? (
-    <div role="toolbar" aria-label="Add to this page" className="sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b bg-background/95 px-3 py-2 backdrop-blur">
+    <div role="toolbar" aria-label="Add to This Page" className="sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b bg-background/95 px-3 py-2 backdrop-blur">
       <span className="text-xs text-muted-foreground">Add to this page:</span>
       {addButtons}
     </div>
@@ -830,7 +830,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                             <>
                               <button
                                 type="button"
-                                title={collapsed[b.id] ? "Expand object" : "Collapse object"}
+                                title={collapsed[b.id] ? "Expand Object" : "Collapse Object"}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
@@ -838,7 +838,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                                 className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
                               >
                                 {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                <span>Object: {b.name ?? "Saved object"}</span>
+                                <span>Object: {b.name ?? "Saved Object"}</span>
                               </button>
                               <ToolButton title="Replace" onClick={() => setObjectFor(b.id)}>
                                 <Boxes className="w-4 h-4" />
@@ -855,7 +855,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                           ) : b.type === "heading" || b.type === "text" ? (
                             <>
                               <ToolButton
-                                title={b.type === "heading" ? "Turn into text" : "Turn into heading"}
+                                title={b.type === "heading" ? "Turn into Text" : "Turn into Heading"}
                                 active={b.type === "heading"}
                                 onClick={() => update(b.id, { type: b.type === "heading" ? "text" : "heading" } as Partial<Block>)}
                               >
@@ -889,12 +889,12 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                                 <span>{b.type === "video" ? "Video" : "Image"}</span>
                               </button>
                               {b.type === "video" ? (
-                                <ToolButton title="Replace video" onClick={() => setVideoFor(b.id)}>
+                                <ToolButton title="Replace Video" onClick={() => setVideoFor(b.id)}>
                                   <Film className="w-4 h-4" />
                                   <span className="ml-1 text-xs">Replace</span>
                                 </ToolButton>
                               ) : (
-                                <ToolButton title="Replace image" onClick={() => setPickerFor(b.id)}>
+                                <ToolButton title="Replace Image" onClick={() => setPickerFor(b.id)}>
                                   <ImageIcon className="w-4 h-4" />
                                   <span className="ml-1 text-xs">Replace</span>
                                 </ToolButton>
@@ -919,12 +919,12 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                           )}
                           <span className="mx-1 h-5 w-px bg-border" />
                           {(i > 0 || (hasExisting && currentFirst)) && (
-                            <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
+                            <ToolButton title="Move Up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
                           )}
                           {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
-                            <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                            <ToolButton title="Move Down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
                           )}
-                          <ToolButton title="Delete block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
+                          <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
     </>
   );
 
@@ -944,19 +944,19 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       ) : quick && showLive ? (
         <>
           {Object.keys(inlineEdits).length > 0 && (
-            <Button variant="outline" size="sm" className="self-start" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
+            <Button variant="outline" size="sm" className="self-start" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo All Changes</Button>
           )}
           <div>{stylePanel}</div>
         </>
       ) : (
         <>
           <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Add a section</p>
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Add a Section</p>
             <div className="flex flex-wrap gap-2">{addButtons}</div>
           </div>
           {page.id && (
             <div className="space-y-1">
-              <div role="radiogroup" aria-label="Page status" className="inline-flex rounded-md border p-0.5">
+              <div role="radiogroup" aria-label="Page Status" className="inline-flex rounded-md border p-0.5">
                 {(["draft", "ready"] as const).map((s) => (
                   <button
                     key={s}
@@ -984,12 +984,12 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                       {blockLabel(b)}
                     </button>
                     {(i > 0 || (hasExisting && currentFirst)) && (
-                      <ToolButton title="Move up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
+                      <ToolButton title="Move Up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
                     )}
                     {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
-                      <ToolButton title="Move down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                      <ToolButton title="Move Down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
                     )}
-                    <ToolButton title="Delete block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
+                    <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
                   </li>
                 ))}
               </ol>
@@ -1000,7 +1000,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
             if (i < 0 || showLive) return null;
             return (
               <div className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Selected section</p>
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Selected Section</p>
                 <div className="flex flex-wrap items-center gap-1 rounded-md border p-2">{blockTools(blocks[i], i)}</div>
               </div>
             );
@@ -1015,11 +1015,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       {addRow(currentFirst ? 0 : blocks.length, "Add a section above")}
       <div className="overflow-hidden rounded-lg border bg-background">
         <div className="flex items-center gap-2 border-b bg-muted px-3 py-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.14em]">Current page</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.14em]">Current Page</span>
           <span className="text-xs text-muted-foreground">Built in code — shown here so you can add around it</span>
           {codedPages[previewSrc(page.path)] && (
             <Button size="sm" className="ml-auto gap-2" disabled={importing} onClick={() => setImporting(true)}>
-              <Pencil className="w-4 h-4" /> {importing ? "Breaking into sections…" : "Make editable"}
+              <Pencil className="w-4 h-4" /> {importing ? "Breaking into sections…" : "Make Editable"}
             </Button>
           )}
           <Button
@@ -1055,7 +1055,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       {/* Page list (not when embedded in the Site Manager's edit mode) */}
       {embedded ? null : !listOpen ? (
         <aside className="lg:sticky lg:top-4 lg:self-start">
-          <Button variant="outline" size="icon" title="Show pages" onClick={() => setListOpen(true)}>
+          <Button variant="outline" size="icon" title="Show Pages" onClick={() => setListOpen(true)}>
             <PanelLeftOpen className="w-4 h-4" />
           </Button>
         </aside>
@@ -1063,16 +1063,16 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       <aside className="space-y-3">
         <div className="flex items-center gap-2">
           <Button className="flex-1 gap-2" onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4" /> New page
+            <Plus className="w-4 h-4" /> New Page
           </Button>
-          <Button variant="outline" size="icon" title="Hide pages" onClick={() => setListOpen(false)}>
+          <Button variant="outline" size="icon" title="Hide Pages" onClick={() => setListOpen(false)}>
             <PanelLeftClose className="w-4 h-4" />
           </Button>
         </div>
         {(<>
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search pages or labels" />
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>Sort by</span>
+          <span>Sort By</span>
           <div className="inline-flex rounded-md border p-0.5">
             {([["name", "Name"], ["recent", "Recently edited"], ["label", "Label"]] as const).map(([k, l]) => (
               <button key={k} type="button" onClick={() => { setSortBy(k); if (k !== "label") setTagFilters([]); }}
@@ -1127,7 +1127,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                 </div>
               )}
               </div>
-              <span role="button" tabIndex={0} title="Delete page"
+              <span role="button" tabIndex={0} title="Delete Page"
                 onClick={(e) => { e.stopPropagation(); setDeleting(p); }}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setDeleting(p); } }}
                 className="shrink-0 rounded p-1 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive focus:opacity-100">
@@ -1185,7 +1185,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                       Click any wording to type over it, or select wording or a picture to change its style on the right. Changes save on their own.
                     </p>
                     {Object.keys(inlineEdits).length > 0 && (
-                      <Button variant="ghost" size="sm" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo all changes</Button>
+                      <Button variant="ghost" size="sm" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo All Changes</Button>
                     )}
                   </div>
                 )}
@@ -1256,7 +1256,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
             {quickAddBar}
             <div ref={blockCanvasRef} {...blockLinkGuard} className={embedded ? "bg-background" : "rounded-lg border bg-background overflow-hidden"} style={deviceStyle}>
               {!hasExisting && (
-                <ChromePreview label="Site header">
+                <ChromePreview label="Site Header">
                   <Header />
                 </ChromePreview>
               )}
@@ -1298,8 +1298,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
 
                       <button
                         type="button"
-                        title="Drag to move"
-                        aria-label="Drag to move"
+                        title="Drag to Move"
+                        aria-label="Drag to Move"
                         onMouseDown={(e) => startDrag(e, b.id)}
                         className={`absolute -left-7 top-2 z-20 cursor-grab rounded p-1 text-muted-foreground transition-opacity hover:bg-muted active:cursor-grabbing ${
                           active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -1309,7 +1309,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                       </button>
                       {active && !embedded && (
                         <div
-                          title="Drag to move"
+                          title="Drag to Move"
                           onMouseDown={(e) => {
                             const t = e.target as HTMLElement;
                             if (t.closest("input,textarea,select,[contenteditable=true]")) return;
@@ -1324,11 +1324,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                       {b.type === "object" ? (
                         <div className="py-2">
                           {!active && (
-                            <div title="Drag to move" onMouseDown={(e) => startDrag(e, b.id)} className="flex w-full cursor-grab items-center gap-1 rounded hover:bg-muted/40 active:cursor-grabbing">
+                            <div title="Drag to Move" onMouseDown={(e) => startDrag(e, b.id)} className="flex w-full cursor-grab items-center gap-1 rounded hover:bg-muted/40 active:cursor-grabbing">
                             <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
 <button
                               type="button"
-                              title={collapsed[b.id] ? "Expand object" : "Collapse object"}
+                              title={collapsed[b.id] ? "Expand Object" : "Collapse Object"}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
@@ -1336,7 +1336,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                               className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
                             >
                               {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              <span>Object: {b.name ?? "Saved object"}</span>
+                              <span>Object: {b.name ?? "Saved Object"}</span>
                             </button>
                             </div>
                           )}
@@ -1349,7 +1349,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                       ) : b.type === "image" || b.type === "video" ? (
                         <div className="py-2">
                           {!active && (
-                            <div title="Drag to move" onMouseDown={(e) => startDrag(e, b.id)} className="flex w-full cursor-grab items-center gap-1 rounded hover:bg-muted/40 active:cursor-grabbing">
+                            <div title="Drag to Move" onMouseDown={(e) => startDrag(e, b.id)} className="flex w-full cursor-grab items-center gap-1 rounded hover:bg-muted/40 active:cursor-grabbing">
                             <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
 <button
                               type="button"
@@ -1374,7 +1374,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                                   onClick={() => (b.type === "video" ? setVideoFor(b.id) : setPickerFor(b.id))}
                                   className="w-full border border-dashed rounded-lg py-12 text-sm text-muted-foreground hover:bg-muted/40"
                                 >
-                                  {b.type === "video" ? "Choose a video" : "Choose an image"}
+                                  {b.type === "video" ? "Choose a Video" : "Choose an Image"}
                                 </button>
                               )}
                               {active && (
@@ -1408,7 +1408,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
               </div>
 
               {!hasExisting && (
-                <ChromePreview label="Site footer">
+                <ChromePreview label="Site Footer">
                   <Footer />
                 </ChromePreview>
               )}

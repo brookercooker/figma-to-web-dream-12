@@ -65,19 +65,19 @@ export default function CreatePageDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Add a static page</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Add a Static Page</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
             Give your page a name and we'll create it for you — you can add its
             content next. It'll be available right away.
           </p>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Page name</label>
+            <label className="text-xs text-muted-foreground mb-1 block">Page Name</label>
             <Input value={name} onChange={(e) => setName(e.target.value)}
               placeholder="e.g. New Arrivals" autoFocus />
           </div>
           <div className="text-xs">
-            <div className="text-muted-foreground mb-1">Page address</div>
+            <div className="text-muted-foreground mb-1">Page Address</div>
             <div className={`font-mono px-2 py-1.5 rounded border ${(dupe || reserved) ? "border-destructive text-destructive" : "bg-muted/40"}`}>
               {route ? `yoursite.com${route}` : <span className="opacity-60">—</span>}
             </div>
@@ -97,7 +97,7 @@ export default function CreatePageDialog({
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button onClick={submit} disabled={!valid || saving}>
-              {saving ? "Creating…" : "Create page"}
+              {saving ? "Creating…" : "Create Page"}
             </Button>
           </div>
         </div>

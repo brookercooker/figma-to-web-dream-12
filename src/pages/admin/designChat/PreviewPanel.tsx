@@ -33,7 +33,7 @@ export default function PreviewPanel() {
             <iframe
               key={f.id}
               src={f.url}
-              title={f.id === preview.shownId || preview.shownId === 0 ? "Design preview" : "Design preview (loading)"}
+              title={f.id === preview.shownId || preview.shownId === 0 ? "Design Preview" : "Design Preview (Loading)"}
               referrerPolicy="origin"
               data-preview-shown={f.id === preview.shownId || preview.shownId === 0 ? "true" : "false"}
               onLoad={() => preview.finish(f.id)}
@@ -62,7 +62,7 @@ export default function PreviewPanel() {
         )}
 
         {inFull && !drawing.capturing && (
-          <Button type="button" size="sm" aria-label="Exit full screen" title="Exit full screen" className="absolute right-4 top-4 z-40 gap-2 bg-foreground/80 text-background shadow-sm hover:bg-foreground/90" onClick={toggleFull}>
+          <Button type="button" size="sm" aria-label="Exit Full Screen" title="Exit Full Screen" className="absolute right-4 top-4 z-40 gap-2 bg-foreground/80 text-background shadow-sm hover:bg-foreground/90" onClick={toggleFull}>
             <Minimize2 className="h-4 w-4" /> Minimize
           </Button>
         )}

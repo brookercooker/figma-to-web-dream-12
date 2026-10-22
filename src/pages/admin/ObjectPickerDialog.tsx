@@ -47,7 +47,7 @@ export default function ObjectPickerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[88vh] flex flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Add an object</DialogTitle>
+          <DialogTitle>Add an Object</DialogTitle>
         </DialogHeader>
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search objects" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 min-h-0 overflow-y-auto pr-1">

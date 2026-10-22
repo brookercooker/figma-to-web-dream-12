@@ -65,7 +65,7 @@ export default function PagePreviewDialog({
                   Refresh Thumbnail and Preview Images
                 </Button>
                 <Button variant="outline" size="sm" onClick={openLive} className="gap-1.5">
-                  <ExternalLink className="w-4 h-4" /> Open in new tab
+                  <ExternalLink className="w-4 h-4" /> Open in New Tab
                 </Button>
               </div>
             )}

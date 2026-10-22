@@ -16,7 +16,7 @@ export const fmtSize = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).t
 // ---- the chat history: only what the person can use ------------------------------------------
 const NOTES: [RegExp, (text: string) => string][] = [
   [/paused for a check-in/i, () => "This change is paused for a check-in that can only be answered in the builder's own editor. Someone with access to the builder's editor needs to continue it there, or you can try rewording the request."],
-  [/taking longer than 15 minutes/i, () => "This is taking longer than usual. It may still finish. You can press Submit for review later to put your changes live."],
+  [/taking longer than 15 minutes/i, () => "This is taking longer than usual. It may still finish. You can press Submit for Review later to put your changes live."],
   [/^The draft is published/i, () => "Your changes are live."],
   [/^Approval (granted|declined)/i, (t) => t],
 ];
@@ -72,7 +72,7 @@ export function approvalView(a: Approval): { title: string; canApprove: boolean;
     note: a.rule === "editor"
       ? "This one can only be answered in the builder's own editor (for example it involves a secret or key, or a form this chat can't show). Someone with access to the builder's editor can answer it there, or you can decline."
       : a.rule === "never"
-        ? "Publishing can't be approved here. Decline this, then use Submit for review."
+        ? "Publishing can't be approved here. Decline this, then use Submit for Review."
         : "",
     editorUrl: a.rule === "editor" ? a.editorUrl : null,
     approveLabel: a.kind === "plan" ? "Approve plan" : "Approve",
@@ -104,13 +104,13 @@ export function problemsModel(s: RelayState | null): ProblemsModel | null {
   if (!p || p.open <= 0) return null;
   if (p.status === "error") {
     const unchanged = "Nothing was changed on the live site.";
-    const fallback = `${unchanged} Press Submit for review to try again.`;
+    const fallback = `${unchanged} Press Submit for Review to try again.`;
     if (r?.state === "error" && r.retry === true && r.headline) {
       const summary = r.summary || fallback;
       return { title: r.headline, sub: summary.includes(unchanged) ? summary : `${unchanged} ${summary}`, items: [] };
     }
     return { title: "The review couldn't finish.", sub: fallback, items: [],
-      devNote: "If it keeps happening, a developer can see the details on the Developer review page." };
+      devNote: "If it keeps happening, a developer can see the details on the Developer Review page." };
   }
   if (p.status === "blocked" && r && r.state === "failure") {
     const all = (r.findings || []).filter(blocking);
@@ -119,7 +119,7 @@ export function problemsModel(s: RelayState | null): ProblemsModel | null {
     if (!mine.length) return { title: "A developer needs to review this before it can go live.", sub: "There is nothing you need to change.", items: [] };
     const model: ProblemsModel = {
       title: "These changes can't go live yet.",
-      sub: `Fix ${mine.length === 1 ? "this" : "these"}, then press Submit for review again. You can also send a new request to change or remove it.`,
+      sub: `Fix ${mine.length === 1 ? "this" : "these"}, then press Submit for Review again. You can also send a new request to change or remove it.`,
       items: mine,
     };
     if (dev) model.devNote = dev === 1 ? "One more item needs a developer's review before this can go live." : `${dev} more items need a developer's review before this can go live.`;

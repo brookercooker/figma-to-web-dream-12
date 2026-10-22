@@ -63,10 +63,10 @@ interface Vid {
 
 type Field = "all" | "name" | "id" | "description" | "alt" | "tags" | "used_on";
 const FIELDS: { v: Field; label: string }[] = [
-  { v: "all", label: "All fields" },
+  { v: "all", label: "All Fields" },
   { v: "name", label: "Name" },
   { v: "description", label: "Description" },
-  { v: "alt", label: "Alt text" },
+  { v: "alt", label: "Alt Text" },
   { v: "tags", label: "Labels" },
   { v: "used_on", label: "Used On (page)" },
 ];
@@ -703,7 +703,7 @@ export default function VideoTab() {
             Uploads are capped at 150 MB per file. For anything larger, upload to YouTube and paste the link below.
           </div>
 
-          <input ref={fileRef} type="file" accept="video/*" multiple hidden aria-label="Upload videos" onChange={onPick} />
+          <input ref={fileRef} type="file" accept="video/*" multiple hidden aria-label="Upload Videos" onChange={onPick} />
         </div>
 
         {/* External link add row */}
@@ -721,14 +721,14 @@ export default function VideoTab() {
             />
           </div>
           <Button onClick={addExternalLink} disabled={linkBusy || !linkUrl.trim()} className="h-11">
-            Add link
+            Add Link
           </Button>
         </div>
 
         {justAddedIds.length > 0 && justAddedAt && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
             <div>
-              <span className="font-medium text-primary">Just added</span>{" "}
+              <span className="font-medium text-primary">Just Added</span>{" "}
               <span className="text-muted-foreground">
                 {justAddedIds.length} video{justAddedIds.length === 1 ? "" : "s"} · {formatRelative(justAddedAt)} · pre-selected below — apply labels from the sidebar
               </span>
@@ -748,7 +748,7 @@ export default function VideoTab() {
           </div>
           <Input
             placeholder="Search videos…"
-            aria-label="Search videos"
+            aria-label="Search Videos"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="flex-1 border-0 rounded-none h-14 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2"
@@ -757,8 +757,8 @@ export default function VideoTab() {
             value={searchField}
             onChange={(e) => setSearchField(e.target.value as Field)}
             className="text-sm px-3 border-l bg-muted/40 h-14"
-            title="Search field"
-            aria-label="Search field"
+            title="Search Field"
+            aria-label="Search Field"
           >
             {FIELDS.map((f) => <option key={f.v} value={f.v}>in {f.label}</option>)}
           </select>
@@ -767,7 +767,7 @@ export default function VideoTab() {
         <div className="flex flex-wrap gap-2 items-center">
           <div className="flex items-center gap-1.5">
             <label className="text-xs font-medium text-muted-foreground" htmlFor="videos-sort">
-              Sort by
+              Sort By
             </label>
             <select
               id="videos-sort"
@@ -775,8 +775,8 @@ export default function VideoTab() {
               onChange={(e) => setSort(e.target.value as any)}
               className="text-sm border rounded px-2 py-1 h-9"
             >
-              <option value="newest">Newest added</option>
-              <option value="oldest">Oldest added</option>
+              <option value="newest">Newest Added</option>
+              <option value="oldest">Oldest Added</option>
               <option value="name">Name (A–Z)</option>
               <option value="name_desc">Name (Z–A)</option>
             </select>
@@ -784,11 +784,11 @@ export default function VideoTab() {
 
           <div className="h-6 w-px bg-border mx-1" aria-hidden="true" />
 
-          <div className="flex items-center gap-1.5" role="group" aria-label="Time range">
+          <div className="flex items-center gap-1.5" role="group" aria-label="Time Range">
             <span className="text-xs font-medium text-muted-foreground">Show</span>
             {([
               { v: "all", label: "All" },
-              { v: "hour", label: "Last hour" },
+              { v: "hour", label: "Last Hour" },
               { v: "day", label: "Last 24h" },
               { v: "week", label: "Last 7 days" },
             ] as { v: TimeRange; label: string }[]).map((c) => (
@@ -810,7 +810,7 @@ export default function VideoTab() {
 
           <label className="text-xs flex items-center gap-1.5 font-medium text-muted-foreground">
             <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
-            Show archived {archivedCount > 0 && <span className="text-muted-foreground">({archivedCount})</span>}
+            Show Archived {archivedCount > 0 && <span className="text-muted-foreground">({archivedCount})</span>}
           </label>
           <Button
             size="sm" variant="outline" className="gap-1.5 ml-auto"
@@ -822,7 +822,7 @@ export default function VideoTab() {
 
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <label className="font-medium text-muted-foreground" htmlFor="videos-used-on-page">
-            Used on page
+            Used on Page
           </label>
           <select
             id="videos-used-on-page"
@@ -830,7 +830,7 @@ export default function VideoTab() {
             onChange={(e) => setUsedOnPage(e.target.value)}
             className="border rounded px-2 py-1 h-8 text-xs bg-background max-w-[260px]"
           >
-            <option value="all">Any page</option>
+            <option value="all">Any Page</option>
             <option value="none">Not used on any page</option>
             {pageOptions.map((p) => (
               <option key={p.id} value={p.id}>
@@ -896,7 +896,7 @@ export default function VideoTab() {
               >
                 {isJustAdded && (
                   <div className="absolute top-1 left-1/2 -translate-x-1/2 z-10 text-[9px] uppercase tracking-wide font-medium bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
-                    Just added
+                    Just Added
                   </div>
                 )}
                 <input
@@ -914,7 +914,7 @@ export default function VideoTab() {
                     <button
                       onClick={(e) => { e.stopPropagation(); unarchive([v.id]); }}
                       className="bg-background/90 hover:bg-muted border rounded p-1"
-                      title="Restore from archive"
+                      title="Restore from Archive"
                     >
                       <ArchiveRestore className="w-3 h-3" />
                     </button>
@@ -930,14 +930,14 @@ export default function VideoTab() {
                   <button
                     onClick={(e) => { e.stopPropagation(); downloadOriginalVideo(v); }}
                     className="bg-background/90 hover:bg-muted border rounded p-1"
-                    title={v.source_type === "upload" ? "Download original" : "Open source (external video)"}
+                    title={v.source_type === "upload" ? "Download Original" : "Open Source (External Video)"}
                   >
                     <Download className="w-3 h-3" />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); requestDelete([v]); }}
                     className="bg-background/90 hover:bg-destructive hover:text-destructive-foreground border rounded p-1"
-                    title="Delete video"
+                    title="Delete Video"
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -1023,7 +1023,7 @@ export default function VideoTab() {
               Showing {shown.length} of {filtered.length}
             </div>
             <Button size="sm" variant="outline" onClick={() => setVisibleCount((c) => c + 36)}>
-              Load more
+              Load More
             </Button>
           </div>
         )}
@@ -1182,7 +1182,7 @@ function VideoDetail({
       </div>
 
       <div>
-        <div className="text-xs mb-1">Alt text</div>
+        <div className="text-xs mb-1">Alt Text</div>
         <Input value={alt} onChange={(e) => setAlt(e.target.value)} onBlur={() => onSaveField("alt_text", alt)} />
       </div>
 
@@ -1192,7 +1192,7 @@ function VideoDetail({
           <span
             className="text-muted-foreground cursor-help"
             title="The preview image shown for this video before it plays. Upload your own if the automatic thumbnail didn't capture well."
-            aria-label="About thumbnails"
+            aria-label="About Thumbnails"
           >
             ⓘ
           </span>
@@ -1210,12 +1210,12 @@ function VideoDetail({
               className="inline-flex items-center gap-1.5 text-xs border rounded px-2.5 py-1.5 hover:bg-muted cursor-pointer w-fit"
               title="Upload a custom preview image for this video"
             >
-              {v.poster_url ? "Change thumbnail" : "Upload thumbnail"}
+              {v.poster_url ? "Change Thumbnail" : "Upload Thumbnail"}
               <input
                 type="file"
                 accept="image/*"
                 hidden
-                aria-label="Upload video thumbnail"
+                aria-label="Upload Video Thumbnail"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) onUploadThumbnail(f);
@@ -1243,7 +1243,7 @@ function VideoDetail({
         </Button>
         <Button size="sm" variant="outline" onClick={() => downloadOriginalVideo(v)}>
           <Download className="w-4 h-4 mr-1" />
-          {v.source_type === "upload" ? "Download original" : "Open source"}
+          {v.source_type === "upload" ? "Download Original" : "Open Source"}
         </Button>
         {v.archived_at ? (
           <Button size="sm" variant="outline" onClick={onUnarchive}>

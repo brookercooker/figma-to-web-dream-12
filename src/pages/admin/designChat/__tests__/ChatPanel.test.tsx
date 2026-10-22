@@ -57,12 +57,12 @@ describe("manual editing registration", () => {
   it("keeps the editing button in the header outside the form, including while editing", () => {
     const view = render(<MemoryRouter><ChatPanel /></MemoryRouter>);
     const button = screen.getByRole("button", { name: "Edit this page by hand (without the chat)" });
-    const section = screen.getByRole("region", { name: "Design chat" });
+    const section = screen.getByRole("region", { name: "Design Chat" });
     const header = section.querySelector("header");
     expect(header).toContainElement(button);
     expect(section.firstElementChild).toBe(header);
     expect(button.closest("form")).toBeNull();
-    expect(button).toHaveTextContent("Edit manually");
+    expect(button).toHaveTextContent("Edit Manually");
 
     mocks.editing = true;
     view.rerender(<MemoryRouter><ChatPanel /></MemoryRouter>);
@@ -70,7 +70,7 @@ describe("manual editing registration", () => {
     expect(header).toBeVisible();
     expect(header).toContainElement(done);
     expect(done).toBeVisible();
-    expect(done).toHaveTextContent("Done editing");
+    expect(done).toHaveTextContent("Done Editing");
     expect(done).toHaveAttribute("aria-pressed", "true");
     expect(done.closest("form")).toBeNull();
     expect(section.querySelector("form")?.lastElementChild).toContainElement(screen.getByRole("button", { name: /^Send$/ }));
@@ -96,7 +96,7 @@ afterEach(cleanup);
 
 function messageBox() {
   render(<MemoryRouter><ChatPanel /></MemoryRouter>);
-  const input = screen.getByRole("textbox", { name: "Describe a change" });
+  const input = screen.getByRole("textbox", { name: "Describe a Change" });
   fireEvent.change(input, { target: { value: "Make the headline larger" } });
   return input;
 }
@@ -132,7 +132,7 @@ describe("chat sending shortcuts", () => {
   });
 });
 
-describe("Edit manually on the front page", () => {
+describe("Edit Manually on the front page", () => {
   const button = () => screen.getByRole("button", { name: "Edit this page by hand (without the chat)" });
   it("is enabled for /home when the home row is stored at /, and opens that row", async () => {
     mocks.location = "/home";
@@ -160,7 +160,7 @@ describe("Edit manually on the front page", () => {
 
 describe("library items in the chat", () => {
   const image = { kind: "image" as const, id: "img1", name: 'Hero "lamp"', url: "https://cdn.example/hero.webp", labels: ["Lobby"] };
-  const box = () => screen.getByRole("textbox", { name: "Describe a change" });
+  const box = () => screen.getByRole("textbox", { name: "Describe a Change" });
   it("shows a removable chip for each item", () => {
     mocks.refs.references = [image];
     render(<MemoryRouter><ChatPanel /></MemoryRouter>);

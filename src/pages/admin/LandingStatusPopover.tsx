@@ -65,7 +65,7 @@ export default function LandingStatusPopover({ value, onSave, disabled }: Props)
         <button
           type="button"
           className="mt-1 inline-flex items-center gap-0.5 text-[11px] text-primary hover:underline focus:outline-none focus:underline"
-          aria-label="Change status and schedule"
+          aria-label="Change Status and Schedule"
         >
           Change
         </button>
@@ -78,7 +78,7 @@ export default function LandingStatusPopover({ value, onSave, disabled }: Props)
         avoidCollisions
         className="w-[420px] max-w-[calc(100vw-2rem)] p-3"
       >
-        <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Work status</div>
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Work Status</div>
         <div className="flex gap-2 mb-3">
           {(["draft", "ready"] as WorkStatus[]).map((s) => (
             <button
@@ -97,7 +97,7 @@ export default function LandingStatusPopover({ value, onSave, disabled }: Props)
         <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">Schedule</div>
         <div className="grid grid-cols-[1fr_96px] gap-2 mb-2">
           <div>
-            <label className="text-[10px] text-muted-foreground block">Start date</label>
+            <label className="text-[10px] text-muted-foreground block">Start Date</label>
             <Input type="date" value={sd} onChange={(e) => setSd(e.target.value)} className="h-8 text-xs" />
           </div>
           <div>
@@ -107,7 +107,7 @@ export default function LandingStatusPopover({ value, onSave, disabled }: Props)
         </div>
         <div className="grid grid-cols-[1fr_96px] gap-2 mb-2">
           <div>
-            <label className="text-[10px] text-muted-foreground block">End date</label>
+            <label className="text-[10px] text-muted-foreground block">End Date</label>
             <Input type="date" value={ed} onChange={(e) => setEd(e.target.value)} className="h-8 text-xs" />
           </div>
           <div>

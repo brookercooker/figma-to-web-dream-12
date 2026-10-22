@@ -39,13 +39,13 @@ export default function WorkStatusPopover({ value, onSave, disabled, label = "Ch
         <button
           type="button"
           className="mt-1 inline-flex items-center gap-0.5 text-[11px] text-primary hover:underline focus:outline-none focus:underline"
-          aria-label="Change work status"
+          aria-label="Change Work Status"
         >
           {label}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" side="bottom" sideOffset={6} collisionPadding={16} avoidCollisions className="w-60 p-3">
-        <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Work status</div>
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-2">Work Status</div>
         <div className="flex flex-col gap-1.5 mb-3">
           {(["draft", "ready"] as WorkStatus[]).map((s) => (
             <button
@@ -60,7 +60,7 @@ export default function WorkStatusPopover({ value, onSave, disabled, label = "Ch
                 {workLabel(s)}
               </span>
               <span className="text-muted-foreground">
-                {s === "ready" ? "Complete — safe to reference" : "Still being built"}
+                {s === "ready" ? "Complete — safe to reference" : "Still Being Built"}
               </span>
             </button>
           ))}

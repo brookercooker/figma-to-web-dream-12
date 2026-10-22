@@ -33,7 +33,7 @@ const cards = () => within(screen.getByRole("dialog")).getAllByRole("button").fi
 describe("library picker", () => {
   it("opens a large popup with search that narrows the grid", async () => {
     setup();
-    expect(await screen.findByRole("heading", { name: "Pick an image" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Pick an Image" })).toBeInTheDocument();
     expect(await screen.findByText("60 of 70 shown")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Search images"), { target: { value: "lobby" } });
     await waitFor(() => expect(cards()).toHaveLength(1));
@@ -51,10 +51,10 @@ describe("library picker", () => {
     fireEvent.click(chip);
     expect(await screen.findByText("60 of 70 shown")).toBeInTheDocument();
   });
-  it("Show more reveals 60 more", async () => {
+  it("Show More reveals 60 more", async () => {
     setup();
     await screen.findByText("60 of 70 shown");
-    fireEvent.click(screen.getByRole("button", { name: "Show more" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show More" }));
     expect(await screen.findByText("70 of 70 shown")).toBeInTheDocument();
     expect(cards()).toHaveLength(70);
   });
@@ -120,7 +120,7 @@ describe("library picker", () => {
   });
   it("has a link to the full page that closes the popup", async () => {
     const { onOpenFull } = setup();
-    fireEvent.click(await screen.findByRole("button", { name: /Open Images page/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Open Images Page/ }));
     expect(onOpenFull).toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
@@ -151,11 +151,11 @@ describe("library picker", () => {
     expect(onPick).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
-  it("Enter on Cancel, Done or Show more is not hijacked", async () => {
+  it("Enter on Cancel, Done or Show More is not hijacked", async () => {
     const { onPick } = setup();
     await screen.findByText("60 of 70 shown");
     fireEvent.click(screen.getByTitle("photo-03.jpg"));
-    for (const name of ["Cancel", "Done", "Show more"]) {
+    for (const name of ["Cancel", "Done", "Show More"]) {
       expect(fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" })).toBe(true);
     }
     expect(onPick).not.toHaveBeenCalled();

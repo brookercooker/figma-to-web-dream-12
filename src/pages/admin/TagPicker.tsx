@@ -44,7 +44,7 @@ export default function TagPicker({ all, selected, onChange, placeholder = "Filt
       {open && (
         <div className="absolute top-full left-0 z-30 mt-1 w-64 bg-background border rounded shadow-lg">
           <div className="p-2 border-b">
-            <Input autoFocus placeholder="Search tags…" aria-label="Search tags" value={q} onChange={(e) => setQ(e.target.value)} className="h-8 text-xs" />
+            <Input autoFocus placeholder="Search tags…" aria-label="Search Tags" value={q} onChange={(e) => setQ(e.target.value)} className="h-8 text-xs" />
           </div>
           {selected.length > 0 && (
             <div className="p-2 border-b flex flex-wrap gap-1">

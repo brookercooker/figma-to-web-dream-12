@@ -58,7 +58,7 @@ export default function AdminAuth() {
           />
         </div>
         <Button type="submit" className="w-full" disabled={busy}>
-          {busy ? "…" : "Sign in"}
+          {busy ? "…" : "Sign In"}
         </Button>
       </form>
     </div>

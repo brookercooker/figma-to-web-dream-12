@@ -56,7 +56,7 @@ type StatusFilter = "all" | "Ready" | "Draft";
 type SortKey = "newest" | "oldest" | "name" | "name_desc";
 type Field = "all" | "name" | "id" | "path" | "description" | "tags";
 const FIELDS: { v: Field; label: string }[] = [
-  { v: "all", label: "All fields" },
+  { v: "all", label: "All Fields" },
   { v: "name", label: "Name" },
   { v: "path", label: "Path" },
   { v: "description", label: "Description" },
@@ -347,7 +347,7 @@ export default function ObjectsTab() {
           </div>
           <Input
             placeholder="Search objects…"
-            aria-label="Search objects"
+            aria-label="Search Objects"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="flex-1 border-0 rounded-none h-14 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2"
@@ -356,8 +356,8 @@ export default function ObjectsTab() {
             value={searchField}
             onChange={(e) => setSearchField(e.target.value as Field)}
             className="text-sm px-3 border-l bg-muted/40 h-14"
-            title="Search field"
-            aria-label="Search field"
+            title="Search Field"
+            aria-label="Search Field"
           >
             {FIELDS.map((f) => <option key={f.v} value={f.v}>in {f.label}</option>)}
           </select>
@@ -367,8 +367,8 @@ export default function ObjectsTab() {
           sort={sort}
           onSortChange={(v) => setSort(v as SortKey)}
           sortOptions={[
-            { v: "newest", label: "Recently modified" },
-            { v: "oldest", label: "Oldest modified" },
+            { v: "newest", label: "Recently Modified" },
+            { v: "oldest", label: "Oldest Modified" },
             { v: "name", label: "Name (A–Z)" },
             { v: "name_desc", label: "Name (Z–A)" },
           ]}
@@ -382,7 +382,7 @@ export default function ObjectsTab() {
           status={statusFilter}
           onStatusChange={(v) => setStatusFilter(v as StatusFilter)}
           statusOptions={[
-            { v: "all", label: "All statuses" },
+            { v: "all", label: "All Statuses" },
             { v: "Ready", label: "Ready" },
             { v: "Draft", label: "Draft" },
           ]}
@@ -441,7 +441,7 @@ export default function ObjectsTab() {
                       if (v) setSelected(new Set(visible.map((o) => o.id)));
                       else setSelected(new Set());
                     }}
-                    aria-label="Select all"
+                    aria-label="Select All"
                   />
                 </th>
                 <th className="px-3 py-3 text-left">Preview</th>
@@ -501,7 +501,7 @@ export default function ObjectsTab() {
                           else gotoObject(obj);
                         }}
                         className="block rounded hover:ring-2 hover:ring-primary/40 focus:outline-none focus:ring-2 focus:ring-primary"
-                        title={hasComponent ? "Open larger preview" : "Open draft"}
+                        title={hasComponent ? "Open Larger Preview" : "Open Draft"}
                       >
                         {hasComponent ? (
                           <div className="w-[96px] h-[60px] rounded border overflow-hidden bg-muted/30">
@@ -582,7 +582,7 @@ export default function ObjectsTab() {
                       <button
                         type="button"
                         onClick={() => navigate(`/manage/objects/design?object=${obj.id}`)}
-                        aria-label="Edit in the object editor"
+                        aria-label="Edit in the Object Editor"
                         title="Edit"
                         className="inline-flex items-center justify-center p-1.5 rounded border hover:bg-muted"
                       >
@@ -594,8 +594,8 @@ export default function ObjectsTab() {
                         href={`/objects/${obj.slug_id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label="Open in new tab"
-                        title="Open in new tab"
+                        aria-label="Open in New Tab"
+                        title="Open in New Tab"
                         className="inline-flex items-center justify-center p-1.5 rounded border hover:bg-muted"
                       >
                         <ExternalLink className="w-4 h-4" />
@@ -604,7 +604,7 @@ export default function ObjectsTab() {
                     <td className="px-1 py-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="p-1.5 rounded border hover:bg-muted" aria-label="More actions" title="More">
+                          <button className="p-1.5 rounded border hover:bg-muted" aria-label="More Actions" title="More">
                             <MoreHorizontal className="w-4 h-4" />
                           </button>
                         </DropdownMenuTrigger>
@@ -626,13 +626,13 @@ export default function ObjectsTab() {
                           {isArchivedRow && (
                             <>
                               <DropdownMenuItem onSelect={() => doRestore(obj)} disabled={restore.isPending}>
-                                <RotateCcw className="w-4 h-4 mr-2" /> Restore from archive
+                                <RotateCcw className="w-4 h-4 mr-2" /> Restore from Archive
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                             </>
                           )}
                           <DropdownMenuItem onSelect={() => setCopyFrom(obj)}>
-                            <Copy className="w-4 h-4 mr-2" /> Make a copy…
+                            <Copy className="w-4 h-4 mr-2" /> Make a Copy…
                           </DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => setRenameTarget(obj)}>
                             <Type className="w-4 h-4 mr-2" /> Rename…
@@ -641,20 +641,20 @@ export default function ObjectsTab() {
                           {hasComponent && (
                             <>
                               <DropdownMenuItem onSelect={() => regenerateObj(obj)}>
-                                <RefreshCw className="w-4 h-4 mr-2" /> Regenerate thumbnail
+                                <RefreshCw className="w-4 h-4 mr-2" /> Regenerate Thumbnail
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                             </>
                           )}
                           <DropdownMenuItem onSelect={() => setConfirmArchive(obj)}>
-                            <Archive className="w-4 h-4 mr-2" /> Archive (reversible)
+                            <Archive className="w-4 h-4 mr-2" /> Archive (Reversible)
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
                             onSelect={() => setConfirmDelete(obj)}
                           >
-                            <AlertTriangle className="w-4 h-4 mr-2" /> Delete permanently…
+                            <AlertTriangle className="w-4 h-4 mr-2" /> Delete Permanently…
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -674,7 +674,7 @@ export default function ObjectsTab() {
           open={!!copyFrom}
           onOpenChange={(o) => { if (!o) setCopyFrom(null); }}
           initialName={copyFrom ? `${copyFrom.name} Copy` : ""}
-          title={copyFrom ? `Make a copy of "${copyFrom.name}"` : "Make a copy"}
+          title={copyFrom ? `Make a copy of "${copyFrom.name}"` : "Make a Copy"}
           submitLabel="Create copy"
           navigateOnCreate
         />
@@ -682,7 +682,7 @@ export default function ObjectsTab() {
         <RenameDialog
           open={!!renameTarget}
           onOpenChange={(o) => { if (!o) setRenameTarget(null); }}
-          title={renameTarget ? `Rename "${renameTarget.name}"` : "Rename object"}
+          title={renameTarget ? `Rename "${renameTarget.name}"` : "Rename Object"}
           description="Renaming updates the object's display name and its /objects URL. All internal references (Copy Reference output, page usage links) resolve by id and stay intact."
           pathPrefix="/objects/"
           currentName={renameTarget?.name ?? ""}
@@ -933,7 +933,7 @@ function ObjectPreviewDialog({ obj, onClose }: { obj: ObjectRegistryRow | null; 
           ) : (
             <div className="rounded border bg-background overflow-hidden">
               <div className="px-3 py-2 text-[11px] text-muted-foreground border-b bg-muted/50">
-                Live component preview
+                Live Component Preview
               </div>
               <Suspense fallback={<div className="h-64 bg-muted animate-pulse" />}>
                 {(() => {
@@ -1003,7 +1003,7 @@ function EditReadyDialog({
                 className="text-left rounded border p-3 hover:border-primary hover:bg-primary/5 transition"
                 onClick={() => onUpdateAll(obj)}
               >
-                <div className="text-sm font-medium mb-1">Update all locations</div>
+                <div className="text-sm font-medium mb-1">Update All Locations</div>
                 <p className="text-xs text-muted-foreground">
                   Edit this shared object. Publishing updates every page that uses it.
                 </p>
@@ -1013,7 +1013,7 @@ function EditReadyDialog({
                 className="text-left rounded border p-3 hover:border-primary hover:bg-primary/5 transition"
                 onClick={() => onMakeCopy(obj)}
               >
-                <div className="text-sm font-medium mb-1">Make a copy</div>
+                <div className="text-sm font-medium mb-1">Make a Copy</div>
                 <p className="text-xs text-muted-foreground">
                   Create a new Draft object and edit it independently. Existing pages keep the original.
                 </p>
@@ -1069,7 +1069,7 @@ function UsedOnChip({ usages, hasKey }: { usages: ObjectUsage[]; hasKey: boolean
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-0">
         <div className="px-3 py-2 border-b text-[11px] uppercase tracking-wider text-muted-foreground">
-          Used on {count} page{count === 1 ? "" : "s"}
+          Used On {count} page{count === 1 ? "" : "s"}
         </div>
         <ul className="max-h-64 overflow-y-auto py-1">
           {usages.map((u) => (

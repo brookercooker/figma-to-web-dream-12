@@ -17,7 +17,7 @@ export type LibraryKind = "images" | "videos" | "objects";
 const PAGE = 60;
 const NOUN = { images: "images", videos: "videos", objects: "objects" } as const;
 const FULL = { images: "Images", videos: "Videos", objects: "Objects" } as const;
-const TITLE = { images: "Pick an image", videos: "Pick a video", objects: "Pick an object" } as const;
+const TITLE = { images: "Pick an Image", videos: "Pick a Video", objects: "Pick an Object" } as const;
 
 type Row = { ref: ChatReference; search: (term: string) => boolean; labels: string[]; note?: string; createdAt?: string };
 
@@ -150,10 +150,10 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
             <DialogTitle>{TITLE[kind]}</DialogTitle>
             <button type="button" onClick={() => { setOpen(false); onOpenFull(); }}
               className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />Open {FULL[kind]} page
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />Open {FULL[kind]} Page
             </button>
           </div>
-          <DialogDescription className="sr-only">Search and pick {NOUN[kind]} to add to the chat.</DialogDescription>
+          <DialogDescription className="sr-only">Search and Pick {NOUN[kind]} to add to the chat.</DialogDescription>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input autoFocus value={term} onChange={(e) => setTerm(e.target.value)} aria-label={`Search ${NOUN[kind]}`}
@@ -170,7 +170,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
             <div className="space-y-2 py-10 text-center">
               <p className="text-sm">No {NOUN[kind]} match</p>
               <p className="text-xs text-muted-foreground">Try fewer words or clear the filters</p>
-              {filtering && <Button variant="outline" size="sm" onClick={clear}>Clear filters</Button>}
+              {filtering && <Button variant="outline" size="sm" onClick={clear}>Clear Filters</Button>}
             </div>
           ) : (
             <>
@@ -181,7 +181,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
               </div>
               {matches.length > limit && (
                 <div className="mt-4 flex justify-center">
-                  <Button variant="outline" data-picker-own-enter="" onClick={() => setLimit((l) => l + PAGE)}>Show more</Button>
+                  <Button variant="outline" data-picker-own-enter="" onClick={() => setLimit((l) => l + PAGE)}>Show More</Button>
                 </div>
               )}
             </>

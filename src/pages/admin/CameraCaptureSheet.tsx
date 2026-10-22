@@ -146,19 +146,19 @@ export default function CameraCaptureSheet({ open, onOpenChange, onCapture, onUn
           <header className="capture-safe-top capture-safe-x shrink-0">
             <div className="flex items-center justify-between p-3">
               <DialogTitle className="text-base">Camera</DialogTitle>
-              <Button variant="ghost" size="icon" className="h-11 w-11 hover:bg-primary-foreground/10 hover:text-primary-foreground" onClick={close} aria-label="Close camera" title="Close camera"><X className="h-6 w-6" /></Button>
+              <Button variant="ghost" size="icon" className="h-11 w-11 hover:bg-primary-foreground/10 hover:text-primary-foreground" onClick={close} aria-label="Close Camera" title="Close Camera"><X className="h-6 w-6" /></Button>
             </div>
           </header>
           <div className="relative min-h-0 flex-1 overflow-hidden">
-            <video ref={videoRef} autoPlay playsInline muted aria-label="Live camera" className="h-full w-full object-contain" onLoadedData={() => setReady(!!streamRef.current && (videoRef.current?.videoWidth ?? 0) > 0)} />
+            <video ref={videoRef} autoPlay playsInline muted aria-label="Live Camera" className="h-full w-full object-contain" onLoadedData={() => setReady(!!streamRef.current && (videoRef.current?.videoWidth ?? 0) > 0)} />
             {!ready && <div role="status" className="absolute inset-0 grid place-items-center"><Loader2 className="h-8 w-8 animate-spin motion-reduce:animate-none" aria-label="Starting camera" /></div>}
           </div>
           <footer className="capture-safe-bottom capture-safe-x shrink-0">
             <div className="space-y-2 p-4">
               <div aria-live="polite" className="min-h-5 text-center text-sm">{shotError || `${taken} taken`}</div>
               <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                <div className="justify-self-start">{canFlip && <Button variant="ghost" size="icon" className="h-12 w-12 hover:bg-primary-foreground/10 hover:text-primary-foreground" disabled={!ready || shooting} onClick={() => { stop(); setReady(false); setFacing((value) => value === "environment" ? "user" : "environment"); }} aria-label="Flip camera" title="Flip camera"><SwitchCamera className="h-6 w-6" /></Button>}</div>
-                <Button variant="secondary" className="h-20 w-20 rounded-full border-4 border-primary-foreground bg-primary-foreground text-primary hover:bg-primary-foreground/90" disabled={!ready || shooting} onClick={shutter} aria-label="Take picture" title="Take picture"><Camera className="h-7 w-7" /></Button>
+                <div className="justify-self-start">{canFlip && <Button variant="ghost" size="icon" className="h-12 w-12 hover:bg-primary-foreground/10 hover:text-primary-foreground" disabled={!ready || shooting} onClick={() => { stop(); setReady(false); setFacing((value) => value === "environment" ? "user" : "environment"); }} aria-label="Flip Camera" title="Flip Camera"><SwitchCamera className="h-6 w-6" /></Button>}</div>
+                <Button variant="secondary" className="h-20 w-20 rounded-full border-4 border-primary-foreground bg-primary-foreground text-primary hover:bg-primary-foreground/90" disabled={!ready || shooting} onClick={shutter} aria-label="Take Picture" title="Take Picture"><Camera className="h-7 w-7" /></Button>
                 <Button variant="ghost" className="h-12 justify-self-end hover:bg-primary-foreground/10 hover:text-primary-foreground" onClick={close}>Done</Button>
               </div>
             </div>

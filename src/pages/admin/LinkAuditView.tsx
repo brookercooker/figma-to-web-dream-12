@@ -405,18 +405,18 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
             </div>
             <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)}
               className="text-sm border rounded px-2 h-9 bg-background max-w-[200px]">
-              <option value="all">All locations</option>
+              <option value="all">All Locations</option>
               {locations.map((l) => <option key={l} value={l}>{l}</option>)}
             </select>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}
               className="text-sm border rounded px-2 h-9 bg-background">
-              <option value="all">All statuses</option>
+              <option value="all">All Statuses</option>
               {(["Registered","Pending","Broken","External","Self-Referencing"] as LinkStatus[]).map((s) =>
                 <option key={s} value={s}>{s}</option>)}
             </select>
             <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as any)}
               className="text-sm border rounded px-2 h-9 bg-background">
-              <option value="all">All types</option>
+              <option value="all">All Types</option>
               {(["Static page","Supernova CC","External","Unknown"] as LinkType[]).map((t) =>
                 <option key={t} value={t}>{t}</option>)}
             </select>
@@ -458,10 +458,10 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
                           setSelectedIds(selectedIds.filter((id) => !fIds.has(id)));
                         }
                       }}
-                      aria-label="Select all"
+                      aria-label="Select All"
                     />
                   </th>
-                  <th className="text-left px-3 py-2">Link text</th>
+                  <th className="text-left px-3 py-2">Link Text</th>
                   <th className="text-left px-3 py-2">Links from</th>
                   <th className="text-left px-3 py-2">Destination</th>
                   <th className="text-left px-3 py-2">Status</th>
@@ -481,7 +481,7 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
                         onCheckedChange={(v) => {
                           setSelectedIds((cur) => v ? [...cur, r.id] : cur.filter((id) => id !== r.id));
                         }}
-                        aria-label="Select row"
+                        aria-label="Select Row"
                       />
                     </td>
                     <td className="px-3 py-2 text-xs">
@@ -521,7 +521,7 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
                         <button
                           onClick={() => dismissRow(r)}
                           className="p-1 rounded hover:bg-destructive hover:text-destructive-foreground"
-                          title="Dismiss deleted row"
+                          title="Dismiss Deleted Row"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -553,7 +553,7 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
                     <span className="font-mono text-xs flex-1 min-w-0 truncate">{r.destination}</span>
                     <Button size="sm" variant="outline" onClick={() =>
                       setPrefill((r.destination.replace(/^\/+/, "") || r.link_text) || "New Page")
-                    }>Create this page</Button>
+                    }>Create This Page</Button>
                   </div>
                 ))}
               </div>

@@ -48,7 +48,7 @@ export default function UsedOnChip({
       </PopoverTrigger>
       <PopoverContent align="start" className="w-72 p-0" onClick={(e) => e.stopPropagation()}>
         <div className="px-3 py-2 border-b text-[11px] uppercase tracking-wider text-muted-foreground">
-          Used on {count} page{count === 1 ? "" : "s"}
+          Used On {count} page{count === 1 ? "" : "s"}
         </div>
         <ul className="max-h-64 overflow-y-auto py-1">
           {usages.map((u) => (

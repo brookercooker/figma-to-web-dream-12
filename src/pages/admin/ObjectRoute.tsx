@@ -166,7 +166,7 @@ export default function ObjectRoute() {
               : `On ${headerUsages.length} pages`}
         </div>
         {lastModified && (
-          <div className="text-muted-foreground">Last modified {lastModified}</div>
+          <div className="text-muted-foreground">Last Modified {lastModified}</div>
         )}
         <div className="ml-auto">
           <CopyRefButton
@@ -211,7 +211,7 @@ export default function ObjectRoute() {
       <Dialog open={saveOpen} onOpenChange={(o) => { if (!saving) setSaveOpen(o); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Save this object</DialogTitle>
+            <DialogTitle>Save This Object</DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <p>
@@ -227,7 +227,7 @@ export default function ObjectRoute() {
           </DialogHeader>
 
           <div className="space-y-3">
-            <p className="text-sm font-medium">Work status</p>
+            <p className="text-sm font-medium">Work Status</p>
             <p className="text-xs text-muted-foreground">
               Draft vs Ready is just your work-tracking marker for whether the
               object is finished being built. It is separate from publishing —

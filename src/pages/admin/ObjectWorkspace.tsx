@@ -220,7 +220,7 @@ export default function ObjectWorkspace() {
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Save this object</DialogTitle>
+            <DialogTitle>Save This Object</DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-2 text-sm">
                 <p>
@@ -237,7 +237,7 @@ export default function ObjectWorkspace() {
           </DialogHeader>
 
           <div className="space-y-3">
-            <p className="text-sm font-medium">Work status</p>
+            <p className="text-sm font-medium">Work Status</p>
             <p className="text-xs text-muted-foreground">
               This is just your work-tracking marker for whether the object is
               finished being built. It is independent of publishing — Draft vs

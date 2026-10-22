@@ -118,7 +118,7 @@ export default function InlineStylePanel({
     const vertical = r.height > r.width;
     return (
       <div>
-        <ToolHeader icon={Minus} title="Divider line" menu={[
+        <ToolHeader icon={Minus} title="Divider Line" menu={[
           { label: "Reset", icon: RotateCcw, onSelect: reset },
           { label: style.visibility ? "Show line" : "Hide line", icon: style.visibility ? Eye : EyeOff, onSelect: () => set("visibility", style.visibility ? "" : "hidden") },
         ]} />
@@ -138,7 +138,7 @@ export default function InlineStylePanel({
           {swatches(style["background-color"], (v) => set("background-color", style["background-color"] === v ? "" : v))}
         </ToolGroup>
         <ToolGroup title="Spacing" icon={MoveVertical}>
-          <ToolField label="Space above and below (px)">
+          <ToolField label="Space Above and Below (px)">
             <Input type="number" min={0} placeholder="Default" value={num(style["margin-top"])}
               onChange={(e) => { const v = px(e.target.value); const next = { ...style }; if (v) { next["margin-top"] = v; next["margin-bottom"] = v; } else { delete next["margin-top"]; delete next["margin-bottom"]; } const out = { ...edits }; if (Object.keys(next).length) out[styleKey(sel.key)] = JSON.stringify(next); else delete out[styleKey(sel.key)]; onChange(out); }} />
           </ToolField>
@@ -150,10 +150,10 @@ export default function InlineStylePanel({
   if (sel.kind === "image") {
     return (
       <div>
-        <ToolHeader icon={ImageIcon} title="Picture" menu={[{ label: "Reset picture size", icon: RotateCcw, onSelect: reset }]} />
+        <ToolHeader icon={ImageIcon} title="Picture" menu={[{ label: "Reset Picture Size", icon: RotateCcw, onSelect: reset }]} />
         <ToolGroup title="Picture" icon={ImageIcon} defaultOpen>
           <Button variant="outline" size="sm" className="w-full gap-2" onClick={onReplaceImage}>
-            <ImageIcon className="w-4 h-4" /> Replace picture
+            <ImageIcon className="w-4 h-4" /> Replace Picture
           </Button>
           <ToolField label="Fit">
             <ToolSegment className="flex w-full">
@@ -177,7 +177,7 @@ export default function InlineStylePanel({
           </ToolGrid>
         </ToolGroup>
         <ToolGroup title="Corners" icon={SquareDashed}>
-          <ToolField label="Rounded corners (px)">
+          <ToolField label="Rounded Corners (px)">
             <Input type="number" min={0} placeholder={num(computed.borderRadius) || "0"}
               value={num(style["border-radius"])} onChange={(e) => set("border-radius", px(e.target.value))} />
           </ToolField>
@@ -223,7 +223,7 @@ export default function InlineStylePanel({
   return (
     <div>
       <ToolHeader icon={Type} title="Text" subtitle={textPreview.length > 40 ? `${textPreview.slice(0, 40)}…` : textPreview || undefined}
-        menu={[{ label: "Reset text style", icon: RotateCcw, onSelect: reset }]} />
+        menu={[{ label: "Reset Text Style", icon: RotateCcw, onSelect: reset }]} />
       {highlighted ? (
         <div className="pb-3">
           <ToolNote>
@@ -271,10 +271,10 @@ export default function InlineStylePanel({
       </ToolGroup>
       <ToolGroup title="Spacing" icon={MoveVertical}>
         <ToolGrid>
-          <ToolField label="Letter spacing">
+          <ToolField label="Letter Spacing">
             <Input type="number" step={0.05} placeholder="0" value={num(style["letter-spacing"])} onChange={(e) => apply("letter-spacing", e.target.value ? `${e.target.value}em` : "")} />
           </ToolField>
-          <ToolField label="Line height">
+          <ToolField label="Line Height">
             <Input type="number" step={0.1} min={0.8} placeholder={(parseFloat(computed.lineHeight) / parseFloat(computed.fontSize) || 1.4).toFixed(1)} value={style["line-height"] ?? ""} onChange={(e) => apply("line-height", e.target.value)} />
           </ToolField>
         </ToolGrid>
@@ -297,7 +297,7 @@ export default function InlineStylePanel({
             })}
           </div>
           {iconNow && (
-            <button type="button" className="text-xs underline text-muted-foreground" onClick={() => { const o = { ...edits }; delete o[`icon:${sel.key}`]; onChange(o); }}>Use original icon</button>
+            <button type="button" className="text-xs underline text-muted-foreground" onClick={() => { const o = { ...edits }; delete o[`icon:${sel.key}`]; onChange(o); }}>Use Original Icon</button>
           )}
         </ToolGroup>
       )}

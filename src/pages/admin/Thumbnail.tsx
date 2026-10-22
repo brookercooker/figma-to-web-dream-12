@@ -136,7 +136,7 @@ function ImagePreview({ src, name, w, h }: { src: string; name?: string; w: numb
     return (
       <div className="w-full h-full flex flex-col items-center justify-center text-[9px] text-destructive bg-destructive/10 p-1 text-center gap-0.5">
         <span aria-hidden>⚠</span>
-        <div className="font-medium">Broken asset</div>
+        <div className="font-medium">Broken Asset</div>
       </div>
     );
   }

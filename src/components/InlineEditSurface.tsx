@@ -531,8 +531,8 @@ export default function InlineEditSurface({
     {editing && grip && (
       <button
         type="button"
-        aria-label="Drag to move"
-        title="Drag to move"
+        aria-label="Drag to Move"
+        title="Drag to Move"
         onPointerDown={startItemDrag}
         className="absolute z-[75] flex h-7 w-6 cursor-grab items-center justify-center rounded border bg-background text-foreground shadow-sm hover:bg-muted active:cursor-grabbing"
         style={{ top: grip.top, left: grip.left }}
@@ -544,8 +544,8 @@ export default function InlineEditSurface({
       <div key={b.key}>
         <button
           type="button"
-          aria-label={b.collapsed ? "Open section" : "Fold section"}
-          title={b.collapsed ? "Open section" : "Fold section"}
+          aria-label={b.collapsed ? "Open Section" : "Fold Section"}
+          title={b.collapsed ? "Open Section" : "Fold Section"}
           onClick={() => onToggleCollapse?.(b.key)}
           className="absolute z-[70] flex h-10 w-10 items-center justify-center text-foreground hover:bg-background/60 rounded"
           style={{ top: b.top, left: b.left + 18 }}
@@ -563,7 +563,7 @@ export default function InlineEditSurface({
             className="absolute z-[70] my-1.5 inline-flex h-7 items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted"
             style={{ top: b.top, left: b.left + b.width - 190, width: 180 }}
           >
-            <ExternalLink className="h-3.5 w-3.5" /> Open in object editor
+            <ExternalLink className="h-3.5 w-3.5" /> Open in Object Editor
           </button>
         )}
       </div>

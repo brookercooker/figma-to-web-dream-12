@@ -18,7 +18,7 @@ export default function PageDesignPage() {
           <h1 className="whitespace-nowrap"><SiteManagerLogo /></h1>
           <div aria-hidden className="h-9 w-px bg-border shrink-0" />
           <Button asChild variant="outline" size="sm" className="gap-2">
-            <Link to="/manage/pages"><ArrowLeft className="w-4 h-4" /> Back to pages</Link>
+            <Link to="/manage/pages"><ArrowLeft className="w-4 h-4" /> Back to Pages</Link>
           </Button>
         </div>
       </header>

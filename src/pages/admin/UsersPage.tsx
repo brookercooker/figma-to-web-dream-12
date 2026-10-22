@@ -192,12 +192,12 @@ export default function UsersPage() {
           <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
             <DialogTrigger asChild>
               <Button size="sm" className="gap-2 shrink-0">
-                <UserPlus className="w-4 h-4" /> Add user
+                <UserPlus className="w-4 h-4" /> Add User
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add a new user</DialogTitle>
+                <DialogTitle>Add a New User</DialogTitle>
                 <DialogDescription>
                   Create a user with an email and password. Share the password with them directly.
                 </DialogDescription>
@@ -238,7 +238,7 @@ export default function UsersPage() {
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setInviteOpen(false)} disabled={inviting}>Cancel</Button>
                 <Button onClick={sendInvite} disabled={inviting || !inviteEmail || invitePassword.length < 8}>
-                  {inviting ? "Creating…" : "Create user"}
+                  {inviting ? "Creating…" : "Create User"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -255,7 +255,7 @@ export default function UsersPage() {
                 <tr className="text-left text-xs text-muted-foreground">
                   <th className="py-3 px-4 text-left">Email</th>
                   <th className="py-3 px-4 text-left min-w-[220px]">Roles</th>
-                  <th className="py-3 px-4 text-left">Last sign-in</th>
+                  <th className="py-3 px-4 text-left">Last Sign-In</th>
                   <th className="py-3 px-4 text-left">Action</th>
                 </tr>
               </thead>
@@ -289,17 +289,17 @@ export default function UsersPage() {
                     <td className="py-3 px-4 text-left">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost" disabled={busyId === u.id} aria-label="User actions">
+                          <Button size="icon" variant="ghost" disabled={busyId === u.id} aria-label="User Actions">
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => openEdit(u)}>
-                            <Pencil className="w-4 h-4 mr-2" /> Edit role
+                            <Pencil className="w-4 h-4 mr-2" /> Edit Role
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => { setPwUser(u); setPwValue(""); }}>
-                            <KeyRound className="w-4 h-4 mr-2" /> Set password
+                            <KeyRound className="w-4 h-4 mr-2" /> Set Password
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -307,7 +307,7 @@ export default function UsersPage() {
                             disabled={u.id === currentUserId}
                             onClick={() => setDeleteUser(u)}
                           >
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete user
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete User
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -327,7 +327,7 @@ export default function UsersPage() {
       <Dialog open={!!editUser} onOpenChange={(o) => !o && setEditUser(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit role</DialogTitle>
+            <DialogTitle>Edit Role</DialogTitle>
             <DialogDescription>{editUser?.email}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
@@ -358,11 +358,11 @@ export default function UsersPage() {
       <Dialog open={!!pwUser} onOpenChange={(o) => { if (!o) { setPwUser(null); setPwValue(""); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Set password</DialogTitle>
+            <DialogTitle>Set Password</DialogTitle>
             <DialogDescription>{pwUser?.email}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <Label htmlFor="pw-value">New password</Label>
+            <Label htmlFor="pw-value">New Password</Label>
             <Input
               id="pw-value"
               type="text"
@@ -375,7 +375,7 @@ export default function UsersPage() {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setPwUser(null)} disabled={pwSaving}>Cancel</Button>
             <Button onClick={savePassword} disabled={pwSaving || pwValue.length < 8}>
-              {pwSaving ? "Saving…" : "Update password"}
+              {pwSaving ? "Saving…" : "Update Password"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -396,7 +396,7 @@ export default function UsersPage() {
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? "Deleting…" : "Delete user"}
+              {deleting ? "Deleting…" : "Delete User"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
