@@ -381,11 +381,11 @@ export default function CapturePage() {
         <section className="space-y-3">
           <input
             ref={cameraRef} type="file" accept="image/*" capture="environment"
-            className="sr-only" onChange={onPick} aria-label="Take a photo"
+            className="sr-only" onChange={onPick} aria-label="Take a Photo"
           />
           <input
             ref={libraryRef} type="file" accept="image/*,video/*,.webm,.mp4,.mov"
-            multiple className="sr-only" onChange={onPick} aria-label="Choose photos or videos"
+            multiple className="sr-only" onChange={onPick} aria-label="Choose Photos or Videos"
           />
           <div className="grid grid-cols-2 gap-3">
             <Button
@@ -394,7 +394,7 @@ export default function CapturePage() {
               className="h-24 flex-col gap-2 text-base rounded-xl transition-transform active:scale-[0.97]"
             >
               <Camera className="w-7 h-7" />
-              Take photo
+              Take Photo
             </Button>
             <Button
               type="button" size="lg" variant="outline" disabled={busy}
@@ -402,11 +402,11 @@ export default function CapturePage() {
               className="h-24 flex-col gap-2 text-base rounded-xl transition-transform active:scale-[0.97]"
             >
               <ImagePlus className="w-7 h-7" />
-              Choose files
+              Choose Files
             </Button>
           </div>
           <details className="rounded-lg border bg-card px-3 py-2 text-xs text-muted-foreground">
-            <summary className="cursor-pointer list-none font-medium text-foreground">How this works</summary>
+            <summary className="cursor-pointer list-none font-medium text-foreground">How This Works</summary>
             <p className="pt-2 leading-relaxed">
               Photos and videos stage here first. Name them, add labels and pages, then upload in one batch.
               Capture metadata (location, date taken, camera) is read from each original automatically.
@@ -419,7 +419,7 @@ export default function CapturePage() {
         {/* Batch tagging */}
         {items.length > 0 && (
           <section className="rounded-lg border bg-card p-4 space-y-4">
-            <h2 className="text-sm font-semibold">Apply to this batch</h2>
+            <h2 className="text-sm font-semibold">Apply to This Batch</h2>
 
             {imageCount > 0 && (
               <div className="space-y-2">
@@ -592,7 +592,7 @@ export default function CapturePage() {
               aria-valuenow={progress.done}
               aria-valuemin={0}
               aria-valuemax={progress.total}
-              aria-label="Upload progress"
+              aria-label="Upload Progress"
             />
           )}
           <div className="mx-auto max-w-3xl px-4 pt-2 pb-2 sm:px-4 flex items-center gap-3">

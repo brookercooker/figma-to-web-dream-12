@@ -93,7 +93,7 @@ export default function ImagePickerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl h-[88vh] flex flex-col overflow-hidden">
-        <DialogHeader><DialogTitle>Choose an image</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Choose an Image</DialogTitle></DialogHeader>
 
         <div className="flex flex-wrap items-center gap-2">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search images" className="w-52" />
@@ -104,7 +104,7 @@ export default function ImagePickerDialog({
               disabled={!url.trim()}
               onClick={() => { onPick({ url: url.trim(), alt: "" }); onOpenChange(false); }}
             >
-              Use link
+              Use Link
             </Button>
           </div>
           <label className="inline-flex">

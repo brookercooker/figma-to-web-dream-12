@@ -35,7 +35,7 @@ export default function LabelsCell({ scope, value, onChange, itemName }: Props) 
         type="button"
         onClick={() => setOpen(true)}
         title={hasAny ? `${count} label${count === 1 ? "" : "s"} — click to edit` : "No labels — click to add"}
-        aria-label={hasAny ? `${count} labels, edit` : "Add labels"}
+        aria-label={hasAny ? `${count} labels, edit` : "Add Labels"}
         className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full border text-xs font-medium transition-colors ${
           hasAny ? "" : "border-dashed border-muted-foreground/30 text-muted-foreground hover:bg-muted"
         }`}
@@ -51,7 +51,7 @@ export default function LabelsCell({ scope, value, onChange, itemName }: Props) 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit labels{itemName ? ` — ${itemName}` : ""}</DialogTitle>
+            <DialogTitle>Edit Labels{itemName ? ` — ${itemName}` : ""}</DialogTitle>
             <DialogDescription>
               Add or remove labels for this item. Labels here only apply to this tool.
             </DialogDescription>

@@ -420,7 +420,7 @@ export default function PagesTab() {
         </div>
         <Input
           placeholder="Search pages…"
-          aria-label="Search pages"
+          aria-label="Search Pages"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           className="flex-1 border-0 rounded-none h-14 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2"
@@ -429,8 +429,8 @@ export default function PagesTab() {
           value={searchField}
           onChange={(e) => setSearchField(e.target.value as Field)}
           className="text-sm px-3 border-l bg-muted/40 h-14"
-          title="Search field"
-          aria-label="Search field"
+          title="Search Field"
+          aria-label="Search Field"
         >
           {FIELDS.map((f) => <option key={f.v} value={f.v}>in {f.label}</option>)}
         </select>
@@ -567,7 +567,7 @@ export default function PagesTab() {
                     type="button"
                     onClick={() => setPreview(p)}
                     className="block rounded hover:ring-2 hover:ring-primary/40 focus:outline-none focus:ring-2 focus:ring-primary"
-                    title="Open larger preview"
+                    title="Open Larger Preview"
                   >
                     <PageMiniPreview name={p.name} path={p.path} content={(p as any).content} />
                   </button>
@@ -650,8 +650,8 @@ export default function PagesTab() {
                         designChat.startEditing();
                       } else navigate(`/manage/design?page=${p.id}&mode=edit`);
                     }}
-                    aria-label={pageAccess(p) === "tweak" ? `Tweak ${p.name}` : "Edit design"}
-                    title={pageAccess(p) === "tweak" ? "Tweak" : "Edit design"}
+                    aria-label={pageAccess(p) === "tweak" ? `Tweak ${p.name}` : "Edit Design"}
+                    title={pageAccess(p) === "tweak" ? "Tweak" : "Edit Design"}
                     className="p-1.5 rounded border hover:bg-muted inline-flex"
                   >
                     <Pencil className="w-4 h-4" />
@@ -660,8 +660,8 @@ export default function PagesTab() {
                 <td className="px-1 py-3 text-center">
                   <button
                     onClick={() => openLive(p.path)}
-                    aria-label="Open in new tab"
-                    title="Open in new tab"
+                    aria-label="Open in New Tab"
+                    title="Open in New Tab"
                     className="p-1.5 rounded border hover:bg-muted inline-flex"
                   >
                     <ExternalLink className="w-4 h-4" />
@@ -671,8 +671,8 @@ export default function PagesTab() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        aria-label="More actions"
-                        title="More actions"
+                        aria-label="More Actions"
+                        title="More Actions"
                         className="p-1.5 rounded border hover:bg-muted inline-flex"
                       >
                         <MoreHorizontal className="w-4 h-4" />
@@ -692,7 +692,7 @@ export default function PagesTab() {
                       <DropdownMenuSeparator />
                       {p.archived_at ? (
                         <DropdownMenuItem onSelect={() => unarchive([p.id])}>
-                          <ArchiveRestore className="w-4 h-4 mr-2" /> Restore from archive
+                          <ArchiveRestore className="w-4 h-4 mr-2" /> Restore from Archive
                         </DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem onSelect={() => archive([p.id])}>
@@ -701,7 +701,7 @@ export default function PagesTab() {
                       )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onSelect={() => regenerateOne(p)}>
-                        <RefreshCw className="w-4 h-4 mr-2" /> Regenerate thumbnail
+                        <RefreshCw className="w-4 h-4 mr-2" /> Regenerate Thumbnail
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem

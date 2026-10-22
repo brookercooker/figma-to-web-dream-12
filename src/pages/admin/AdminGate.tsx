@@ -51,7 +51,7 @@ export default function AdminGate({ children }: { children?: ReactNode }) {
         <p className="text-sm text-muted-foreground">
           Your account doesn't have access to the Site Manager. Ask an administrator.
         </p>
-        <Button variant="outline" onClick={() => supabase.auth.signOut()}>Sign out</Button>
+        <Button variant="outline" onClick={() => supabase.auth.signOut()}>Sign Out</Button>
       </div>
     );
   }

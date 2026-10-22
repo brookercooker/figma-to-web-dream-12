@@ -20,10 +20,10 @@ export default function ListPager({ page, pages, setPage, total, start, end }: {
       <span>{start + 1}–{Math.min(end, total)} of {total}</span>
       <div className="flex items-center gap-1">
         <button type="button" className="p-1.5 rounded border hover:bg-muted disabled:opacity-40" disabled={page === 0}
-          onClick={() => setPage(page - 1)} aria-label="Previous page"><ChevronLeft className="w-4 h-4" /></button>
+          onClick={() => setPage(page - 1)} aria-label="Previous Page"><ChevronLeft className="w-4 h-4" /></button>
         <span className="px-2">Page {page + 1} of {pages}</span>
         <button type="button" className="p-1.5 rounded border hover:bg-muted disabled:opacity-40" disabled={page >= pages - 1}
-          onClick={() => setPage(page + 1)} aria-label="Next page"><ChevronRight className="w-4 h-4" /></button>
+          onClick={() => setPage(page + 1)} aria-label="Next Page"><ChevronRight className="w-4 h-4" /></button>
       </div>
     </div>
   );

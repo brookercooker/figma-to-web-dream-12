@@ -21,8 +21,8 @@ export default function InsertGap({ edge, onAdd }: { edge: "top" | "bottom"; onA
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            aria-label="Insert here"
-            title="Insert here"
+            aria-label="Insert Here"
+            title="Insert Here"
             className={`relative flex h-6 w-6 items-center justify-center rounded-full border bg-background text-foreground shadow-sm transition-opacity hover:bg-muted focus-visible:opacity-100 ${shown}`}
           >
             <Plus className="h-3.5 w-3.5" />

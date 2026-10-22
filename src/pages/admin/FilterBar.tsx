@@ -56,7 +56,7 @@ export default function FilterBar({
     <div className="flex flex-wrap gap-2 items-center">
       <div className="flex items-center gap-1.5">
         <label className="text-xs font-medium text-muted-foreground" htmlFor="filterbar-sort">
-          Sort by
+          Sort By
         </label>
         <select
           id="filterbar-sort"
@@ -184,7 +184,7 @@ export default function FilterBar({
               checked={!!showArchived}
               onChange={(e) => onShowArchivedChange(e.target.checked)}
             />
-            Show archived
+            Show Archived
             {archivedCount && archivedCount > 0 ? (
               <span className="text-muted-foreground">({archivedCount})</span>
             ) : null}

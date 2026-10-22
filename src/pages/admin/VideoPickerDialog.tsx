@@ -87,7 +87,7 @@ export default function VideoPickerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
-        <DialogHeader><DialogTitle>Choose a video</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Choose a Video</DialogTitle></DialogHeader>
 
         <div className="flex flex-wrap items-center gap-2">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search videos" className="w-52" />
@@ -102,7 +102,7 @@ export default function VideoPickerDialog({
               disabled={!url.trim()}
               onClick={() => { onPick({ url: url.trim(), name: "" }); onOpenChange(false); }}
             >
-              Use link
+              Use Link
             </Button>
           </div>
           <label className="inline-flex">

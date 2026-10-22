@@ -613,13 +613,13 @@ export default function ImagesTab() {
             : busy
               ? "Uploading…"
               : "Drop images here or click to select files from your computer"}
-        <input ref={fileRef} type="file" accept="image/*" multiple hidden aria-label="Upload images" onChange={onPick} />
+        <input ref={fileRef} type="file" accept="image/*" multiple hidden aria-label="Upload Images" onChange={onPick} />
       </div>
 
       {justAddedIds.length > 0 && justAddedAt && (
         <div className="flex items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-sm">
           <div>
-            <span className="font-medium text-primary">Just added</span>{" "}
+            <span className="font-medium text-primary">Just Added</span>{" "}
             <span className="text-muted-foreground">
               {justAddedIds.length} image{justAddedIds.length === 1 ? "" : "s"} · {formatRelative(justAddedAt)} · pre-selected below — apply labels from the sidebar
             </span>
@@ -679,7 +679,7 @@ export default function ImagesTab() {
         ) : (
           <Input
             placeholder="Search images…"
-            aria-label="Search images"
+            aria-label="Search Images"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="flex-1 border-0 rounded-none h-14 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2"
@@ -693,8 +693,8 @@ export default function ImagesTab() {
             if (next === "date_taken") { setQ(""); setTimeRange("custom"); }
           }}
           className="text-sm px-3 border-l bg-muted/40 h-14"
-          title="Search field"
-          aria-label="Search field"
+          title="Search Field"
+          aria-label="Search Field"
         >
           {FIELDS.map((f) => <option key={f.v} value={f.v}>in {f.label}</option>)}
         </select>
@@ -735,7 +735,7 @@ export default function ImagesTab() {
 
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <label className="font-medium text-muted-foreground" htmlFor="images-used-on-page">
-          Used on page
+          Used on Page
         </label>
         <select
           id="images-used-on-page"
@@ -743,7 +743,7 @@ export default function ImagesTab() {
           onChange={(e) => setUsedOnPage(e.target.value)}
           className="border rounded px-2 py-1 h-8 text-xs bg-background max-w-[260px]"
         >
-          <option value="all">Any page</option>
+          <option value="all">Any Page</option>
           <option value="none">Not used on any page</option>
           {pageOptions.map((p) => (
             <option key={p.id} value={p.id}>
@@ -786,7 +786,7 @@ export default function ImagesTab() {
           <Lock className="w-3.5 h-3.5 mr-1.5" /> Gate
         </Button>
         <Button size="sm" variant="outline" onClick={() => downloadImagesAsZip((images as Img[]).filter((i) => selected.has(i.id)))}>
-          <Download className="w-3.5 h-3.5 mr-1.5" /> Download .zip
+          <Download className="w-3.5 h-3.5 mr-1.5" /> Download .Zip
         </Button>
         <Button size="sm" variant="destructive" onClick={bulkDelete}>
           <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
@@ -820,7 +820,7 @@ export default function ImagesTab() {
               )}
               {isJustAdded && (
                 <div className="absolute top-1 left-1/2 -translate-x-1/2 z-10 text-[9px] uppercase tracking-wide font-medium bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
-                  Just added
+                  Just Added
                 </div>
               )}
               <input type="checkbox" checked={sel}
@@ -835,7 +835,7 @@ export default function ImagesTab() {
                   <button
                     onClick={(e) => { e.stopPropagation(); unarchiveImages([img.id]); }}
                     className="bg-background/90 hover:bg-muted border rounded p-1"
-                    title="Restore from archive"
+                    title="Restore from Archive"
                   >
                     <ArchiveRestore className="w-3 h-3" />
                   </button>
@@ -851,14 +851,14 @@ export default function ImagesTab() {
                 <button
                   onClick={(e) => { e.stopPropagation(); downloadOriginalImage(img); }}
                   className="bg-background/90 hover:bg-muted border rounded p-1"
-                  title="Download original"
+                  title="Download Original"
                 >
                   <Download className="w-3 h-3" />
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); remove(img); }}
                   className="bg-background/90 hover:bg-destructive hover:text-destructive-foreground border rounded p-1"
-                  title="Delete image"
+                  title="Delete Image"
                 >
                   <Trash2 className="w-3 h-3" />
                 </button>
@@ -873,7 +873,7 @@ export default function ImagesTab() {
                       title="Image failed to load"
                     >
                       <AlertTriangle className="w-6 h-6" />
-                      <div className="font-medium">Broken asset</div>
+                      <div className="font-medium">Broken Asset</div>
                       <div className="opacity-70">image failed to load</div>
                     </div>
                   );
@@ -944,7 +944,7 @@ export default function ImagesTab() {
             Showing {shown.length} of {filtered.length}
           </div>
           <Button size="sm" variant="outline" onClick={() => setVisibleCount((c) => c + 48)}>
-            Load more
+            Load More
           </Button>
         </div>
       )}
@@ -1038,7 +1038,7 @@ function ImageDetail({ img, tags, allTags, broken, onBroken, usages, onAddTag, o
       </div>
       <div className="space-y-3 min-w-0">
       <div className="rounded-md border bg-muted/30 p-2 text-xs space-y-1">
-        <div className="uppercase tracking-wide text-[10px] text-muted-foreground font-medium">Capture metadata</div>
+        <div className="uppercase tracking-wide text-[10px] text-muted-foreground font-medium">Capture Metadata</div>
         {img.taken_at && (
           <div>
             <span className="text-muted-foreground">Taken:</span>{" "}
@@ -1103,7 +1103,7 @@ function ImageDetail({ img, tags, allTags, broken, onBroken, usages, onAddTag, o
         />
       </div>
       <div>
-        <div className="text-xs mb-1">Alt text</div>
+        <div className="text-xs mb-1">Alt Text</div>
         <Input value={alt} onChange={(e) => setAlt(e.target.value)} onBlur={() => onSaveAlt(alt)} />
       </div>
       <div className="flex gap-2 flex-wrap">
@@ -1115,7 +1115,7 @@ function ImageDetail({ img, tags, allTags, broken, onBroken, usages, onAddTag, o
           Copy URL
         </Button>
         <Button size="sm" variant="outline" onClick={() => downloadOriginalImage(img)}>
-          <Download className="w-4 h-4 mr-1" /> Download original
+          <Download className="w-4 h-4 mr-1" /> Download Original
         </Button>
         {img.archived_at ? (
           <Button size="sm" variant="outline" onClick={onUnarchive}>

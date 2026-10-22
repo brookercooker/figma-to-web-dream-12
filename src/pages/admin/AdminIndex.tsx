@@ -182,7 +182,7 @@ function AdminShell() {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <header className="z-30 w-full shrink-0 border-b bg-background">
             <div ref={rowRef} className="flex w-full items-center gap-3 px-4 py-2.5">
-              <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager sections">
+              <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager Sections">
                 {TABS.map(({ key, label, Icon }) => {
                   const active = tab === key;
                   const className = `inline-flex items-center gap-2 whitespace-nowrap ${compact ? "px-2.5" : "px-3"} py-2 rounded-md text-sm font-medium transition-colors border ${
@@ -224,7 +224,7 @@ function AdminShell() {
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="shrink-0 gap-2" aria-label="Account menu">
+                  <Button variant="ghost" size="sm" className="shrink-0 gap-2" aria-label="Account Menu">
                     <UserCircle2 className="w-5 h-5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -235,17 +235,17 @@ function AdminShell() {
                         <Shield className="w-4 h-4 mr-2" /> Admin
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate("/manage/developer")}>
-                        <Code className="w-4 h-4 mr-2" /> Developer review
+                        <Code className="w-4 h-4 mr-2" /> Developer Review
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                     </>
                   )}
                   <DropdownMenuItem onClick={() => setPwOpen(true)}>
-                    <KeyRound className="w-4 h-4 mr-2" /> Change password
+                    <KeyRound className="w-4 h-4 mr-2" /> Change Password
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => supabase.auth.signOut()}>
-                    <LogOut className="w-4 h-4 mr-2" /> Sign out
+                    <LogOut className="w-4 h-4 mr-2" /> Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -303,7 +303,7 @@ function AdminShell() {
         >
           {chatCollapsed && (
             <div className="flex shrink-0 justify-start p-1.5 lg:justify-center">
-              <Button type="button" variant="ghost" size="icon" className="h-9 w-9" aria-label="Expand chat" title="Expand chat" aria-expanded={false} onClick={() => setChatCollapsed(false)}>
+              <Button type="button" variant="ghost" size="icon" className="h-9 w-9" aria-label="Expand Chat" title="Expand Chat" aria-expanded={false} onClick={() => setChatCollapsed(false)}>
                 <PanelLeftOpen className="h-4 w-4" />
               </Button>
             </div>
@@ -314,7 +314,7 @@ function AdminShell() {
             </h1>
             <div className="flex-1" />
             {!editing && <SubmitButton />}
-            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse chat" title="Collapse chat" aria-expanded={true} onClick={() => setChatCollapsed(true)}>
+            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded={true} onClick={() => setChatCollapsed(true)}>
               <PanelLeftClose className="h-4 w-4" />
             </Button>
           </div>
@@ -322,12 +322,12 @@ function AdminShell() {
             <div className={cn("flex min-h-0 flex-1 flex-col", chatCollapsed && "hidden")}>
               <div className="flex items-center justify-between px-3 pt-2">
                 {objectOpen && (
-                  <button type="button" aria-label="Back to page" disabled={finishing} onClick={() => void backToPage()} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                    <ArrowLeft className="h-3 w-3" aria-hidden />Back to page
+                  <button type="button" aria-label="Back to Page" disabled={finishing} onClick={() => void backToPage()} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                    <ArrowLeft className="h-3 w-3" aria-hidden />Back to Page
                   </button>
                 )}
-                <button type="button" aria-label="Return to preview" disabled={finishing} onClick={() => void finishEditing()} className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                  <Eye className="h-3 w-3" aria-hidden />Return to preview
+                <button type="button" aria-label="Return to Preview" disabled={finishing} onClick={() => void finishEditing()} className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                  <Eye className="h-3 w-3" aria-hidden />Return to Preview
                 </button>
               </div>
               <div className="flex shrink-0 flex-col gap-2 border-b px-3 py-3">
@@ -337,10 +337,10 @@ function AdminShell() {
                 </div>
                 <div className="flex gap-1.5">
                   <Button type="button" size="sm" className="flex-1 gap-1.5" disabled={finishing} onClick={() => void saveChanges()}><Check className="h-4 w-4" aria-hidden />{finishing ? "Saving…" : "Finish Editing"}</Button>
-                  <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing} onClick={discardEditing}><Undo2 className="h-4 w-4" aria-hidden />Discard changes</Button>
+                  <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing} onClick={discardEditing}><Undo2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
                 </div>
               </div>
-              <div ref={setSlot} aria-label="Page editing options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
+              <div ref={setSlot} aria-label="Page Editing Options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
             </div>
           )}
           <div className={cn("min-h-0", editing ? "shrink-0" : "flex-1", chatCollapsed && "hidden")}>

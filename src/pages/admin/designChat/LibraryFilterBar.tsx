@@ -16,7 +16,7 @@ export default function LibraryFilterBar({ colorOf = (p) => colorFor(p), labels,
   return (
     <div className="space-y-2">
       {labels.length > 0 && (
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by label">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by Label">
           <button type="button" aria-pressed={label === ""} data-picker-own-enter="" onClick={() => setLabel("")} className={chip(label === "")}>All</button>
           {labels.map((l) => {
             const c = colorOf(l), on = label === l;
@@ -35,13 +35,13 @@ export default function LibraryFilterBar({ colorOf = (p) => colorFor(p), labels,
             onChange={(e) => setSort(e.target.value as SortKey)} data-picker-own-enter="">
             <option value="name">Name A–Z</option>
             <option value="name-desc">Name Z–A</option>
-            {showDates && <option value="newest">Newest first</option>}
-            {showDates && <option value="oldest">Oldest first</option>}
+            {showDates && <option value="newest">Newest First</option>}
+            {showDates && <option value="oldest">Oldest First</option>}
             <option value="label">Label</option>
           </select>
         </label>
         <span className="ml-auto text-xs text-muted-foreground" aria-live="polite">{shown} of {total} shown</span>
-        {filtering && <button type="button" data-picker-own-enter="" onClick={onClear} className="text-xs font-medium underline-offset-2 hover:underline">Clear filters</button>}
+        {filtering && <button type="button" data-picker-own-enter="" onClick={onClear} className="text-xs font-medium underline-offset-2 hover:underline">Clear Filters</button>}
       </div>
     </div>
   );

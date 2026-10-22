@@ -106,20 +106,20 @@ export default function DrawLayer() {
         onContextMenu={(e) => e.preventDefault()}
       />
       <div className={cn("pointer-events-none absolute left-3 top-3 right-3 flex flex-col items-start gap-1.5", capturing && "invisible")}>
-        <div className="pointer-events-auto flex flex-wrap items-center gap-1 rounded-md border bg-background/95 p-1 shadow-md" role="toolbar" aria-label="Drawing tools">
+        <div className="pointer-events-auto flex flex-wrap items-center gap-1 rounded-md border bg-background/95 p-1 shadow-md" role="toolbar" aria-label="Drawing Tools">
           <span className="px-2 text-xs font-medium" aria-live="polite">
             {strokes.length === 0 ? "Draw on the page" : `${strokes.length} ${strokes.length === 1 ? "mark" : "marks"}`}
           </span>
           <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={undo} disabled={strokes.length === 0} aria-label="Undo the last mark" title="Undo the last mark (Ctrl+Z)">
             <Undo2 className="h-4 w-4" />
           </Button>
-          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={clear} disabled={strokes.length === 0} aria-label="Clear all marks" title="Clear all marks">
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={clear} disabled={strokes.length === 0} aria-label="Clear All Marks" title="Clear All Marks">
             <Eraser className="h-4 w-4" />
           </Button>
           {pictureSupported && (
             <Button type="button" variant={picture ? "secondary" : "ghost"} size="sm" className="h-8 gap-1.5 px-2 text-xs" aria-pressed={picture}
               onClick={() => void setPicture(!picture)} title="Send a picture of the page with your marks on it, along with the written description. Your browser asks you once to share this tab.">
-              <Camera className="h-4 w-4" /> {picture ? "Picture on" : "Add a picture"}
+              <Camera className="h-4 w-4" /> {picture ? "Picture on" : "Add a Picture"}
             </Button>
           )}
           <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={cancel} aria-label="Stop drawing and remove the marks" title="Stop drawing and remove the marks (Esc)">

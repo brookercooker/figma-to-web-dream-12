@@ -256,7 +256,7 @@ export default function LabelPicker({
                     )}
                     <div>
                       <div className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1 flex items-center gap-1">
-                        <Palette className="w-3 h-3" /> Color (auto if unset)
+                        <Palette className="w-3 h-3" /> Color (Auto If Unset)
                       </div>
                       <ColorSwatchPicker
                         value={pendingColor ?? pickLeastUsedColor(allLabels.map((l) => l.color_index))}
@@ -272,7 +272,7 @@ export default function LabelPicker({
                 </CommandGroup>
               )}
               {term && exactMatch && (
-                <CommandGroup heading="Already exists">
+                <CommandGroup heading="Already Exists">
                   <CommandItem
                     value={`__exists__${term}`}
                     onSelect={() => add(term)}

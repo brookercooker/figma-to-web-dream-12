@@ -31,18 +31,18 @@ export default function ChangeMyPasswordDialog({
     <Dialog open={open} onOpenChange={(o) => { if (!o) { setPw(""); setPw2(""); } onOpenChange(o); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Change your password</DialogTitle>
+          <DialogTitle>Change Your Password</DialogTitle>
           <DialogDescription>Update the password for your own account.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 py-2">
           <div className="space-y-2">
-            <Label htmlFor="my-pw">New password</Label>
+            <Label htmlFor="my-pw">New Password</Label>
             <Input id="my-pw" type="password" autoComplete="new-password"
               placeholder="At least 8 characters"
               value={pw} onChange={(e) => setPw(e.target.value)} autoFocus />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="my-pw2">Confirm password</Label>
+            <Label htmlFor="my-pw2">Confirm Password</Label>
             <Input id="my-pw2" type="password" autoComplete="new-password"
               value={pw2} onChange={(e) => setPw2(e.target.value)} />
           </div>
@@ -50,7 +50,7 @@ export default function ChangeMyPasswordDialog({
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
           <Button onClick={save} disabled={saving || pw.length < 8 || pw !== pw2}>
-            {saving ? "Saving…" : "Update password"}
+            {saving ? "Saving…" : "Update Password"}
           </Button>
         </DialogFooter>
       </DialogContent>

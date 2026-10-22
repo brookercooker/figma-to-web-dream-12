@@ -85,7 +85,7 @@ export function CopyRefButton({
         copy(reference, "Reference");
       }}
       title={disabled ? (disabledMessage ?? "") : (compact ? `Copy reference: ${reference}` : reference)}
-      aria-label="Copy reference"
+      aria-label="Copy Reference"
       aria-disabled={disabled || undefined}
     >
       <Copy className="w-3.5 h-3.5 shrink-0 transition-transform duration-200 group-hover:scale-110" />

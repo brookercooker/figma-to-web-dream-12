@@ -17,7 +17,7 @@ export default function ColorSwatchPicker({ value, onChange, size = "sm", classN
   const dim = size === "md" ? "w-5 h-5" : "w-4 h-4";
   const check = size === "md" ? "w-3 h-3" : "w-2.5 h-2.5";
   return (
-    <div className={`grid grid-cols-8 gap-1 ${className}`} role="radiogroup" aria-label="Choose label color">
+    <div className={`grid grid-cols-8 gap-1 ${className}`} role="radiogroup" aria-label="Choose Label Color">
       {PALETTE.map((c) => {
         const selected = value === c.idx;
         return (

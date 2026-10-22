@@ -81,7 +81,7 @@ export default function CreateLandingPageDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>New landing page</DialogTitle>
+          <DialogTitle>New Landing Page</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -91,7 +91,7 @@ export default function CreateLandingPageDialog({
               placeholder="e.g. Summer Sale 2026" autoFocus />
           </div>
           <div className="text-xs">
-            <div className="text-muted-foreground mb-1">Path (auto)</div>
+            <div className="text-muted-foreground mb-1">Path (Auto)</div>
             <div className={`font-mono px-2 py-1.5 rounded border ${dupe ? "border-destructive text-destructive" : "bg-muted/40"}`}>
               {path || <span className="opacity-60">—</span>}
             </div>
@@ -107,7 +107,7 @@ export default function CreateLandingPageDialog({
 
           <div className="grid grid-cols-[1fr_120px] gap-2">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Start date (optional)</label>
+              <label className="text-xs text-muted-foreground mb-1 block">Start Date (Optional)</label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
             <div>
@@ -117,7 +117,7 @@ export default function CreateLandingPageDialog({
           </div>
           <div className="grid grid-cols-[1fr_120px] gap-2">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">End date</label>
+              <label className="text-xs text-muted-foreground mb-1 block">End Date</label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} disabled={alwaysOn} />
             </div>
             <div>
@@ -128,13 +128,13 @@ export default function CreateLandingPageDialog({
           <p className="text-[11px] text-muted-foreground -mt-2">Dates use your local time. Leave time blank for an all-day date.</p>
           <label className="flex items-center gap-2 text-xs">
             <input type="checkbox" checked={alwaysOn} onChange={(e) => setAlwaysOn(e.target.checked)} />
-            Always on (no end date)
+            Always on (No End Date)
           </label>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button onClick={submit} disabled={!valid || saving}>
-              {saving ? "Creating…" : "Create landing page"}
+              {saving ? "Creating…" : "Create Landing Page"}
             </Button>
           </div>
         </div>

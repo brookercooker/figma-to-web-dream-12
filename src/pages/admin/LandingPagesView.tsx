@@ -399,7 +399,7 @@ export default function LandingPagesView() {
           </div>
           <Input
             placeholder="Search landing pages…"
-            aria-label="Search landing pages"
+            aria-label="Search Landing Pages"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             className="flex-1 border-0 rounded-none h-14 text-lg focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none px-2"
@@ -408,8 +408,8 @@ export default function LandingPagesView() {
             value={searchField}
             onChange={(e) => setSearchField(e.target.value as Field)}
             className="text-sm px-3 border-l bg-muted/40 h-14"
-            title="Search field"
-            aria-label="Search field"
+            title="Search Field"
+            aria-label="Search Field"
           >
             {FIELDS.map((f) => <option key={f.v} value={f.v}>in {f.label}</option>)}
           </select>
@@ -536,7 +536,7 @@ export default function LandingPagesView() {
                         type="button"
                         onClick={() => setPreview(r)}
                         className="block rounded hover:ring-2 hover:ring-primary/40 focus:outline-none focus:ring-2 focus:ring-primary"
-                        title="Open larger preview"
+                        title="Open Larger Preview"
                       >
                         <PageMiniPreview name={r.name} path={r.path} content={(r as any).content} />
                       </button>
@@ -605,15 +605,15 @@ export default function LandingPagesView() {
                       {fmtDateTime(r.updated_at) || "—"}
                     </td>
                     <td className="px-1 py-3 text-center">
-                      <button className="p-1.5 rounded border hover:bg-muted inline-flex" aria-label="Edit design" title="Edit design"
+                      <button className="p-1.5 rounded border hover:bg-muted inline-flex" aria-label="Edit Design" title="Edit Design"
                         onClick={() => navigate(`/manage/design?page=${r.id}`)}>
                         <Pencil className="w-4 h-4" />
                       </button>
                     </td>
                     <td className="px-1 py-3 text-center">
                       <button className="p-1.5 rounded border hover:bg-muted inline-flex"
-                        aria-label="Open in new tab"
-                        title="Open in new tab"
+                        aria-label="Open in New Tab"
+                        title="Open in New Tab"
                         onClick={() => window.open(r.path, "_blank", "noopener,noreferrer")}>
                         <ExternalLink className="w-4 h-4" />
                       </button>
@@ -623,8 +623,8 @@ export default function LandingPagesView() {
                         <DropdownMenuTrigger asChild>
                           <button
                             className="p-1.5 rounded border hover:bg-muted inline-flex"
-                            aria-label="More actions"
-                            title="More actions"
+                            aria-label="More Actions"
+                            title="More Actions"
                           >
                             <MoreHorizontal className="w-4 h-4" />
                           </button>
@@ -656,7 +656,7 @@ export default function LandingPagesView() {
                           )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onSelect={() => regenerateOne(r)}>
-                            <RefreshCw className="w-4 h-4 mr-2" /> Regenerate thumbnail
+                            <RefreshCw className="w-4 h-4 mr-2" /> Regenerate Thumbnail
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -682,7 +682,7 @@ export default function LandingPagesView() {
       <RenameDialog
         open={!!renaming}
         onOpenChange={(o) => { if (!o) setRenaming(null); }}
-        title={renaming ? `Rename "${renaming.name}"` : "Rename landing page"}
+        title={renaming ? `Rename "${renaming.name}"` : "Rename Landing Page"}
         description="Renaming updates the URL. A redirect from the old path is created automatically so existing links keep working."
         pathPrefix="/landing/"
         currentName={renaming?.name ?? ""}
@@ -750,7 +750,7 @@ export default function LandingPagesView() {
                 });
               }}
             >
-              Publish as-is (show the scaffold)
+              Publish as-is (Show the Scaffold)
             </Button>
             <Button
               variant="secondary"
@@ -763,10 +763,10 @@ export default function LandingPagesView() {
                 });
               }}
             >
-              Show a "Coming Soon" message
+              Show a "Coming Soon" Message
             </Button>
             <Button variant="ghost" onClick={() => setPromoteConfirm(null)}>
-              Cancel — keep as Draft
+              Cancel — Keep as Draft
             </Button>
           </div>
         </DialogContent>
@@ -818,7 +818,7 @@ function EditLandingDialog({
   return (
     <Dialog open={!!row} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Edit landing page</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Edit Landing Page</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Name</label>
@@ -846,7 +846,7 @@ function EditLandingDialog({
           </div>
           <div className="grid grid-cols-[1fr_120px] gap-2">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Start date</label>
+              <label className="text-xs text-muted-foreground mb-1 block">Start Date</label>
               <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
             <div>
@@ -856,7 +856,7 @@ function EditLandingDialog({
           </div>
           <div className="grid grid-cols-[1fr_120px] gap-2">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">End date</label>
+              <label className="text-xs text-muted-foreground mb-1 block">End Date</label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
             <div>

@@ -91,7 +91,7 @@ export default function CreateObjectDialog({
             build it out next.
           </p>
           <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Object name</label>
+            <label className="text-xs text-muted-foreground mb-1 block">Object Name</label>
             <Input value={name} onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") { e.preventDefault(); if (valid && !saving) submit(); }
@@ -106,7 +106,7 @@ export default function CreateObjectDialog({
             )}
           </div>
           <div className="text-xs">
-            <div className="text-muted-foreground mb-1">Object address</div>
+            <div className="text-muted-foreground mb-1">Object Address</div>
             <div className={`font-mono px-2 py-1.5 rounded border ${dupeSlug ? "border-destructive text-destructive" : "bg-muted/40"}`}>
               {route ? `yoursite.com${route}` : <span className="opacity-60">—</span>}
             </div>

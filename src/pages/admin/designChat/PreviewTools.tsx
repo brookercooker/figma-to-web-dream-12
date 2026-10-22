@@ -16,20 +16,20 @@ export default function PreviewTools({ showViewControls, tight = false }: { show
       {showViewControls && (
         <>
           {!tight && <ToggleGroup type="single" value={device} onValueChange={(v) => v && setDevice(v as Device)} variant="outline" size="sm"
-            className="hidden lg:flex gap-0 [&>button]:rounded-none [&>button:first-child]:rounded-l-md [&>button:last-child]:rounded-r-md [&>button+button]:-ml-px" aria-label="Preview size">
-            <ToggleGroupItem value="mobile" aria-label="Mobile preview" title="Mobile preview"><Smartphone className="h-4 w-4" /></ToggleGroupItem>
-            <ToggleGroupItem value="tablet" aria-label="Tablet preview" title="Tablet preview"><Tablet className="h-4 w-4" /></ToggleGroupItem>
-            <ToggleGroupItem value="desktop" aria-label="Desktop preview" title="Desktop preview"><Monitor className="h-4 w-4" /></ToggleGroupItem>
+            className="hidden lg:flex gap-0 [&>button]:rounded-none [&>button:first-child]:rounded-l-md [&>button:last-child]:rounded-r-md [&>button+button]:-ml-px" aria-label="Preview Size">
+            <ToggleGroupItem value="mobile" aria-label="Mobile Preview" title="Mobile Preview"><Smartphone className="h-4 w-4" /></ToggleGroupItem>
+            <ToggleGroupItem value="tablet" aria-label="Tablet Preview" title="Tablet Preview"><Tablet className="h-4 w-4" /></ToggleGroupItem>
+            <ToggleGroupItem value="desktop" aria-label="Desktop Preview" title="Desktop Preview"><Monitor className="h-4 w-4" /></ToggleGroupItem>
           </ToggleGroup>}
           <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={toggleFull}
-            aria-label={inFull ? "Exit full screen" : "Full screen"} title={inFull ? "Exit full screen" : "Full screen"}>
+            aria-label={inFull ? "Exit Full Screen" : "Full Screen"} title={inFull ? "Exit Full Screen" : "Full Screen"}>
             {inFull ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
         </>
       )}
       {state?.liveUrl && !tight && (
         <Button asChild variant="outline" size="icon" className="h-9 w-9">
-          <a href={state.liveUrl} target="_blank" rel="noopener noreferrer" aria-label="Open published site" title="Open published site">
+          <a href={state.liveUrl} target="_blank" rel="noopener noreferrer" aria-label="Open Published Site" title="Open Published Site">
             <ExternalLink className="h-4 w-4" />
           </a>
         </Button>
@@ -47,7 +47,7 @@ export function SubmitButton() {
   const submit = async () => { await postToHelper("/publish"); refreshSoon(); };
   return (
     <Button type="button" size="sm" disabled={submitDisabled} onClick={submit}>
-      {reviewOn === false ? "Publish" : "Submit for review"}
+      {reviewOn === false ? "Publish" : "Submit for Review"}
     </Button>
   );
 }

@@ -209,7 +209,7 @@ export default function TagsPanel({
               type="button"
               onClick={(e) => { e.stopPropagation(); setEditing(n.row); }}
               className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-muted-foreground/20"
-              title="Edit label"
+              title="Edit Label"
               aria-label={`Edit ${n.row.path}`}
             >
               <Pencil className="w-3 h-3" />
@@ -218,7 +218,7 @@ export default function TagsPanel({
               type="button"
               onClick={(e) => { e.stopPropagation(); setDeleting(n.row); }}
               className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-destructive hover:text-destructive-foreground"
-              title="Delete label"
+              title="Delete Label"
               aria-label={`Delete ${n.row.path}`}
             >
               <Trash2 className="w-3 h-3" />
@@ -252,7 +252,7 @@ export default function TagsPanel({
             <Search className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search labels…"
-              aria-label="Search labels"
+              aria-label="Search Labels"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               className="h-7 pl-6 text-xs"
@@ -263,9 +263,9 @@ export default function TagsPanel({
         {activeFilters.length > 0 && (
           <div className="px-3 pb-2 space-y-1.5">
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Active filters</span>
+              <span>Active Filters</span>
               <button onClick={onClearFilters} className="text-[10px] normal-case tracking-normal text-primary hover:underline">
-                Clear all
+                Clear All
               </button>
             </div>
             <div className="flex flex-wrap gap-1">
@@ -291,7 +291,7 @@ export default function TagsPanel({
                 onClick={onSelectAllFiltered}
                 className="w-full text-[11px] px-2 py-1 rounded border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary font-medium"
               >
-                Select all {filteredCount} {itemLabel}
+                Select All {filteredCount} {itemLabel}
               </button>
             )}
           </div>
@@ -318,7 +318,7 @@ export default function TagsPanel({
             className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            Create new label
+            Create New Label
           </button>
         </div>
 
@@ -417,7 +417,7 @@ function EditLabelDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit label</DialogTitle>
+          <DialogTitle>Edit Label</DialogTitle>
           <DialogDescription>
             This label will only apply to <strong className="font-semibold text-foreground">{SCOPE_LABELS[scope]}</strong>.
           </DialogDescription>
@@ -454,7 +454,7 @@ function EditLabelDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
-          <Button onClick={save} disabled={busy || !name.trim()}>Save changes</Button>
+          <Button onClick={save} disabled={busy || !name.trim()}>Save Changes</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -594,7 +594,7 @@ function CreateLabelDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Create new label</DialogTitle>
+          <DialogTitle>Create New Label</DialogTitle>
           <DialogDescription>
             This label will only apply to <strong className="font-semibold text-foreground">{SCOPE_LABELS[scope]}</strong>.
           </DialogDescription>
@@ -643,7 +643,7 @@ function CreateLabelDialog({
         <DialogFooter>
           <Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
           <Button onClick={save} disabled={busy || !name.trim()}>
-            {selectedCount > 0 ? `Create + apply (${selectedCount})` : "Create label"}
+            {selectedCount > 0 ? `Create + apply (${selectedCount})` : "Create Label"}
           </Button>
         </DialogFooter>
       </DialogContent>
