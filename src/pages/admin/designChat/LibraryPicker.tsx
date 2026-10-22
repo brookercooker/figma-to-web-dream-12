@@ -53,8 +53,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const [labelF, setLabelF] = useState("");
   const [built, setBuilt] = useState<BuiltFilter>("all");
   const [limit, setLimit] = useState(PAGE);
-  const [keepOpen, setKeepOpen] = useState(false);
-  const [added, setAdded] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Row[]>([]);
   const picked = useRef(false); // after a pick, the chat box keeps focus instead of the tab button
 
   const { data: labelRows = [], refetch } = useLabelsForScope(kind);
@@ -64,7 +63,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
 
   useEffect(() => {
     if (!open) return;
-    setTerm(""); setLabelF(""); setBuilt("all"); setLimit(PAGE); setAdded(new Set()); setKeepOpen(false);
+    setTerm(""); setLabelF(""); setBuilt("all"); setLimit(PAGE); setSelected([]);
     void refetchRef.current();
     let live = true;
     setRows(null);
@@ -81,9 +80,11 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const clear = () => { setTerm(""); setLabelF(""); setBuilt("all"); };
   const FallbackIcon = kind === "images" ? ImageIcon : kind === "videos" ? Film : Box;
 
-  const pick = (r: Row) => {
-    onPick(r.ref);
-    if (keepOpen) { setAdded((s) => new Set(s).add(r.ref.id)); return; }
+  const selectedIds = useMemo(() => new Set(selected.map((r) => r.ref.id)), [selected]);
+  const toggle = (r: Row) => setSelected((s) => s.some((x) => x.ref.id === r.ref.id) ? s.filter((x) => x.ref.id !== r.ref.id) : [...s, r]);
+  const finish = () => {
+    if (selected.length === 0) return;
+    selected.forEach((r) => onPick(r.ref));
     picked.current = true;
     setOpen(false);
   };
@@ -111,7 +112,8 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input autoFocus value={term} onChange={(e) => setTerm(e.target.value)} aria-label={`Search ${NOUN[kind]}`}
-              placeholder={`Search ${NOUN[kind]} by name or label…`} className="h-11 pl-9 text-base" />
+              placeholder={`Search ${NOUN[kind]} by name or label…`} className="h-11 pl-9 text-base"
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); finish(); } }} />
           </div>
           <LibraryFilterBar labels={allLabels} label={labelF} setLabel={setLabelF} built={built} setBuilt={setBuilt}
             showBuilt={kind === "objects"} shown={Math.min(limit, matches.length)} total={matches.length} filtering={filtering} onClear={clear} />
@@ -129,7 +131,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
             <>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {matches.slice(0, limit).map((r) => (
-                  <LibraryCard key={r.ref.id} item={r.ref} labels={r.labels} note={r.note} added={added.has(r.ref.id)} FallbackIcon={FallbackIcon} onPick={() => pick(r)} />
+                  <LibraryCard key={r.ref.id} item={r.ref} labels={r.labels} note={r.note} selected={selectedIds.has(r.ref.id)} FallbackIcon={FallbackIcon} onPick={() => toggle(r)} />
                 ))}
               </div>
               {matches.length > limit && (
@@ -141,11 +143,14 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
           )}
         </div>
         <div className="flex items-center justify-between gap-3 border-t px-4 py-3 sm:px-5">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={keepOpen} onChange={(e) => setKeepOpen(e.target.checked)} className="h-4 w-4" />
-            Keep open to add more
-          </label>
-          {added.size > 0 && <span className="text-xs text-muted-foreground" aria-live="polite">{added.size} added</span>}
+          <div className="flex flex-col">
+            <span className="text-sm" aria-live="polite">{selected.length > 0 ? `${selected.length} selected` : "Nothing selected yet"}</span>
+            <span className="text-xs text-muted-foreground">Press Enter to finish</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button onClick={finish} disabled={selected.length === 0}>Done</Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

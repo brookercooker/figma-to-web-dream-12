@@ -64,22 +64,65 @@ describe("library picker", () => {
     expect(await screen.findByText("70 of 70 shown")).toBeInTheDocument();
     expect(cards()).toHaveLength(70);
   });
-  it("picks one item and closes", async () => {
-    const { onPick } = setup();
-    fireEvent.click(await screen.findByTitle("photo-03.jpg"));
-    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ kind: "image", id: "i3", url: "https://x/3.webp" }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  });
-  it("Keep open stays open and marks the pick as added", async () => {
+  it("select then Done adds items in selection order and closes", async () => {
     const { onPick } = setup();
     await screen.findByText("60 of 70 shown");
-    fireEvent.click(screen.getByLabelText("Keep open to add more"));
-    fireEvent.click(screen.getByTitle("photo-03.jpg"));
     fireEvent.click(screen.getByTitle("photo-04.jpg"));
-    expect(onPick).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByTitle("photo-03.jpg"));
+    expect(onPick).not.toHaveBeenCalled();
+    expect(screen.getByTitle("photo-04.jpg")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("2 selected")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(onPick.mock.calls.map((c) => c[0].id)).toEqual(["i4", "i3"]);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+  it("clicking a selected card deselects it", async () => {
+    setup();
+    await screen.findByText("60 of 70 shown");
+    fireEvent.click(screen.getByTitle("photo-03.jpg"));
+    fireEvent.click(screen.getByTitle("photo-03.jpg"));
+    expect(screen.getByTitle("photo-03.jpg")).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("Nothing selected yet")).toBeInTheDocument();
+  });
+  it("Done is disabled with no selection", async () => {
+    setup();
+    await screen.findByText("60 of 70 shown");
+    expect(screen.getByRole("button", { name: "Done" })).toBeDisabled();
+  });
+  it("Cancel and Escape add nothing", async () => {
+    const { onPick } = setup();
+    await screen.findByText("60 of 70 shown");
+    fireEvent.click(screen.getByTitle("photo-03.jpg"));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "Images" }));
+    await screen.findByText("60 of 70 shown");
+    expect(screen.getByText("Nothing selected yet")).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle("photo-03.jpg"));
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(onPick).not.toHaveBeenCalled();
+  });
+  it("Enter in the search box finishes only with a selection", async () => {
+    const { onPick } = setup();
+    await screen.findByText("60 of 70 shown");
+    const box = screen.getByLabelText("Search images");
+    fireEvent.keyDown(box, { key: "Enter" });
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getAllByText("Added")).toHaveLength(2);
-    expect(screen.getByText("2 added")).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle("photo-03.jpg"));
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(onPick).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+  it("selection survives a search change", async () => {
+    const { onPick } = setup();
+    await screen.findByText("60 of 70 shown");
+    fireEvent.click(screen.getByTitle("photo-03.jpg"));
+    fireEvent.change(screen.getByLabelText("Search images"), { target: { value: "lobby" } });
+    await waitFor(() => expect(cards()).toHaveLength(1));
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: "i3" }));
   });
   it("has a link to the full page that closes the popup", async () => {
     const { onOpenFull } = setup();
