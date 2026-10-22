@@ -8,7 +8,8 @@ import { loadLibraryVideos, videoMatches } from "../VideoPickerDialog";
 import { loadLibraryObjects, objectMatches } from "../ObjectPickerDialog";
 import { matchesLabelFilter } from "../labelPath";
 import { useLabelsForScope } from "../useAllLabels";
-import LibraryCard from "./LibraryCard";
+import LibraryCard, { type LabelColorOf } from "./LibraryCard";
+import { colorFor } from "../labelColors";
 import LibraryFilterBar, { type BuiltFilter, type SortKey } from "./LibraryFilterBar";
 import type { ChatReference } from "./references";
 
@@ -80,6 +81,11 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const { data: labelRows = [], refetch } = useLabelsForScope(kind);
   const refetchRef = useRef(refetch);
   refetchRef.current = refetch;
+  const colorOf = useMemo<LabelColorOf>(() => {
+    const idx = new Map(labelRows.map((r: any) => [r.path as string, (r.color_index ?? null) as number | null]));
+    const cache = new Map<string, ReturnType<typeof colorFor>>();
+    return (p) => { let c = cache.get(p); if (!c) { c = colorFor(p, idx.get(p) ?? null); cache.set(p, c); } return c; };
+  }, [labelRows]);
   const allLabels = useMemo(() => labelRows.map((r) => r.path).sort((a, b) => a.localeCompare(b)), [labelRows]);
 
   useEffect(() => {
@@ -157,7 +163,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
               placeholder={`Search ${NOUN[kind]} by name or label…`} className="h-11 pl-9 text-base"
  />
           </div>
-          <LibraryFilterBar labels={allLabels} label={labelF} setLabel={setLabelF} built={built} setBuilt={setBuilt}
+          <LibraryFilterBar colorOf={colorOf} labels={allLabels} label={labelF} setLabel={setLabelF} built={built} setBuilt={setBuilt}
             showBuilt={kind === "objects"} sort={sort} setSort={setSort} showDates={showDates} shown={Math.min(limit, matches.length)} total={matches.length} filtering={filtering} onClear={clear} />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
@@ -173,7 +179,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
             <>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {matches.slice(0, limit).map((r) => (
-                  <LibraryCard key={r.ref.id} item={r.ref} labels={r.labels} note={r.note} selected={selectedIds.has(r.ref.id)} FallbackIcon={FallbackIcon} onPick={() => toggle(r)} />
+                  <LibraryCard key={r.ref.id} item={r.ref} labels={r.labels} note={r.note} selected={selectedIds.has(r.ref.id)} FallbackIcon={FallbackIcon} colorOf={colorOf} onPick={() => toggle(r)} />
                 ))}
               </div>
               {matches.length > limit && (
