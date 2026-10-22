@@ -1001,7 +1001,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
             tabIndex={-1}
           />
         ) : (
-          <div className="h-[46vh] overflow-y-auto">
+          <div data-editor-content className="h-[46vh] overflow-y-auto">
             <InlinePagePreview name={page.name} blocks={savedBlocks} />
           </div>
         )}
