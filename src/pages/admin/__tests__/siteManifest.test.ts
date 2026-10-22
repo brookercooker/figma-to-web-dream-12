@@ -53,7 +53,7 @@ describe("reading the manifest", () => {
 describe("loading the manifest", () => {
   it("reads the draft origin first, preserving its preview token", async () => {
     setManifestBase("https://draft.example/about?__lovable_token=test-token");
-    const fetcher = vi.fn(async () => new Response(JSON.stringify(manifest)));
+    const fetcher = vi.fn(async (_url: string) => new Response(JSON.stringify(manifest)));
     vi.stubGlobal("fetch", fetcher);
     await loadSiteManifest();
     expect(fetcher.mock.calls[0][0]).toBe("https://draft.example/site-manifest.json?__lovable_token=test-token");

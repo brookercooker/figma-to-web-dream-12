@@ -7,7 +7,7 @@ export const PAGES_SYNCED = "nova-pages-synced";
 const alias = (path: string) => normalizePreviewPath(path) === "/home" ? "/" : normalizePreviewPath(path);
 
 /** Pure row planning: archived records are deliberately included in existingRows. */
-export function missingPageRows(manifestPages: Pick<SiteManifestPage, "path" | "type">[], existingRows: { path: string }[]) {
+export function missingPageRows(manifestPages: Pick<SiteManifestPage, "path" | "type">[], existingRows: { path: string; archived_at?: string | null }[]) {
   const existing = new Set(existingRows.map((row) => alias(row.path)));
   return manifestPages.flatMap((page) => {
     const path = normalizePreviewPath(page.path);
