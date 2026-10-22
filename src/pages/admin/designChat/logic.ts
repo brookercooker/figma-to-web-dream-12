@@ -31,14 +31,24 @@ export function visibleText(entry: Entry): string | null {
 }
 
 // ---- the live "working on it" line ------------------------------------------------------------
-export function workLabel(job: Job): string {
+export function workLabel(job: Job, now: number = Date.now()): string {
   const st = job.status;
   if (st === "approval") return "Waiting for an approval…";
-  if (job.kind === "change") return st === "working" ? "Making your change…" : "Sending your request…";
-  if (job.kind === "dev") return "Updating the page…";
-  if (st === "publishing") return "Going live…";
-  if (st === "updating") return "Waiting for the live site to update…";
-  return "Reviewing your changes…";
+  const variants = st === "content"
+    ? ["Adding your edits to the draft…", "Saving your edits…", "Lining your edits up with the draft…", "Working on your draft edits…"]
+    : job.kind === "change"
+      ? st === "working"
+        ? ["Making your change…", "Working on your change…", "Your change is still in progress…", "Giving your change the time it needs…", "Still working on it…"]
+        : ["Sending your request…", "Passing your request along…", "Your request is on its way…", "Getting your request through…"]
+      : job.kind === "dev"
+        ? ["Updating the page…", "Working on the page update…", "The page update is in progress…", "Still working on the page…"]
+        : st === "publishing"
+          ? ["Going live…", "Putting your changes live…", "Publishing is still in progress…", "Your changes are on their way to the live site…"]
+          : st === "updating"
+            ? ["Waiting for the live site to update…", "Waiting for your changes to appear live…", "The live site is still catching up…", "Giving the live site time to update…"]
+            : ["Reviewing your changes…", "Your changes are under review…", "The review is still in progress…", "Giving the review the time it needs…"];
+  const elapsedMs = Math.max(0, now - (job.stepStartedAt || job.startedAt));
+  return variants[Math.floor(elapsedMs / 7000) % variants.length];
 }
 
 export function workHint(job: Job, s: RelayState, now: number): string {

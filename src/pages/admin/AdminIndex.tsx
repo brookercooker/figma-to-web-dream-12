@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Pencil, Check, Undo2, ArrowLeft, Code } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Check, Undo2, ArrowLeft, Code } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import SiteManagerLogo from "./SiteManagerLogo";
 import ChatPanel from "./designChat/ChatPanel";
@@ -66,7 +66,7 @@ export default function AdminIndex() {
 
 function AdminShell() {
   const designChat = useDesignChat();
-  const { workingPage, editing, startEditing, stopEditing, clearWorkingPage, selectPage, previewLocation, previewPage, objectOpen, closeObject } = designChat;
+  const { workingPage, editing, stopEditing, clearWorkingPage, objectOpen, closeObject } = designChat;
   const { setSlot, saveAll, discardAll, hasChanges } = useEditorSlot();
   // Saves the editor's held changes, then leaves edit mode; on a failed save it stays in edit mode.
   const [finishing, setFinishing] = useState(false);
@@ -122,16 +122,6 @@ function AdminShell() {
       collapsedBeforeEdit.current = null;
     }
   }, [editing]); // eslint-disable-line react-hooks/exhaustive-deps
-  // The page the button edits: the one the visitor is on in the preview, or, before the preview reports, the working page.
-  const editTarget = previewLocation ? previewPage : workingPage?.id ? workingPage : null;
-  const noPageHere = !!previewLocation && !previewPage;
-  const showEditButton = (tab === "preview" || editing) && (!!editTarget || noPageHere);
-  const toggleEditing = () => {
-    if (editing) { void finishEditing(); return; }
-    if (!editTarget?.id) return;
-    selectPage({ id: editTarget.id, name: editTarget.name, path: editTarget.path });
-    startEditing();
-  };
   const checkedFor = useRef<string | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -153,7 +143,7 @@ function AdminShell() {
     if (nav && nav.scrollWidth - nav.clientWidth > 1 && squeeze < 3) setSqueeze(squeeze + 1);
     else needsMeasure.current = false;
   });
-  useLayoutEffect(() => { remeasure(); }, [tab, isAdmin, showEditButton, editing]);
+  useLayoutEffect(() => { remeasure(); }, [tab, isAdmin, editing]);
   useEffect(() => {
     const row = rowRef.current;
     if (!row) return;
@@ -214,23 +204,6 @@ function AdminShell() {
                 })}
               </nav>
 
-              {showEditButton && (
-                <Button
-                  type="button"
-                  variant={editing ? "default" : "outline"}
-                  size="sm"
-                  className={cn("h-9 shrink-0 gap-2", squeeze >= 2 && "w-9 px-0", !editing && !editTarget && "cursor-not-allowed opacity-50")}
-                  aria-pressed={editing}
-                  aria-label={editing ? "Editing" : "Edit page"}
-                  title={editing ? `Editing ${workingPage?.name ?? ""} — press to save your changes and return to the chat` : editTarget ? `Edit ${editTarget.name}` : "This address isn't a page in the Site Manager."}
-                  disabled={editing && finishing}
-                  aria-disabled={!editing && !editTarget}
-                  onClick={toggleEditing}
-                >
-                  <Pencil className="h-4 w-4" />
-                  {squeeze < 2 && <span>{editing ? "Editing" : "Edit page"}</span>}
-                </Button>
-              )}
               <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />
 
               <div aria-hidden className="h-9 w-px bg-border shrink-0" />
@@ -336,9 +309,6 @@ function AdminShell() {
               <PanelLeftClose className="h-4 w-4" />
             </Button>
           </div>
-          <div className={cn("min-h-0 flex-1", (chatCollapsed || editing) && "hidden")}>
-            <ChatPanel />
-          </div>
           {editing && workingPage && (
             <div className={cn("flex min-h-0 flex-1 flex-col", chatCollapsed && "hidden")}>
               <div className="flex items-center justify-between px-3 pt-2">
@@ -364,6 +334,9 @@ function AdminShell() {
               <div ref={setSlot} aria-label="Page editing options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
             </div>
           )}
+          <div className={cn("min-h-0", editing ? "shrink-0" : "flex-1", chatCollapsed && "hidden")}>
+            <ChatPanel />
+          </div>
         </aside>
       </div>
       <ConfirmDialog

@@ -1,4 +1,6 @@
 # Roadmap — coded object import fidelity
+- [x] Move Edit page into the chat controls, with Done editing while editing.
+- [x] Rotate working labels every seven seconds and distinguish hand-edit syncing from review.
 - [x] Disable visitor link actions while preserving editor selection.
 - [x] Show Minimize inside native and fallback full-screen preview/editor, except during picture capture.
 - [x] Preserve alignment (centered stays centered)

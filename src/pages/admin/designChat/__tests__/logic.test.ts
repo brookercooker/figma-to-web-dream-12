@@ -28,15 +28,47 @@ describe("visibleText", () => {
 describe("the working line", () => {
   const job = (over = {}) => ({ kind: "change", status: "working", startedAt: 1000, ...over });
   it("says what is happening", () => {
-    expect(workLabel(job({ status: "sending" }))).toBe("Sending your request…");
-    expect(workLabel(job())).toBe("Making your change…");
-    expect(workLabel({ kind: "publish", status: "reviewing", startedAt: 0 })).toBe("Reviewing your changes…");
-    expect(workLabel({ kind: "publish", status: "publishing", startedAt: 0 })).toBe("Going live…");
+    expect(workLabel(job({ status: "sending" }), 1000)).toBe("Sending your request…");
+    expect(workLabel(job(), 1000)).toBe("Making your change…");
+    expect(workLabel({ kind: "publish", status: "reviewing", startedAt: 0 }, 0)).toBe("Reviewing your changes…");
+    expect(workLabel({ kind: "publish", status: "publishing", startedAt: 0 }, 0)).toBe("Going live…");
   });
   it("adds a hint only when it helps", () => {
     expect(workHint(job(), base, 1000 + 10_000)).toBe("");
     expect(workHint(job(), base, 1000 + 60_000)).toMatch(/Bigger changes take longer/);
     expect(workHint({ kind: "publish", status: "reviewing", startedAt: 0 }, { ...base, review: { mode: "github" } }, 5)).toMatch(/minute or two/);
+  });
+  const cases = [
+    ["change", "working", "Making your change…", 5],
+    ["change", "sending", "Sending your request…", 4],
+    ["change", "queued", "Sending your request…", 4],
+    ["dev", "working", "Updating the page…", 4],
+    ["publish", "reviewing", "Reviewing your changes…", 4],
+    ["publish", "publishing", "Going live…", 4],
+    ["publish", "updating", "Waiting for the live site to update…", 4],
+    ["publish", "content", "Adding your edits to the draft…", 4],
+  ] as const;
+  for (const [kind, status, first, count] of cases) {
+    it(`rotates ${kind}/${status} every 7 seconds and wraps`, () => {
+      const j = { kind, status, startedAt: 1000, stepStartedAt: 2000 };
+      expect(workLabel(j, 2000)).toBe(first);
+      expect(workLabel(j, 8999)).toBe(first);
+      const second = workLabel(j, 9000);
+      expect(second).not.toBe(first);
+      expect(workLabel(j, 15999)).toBe(second);
+      expect(workLabel(j, 2000 + count * 7000)).toBe(first);
+      expect(workLabel({ ...j, stepStartedAt: 0 }, 1000)).toBe(first);
+    });
+  }
+  it("never presents hand edits as a review, for any kind or variant", () => {
+    for (const kind of ["change", "dev", "publish", undefined]) {
+      for (let i = 0; i < 8; i++) expect(workLabel({ kind, status: "content", startedAt: 1000 }, 1000 + i * 7000)).not.toMatch(/review/i);
+    }
+  });
+  it("keeps approval wording fixed regardless of elapsed time or job kind", () => {
+    for (const kind of ["change", "dev", "publish", undefined]) {
+      for (const now of [1000, 8000, 60000]) expect(workLabel({ kind, status: "approval", startedAt: 1000 }, now)).toBe("Waiting for an approval…");
+    }
   });
   it("is showing while a job is busy or queued", () => {
     expect(isWorking(null)).toBe(false);

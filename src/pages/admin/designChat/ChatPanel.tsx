@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { FileText, Loader2, Mic, Paperclip, Pencil, Send, X } from "lucide-react";
+import { FileText, Loader2, Mic, Paperclip, Pencil, SquarePen, Send, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useEditorSlot } from "./EditorSlot";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -24,7 +26,23 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel() {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, startEditing, stopEditing, previewLocation, previewPage, selectPage } = useDesignChat();
+  const navigate = useNavigate();
+  const { saveAll } = useEditorSlot();
+  const [finishing, setFinishing] = useState(false);
+  const editTarget = previewLocation ? previewPage : workingPage?.id ? workingPage : null;
+  const toggleEditing = async () => {
+    if (finishing || state?.busy) return;
+    if (editing) {
+      setFinishing(true);
+      try { if (await saveAll()) stopEditing(); } finally { setFinishing(false); }
+      return;
+    }
+    if (!editTarget?.id) return;
+    selectPage({ id: editTarget.id, name: editTarget.name, path: editTarget.path });
+    navigate("/manage/preview");
+    startEditing();
+  };
   const [text, setText] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [dragging, setDragging] = useState(false);
@@ -120,7 +138,7 @@ export default function ChatPanel() {
 
   return (
     <section className="flex h-full flex-col bg-background min-h-0 overflow-hidden" aria-label="Design chat">
-      <div ref={logRef} onScroll={onScroll} className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 flex flex-col gap-2.5 text-sm" role="log">
+      <div ref={logRef} onScroll={onScroll} className={cn("flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 flex flex-col gap-2.5 text-sm", editing && "hidden")} role="log">
         {messages.length === 0 && (
           <div className="text-muted-foreground space-y-2">
             <p>Describe a change to the site. You'll see it in the Preview tab. To work on one page, pick it in the Pages tab. Nothing goes live until you press Submit for review.</p>
@@ -159,7 +177,7 @@ export default function ChatPanel() {
             <span className="flex gap-1" aria-hidden="true">
               {[0, 1, 2].map((n) => <i key={n} className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: `${n * 0.2}s` }} />)}
             </span>
-            <span className="font-medium">{workLabel(job)}</span>
+            <span className="font-medium">{workLabel(job, now)}</span>
             <span className="text-xs text-muted-foreground tabular-nums" aria-hidden="true">{fmtDur(now - job.startedAt)}</span>
             {hintForWork && <span className="col-span-3 text-xs text-muted-foreground">{hintForWork}</span>}
           </div>
@@ -192,7 +210,7 @@ export default function ChatPanel() {
       </div>
 
       <form
-        className={cn("border-t p-3 flex flex-col gap-2", dragging && "outline-2 outline-dashed outline-primary -outline-offset-4 bg-muted")}
+        className={cn("border-t p-3 flex flex-col gap-2", editing && "[&>*:not(:last-child)]:hidden", dragging && "outline-2 outline-dashed outline-primary -outline-offset-4 bg-muted")}
         autoComplete="off"
         onSubmit={(e) => { e.preventDefault(); send(); }}
         onDragEnter={(e) => { if (hasFiles(e)) { e.preventDefault(); dragDepth.current++; setDragging(true); } }}
@@ -262,7 +280,7 @@ export default function ChatPanel() {
           className="min-h-[210px] max-h-[50vh] resize-none overflow-y-auto leading-snug"
         />
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <input
             ref={fileRef}
             type="file"
@@ -288,6 +306,10 @@ export default function ChatPanel() {
               <Mic className="h-4 w-4" />
             </Button>
           )}
+          <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label="Edit this page" title="Edit this page"
+            aria-pressed={editing} disabled={finishing || busy || (!editing && !editTarget?.id)} onClick={() => void toggleEditing()}>
+            <SquarePen className="h-4 w-4" /> {editing ? "Done editing" : "Edit page"}
+          </Button>
           <span role="status" className={cn("flex-1 min-w-0 text-xs", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>
             {offline ? "Can't reach the design service right now. It will keep trying." : hint.text}
           </span>
