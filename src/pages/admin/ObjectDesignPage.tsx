@@ -4771,7 +4771,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                           </div>
                         </div>
                       ) : (
-                        <div data-editor-content><SectionView section={s} /></div>
+                        <div data-editor-content className="contents"><SectionView section={s} /></div>
                       )}
                     </BlockCanvas>
                     </>)}

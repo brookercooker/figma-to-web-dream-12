@@ -1,4 +1,4 @@
-import { useEffect, type RefObject, type MouseEvent, type SyntheticEvent } from "react";
+import { useEffect, type RefObject, type MouseEvent, type SyntheticEvent, type KeyboardEvent, type DragEvent } from "react";
 
 const LINKS = 'a[href],[role="link"],button,[role="button"],[onclick]';
 const NOTE = "Links are switched off while editing";
@@ -42,7 +42,7 @@ export function useEditorLinkGuard(
         if (old.cursor) el.style.setProperty("cursor", old.cursor, old.priority); else el.style.removeProperty("cursor");
       });
     };
-  }, [ref, editing, contentOnly]);
+  }); // Canvases may mount after their page finishes loading.
 
   const block = (event: SyntheticEvent<HTMLElement>) => {
     if (!editing || !actionAt(event.target)) return false;
@@ -56,10 +56,10 @@ export function useEditorLinkGuard(
       if (editing && actionAt(event.target)) { select?.(event); block(event); }
     },
     onAuxClickCapture: (event: MouseEvent<HTMLElement>) => { block(event); },
-    onKeyDownCapture: (event: React.KeyboardEvent<HTMLElement>) => {
-      if (event.key === "Enter" || event.key === " ") block(event);
+    onKeyDownCapture: (event: KeyboardEvent<HTMLElement>) => {
+      if (event.key === "Enter" || (event.key === " " && !(event.target instanceof HTMLElement && event.target.isContentEditable))) block(event);
     },
-    onDragStartCapture: (event: React.DragEvent<HTMLElement>) => { block(event); },
+    onDragStartCapture: (event: DragEvent<HTMLElement>) => { block(event); },
     onDoubleClickCapture: (event: MouseEvent<HTMLElement>) => {
       // Keep double-click text editing, but not visitor-side double-click actions.
       if (editing && actionAt(event.target)) event.preventDefault();
