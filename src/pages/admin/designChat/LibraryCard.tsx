@@ -8,7 +8,7 @@ export default function LibraryCard({ item, labels, note, selected, FallbackIcon
   FallbackIcon: ComponentType<{ className?: string }>; onPick: () => void;
 }) {
   return (
-    <button type="button" onClick={onPick} title={item.name} aria-pressed={selected}
+    <button type="button" onClick={onPick} data-picker-card="" title={item.name} aria-pressed={selected}
       className={`group flex flex-col overflow-hidden rounded-lg border bg-card text-left transition-colors ${selected ? "border-foreground ring-2 ring-foreground" : "hover:border-foreground/40"} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`}>
       <span className="relative block aspect-[4/3] w-full bg-muted">
         {item.thumb ? <img src={item.thumb} alt="" loading="lazy" className="h-full w-full object-cover" />

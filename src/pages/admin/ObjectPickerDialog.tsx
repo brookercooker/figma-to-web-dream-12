@@ -3,16 +3,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/prototype/client";
 
-export interface ObjectRow { id: string; name: string; status?: string; description?: string; thumbnail_url?: string | null; component_key?: string | null; labels?: string[] | null }
+export interface ObjectRow { id: string; name: string; status?: string; description?: string; thumbnail_url?: string | null; component_key?: string | null; labels?: string[] | null; createdAt?: string }
 
 /** Saved objects as the page editor uses them: an object block stores `objectId` (this row's id) and `name`. */
 export async function loadLibraryObjects(): Promise<ObjectRow[]> {
   const { data } = await (supabase as any)
     .from("object_registry")
-    .select("id,name,status,description,thumbnail_url,component_key,labels")
+    .select("id,name,status,description,thumbnail_url,component_key,labels,created_at")
     .is("archived_at", null)
     .order("name", { ascending: true });
-  return (data ?? []) as ObjectRow[];
+  return ((data ?? []) as any[]).map(({ created_at, ...o }) => ({ ...o, createdAt: created_at ?? undefined })) as ObjectRow[];
 }
 
 /** Same search the picker uses (name and description), plus labels. */

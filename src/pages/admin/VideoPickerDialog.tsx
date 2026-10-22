@@ -7,13 +7,13 @@ import { leafOf, matchesLabelFilter } from "./labelPath";
 import { useLabelsForScope } from "./useAllLabels";
 
 interface Choice { url: string; poster?: string; name: string }
-export interface LibraryVideo extends Choice { id?: string; altUrl?: string; labels: string[] }
+export interface LibraryVideo extends Choice { id?: string; altUrl?: string; labels: string[]; createdAt?: string }
 
 /** The video library as the page editor uses it: `url` and `poster` are exactly what a video block stores. */
 export async function loadLibraryVideos(limit = 120): Promise<LibraryVideo[]> {
   const { data } = await (supabase as any)
     .from("videos")
-    .select("id,name,storage_url,external_url,poster_url,alt_url,tags")
+    .select("id,name,storage_url,external_url,poster_url,alt_url,tags,created_at")
     .is("archived_at", null)
     .limit(limit);
   return (data ?? [])
@@ -24,6 +24,7 @@ export async function loadLibraryVideos(limit = 120): Promise<LibraryVideo[]> {
       poster: row.poster_url || undefined,
       name: row.name || "",
       labels: Array.isArray(row.tags) ? row.tags.filter(Boolean) : [],
+      createdAt: row.created_at ?? undefined,
     }))
     .filter((c: LibraryVideo) => !!c.url);
 }

@@ -9,7 +9,7 @@ import { loadLibraryObjects, objectMatches } from "../ObjectPickerDialog";
 import { matchesLabelFilter } from "../labelPath";
 import { useLabelsForScope } from "../useAllLabels";
 import LibraryCard from "./LibraryCard";
-import LibraryFilterBar, { type BuiltFilter } from "./LibraryFilterBar";
+import LibraryFilterBar, { type BuiltFilter, type SortKey } from "./LibraryFilterBar";
 import type { ChatReference } from "./references";
 
 export type LibraryKind = "images" | "videos" | "objects";
@@ -18,27 +18,47 @@ const NOUN = { images: "images", videos: "videos", objects: "objects" } as const
 const FULL = { images: "Images", videos: "Videos", objects: "Objects" } as const;
 const TITLE = { images: "Pick an image", videos: "Pick a video", objects: "Pick an object" } as const;
 
-type Row = { ref: ChatReference; search: (term: string) => boolean; labels: string[]; note?: string; inCode?: boolean };
+type Row = { ref: ChatReference; search: (term: string) => boolean; labels: string[]; note?: string; inCode?: boolean; createdAt?: string };
+
+const byName = (a: Row, b: Row) => a.ref.name.localeCompare(b.ref.name);
+const time = (r: Row) => { const t = r.createdAt ? Date.parse(r.createdAt) : NaN; return Number.isNaN(t) ? null : t; };
+/** Order rows for the chosen sort; undated items go last in both date orders. */
+export function sortRows(rows: Row[], sort: SortKey): Row[] {
+  const out = [...rows];
+  if (sort === "name-desc") return out.sort((a, b) => byName(b, a));
+  if (sort === "newest" || sort === "oldest") return out.sort((a, b) => {
+    const ta = time(a), tb = time(b);
+    if (ta === null || tb === null) return ta === tb ? byName(a, b) : ta === null ? 1 : -1;
+    return (sort === "newest" ? tb - ta : ta - tb) || byName(a, b);
+  });
+  if (sort === "label") return out.sort((a, b) => {
+    const la = a.labels[0], lb = b.labels[0];
+    if (!la || !lb) return la === lb ? byName(a, b) : !la ? 1 : -1;
+    return la.localeCompare(lb) || byName(a, b);
+  });
+  if (sort === "built") return out.sort((a, b) => Number(!a.inCode) - Number(!b.inCode) || byName(a, b));
+  return out.sort(byName);
+}
 
 /** Load the library through the same loaders the page editor's pickers use. */
 async function loadRows(kind: LibraryKind): Promise<Row[]> {
   if (kind === "images") {
     return (await loadLibraryImages(2000)).map((i, n) => ({
       ref: { kind: "image", id: i.id ?? i.url ?? String(n), name: i.name || i.alt || "Untitled image", url: i.url, labels: i.labels, thumb: i.url },
-      search: (t) => imageMatches(i, t), labels: i.labels,
+      search: (t) => imageMatches(i, t), labels: i.labels, createdAt: i.createdAt,
     }));
   }
   if (kind === "videos") {
     return (await loadLibraryVideos(2000)).map((v, n) => ({
       ref: { kind: "video", id: v.id ?? v.url ?? String(n), name: v.name || "Untitled video", url: v.url, altUrl: v.altUrl, poster: v.poster, labels: v.labels, thumb: v.poster },
-      search: (t) => videoMatches(v, t), labels: v.labels,
+      search: (t) => videoMatches(v, t), labels: v.labels, createdAt: v.createdAt,
     }));
   }
   return (await loadLibraryObjects()).map((o) => {
     const type = o.component_key ? "built in code" : "built in the Site Manager";
     return {
       ref: { kind: "object", id: o.id, name: o.name, componentKey: o.component_key, type, thumb: o.thumbnail_url ?? undefined },
-      search: (t) => objectMatches(o, t), labels: o.labels ?? [], note: type, inCode: !!o.component_key,
+      search: (t) => objectMatches(o, t), labels: o.labels ?? [], note: type, inCode: !!o.component_key, createdAt: o.createdAt,
     };
   });
 }
@@ -53,6 +73,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const [labelF, setLabelF] = useState("");
   const [built, setBuilt] = useState<BuiltFilter>("all");
   const [limit, setLimit] = useState(PAGE);
+  const [sort, setSort] = useState<SortKey>("name");
   const [selected, setSelected] = useState<Row[]>([]);
   const picked = useRef(false); // after a pick, the chat box keeps focus instead of the tab button
 
@@ -63,7 +84,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
 
   useEffect(() => {
     if (!open) return;
-    setTerm(""); setLabelF(""); setBuilt("all"); setLimit(PAGE); setSelected([]);
+    setTerm(""); setLabelF(""); setBuilt("all"); setSort("name"); setLimit(PAGE); setSelected([]);
     void refetchRef.current();
     let live = true;
     setRows(null);
@@ -71,10 +92,10 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
     return () => { live = false; };
   }, [open, kind]);
 
-  const matches = useMemo(() => (rows ?? [])
+  const matches = useMemo(() => sortRows((rows ?? [])
     .filter((r) => r.search(term) && (!labelF || matchesLabelFilter(r.labels, labelF))
-      && (built === "all" || (built === "code") === !!r.inCode))
-    .sort((a, b) => a.ref.name.localeCompare(b.ref.name)), [rows, term, labelF, built]);
+      && (built === "all" || (built === "code") === !!r.inCode)), sort), [rows, term, labelF, built, sort]);
+  const showDates = useMemo(() => (rows ?? []).some((r) => !!r.createdAt), [rows]);
   useEffect(() => setLimit(PAGE), [term, labelF, built]);
   const filtering = term.trim() !== "" || labelF !== "" || built !== "all";
   const clear = () => { setTerm(""); setLabelF(""); setBuilt("all"); };
@@ -88,6 +109,26 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
     picked.current = true;
     setOpen(false);
   };
+  const finishRef = useRef(finish);
+  finishRef.current = finish;
+  const countRef = useRef(0);
+  countRef.current = selected.length;
+
+  /** Enter finishes from anywhere in the popup, except controls that own Enter. */
+  const handleEnter = (e: KeyboardEvent) => {
+    if (e.key !== "Enter" || e.isComposing || e.defaultPrevented) return;
+    const t = e.target instanceof Element ? e.target : null;
+    if (t?.closest("[data-picker-own-enter]")) return;
+    if (countRef.current === 0) return; // cards select natively; elsewhere nothing happens
+    e.preventDefault();
+    finishRef.current();
+  };
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (!(e.target instanceof Element && e.target.closest("[role=dialog]"))) handleEnter(e); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -99,6 +140,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
         </button>
       </DialogTrigger>
       <DialogContent className="flex h-[92vh] w-[96vw] max-w-6xl flex-col gap-0 p-0 sm:h-[85vh]"
+        onKeyDown={(e) => handleEnter(e.nativeEvent)}
         onCloseAutoFocus={(e) => { if (picked.current) { e.preventDefault(); picked.current = false; } }}>
         <div className="space-y-3 border-b p-4 pr-12 sm:p-5 sm:pr-14">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -113,10 +155,10 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input autoFocus value={term} onChange={(e) => setTerm(e.target.value)} aria-label={`Search ${NOUN[kind]}`}
               placeholder={`Search ${NOUN[kind]} by name or label…`} className="h-11 pl-9 text-base"
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); finish(); } }} />
+ />
           </div>
           <LibraryFilterBar labels={allLabels} label={labelF} setLabel={setLabelF} built={built} setBuilt={setBuilt}
-            showBuilt={kind === "objects"} shown={Math.min(limit, matches.length)} total={matches.length} filtering={filtering} onClear={clear} />
+            showBuilt={kind === "objects"} sort={sort} setSort={setSort} showDates={showDates} shown={Math.min(limit, matches.length)} total={matches.length} filtering={filtering} onClear={clear} />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
           {rows === null ? (
@@ -136,7 +178,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
               </div>
               {matches.length > limit && (
                 <div className="mt-4 flex justify-center">
-                  <Button variant="outline" onClick={() => setLimit((l) => l + PAGE)}>Show more</Button>
+                  <Button variant="outline" data-picker-own-enter="" onClick={() => setLimit((l) => l + PAGE)}>Show more</Button>
                 </div>
               )}
             </>
@@ -145,11 +187,11 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
         <div className="flex items-center justify-between gap-3 border-t px-4 py-3 sm:px-5">
           <div className="flex flex-col">
             <span className="text-sm" aria-live="polite">{selected.length > 0 ? `${selected.length} selected` : "Nothing selected yet"}</span>
-            <span className="text-xs text-muted-foreground">Press Enter to finish</span>
+            <span className="text-xs text-muted-foreground">Press Enter to finish · Space selects the focused item</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={finish} disabled={selected.length === 0}>Done</Button>
+            <Button variant="outline" data-picker-own-enter="" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button data-picker-own-enter="" onClick={finish} disabled={selected.length === 0}>Done</Button>
           </div>
         </div>
       </DialogContent>
