@@ -210,7 +210,7 @@ describe("library picker", () => {
   it("selection survives a sort change", async () => {
     setup(); await screen.findByText("60 of 70 shown");
     fireEvent.click(screen.getByTitle("photo-03.jpg"));
-    sortTo("name-desc");
+    sortTo("label");
     expect(screen.getByText("1 selected")).toBeInTheDocument();
     expect(screen.getByTitle("photo-03.jpg")).toHaveAttribute("aria-pressed", "true");
   });
