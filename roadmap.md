@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Add live Capture camera with repeated shots, native-picker fallback and verified cleanup tests.
 - [x] Sync manifest pages into Pages automatically and enforce unique paths; verified automatic additions and 198 tests.
 - [ ] Verify hosted draft manifest/token access and /draft listing: blocked by net::ERR_FAILED from the preview-address service and hosted preview manifest; same-origin fallback verified.
 - [x] Automatically register real preview pages and open them for manual editing; verify an unlisted page.

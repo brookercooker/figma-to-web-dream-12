@@ -6,3 +6,4 @@
 - Page additions share pure insertion helpers; media pickers remember positions and create filled blocks only on selection, so cancellation cannot dirty the page.
 - Manual editing registers visitor pages through a deduplicated path cache; empty-content embedded pages resolve live components from the public-site manifest, so new public routes do not require editor allowlist updates.
 - Manifest synchronization and edit policy share the draft-first manifest loader; sync batches missing paths once per build and relies on a unique pages.path index to prevent cross-tab duplicates without changing existing records.
+- Capture uses an isolated camera sheet with session-scoped stream cleanup and passes JPEG Files into existing staging; uploads stay unchanged and camera failure uses a single-photo native input.
