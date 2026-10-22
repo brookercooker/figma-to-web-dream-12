@@ -4,3 +4,4 @@
 - Editor canvases share useEditorLinkGuard; visitor actions dispatch selection explicitly before propagation is blocked, keeping navigation disabled without disabling editor controls.
 - Site Manager reads/writes the real Lovable Cloud database via `src/prototype/client.ts` (product catalog still demo); open-access `dev_open_all` policies are temporary while building and must be dropped before launch.
 - Page additions share pure insertion helpers; media pickers remember positions and create filled blocks only on selection, so cancellation cannot dirty the page.
+- Manual editing registers visitor pages through a deduplicated path cache; empty-content embedded pages resolve live components from the public-site manifest, so new public routes do not require editor allowlist updates.

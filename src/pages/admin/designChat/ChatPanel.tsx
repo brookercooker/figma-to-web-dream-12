@@ -12,6 +12,8 @@ import { fmtDur, fmtSize, isWorking, problemsModel, visibleText, workHint, workL
 import { useAttachments } from "./useAttachments";
 import { useHint } from "./useHint";
 import { useVoice } from "./useVoice";
+import { toast } from "sonner";
+import { registerPreviewPage } from "./usePreviewPage";
 
 const SUGGESTIONS = [
   "Make the headline larger",
@@ -26,22 +28,31 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel() {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, startEditing, stopEditing, previewLocation, previewPage, selectPage } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, startEditing, stopEditing, previewLocation, previewPage, previewRegistrable, selectPage } = useDesignChat();
   const navigate = useNavigate();
   const { saveAll } = useEditorSlot();
   const [finishing, setFinishing] = useState(false);
+  const opening = useRef(false);
   const editTarget = previewLocation ? previewPage : workingPage?.id ? workingPage : null;
   const toggleEditing = async () => {
-    if (finishing || state?.busy) return;
+    if (finishing || opening.current || state?.busy) return;
     if (editing) {
       setFinishing(true);
       try { if (await saveAll()) stopEditing(); } finally { setFinishing(false); }
       return;
     }
-    if (!editTarget?.id) return;
-    selectPage({ id: editTarget.id, name: editTarget.name, path: editTarget.path });
-    navigate("/manage/preview");
-    startEditing();
+    if (!editTarget?.id && !previewRegistrable) return;
+    opening.current = true;
+    setFinishing(true);
+    try {
+      const target = editTarget?.id ? editTarget : previewRegistrable ? await registerPreviewPage(previewRegistrable) : null;
+      if (!target?.id) return;
+      selectPage({ id: target.id, name: target.name, path: target.path });
+      navigate("/manage/preview");
+      startEditing();
+    } catch {
+      toast.error("Couldn't open this page for editing. Try again.");
+    } finally { opening.current = false; setFinishing(false); }
   };
   const [text, setText] = useState("");
   const [now, setNow] = useState(() => Date.now());
@@ -306,8 +317,8 @@ export default function ChatPanel() {
               <Mic className="h-4 w-4" />
             </Button>
           )}
-          <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label="Edit this page by hand (without the chat)" title="Edit this page by hand (without the chat)"
-            aria-pressed={editing} disabled={finishing || busy || (!editing && !editTarget?.id)} onClick={() => void toggleEditing()}>
+          <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label="Edit this page by hand (without the chat)" title={!editing && !editTarget?.id && !previewRegistrable ? "This address isn't a page that can be edited." : "Edit this page by hand (without the chat)"}
+            aria-pressed={editing} disabled={finishing || busy || (!editing && !editTarget?.id && !previewRegistrable)} onClick={() => void toggleEditing()}>
             <SquarePen className="h-4 w-4" /> {editing ? "Done editing" : "Edit manually"}
           </Button>
           {(offline || hint.text) && <span role="status" className={cn("flex-1 min-w-0 text-xs", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>

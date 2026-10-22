@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [x] Automatically register real preview pages and open them for manual editing; verify an unlisted page.
 - [x] Move Edit manually into the chat controls, with Done editing while editing.
 - [x] Keep Enter sending and Shift+Enter for new lines, with no idle hint.
 - [x] Rotate working labels every seven seconds and distinguish hand-edit syncing from review.
