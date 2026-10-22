@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/prototype/client";
-import { toRouteSlug } from "../slug";
 import { notifyContentEdited } from "./contentSync";
-import { normalizePreviewPath, pageToRegister, type RegistrablePage } from "./registerPage";
+import { normalizePreviewPath, pageToRegister, pageRow, pageSlugSuffix, type RegistrablePage } from "./registerPage";
 export { normalizePreviewPath } from "./registerPage";
 
 /** The Site Manager page shown at an address of the public site (looked up by path, cached for the session). */
@@ -20,9 +19,7 @@ export function registerPreviewPage(candidate: RegistrablePage): Promise<Preview
   const pending = registering.get(key);
   if (pending) return pending;
   const request = (async () => {
-    const suffix = Array.from(crypto.getRandomValues(new Uint8Array(3)), (n) => n.toString(16).padStart(2, "0")).join("");
-    const fields = { name: candidate.name, path: key, page_type: "static", status: "draft", build_status: "ready",
-      content: null, inline_edits: {}, slug_id: `${toRouteSlug(candidate.name)}-${suffix}` };
+    const fields = pageRow({ ...candidate, path: key }, "static", pageSlugSuffix());
     let { data, error } = await (supabase as any).from("pages").insert(fields).select("id,name,path").single();
     if (error?.code === "23505") {
       const found = await (supabase as any).from("pages").select("id,name,path,archived_at").eq("path", key).maybeSingle();

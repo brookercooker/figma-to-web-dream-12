@@ -1,9 +1,20 @@
+import { toRouteSlug } from "../slug";
+
 /** "/about/" → "/about"; "/" stays. */
 export function normalizePreviewPath(path: string): string {
   return path.length > 1 ? path.replace(/\/+$/, "") || "/" : path;
 }
 
 export type RegistrablePage = { name: string; path: string };
+
+export function pageRow(candidate: RegistrablePage, type: "static" | "landing" = "static", suffix = "") {
+  return { name: candidate.name, path: candidate.path, page_type: type, status: "draft", build_status: type === "landing" ? "draft" : "ready",
+    content: null, inline_edits: {}, slug_id: `${toRouteSlug(candidate.name)}-${suffix}` };
+}
+
+export function pageSlugSuffix() {
+  return Array.from(crypto.getRandomValues(new Uint8Array(3)), (n) => n.toString(16).padStart(2, "0")).join("");
+}
 
 /** Only visitor pages can be automatically added for hand editing. */
 export function pageToRegister(path: string, notFound = false): RegistrablePage | null {

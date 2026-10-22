@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EMBED_FN, SUPABASE_KEY, type RelayState } from "./helper";
 import { withPath } from "./logic";
+import { setManifestBase, resetSiteManifestCache } from "../siteManifest";
+import { syncManifestPages } from "../manifestPageSync";
 
 /**
  * The draft preview and how it keeps up with changes.
@@ -66,6 +68,8 @@ export function usePreview(state: RelayState | null, path: string | null = null)
     shown.current = id;
     setShownId(id);
     setLoaded(true);
+    resetSiteManifestCache();
+    void syncManifestPages();
     setError(null);
     setFrames((fs) => fs.filter((f) => f.id >= id)); // older copies go; newer ones still loading stay
     if (clearOnSwap.current) { clearOnSwap.current = false; hideUpdating(); }
@@ -85,6 +89,7 @@ export function usePreview(state: RelayState | null, path: string | null = null)
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.embed_url) throw new Error(data.error || "Couldn't load the preview.");
       if (!alive.current) return;
+      setManifestBase(data.embed_url);
       const id = ++seq.current;
       setFrames((fs) => [...fs, { id, url: withPath(data.embed_url, remembered.current ?? pathRef.current) }]);
       swapTimers.current[id] = setTimeout(() => finish(id), SWAP_TIMEOUT_MS);
@@ -100,6 +105,7 @@ export function usePreview(state: RelayState | null, path: string | null = null)
 
   /** The builder finished a change: reload now and a few more times, and say so over the preview. */
   const reloadSoon = useCallback(() => {
+    resetSiteManifestCache();
     lastReloadAt.current = Date.now();
     followTimers.current.forEach(clearTimeout); followTimers.current = [];
     reloadTimers.current.forEach(clearTimeout);
@@ -110,6 +116,8 @@ export function usePreview(state: RelayState | null, path: string | null = null)
 
   /** The helper saw the preview's new build: reload now and a few times just after (the build is served a little later). */
   const buildSeen = useCallback((showing: boolean) => {
+    resetSiteManifestCache();
+    void syncManifestPages();
     loadPreview();
     followTimers.current.forEach(clearTimeout);
     followTimers.current = AFTER_BUILD_MS.map((ms) => setTimeout(() => {
