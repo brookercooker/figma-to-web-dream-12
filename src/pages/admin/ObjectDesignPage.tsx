@@ -349,7 +349,7 @@ const LinkStyleIcon = ((props: { className?: string }) => (
 const BUTTON_STYLE_OPTIONS = [
   { value: "solid" as const, label: "Solid", icon: SolidStyleIcon },
   { value: "outline" as const, label: "Outline", icon: OutlineStyleIcon },
-  { value: "link" as const, label: "Text link", icon: LinkStyleIcon },
+  { value: "link" as const, label: "Text Link", icon: LinkStyleIcon },
 ];
 
 /**
@@ -2553,7 +2553,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                           <Choice
                             value={typeof t.divider?.widthPct === "number" ? "percent" : (t.divider?.width ?? "full")}
                             options={[
-                              { value: "full" as const, label: "Full width", icon: Minus },
+                              { value: "full" as const, label: "Full Width", icon: Minus },
                               { value: "short" as const, label: "Short", icon: Minus },
                               { value: "percent" as const, label: "Percent", icon: Minus },
                             ]}
@@ -3089,9 +3089,9 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
             <ToolGroup title="Block Alignment" icon={AlignCenter} defaultOpen>
             <div className="flex flex-wrap items-center gap-1">
             {([
-              { value: "left" as SectionAlign, label: "Align left", icon: AlignLeft },
-              { value: "center" as SectionAlign, label: "Align center", icon: AlignCenter },
-              { value: "right" as SectionAlign, label: "Align right", icon: AlignRight },
+              { value: "left" as SectionAlign, label: "Align Left", icon: AlignLeft },
+              { value: "center" as SectionAlign, label: "Align Center", icon: AlignCenter },
+              { value: "right" as SectionAlign, label: "Align Right", icon: AlignRight },
             ]).map((o) => (
               <Button
                 key={o.value}
@@ -3531,7 +3531,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     <Choice
                       value={typeof d.widthPct === "number" ? "percent" : (d.width ?? "short")}
                       options={[
-                        { value: "full" as const, label: "Full width", icon: Minus },
+                        { value: "full" as const, label: "Full Width", icon: Minus },
                         { value: "short" as const, label: "Short", icon: Minus },
                         { value: "percent" as const, label: "Percent", icon: Minus },
                       ]}
@@ -3741,8 +3741,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                   <IconSelect
                     value={section.layout === "behind" ? "behind" : "stacked"}
                     options={[
-                      { value: "stacked" as const, label: "In place", icon: Rows2 },
-                      { value: "behind" as const, label: "Behind text", icon: Layers },
+                      { value: "stacked" as const, label: "In Place", icon: Rows2 },
+                      { value: "behind" as const, label: "Behind Text", icon: Layers },
                     ]}
                     onChange={(v) => patch(section.id, { layout: v })}
                   />
@@ -4086,10 +4086,10 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         title={title}
         subtitle={`Section ${i + 1} · ${SECTION_LABEL[s.type]}`}
         menu={[
-          ...(i > 0 ? [{ label: "Move up", icon: ArrowUp, onSelect: () => move(s.id, -1) }] : []),
-          ...(i < sections.length - 1 ? [{ label: "Move down", icon: ArrowDown, onSelect: () => move(s.id, 1) }] : []),
-          { label: "Duplicate section", icon: Copy, onSelect: () => duplicateSection(s.id) },
-          { label: "Delete section", icon: Trash2, onSelect: () => remove(s.id), destructive: true },
+          ...(i > 0 ? [{ label: "Move Up", icon: ArrowUp, onSelect: () => move(s.id, -1) }] : []),
+          ...(i < sections.length - 1 ? [{ label: "Move Down", icon: ArrowDown, onSelect: () => move(s.id, 1) }] : []),
+          { label: "Duplicate Section", icon: Copy, onSelect: () => duplicateSection(s.id) },
+          { label: "Delete Section", icon: Trash2, onSelect: () => remove(s.id), destructive: true },
         ]}
       />
     );
@@ -4927,8 +4927,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 label="Sits"
                 value={sec.layout === "behind" ? "behind" : "stacked"}
                 options={[
-                  { value: "stacked", label: "In place", icon: Rows2 },
-                  { value: "behind", label: "Behind text", icon: Layers },
+                  { value: "stacked", label: "In Place", icon: Rows2 },
+                  { value: "behind", label: "Behind Text", icon: Layers },
                 ]}
                 onChange={(v) => patch(sec.id, { layout: v })}
               />

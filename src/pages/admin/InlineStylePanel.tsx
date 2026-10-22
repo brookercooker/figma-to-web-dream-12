@@ -150,7 +150,7 @@ export default function InlineStylePanel({
   if (sel.kind === "image") {
     return (
       <div>
-        <ToolHeader icon={ImageIcon} title="Picture" menu={[{ label: "Reset picture size", icon: RotateCcw, onSelect: reset }]} />
+        <ToolHeader icon={ImageIcon} title="Picture" menu={[{ label: "Reset Picture Size", icon: RotateCcw, onSelect: reset }]} />
         <ToolGroup title="Picture" icon={ImageIcon} defaultOpen>
           <Button variant="outline" size="sm" className="w-full gap-2" onClick={onReplaceImage}>
             <ImageIcon className="w-4 h-4" /> Replace Picture
@@ -223,7 +223,7 @@ export default function InlineStylePanel({
   return (
     <div>
       <ToolHeader icon={Type} title="Text" subtitle={textPreview.length > 40 ? `${textPreview.slice(0, 40)}…` : textPreview || undefined}
-        menu={[{ label: "Reset text style", icon: RotateCcw, onSelect: reset }]} />
+        menu={[{ label: "Reset Text Style", icon: RotateCcw, onSelect: reset }]} />
       {highlighted ? (
         <div className="pb-3">
           <ToolNote>

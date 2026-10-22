@@ -63,10 +63,10 @@ interface Vid {
 
 type Field = "all" | "name" | "id" | "description" | "alt" | "tags" | "used_on";
 const FIELDS: { v: Field; label: string }[] = [
-  { v: "all", label: "All fields" },
+  { v: "all", label: "All Fields" },
   { v: "name", label: "Name" },
   { v: "description", label: "Description" },
-  { v: "alt", label: "Alt text" },
+  { v: "alt", label: "Alt Text" },
   { v: "tags", label: "Labels" },
   { v: "used_on", label: "Used On (page)" },
 ];
@@ -788,7 +788,7 @@ export default function VideoTab() {
             <span className="text-xs font-medium text-muted-foreground">Show</span>
             {([
               { v: "all", label: "All" },
-              { v: "hour", label: "Last hour" },
+              { v: "hour", label: "Last Hour" },
               { v: "day", label: "Last 24h" },
               { v: "week", label: "Last 7 days" },
             ] as { v: TimeRange; label: string }[]).map((c) => (

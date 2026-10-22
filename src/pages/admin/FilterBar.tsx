@@ -7,7 +7,7 @@ export type TimeRange = "all" | "hour" | "day" | "week" | "custom";
 
 const RANGE_CHIPS: { v: TimeRange; label: string }[] = [
   { v: "all", label: "All" },
-  { v: "hour", label: "Last hour" },
+  { v: "hour", label: "Last Hour" },
   { v: "day", label: "Last 24h" },
   { v: "week", label: "Last 7 days" },
   { v: "custom", label: "Custom" },

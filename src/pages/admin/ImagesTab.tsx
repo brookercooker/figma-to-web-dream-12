@@ -66,14 +66,14 @@ interface Img {
 
 type Field = "all" | "filename" | "id" | "description" | "alt" | "tags" | "used_on" | "location" | "date_taken";
 const FIELDS: { v: Field; label: string }[] = [
-  { v: "all", label: "All fields" },
+  { v: "all", label: "All Fields" },
   { v: "filename", label: "Filename" },
   { v: "description", label: "Description" },
-  { v: "alt", label: "Alt text" },
+  { v: "alt", label: "Alt Text" },
   { v: "tags", label: "Labels" },
   { v: "used_on", label: "Used On (page)" },
   { v: "location", label: "Location" },
-  { v: "date_taken", label: "Date taken" },
+  { v: "date_taken", label: "Date Taken" },
 ];
 
 const SIGN_EXPIRY = 60 * 60 * 24 * 365 * 10;

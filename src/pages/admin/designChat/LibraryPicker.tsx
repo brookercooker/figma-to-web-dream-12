@@ -17,7 +17,7 @@ export type LibraryKind = "images" | "videos" | "objects";
 const PAGE = 60;
 const NOUN = { images: "images", videos: "videos", objects: "objects" } as const;
 const FULL = { images: "Images", videos: "Videos", objects: "Objects" } as const;
-const TITLE = { images: "Pick an image", videos: "Pick a video", objects: "Pick an object" } as const;
+const TITLE = { images: "Pick an Image", videos: "Pick a Video", objects: "Pick an Object" } as const;
 
 type Row = { ref: ChatReference; search: (term: string) => boolean; labels: string[]; note?: string; createdAt?: string };
 

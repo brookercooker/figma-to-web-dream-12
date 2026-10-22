@@ -48,7 +48,7 @@ interface Page {
 
 type Field = "all" | "name" | "id" | "path" | "description" | "tags";
 const FIELDS: { v: Field; label: string }[] = [
-  { v: "all", label: "All fields" },
+  { v: "all", label: "All Fields" },
   { v: "name", label: "Name" },
   { v: "path", label: "Path" },
   { v: "description", label: "Description" },
@@ -440,8 +440,8 @@ export default function PagesTab() {
         sort={sort}
         onSortChange={(v) => setSort(v as any)}
         sortOptions={[
-          { v: "newest", label: "Recently modified" },
-          { v: "oldest", label: "Oldest modified" },
+          { v: "newest", label: "Recently Modified" },
+          { v: "oldest", label: "Oldest Modified" },
           { v: "name", label: "Name (A–Z)" },
           { v: "name_desc", label: "Name (Z–A)" },
         ]}
@@ -455,7 +455,7 @@ export default function PagesTab() {
         status={statusFilter}
         onStatusChange={(v) => setStatusFilter(v as any)}
         statusOptions={[
-          { v: "all", label: "All statuses" },
+          { v: "all", label: "All Statuses" },
           { v: "ready", label: "Ready" },
           { v: "draft", label: "Draft" },
         ]}
