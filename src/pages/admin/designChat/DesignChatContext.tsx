@@ -138,6 +138,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       if (!d || typeof d !== "object" || d.source !== "nova-site" || d.type !== "location") return;
       if (typeof d.path !== "string" || !d.path.startsWith("/") || d.path.length > 300) return;
       if (!event.source || !Array.from(document.querySelectorAll("iframe")).some((f) => f.contentWindow === event.source)) return;
+      console.debug("[preview] location", d.path);
       const search = typeof d.search === "string" && d.search.length <= 300 ? d.search : "";
       const notFound = d.notFound === true;
       setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search && Boolean(cur.notFound) === notFound ? cur : { path: d.path, search, ...(notFound ? { notFound: true } : {}) }));

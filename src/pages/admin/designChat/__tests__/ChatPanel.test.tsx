@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => ({
   start: vi.fn(),
   sync: vi.fn(),
   candidate: null as null | { name: string; path: string },
+  location: null as null | string,
+  page: null as null | { id: string; name: string; path: string },
   editing: false,
 }));
 vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({
@@ -19,7 +21,8 @@ vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({
   workingPage: null, clearWorkingPage: vi.fn(), editing: mocks.editing,
   drawing: { strokes: [], on: false, available: false, cancel: vi.fn(), toggle: vi.fn() },
   preview: { loaded: false }, startEditing: mocks.start, stopEditing: vi.fn(), selectPage: mocks.select,
-  previewLocation: mocks.candidate ? { path: mocks.candidate.path, search: "" } : null,
+  previewLocation: mocks.location ? { path: mocks.location, search: "" } : mocks.candidate ? { path: mocks.candidate.path, search: "" } : null,
+  previewPage: mocks.page,
   previewRegistrable: mocks.candidate,
 }) }));
 vi.mock("../contentSync", () => ({ notifyContentEdited: mocks.sync }));
@@ -41,6 +44,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.post.mockResolvedValue({ ok: true, data: {} });
   mocks.candidate = null;
+  mocks.location = null;
+  mocks.page = null;
   mocks.editing = false;
   mocks.insert.mockReturnValue({ select: () => ({ single: async () => ({ data: { id: "registered", name: "Race Test Page", path: "/race-test-page" }, error: null }) }) });
 });
@@ -121,5 +126,31 @@ describe("chat sending shortcuts", () => {
     messageBox();
     fireEvent.click(screen.getByRole("button", { name: /^Send$/ }));
     await waitFor(() => expect(mocks.post).toHaveBeenCalledTimes(1));
+  });
+});
+
+describe("Edit manually on the front page", () => {
+  const button = () => screen.getByRole("button", { name: "Edit this page by hand (without the chat)" });
+  it("is enabled for /home when the home row is stored at /, and opens that row", async () => {
+    mocks.location = "/home";
+    mocks.page = { id: "home", name: "Homepage", path: "/" };
+    render(<MemoryRouter><ChatPanel /></MemoryRouter>);
+    expect(button()).toBeEnabled();
+    fireEvent.click(button());
+    await waitFor(() => expect(mocks.select).toHaveBeenCalledWith({ id: "home", name: "Homepage", path: "/" }));
+    expect(mocks.insert).not.toHaveBeenCalled();
+  });
+  it("stays disabled with its hint for an unknown address", () => {
+    mocks.location = "/manage/somewhere";
+    render(<MemoryRouter><ChatPanel /></MemoryRouter>);
+    expect(button()).toBeDisabled();
+    expect(button()).toHaveAttribute("title", "This address isn't a page that can be edited.");
+  });
+  it("leaves /about unchanged", async () => {
+    mocks.location = "/about";
+    mocks.page = { id: "about", name: "About", path: "/about" };
+    render(<MemoryRouter><ChatPanel /></MemoryRouter>);
+    fireEvent.click(button());
+    await waitFor(() => expect(mocks.select).toHaveBeenCalledWith({ id: "about", name: "About", path: "/about" }));
   });
 });
