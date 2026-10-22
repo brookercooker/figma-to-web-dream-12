@@ -786,7 +786,7 @@ export default function ImagesTab() {
           <Lock className="w-3.5 h-3.5 mr-1.5" /> Gate
         </Button>
         <Button size="sm" variant="outline" onClick={() => downloadImagesAsZip((images as Img[]).filter((i) => selected.has(i.id)))}>
-          <Download className="w-3.5 h-3.5 mr-1.5" /> Download .Zip
+          <Download className="w-3.5 h-3.5 mr-1.5" /> Download .zip
         </Button>
         <Button size="sm" variant="destructive" onClick={bulkDelete}>
           <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete

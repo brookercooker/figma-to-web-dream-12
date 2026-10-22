@@ -93,7 +93,7 @@ export default function InlineStylePanel({
           { label: hidden ? "Show line" : "Hide line", icon: hidden ? Eye : EyeOff, onSelect: () => set(`border-${side}-style`, hidden ? "" : "none") },
         ]} />
         <ToolGroup title="Line" icon={Minus} defaultOpen>
-          <ToolField label="Thickness (Px)">
+          <ToolField label="Thickness (px)">
             <Input type="number" min={1} max={12} placeholder={num(cs.getPropertyValue(`border-${side}-width`)) || "1"}
               value={num(style[`border-${side}-width`])} onChange={(e) => set(`border-${side}-width`, px(e.target.value))} />
           </ToolField>
@@ -128,7 +128,7 @@ export default function InlineStylePanel({
               <Input type="number" min={4} placeholder={String(Math.round(vertical ? r.height : r.width))}
                 value={num(style[vertical ? "height" : "width"])} onChange={(e) => set(vertical ? "height" : "width", px(e.target.value))} />
             </ToolField>
-            <ToolField label="Thickness (Px)">
+            <ToolField label="Thickness (px)">
               <Input type="number" min={1} max={12} placeholder={String(Math.max(1, Math.round(vertical ? r.width : r.height)))}
                 value={num(style[vertical ? "width" : "height"])} onChange={(e) => set(vertical ? "width" : "height", px(e.target.value))} />
             </ToolField>
@@ -138,7 +138,7 @@ export default function InlineStylePanel({
           {swatches(style["background-color"], (v) => set("background-color", style["background-color"] === v ? "" : v))}
         </ToolGroup>
         <ToolGroup title="Spacing" icon={MoveVertical}>
-          <ToolField label="Space Above and Below (Px)">
+          <ToolField label="Space Above and Below (px)">
             <Input type="number" min={0} placeholder="Default" value={num(style["margin-top"])}
               onChange={(e) => { const v = px(e.target.value); const next = { ...style }; if (v) { next["margin-top"] = v; next["margin-bottom"] = v; } else { delete next["margin-top"]; delete next["margin-bottom"]; } const out = { ...edits }; if (Object.keys(next).length) out[styleKey(sel.key)] = JSON.stringify(next); else delete out[styleKey(sel.key)]; onChange(out); }} />
           </ToolField>
@@ -166,18 +166,18 @@ export default function InlineStylePanel({
         </ToolGroup>
         <ToolGroup title="Size" icon={Maximize2}>
           <ToolGrid>
-            <ToolField label="Width (Px)">
+            <ToolField label="Width (px)">
               <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().width))}
                 value={num(style.width)} onChange={(e) => set("width", px(e.target.value))} />
             </ToolField>
-            <ToolField label="Height (Px)">
+            <ToolField label="Height (px)">
               <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().height))}
                 value={num(style.height)} onChange={(e) => set("height", px(e.target.value))} />
             </ToolField>
           </ToolGrid>
         </ToolGroup>
         <ToolGroup title="Corners" icon={SquareDashed}>
-          <ToolField label="Rounded Corners (Px)">
+          <ToolField label="Rounded Corners (px)">
             <Input type="number" min={0} placeholder={num(computed.borderRadius) || "0"}
               value={num(style["border-radius"])} onChange={(e) => set("border-radius", px(e.target.value))} />
           </ToolField>
@@ -255,7 +255,7 @@ export default function InlineStylePanel({
           </select>
         </ToolField>
         <ToolGrid>
-          <ToolField label="Size (Px)">
+          <ToolField label="Size (px)">
             <Input type="number" min={8} placeholder={num(computed.fontSize)} value={num(style["font-size"])} onChange={(e) => apply("font-size", px(e.target.value))} />
           </ToolField>
           <ToolField label="Weight">

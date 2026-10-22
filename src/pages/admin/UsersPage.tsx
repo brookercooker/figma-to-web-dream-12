@@ -255,7 +255,7 @@ export default function UsersPage() {
                 <tr className="text-left text-xs text-muted-foreground">
                   <th className="py-3 px-4 text-left">Email</th>
                   <th className="py-3 px-4 text-left min-w-[220px]">Roles</th>
-                  <th className="py-3 px-4 text-left">Last Sign-in</th>
+                  <th className="py-3 px-4 text-left">Last Sign-In</th>
                   <th className="py-3 px-4 text-left">Action</th>
                 </tr>
               </thead>

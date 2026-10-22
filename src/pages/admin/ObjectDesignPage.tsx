@@ -2584,7 +2584,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                           />
                         </Field>
                       )}
-                      <Field label="Thickness (Px)">
+                      <Field label="Thickness (px)">
                         <Input
                           type="number"
                           min={1}
@@ -3558,7 +3558,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     />
                   </Field>
                 )}
-                <Field label="Thickness (Px)">
+                <Field label="Thickness (px)">
                   <Input
                     type="number"
                     min={1}
@@ -3701,7 +3701,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     />
                   </div>
                 </Field>
-                <Field label="Thickness (Px)">
+                <Field label="Thickness (px)">
                   <Input
                     type="number"
                     min={1}
@@ -3711,7 +3711,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     className="h-8 w-20"
                   />
                 </Field>
-                <Field label="Corner Radius (Px)">
+                <Field label="Corner Radius (px)">
                   <Input
                     type="number"
                     min={0}
@@ -3721,7 +3721,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     className="h-8 w-20"
                   />
                 </Field>
-                <Field label="Inner Spacing (Px)">
+                <Field label="Inner Spacing (px)">
                   <Input
                     type="number"
                     min={0}
@@ -3781,7 +3781,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 </>
               )}
               {section.layout !== "behind" && count > 0 && (
-                <Field label="Exact Size (Px)">
+                <Field label="Exact Size (px)">
                   <div className="flex items-center gap-2">
                     <label className="flex items-center gap-1 text-xs text-muted-foreground">
                       H
@@ -4882,7 +4882,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               {sec.layout !== "behind" && (
                 <>
                   <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                    H Px
+                    H px
                     <Input
                       type="number"
                       placeholder="auto"
@@ -4896,7 +4896,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                     />
                   </label>
                   <label className="flex items-center gap-1 text-xs text-muted-foreground">
-                    W Px
+                    W px
                     <Input
                       type="number"
                       placeholder="auto"

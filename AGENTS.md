@@ -11,3 +11,7 @@
 - The draft-manifest reachable flag is stored with each cached manifest load; resolveLivePage only returns "missing" when the draft list (or, with no draft, the public list) was actually read, otherwise "unreachable".
 - "/" and "/home" are one page: lookups, caches and registration go through registerPage homeAliases/pageKey, and the front page is only ever stored as "/".
 - Top-bar Objects/Images/Videos open LibraryPicker (except while editing by hand) using the pickers' exported loaders; picked items live in DesignChatContext refs and are sent as a plain-text block appended to the message, so the /send format never changes.
+
+## Capitalisation
+- Site Manager interface labels use Title Case: buttons, links, tabs, menu items, headings, dialog titles, column headers, badges, chips, select options, and aria-labels/tooltips that repeat a visible label. Keep a, an, the, and, or, but, of, in, on, to, for, at, by, as, vs lowercase unless first or last; keep acronyms, units (px) and brand names as written.
+- Leave sentences, help text, hints, empty states, errors, toasts, placeholders, counters and progress messages in sentence case; never change data, stored values, text sent to the helper, routes, keys, enum values or comments.

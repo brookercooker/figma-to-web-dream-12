@@ -873,7 +873,7 @@ export default function VideoTab() {
             <Lock className="w-3.5 h-3.5 mr-1.5" /> Gate
           </Button>
           <Button size="sm" variant="outline" onClick={() => downloadVideosAsZip((videos as Vid[]).filter((v) => selected.has(v.id)))}>
-            <Download className="w-3.5 h-3.5 mr-1.5" /> Download .Zip
+            <Download className="w-3.5 h-3.5 mr-1.5" /> Download .zip
           </Button>
           <Button size="sm" variant="destructive" onClick={bulkDelete}>
             <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete

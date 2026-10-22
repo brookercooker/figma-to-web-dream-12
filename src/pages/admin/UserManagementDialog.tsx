@@ -64,7 +64,7 @@ export default function UserManagementDialog({
                 <tr className="border-b text-left text-xs text-muted-foreground">
                   <th className="py-3 pr-4 text-left">Email</th>
                   <th className="py-3 pr-4 text-left min-w-[140px]">Role</th>
-                  <th className="py-3 pr-4 text-left">Last Sign-in</th>
+                  <th className="py-3 pr-4 text-left">Last Sign-In</th>
                   <th className="py-3 pr-4 text-left">Action</th>
                 </tr>
               </thead>
