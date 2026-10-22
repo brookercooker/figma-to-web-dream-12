@@ -4,7 +4,7 @@
 // "which pages use this object?" and "which pages refer to this image or video?" without reading any of the public site's
 // code, so it keeps working when the two are separate projects.
 //
-// Where the manifest comes from: the same site by default; set VITE_PUBLIC_SITE_URL to read it from the published site.
+// Read the current draft embed origin (including its query token) first, then VITE_PUBLIC_SITE_URL or the same site.
 
 export interface SiteManifestPage {
   path: string;
@@ -87,7 +87,7 @@ export function loadSiteManifest(force = false): Promise<SiteManifest> {
         return manifest;
       } catch (e) {
         failure = e;
-        if (index === 0 && draftBase) console.warn("Draft page manifest could not be read; trying the public manifest.");
+        if (index === 0 && draftBase) console.warn(`Draft page manifest could not be read (${e instanceof Error ? e.message : "network error"}); trying the public manifest.`);
       }
     }
     throw new SiteManifestUnavailable(`Couldn't reach the site manifest (${failure instanceof Error ? failure.message : "network error"}).`);
