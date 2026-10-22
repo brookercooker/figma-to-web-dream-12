@@ -70,7 +70,7 @@ export type RelayState = {
   drawing?: boolean;
   history: Entry[];
   publish?: { ok?: boolean; open: number; status?: string; willReview?: boolean };
-  draft?: { review?: { state?: string; locked?: boolean; findings?: Finding[] } };
+  draft?: { review?: { state?: string; locked?: boolean; findings?: Finding[]; headline?: string; summary?: string; retry?: boolean } };
   review?: { enabled?: boolean; mode?: string };
   liveUrl?: string | null;
   embedEnabled?: boolean;

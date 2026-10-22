@@ -102,7 +102,14 @@ export function problemsModel(s: RelayState | null): ProblemsModel | null {
   const r = s.draft?.review;
   if (!p || p.open <= 0) return null;
   if (p.status === "error") {
-    return { title: "The review couldn't finish.", sub: "Nothing was changed on the live site. Press Submit for review to try again.", items: [] };
+    const unchanged = "Nothing was changed on the live site.";
+    const fallback = `${unchanged} Press Submit for review to try again.`;
+    if (r?.state === "error" && r.retry === true && r.headline) {
+      const summary = r.summary || fallback;
+      return { title: r.headline, sub: summary.includes(unchanged) ? summary : `${unchanged} ${summary}`, items: [] };
+    }
+    return { title: "The review couldn't finish.", sub: fallback, items: [],
+      devNote: "If it keeps happening, a developer can see the details on the Developer review page." };
   }
   if (p.status === "blocked" && r && r.state === "failure") {
     const all = (r.findings || []).filter(blocking);
