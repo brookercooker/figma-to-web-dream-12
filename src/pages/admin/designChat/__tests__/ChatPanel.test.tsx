@@ -66,7 +66,7 @@ describe("chat sending shortcuts", () => {
 
   it("still sends with the Send button", async () => {
     messageBox();
-    fireEvent.click(screen.getByRole("button", { name: "Send", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Send$/ }));
     await waitFor(() => expect(mocks.post).toHaveBeenCalledTimes(1));
   });
 });
