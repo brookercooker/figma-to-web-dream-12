@@ -1,5 +1,6 @@
 # Roadmap — coded object import fidelity
-- [x] Move Edit page into the chat controls, with Done editing while editing.
+- [x] Move Edit manually into the chat controls, with Done editing while editing.
+- [x] Keep Enter for new lines; send chat requests with Send or Ctrl/Cmd+Enter.
 - [x] Rotate working labels every seven seconds and distinguish hand-edit syncing from review.
 - [x] Disable visitor link actions while preserving editor selection.
 - [x] Show Minimize inside native and fallback full-screen preview/editor, except during picture capture.
