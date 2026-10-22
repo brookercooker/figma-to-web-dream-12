@@ -6,6 +6,7 @@ import { usePreviewPage, type PreviewPage } from "./usePreviewPage";
 import { useDrawing, type Drawing } from "./useDrawing";
 import type { RegistrablePage } from "./registerPage";
 import { syncManifestPages } from "../manifestPageSync";
+import { useChatReferences, type ChatReferences } from "./useChatReferences";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview
@@ -72,6 +73,8 @@ export type DesignChat = {
   previewRegistrable: RegistrablePage | null;
   /** The pencil on the preview: marks drawn over it, sent with the next request. */
   drawing: Drawing;
+  /** Library items picked from the top bar for the next request. */
+  refs: ChatReferences;
 };
 
 const Ctx = createContext<DesignChat | null>(null);
@@ -149,12 +152,13 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   }, [rememberPath]);
   const { page: previewPage, loading: previewPageLoading, registrable: previewRegistrable } = usePreviewPage(previewLocation?.path ?? null, previewLocation?.notFound);
   const drawing = useDrawing({ device, path: previewLocation?.path ?? null });
+  const refs = useChatReferences();
 
   const value = useMemo<DesignChat>(() => ({
     state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
-    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject,
-  }), [objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
+    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, refs,
+  }), [refs, objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

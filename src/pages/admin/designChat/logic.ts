@@ -1,6 +1,7 @@
 /**
  * The rules for what the Design Chat shows. Plain functions (no React) so they can be tested on their own.
  */
+import { readableReferences } from "./references";
 import type { Approval, ApprovalField, Entry, Finding, Job, RelayState, UploadRules } from "./helper";
 
 export const IDLE_HINT = "";
@@ -27,7 +28,7 @@ export function visibleText(entry: Entry): string | null {
     return null;
   }
   if (entry.role === "error") return `${entry.text}\nTry sending it again in a moment.`;
-  return entry.text;
+  return entry.role === "user" ? readableReferences(entry.text) : entry.text;
 }
 
 // ---- the live "working on it" line ------------------------------------------------------------

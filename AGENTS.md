@@ -10,3 +10,4 @@
 - LivePreviewPage resolves a page to found | missing | unreachable (never a silent DbPage fallback); DesignTab gives missing+empty pages unsaved starter blocks and unreachable pages a Retry panel, so failed code loads can never be overwritten.
 - The draft-manifest reachable flag is stored with each cached manifest load; resolveLivePage only returns "missing" when the draft list (or, with no draft, the public list) was actually read, otherwise "unreachable".
 - "/" and "/home" are one page: lookups, caches and registration go through registerPage homeAliases/pageKey, and the front page is only ever stored as "/".
+- Top-bar Objects/Images/Videos open LibraryPicker (except while editing by hand) using the pickers' exported loaders; picked items live in DesignChatContext refs and are sent as a plain-text block appended to the message, so the /send format never changes.

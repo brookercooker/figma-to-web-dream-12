@@ -7,7 +7,33 @@ import { leafOf, matchesLabelFilter } from "./labelPath";
 import { useLabelsForScope } from "./useAllLabels";
 
 interface Choice { url: string; poster?: string; name: string }
-interface LibraryVideo extends Choice { labels: string[] }
+export interface LibraryVideo extends Choice { id?: string; altUrl?: string; labels: string[] }
+
+/** The video library as the page editor uses it: `url` and `poster` are exactly what a video block stores. */
+export async function loadLibraryVideos(limit = 120): Promise<LibraryVideo[]> {
+  const { data } = await (supabase as any)
+    .from("videos")
+    .select("id,name,storage_url,external_url,poster_url,alt_url,tags")
+    .is("archived_at", null)
+    .limit(limit);
+  return (data ?? [])
+    .map((row: any) => ({
+      id: row.id,
+      url: row.external_url || row.storage_url || "",
+      altUrl: row.alt_url || undefined,
+      poster: row.poster_url || undefined,
+      name: row.name || "",
+      labels: Array.isArray(row.tags) ? row.tags.filter(Boolean) : [],
+    }))
+    .filter((c: LibraryVideo) => !!c.url);
+}
+
+/** Same search the picker uses: name and labels (full path or last part). */
+export function videoMatches(i: LibraryVideo, term: string) {
+  const t = term.trim().toLowerCase();
+  if (!t) return true;
+  return i.name.toLowerCase().includes(t) || i.labels.some((l) => l.toLowerCase().includes(t) || leafOf(l).toLowerCase().includes(t));
+}
 
 /** Pick a video from the library, paste a YouTube / Vimeo link, or upload a file. */
 export default function VideoPickerDialog({
@@ -25,22 +51,7 @@ export default function VideoPickerDialog({
   useEffect(() => {
     if (!open) return;
     setQ(""); setUrl(""); setLabel("");
-    (async () => {
-      const { data } = await (supabase as any)
-        .from("videos")
-        .select("name,storage_url,external_url,poster_url,tags")
-        .is("archived_at", null)
-        .limit(120);
-      const mapped: LibraryVideo[] = (data ?? [])
-        .map((row: any) => ({
-          url: row.external_url || row.storage_url || "",
-          poster: row.poster_url || undefined,
-          name: row.name || "",
-          labels: Array.isArray(row.tags) ? row.tags.filter(Boolean) : [],
-        }))
-        .filter((c: LibraryVideo) => !!c.url);
-      setItems(mapped);
-    })();
+    void loadLibraryVideos().then(setItems);
   }, [open]);
 
   // Labels come from the same per-tool label registry the Videos page uses.
@@ -55,11 +66,7 @@ export default function VideoPickerDialog({
     const term = q.trim().toLowerCase();
     const list = items.filter((i) => {
       if (label && !matchesLabelFilter(i.labels, label)) return false;
-      if (!term) return true;
-      return (
-        i.name.toLowerCase().includes(term) ||
-        i.labels.some((l) => l.toLowerCase().includes(term) || leafOf(l).toLowerCase().includes(term))
-      );
+      return videoMatches(i, term);
     });
     return list.sort((a, b) => {
       const la = (a.labels[0] ?? "\uffff").toLowerCase();
