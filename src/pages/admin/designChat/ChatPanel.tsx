@@ -163,7 +163,7 @@ export default function ChatPanel() {
       <div ref={logRef} onScroll={onScroll} className={cn("flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 flex flex-col gap-2.5 text-sm", editing && "hidden")} role="log">
         {messages.length === 0 && (
           <div className="text-muted-foreground space-y-2">
-            <p>Describe a change to the site. You'll see it in the Preview tab. To work on one page, pick it in the Pages tab. Nothing goes live until you press Submit for review.</p>
+            <p>Describe a change to the site. You'll see it in the Preview tab. To work on one page, pick it in the Pages tab. Nothing goes live until you press Submit for Review.</p>
             <p>
               {state?.review?.mode === "simulated"
                 ? "Demo mode: your changes are checked once together by fixed rules, not by Claude reading the code, and they go live automatically if the check passes."
