@@ -3,7 +3,7 @@
  */
 import type { Approval, ApprovalField, Entry, Finding, Job, RelayState, UploadRules } from "./helper";
 
-export const IDLE_HINT = "Press Send, or Ctrl/Cmd+Enter, to send";
+export const IDLE_HINT = "";
 
 export const fmtDur = (ms: number) => {
   const s = Math.max(0, Math.round(ms / 1000));
