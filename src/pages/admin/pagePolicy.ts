@@ -10,6 +10,7 @@
 // live, so a changed screen can't be used to get around it (see the production notes in the plan).
 
 import { codedPages } from "./codedPages";
+import { manifestHasPage } from "./siteManifest";
 
 export type PageAccess = "full" | "tweak" | "view";
 
@@ -22,7 +23,7 @@ export interface PageLike {
 export const codedPathOf = (path: string) => (path === "/" ? "/home" : path);
 
 /** True if the page is built in code, so it can be shown and tweaked in place. */
-export const isCodedPath = (path: string) => !!codedPages[codedPathOf(path)];
+export const isCodedPath = (path: string) => manifestHasPage(path) || !!codedPages[codedPathOf(path)];
 
 export const isLandingPage = (p: PageLike) => p.page_type === "landing" || (p.path ?? "").startsWith("/landing/");
 

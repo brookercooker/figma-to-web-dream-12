@@ -4,7 +4,7 @@
 // "which pages use this object?" and "which pages refer to this image or video?" without reading any of the public site's
 // code, so it keeps working when the two are separate projects.
 //
-// Where the manifest comes from: the same site by default; set VITE_PUBLIC_SITE_URL to read it from the published site.
+// Read the current draft embed origin (including its query token) first, then VITE_PUBLIC_SITE_URL or the same site.
 
 export interface SiteManifestPage {
   path: string;
@@ -35,8 +35,27 @@ export class SiteManifestUnavailable extends Error {
 }
 
 export const SUPPORTED_VERSION = 1;
+let draftBase: string | null = null;
+let knownPaths = new Set<string>();
+export const MANIFEST_CHANGED = "nova-manifest-changed";
+export function setManifestBase(url: string) {
+  if (url === draftBase) return;
+  draftBase = url || null;
+  resetSiteManifestCache();
+}
+export function manifestHasPage(path: string) { return knownPaths.has(path === "/" ? "/home" : path.replace(/\/+$/, "")); }
 
 export function siteManifestUrl(): string {
+  if (draftBase) {
+    const url = new URL(draftBase);
+    url.pathname = "/site-manifest.json";
+    url.hash = "";
+    return url.toString();
+  }
+  return fallbackManifestUrl();
+}
+
+function fallbackManifestUrl(): string {
   const base = String((import.meta as any).env?.VITE_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
   return `${base}/site-manifest.json`;
 }
@@ -56,16 +75,22 @@ let cached: { at: number; promise: Promise<SiteManifest> } | null = null;
 export function loadSiteManifest(force = false): Promise<SiteManifest> {
   if (!force && cached && Date.now() - cached.at < TTL_MS) return cached.promise;
   const promise = (async () => {
-    let res: Response;
-    try {
-      res = await fetch(siteManifestUrl(), { cache: "no-store" });
-    } catch (e: any) {
-      throw new SiteManifestUnavailable(`Couldn't reach the site manifest (${e?.message ?? "network error"}).`);
+    const urls = [...new Set([siteManifestUrl(), fallbackManifestUrl()])];
+    let failure: unknown;
+    for (const [index, url] of urls.entries()) {
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new SiteManifestUnavailable(`The site manifest returned ${res.status}.`);
+        const manifest = parseSiteManifest(await res.json());
+        knownPaths = codePagePaths(manifest);
+        window.dispatchEvent(new Event(MANIFEST_CHANGED));
+        return manifest;
+      } catch (e) {
+        failure = e;
+        if (index === 0 && draftBase) console.warn(`Draft page manifest could not be read (${e instanceof Error ? e.message : "network error"}); trying the public manifest.`);
+      }
     }
-    if (!res.ok) throw new SiteManifestUnavailable(`The site manifest returned ${res.status}.`);
-    let body: unknown;
-    try { body = await res.json(); } catch { throw new SiteManifestUnavailable("The site manifest isn't valid JSON."); }
-    return parseSiteManifest(body);
+    throw new SiteManifestUnavailable(`Couldn't reach the site manifest (${failure instanceof Error ? failure.message : "network error"}).`);
   })();
   cached = { at: Date.now(), promise };
   promise.catch(() => { if (cached?.promise === promise) cached = null; }); // a failure isn't remembered

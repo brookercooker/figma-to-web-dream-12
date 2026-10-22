@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   SiteManifestUnavailable, codePagePaths, loadSiteManifest, pagesReferencing, pagesUsingObject,
   parseSiteManifest, resetSiteManifestCache, siteManifestUrl, type SiteManifest,
+  setManifestBase,
 } from "../siteManifest";
 import { imageNeedles, videoNeedles } from "../assetUsages";
 
@@ -21,7 +22,7 @@ const manifest: SiteManifest = {
   },
 };
 
-afterEach(() => { vi.unstubAllGlobals(); resetSiteManifestCache(); });
+afterEach(() => { vi.unstubAllGlobals(); setManifestBase(""); resetSiteManifestCache(); });
 
 describe("reading the manifest", () => {
   it("pages using an object", () => {
@@ -50,6 +51,21 @@ describe("reading the manifest", () => {
 });
 
 describe("loading the manifest", () => {
+  it("reads the draft origin first, preserving its preview token", async () => {
+    setManifestBase("https://draft.example/about?__lovable_token=test-token");
+    const fetcher = vi.fn(async (_url: string) => new Response(JSON.stringify(manifest)));
+    vi.stubGlobal("fetch", fetcher);
+    await loadSiteManifest();
+    expect(fetcher.mock.calls[0][0]).toBe("https://draft.example/site-manifest.json?__lovable_token=test-token");
+  });
+  it("falls back if the draft cannot be reached", async () => {
+    setManifestBase("https://draft.example/?__lovable_token=test-token");
+    const fetcher = vi.fn().mockRejectedValueOnce(new Error("CORS")).mockResolvedValueOnce(new Response(JSON.stringify(manifest)));
+    vi.stubGlobal("fetch", fetcher);
+    expect((await loadSiteManifest()).buildId).toBe("b");
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher.mock.calls[1][0]).toBe("/site-manifest.json");
+  });
   it("rejects a manifest of another version or shape", () => {
     expect(() => parseSiteManifest({ version: 2, pages: [], files: {} })).toThrow(SiteManifestUnavailable);
     expect(() => parseSiteManifest({ version: 1 })).toThrow(SiteManifestUnavailable);

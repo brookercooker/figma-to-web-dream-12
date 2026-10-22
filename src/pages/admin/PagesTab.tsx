@@ -29,6 +29,9 @@ import LandingPagesView from "./LandingPagesView";
 import PagePreviewDialog from "./PagePreviewDialog";
 import { useAutoCaptureThumbnails, regenerateThumbnail } from "./useThumbnailCapture";
 import WorkStatusPopover from "./WorkStatusPopover";
+import { syncManifestPages, PAGES_SYNCED } from "./manifestPageSync";
+import { MANIFEST_CHANGED } from "./siteManifest";
+import { pageAccess } from "./pagePolicy";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -126,7 +129,14 @@ export default function PagesTab() {
     const { data } = await (supabase as any).from("pages").select("*").order("updated_at", { ascending: false });
     setPages((data ?? []).map((p: any) => ({ ...p, tags: p.tags ?? [] })));
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    void syncManifestPages();
+    const refreshList = () => { void load(); };
+    window.addEventListener(PAGES_SYNCED, refreshList);
+    window.addEventListener(MANIFEST_CHANGED, refreshList);
+    return () => { window.removeEventListener(PAGES_SYNCED, refreshList); window.removeEventListener(MANIFEST_CHANGED, refreshList); };
+  }, []);
 
   // Keep the list fresh when the tab regains focus or the manager comes back into view.
   useEffect(() => {
@@ -633,9 +643,15 @@ export default function PagesTab() {
                 </td>
                 <td className="px-1 py-3 text-center">
                   <button
-                    onClick={() => navigate(`/manage/design?page=${p.id}`)}
-                    aria-label="Edit design"
-                    title="Edit design"
+                    onClick={() => {
+                      if (pageAccess(p) === "tweak" && designChat) {
+                        designChat.selectPage({ id: p.id, name: p.name, path: p.path });
+                        navigate("/manage/preview");
+                        designChat.startEditing();
+                      } else navigate(`/manage/design?page=${p.id}&mode=edit`);
+                    }}
+                    aria-label={pageAccess(p) === "tweak" ? `Tweak ${p.name}` : "Edit design"}
+                    title={pageAccess(p) === "tweak" ? "Tweak" : "Edit design"}
                     className="p-1.5 rounded border hover:bg-muted inline-flex"
                   >
                     <Pencil className="w-4 h-4" />

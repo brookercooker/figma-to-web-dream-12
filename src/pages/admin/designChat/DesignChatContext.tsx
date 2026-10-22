@@ -5,6 +5,7 @@ import { usePreview } from "./usePreview";
 import { usePreviewPage, type PreviewPage } from "./usePreviewPage";
 import { useDrawing, type Drawing } from "./useDrawing";
 import type { RegistrablePage } from "./registerPage";
+import { syncManifestPages } from "../manifestPageSync";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview
@@ -76,6 +77,7 @@ export type DesignChat = {
 const Ctx = createContext<DesignChat | null>(null);
 
 export function DesignChatProvider({ children }: { children: ReactNode }) {
+  useEffect(() => { void syncManifestPages(); }, []);
   // The preview hook needs the helper's state; the helper's polling speed needs to know when the preview last reloaded.
   const lastReload = useRef<{ current: number } | null>(null);
   const { state, offline, refreshSoon } = useHelperState((s: RelayState | null) => {

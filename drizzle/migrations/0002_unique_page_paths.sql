@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS pages_path_unique ON public.pages (path);
