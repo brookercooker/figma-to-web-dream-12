@@ -61,6 +61,7 @@ beforeEach(() => {
 });
 
 async function openEditor(embedded = true) {
+  window.history.replaceState(null, "", "/manage/design?page=page&mode=edit");
   const result = render(<MemoryRouter initialEntries={["/manage/design?page=page&mode=edit"]}>
     <DesignTab embedded={embedded} pageId="page" />
   </MemoryRouter>);
