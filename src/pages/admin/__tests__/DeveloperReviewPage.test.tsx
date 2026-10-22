@@ -15,27 +15,27 @@ beforeEach(() => { mocks.admin = true; mocks.review = undefined; });
 afterEach(cleanup);
 const open = () => render(<MemoryRouter><DeveloperReviewPage /></MemoryRouter>);
 
-describe("Developer review error details", () => {
+describe("Developer Review error details", () => {
   it.each([true, false, undefined])("shows exact service details and retry classification (%s)", async (retry) => {
     mocks.review = { review: { state: "error", headline: "GitHub refused commit abc123.", summary: "Missing actions:write.\nWorkflow review.yml could not start.", retry } };
     open();
-    const block = await screen.findByRole("region", { name: "Review error details" });
+    const block = await screen.findByRole("region", { name: "Review Error Details" });
     expect(block.querySelectorAll("p")[0].textContent).toBe("GitHub refused commit abc123.");
     expect(block.querySelectorAll("p")[1].textContent).toBe("Missing actions:write.\nWorkflow review.yml could not start.");
-    expect(screen.getByText(retry ? "Staff can retry this themselves" : "Needs a developer")).toBeVisible();
-    expect(screen.getByTitle("Developer review")).toHaveAttribute("src", "https://design.example/dev");
+    expect(screen.getByText(retry ? "Staff can retry this themselves" : "Needs a Developer")).toBeVisible();
+    expect(screen.getByTitle("Developer Review")).toHaveAttribute("src", "https://design.example/dev");
   });
   it("handles an older service without a reason", async () => {
     mocks.review = { review: { state: "error" } };
     open();
     expect(await screen.findByText("No reason was reported by the design service.")).toBeVisible();
-    expect(screen.getByText("Needs a developer")).toBeVisible();
+    expect(screen.getByText("Needs a Developer")).toBeVisible();
   });
   it("does not show an error block for a successful review", async () => {
     mocks.review = { review: { state: "success", headline: "Not an error" } };
     open();
-    await screen.findByTitle("Developer review");
-    expect(screen.queryByRole("region", { name: "Review error details" })).toBeNull();
+    await screen.findByTitle("Developer Review");
+    expect(screen.queryByRole("region", { name: "Review Error Details" })).toBeNull();
   });
   it("keeps the details unavailable to non-admins", async () => {
     mocks.admin = false;

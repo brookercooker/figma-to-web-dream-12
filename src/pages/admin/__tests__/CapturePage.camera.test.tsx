@@ -52,23 +52,23 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 function openPage() {
   render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><CapturePage /></MemoryRouter></QueryClientProvider>);
-  fireEvent.click(screen.getByRole("button", { name: /^Take photo$/ }));
+  fireEvent.click(screen.getByRole("button", { name: /^Take Photo$/ }));
 }
 async function readyCamera() {
-  await waitFor(() => expect(screen.getByRole("button", { name: "Take picture" })).toBeEnabled());
+  await waitFor(() => expect(screen.getByRole("button", { name: "Take Picture" })).toBeEnabled());
 }
 
 describe("Capture live camera", () => {
-  it("opens Take photo directly and stages repeated native-resolution JPEG shots without uploading", async () => {
+  it("opens Take Photo directly and stages repeated native-resolution JPEG shots without uploading", async () => {
     const picker = vi.spyOn(HTMLInputElement.prototype, "click");
     openPage();
     await readyCamera();
     expect(getUserMedia).toHaveBeenCalledWith({ video: { facingMode: { ideal: "environment" }, width: { ideal: 4096 }, height: { ideal: 2160 } }, audio: false });
     expect(picker).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Take picture" }));
-    fireEvent.click(screen.getByRole("button", { name: "Take picture" }));
+    fireEvent.click(screen.getByRole("button", { name: "Take Picture" }));
+    fireEvent.click(screen.getByRole("button", { name: "Take Picture" }));
     expect(screen.getByText("2 taken")).toBeInTheDocument();
-    expect(drawImage).toHaveBeenCalledWith(screen.getByLabelText("Live camera"), 0, 0, 4096, 2160);
+    expect(drawImage).toHaveBeenCalledWith(screen.getByLabelText("Live Camera"), 0, 0, 4096, 2160);
     expect(toBlob).toHaveBeenCalledWith(expect.any(Function), "image/jpeg", 0.92);
     const captured = vi.mocked(URL.createObjectURL).mock.calls[0]?.[0];
     expect(captured).toBeInstanceOf(File);
@@ -86,10 +86,10 @@ describe("Capture live camera", () => {
     const picker = vi.spyOn(HTMLInputElement.prototype, "click");
     openPage();
     await waitFor(() => expect(picker).toHaveBeenCalledOnce());
-    expect(picker.mock.instances[0]).toBe(screen.getByLabelText("Take a photo"));
-    expect(screen.getByLabelText("Take a photo")).toHaveAttribute("accept", "image/*");
-    expect(screen.getByLabelText("Take a photo")).toHaveAttribute("capture", "environment");
-    expect(screen.getByLabelText("Take a photo")).not.toHaveAttribute("multiple");
+    expect(picker.mock.instances[0]).toBe(screen.getByLabelText("Take a Photo"));
+    expect(screen.getByLabelText("Take a Photo")).toHaveAttribute("accept", "image/*");
+    expect(screen.getByLabelText("Take a Photo")).toHaveAttribute("capture", "environment");
+    expect(screen.getByLabelText("Take a Photo")).not.toHaveAttribute("multiple");
     expect(mocks.info).toHaveBeenCalledWith(expect.stringContaining(name === "NotAllowedError" ? "Camera access was blocked" : name === "NotFoundError" ? "No camera was found" : "couldn't be started"));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
@@ -103,13 +103,13 @@ describe("Capture live camera", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("keeps Choose files as the multiple image and video picker", () => {
+  it("keeps Choose Files as the multiple image and video picker", () => {
     render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><CapturePage /></MemoryRouter></QueryClientProvider>);
     const picker = vi.spyOn(HTMLInputElement.prototype, "click");
-    fireEvent.click(screen.getByRole("button", { name: "Choose files" }));
-    expect(picker.mock.instances[0]).toBe(screen.getByLabelText("Choose photos or videos"));
-    expect(screen.getByLabelText("Choose photos or videos")).toHaveAttribute("multiple");
-    expect(screen.getByLabelText("Choose photos or videos")).toHaveAttribute("accept", "image/*,video/*,.webm,.mp4,.mov");
+    fireEvent.click(screen.getByRole("button", { name: "Choose Files" }));
+    expect(picker.mock.instances[0]).toBe(screen.getByLabelText("Choose Photos or Videos"));
+    expect(screen.getByLabelText("Choose Photos or Videos")).toHaveAttribute("multiple");
+    expect(screen.getByLabelText("Choose Photos or Videos")).toHaveAttribute("accept", "image/*,video/*,.webm,.mp4,.mov");
     expect(getUserMedia).not.toHaveBeenCalled();
   });
 });
@@ -145,7 +145,7 @@ describe("camera stream lifecycle", () => {
     getUserMedia.mockImplementation(() => new Promise<MediaStream>((r) => { resolve = r; }));
     const { unmount, props } = sheet();
     await waitFor(() => expect(getUserMedia).toHaveBeenCalledOnce());
-    fireEvent.click(screen.getByRole("button", { name: "Close camera" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close Camera" }));
     await act(async () => resolve?.(stream));
     expect(stop).toHaveBeenCalled();
     expect(props.onUnavailable).not.toHaveBeenCalled();
@@ -154,16 +154,16 @@ describe("camera stream lifecycle", () => {
   it("switches cameras after stopping the previous stream", async () => {
     sheet();
     await readyCamera();
-    await waitFor(() => expect(screen.getByRole("button", { name: "Flip camera" })).toBeEnabled());
-    fireEvent.click(screen.getByRole("button", { name: "Flip camera" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Flip Camera" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Flip Camera" }));
     await waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(2));
     expect(stop).toHaveBeenCalled();
     expect(getUserMedia.mock.calls[1]?.[0].video.facingMode).toEqual({ ideal: "user" });
   });
-  it("hides Flip camera for a single video input", async () => {
+  it("hides Flip Camera for a single video input", async () => {
     vi.mocked(navigator.mediaDevices.enumerateDevices).mockResolvedValue([{ kind: "videoinput" } as MediaDeviceInfo]);
     sheet();
     await readyCamera();
-    expect(screen.queryByRole("button", { name: "Flip camera" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Flip Camera" })).toBeNull();
   });
 });

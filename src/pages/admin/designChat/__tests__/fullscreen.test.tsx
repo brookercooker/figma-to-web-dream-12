@@ -24,15 +24,15 @@ describe("full-screen exit", () => {
         context.chat = chat;
         const view = () => editor ? <EmbeddedBox chat={chat}>Content</EmbeddedBox> : <MemoryRouter><PreviewPanel /></MemoryRouter>;
         const { rerender } = render(view());
-        fireEvent.click(screen.getByRole("button", { name: "Exit full screen" }));
+        fireEvent.click(screen.getByRole("button", { name: "Exit Full Screen" }));
         expect(toggleFull).toHaveBeenCalledTimes(1);
         chat.drawing.capturing = true;
         rerender(view());
-        expect(screen.queryByRole("button", { name: "Exit full screen" })).toBeNull();
+        expect(screen.queryByRole("button", { name: "Exit Full Screen" })).toBeNull();
         chat.drawing.capturing = false;
         chat.inFull = false;
         rerender(view());
-        expect(screen.queryByRole("button", { name: "Exit full screen" })).toBeNull();
+        expect(screen.queryByRole("button", { name: "Exit Full Screen" })).toBeNull();
       });
     }
   }

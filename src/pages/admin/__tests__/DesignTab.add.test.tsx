@@ -72,13 +72,13 @@ async function openEditor(embedded = true) {
 describe("page editor quick add", () => {
   it("offers the three quick-add controls when embedded", async () => {
     await openEditor();
-    const toolbar = screen.getByRole("toolbar", { name: "Add to this page" });
+    const toolbar = screen.getByRole("toolbar", { name: "Add to This Page" });
     expect(within(toolbar).getAllByRole("button")).toHaveLength(3);
     for (const name of ["Object", "Image", "Video"]) expect(within(toolbar).getByRole("button", { name })).toBeEnabled();
   });
   it("does not show the embedded bar in the standalone editor", async () => {
     await openEditor(false);
-    expect(screen.queryByRole("toolbar", { name: "Add to this page" })).toBeNull();
+    expect(screen.queryByRole("toolbar", { name: "Add to This Page" })).toBeNull();
   });
   it.each(["Image", "Video"])("keeps blocks and dirty tracking unchanged when cancelling %s", async (kind) => {
     const { container } = await openEditor();

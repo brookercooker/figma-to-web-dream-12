@@ -33,11 +33,11 @@ afterEach(cleanup);
 describe("top bar library buttons", () => {
   it("Images picks for the chat instead of navigating, and expands the chat", async () => {
     open();
-    expect(screen.getByRole("button", { name: "Expand chat" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Expand Chat" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Images" }));
     expect(m.add).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/pages");
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Expand chat" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Expand Chat" })).toBeNull());
   });
   it("Open Images page navigates", () => {
     open();

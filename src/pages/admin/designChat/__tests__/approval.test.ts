@@ -58,7 +58,7 @@ describe("missingField", () => {
 
 describe("approval notes and status", () => {
   it("visibleText", () => {
-    expect(visibleText({ role: "note", text: "Approval needed: Change the site's database" })).toBeNull();
+    expect(visibleText({ role: "note", text: "Approval Needed: Change the site's database" })).toBeNull();
     const g = "Approval granted by pat@example.com: Change the site's database";
     expect(visibleText({ role: "note", text: g })).toBe(g);
     expect(visibleText({ role: "note", text: "This change is paused for a check-in that can only be answered in the builder's own editor. Someone with access to the builder's editor needs to continue it there, or you can rephrase the request." }))
