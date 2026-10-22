@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Box, Image as ImageIcon } from "lucide-react";
 import LibraryPicker from "../LibraryPicker";
 
-const many = Array.from({ length: 70 }, (_, n) => ({ id: `i${n}`, name: `photo-${String(n).padStart(2, "0")}.jpg`, url: `https://x/${n}.webp`, alt: `photo ${n}`, labels: n === 7 ? ["Rooms/Lobby"] : [] }));
+const many = Array.from({ length: 70 }, (_, n) => ({ id: `i${n}`, name: `photo-${String(n).padStart(2, "0")}.jpg`, url: `https://x/${n}.webp`, alt: `photo ${n}`, labels: n === 7 ? ["Rooms/Lobby"] : n === 2 ? ["Area/Kitchen"] : [], createdAt: n === 5 ? "2026-01-03T00:00:00Z" : n === 6 ? "2025-01-01T00:00:00Z" : undefined }));
 vi.mock("../../ImagePickerDialog", async () => {
   const real = await vi.importActual<any>("../../ImagePickerDialog");
   return { ...real, loadLibraryImages: async () => many };
@@ -129,5 +129,89 @@ describe("library picker", () => {
     fireEvent.click(await screen.findByRole("button", { name: /Open full Images page/ }));
     expect(onOpenFull).toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+  const titles = () => cards().map((c) => c.getAttribute("title"));
+  const sortTo = (v: string) => fireEvent.change(screen.getByLabelText("Sort"), { target: { value: v } });
+  it("Enter finishes after clicking a card", async () => {
+    const { onPick } = setup();
+    await screen.findByText("60 of 70 shown");
+    const card = screen.getByTitle("photo-03.jpg");
+    fireEvent.click(card); card.focus();
+    fireEvent.keyDown(card, { key: "Enter" });
+    expect(onPick).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+  it("Enter finishes even when focus is on the page body", async () => {
+    const { onPick } = setup();
+    await screen.findByText("60 of 70 shown");
+    fireEvent.click(screen.getByTitle("photo-03.jpg"));
+    fireEvent.keyDown(document.body, { key: "Enter" });
+    expect(onPick).toHaveBeenCalledTimes(1);
+  });
+  it("Enter on a card with nothing selected is left to the card (selects it)", async () => {
+    const { onPick } = setup();
+    await screen.findByText("60 of 70 shown");
+    const card = screen.getByTitle("photo-03.jpg");
+    const ev = fireEvent.keyDown(card, { key: "Enter" });
+    expect(ev).toBe(true); // not prevented, so the button's native activation runs
+    expect(onPick).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+  it("Enter on Cancel, Done or Show more is not hijacked", async () => {
+    const { onPick } = setup();
+    await screen.findByText("60 of 70 shown");
+    fireEvent.click(screen.getByTitle("photo-03.jpg"));
+    for (const name of ["Cancel", "Done", "Show more"]) {
+      expect(fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" })).toBe(true);
+    }
+    expect(onPick).not.toHaveBeenCalled();
+  });
+  it("Enter does nothing with nothing selected", async () => {
+    const { onPick } = setup();
+    await screen.findByText("60 of 70 shown");
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Enter" });
+    fireEvent.keyDown(document.body, { key: "Enter" });
+    expect(onPick).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+  it("sorts by name Z–A", async () => {
+    setup(); await screen.findByText("60 of 70 shown");
+    sortTo("name-desc");
+    expect(titles()[0]).toBe("photo-69.jpg");
+  });
+  it("sorts newest and oldest first with undated items last", async () => {
+    setup(); await screen.findByText("60 of 70 shown");
+    sortTo("newest");
+    expect(titles().slice(0, 3)).toEqual(["photo-05.jpg", "photo-06.jpg", "photo-00.jpg"]);
+    sortTo("oldest");
+    expect(titles().slice(0, 3)).toEqual(["photo-06.jpg", "photo-05.jpg", "photo-00.jpg"]);
+    expect(screen.getByText("60 of 70 shown")).toBeInTheDocument();
+  });
+  it("groups by first label with unlabelled items last", async () => {
+    setup(); await screen.findByText("60 of 70 shown");
+    sortTo("label");
+    expect(titles().slice(0, 3)).toEqual(["photo-02.jpg", "photo-07.jpg", "photo-00.jpg"]);
+  });
+  it("objects can sort by where they're built", async () => {
+    setup("objects"); await screen.findByText("2 of 2 shown");
+    expect(titles()).toEqual(["Flyer", "Hero"]);
+    sortTo("built");
+    expect(titles()).toEqual(["Hero", "Flyer"]);
+  });
+  it("sort resets on reopen", async () => {
+    setup(); await screen.findByText("60 of 70 shown");
+    sortTo("name-desc");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "Images" }));
+    await screen.findByText("60 of 70 shown");
+    expect(screen.getByLabelText("Sort")).toHaveValue("name");
+  });
+  it("selection survives a sort change", async () => {
+    setup(); await screen.findByText("60 of 70 shown");
+    fireEvent.click(screen.getByTitle("photo-03.jpg"));
+    sortTo("label");
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
+    expect(screen.getByTitle("photo-03.jpg")).toHaveAttribute("aria-pressed", "true");
   });
 });
