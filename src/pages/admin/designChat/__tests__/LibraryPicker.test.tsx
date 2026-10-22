@@ -35,9 +35,9 @@ describe("library picker", () => {
     setup();
     expect(await screen.findByRole("heading", { name: "Pick an Image" })).toBeInTheDocument();
     expect(await screen.findByText("60 of 70 shown")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Search Images"), { target: { value: "lobby" } });
+    fireEvent.change(screen.getByLabelText("Search images"), { target: { value: "lobby" } });
     await waitFor(() => expect(cards()).toHaveLength(1));
-    fireEvent.change(screen.getByLabelText("Search Images"), { target: { value: "zzz" } });
+    fireEvent.change(screen.getByLabelText("Search images"), { target: { value: "zzz" } });
     expect(await screen.findByText("No images match")).toBeInTheDocument();
     expect(screen.getByText("Try fewer words or clear the filters")).toBeInTheDocument();
   });
@@ -100,7 +100,7 @@ describe("library picker", () => {
   it("Enter in the search box finishes only with a selection", async () => {
     const { onPick } = setup();
     await screen.findByText("60 of 70 shown");
-    const box = screen.getByLabelText("Search Images");
+    const box = screen.getByLabelText("Search images");
     fireEvent.keyDown(box, { key: "Enter" });
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     fireEvent.click(screen.getByTitle("photo-03.jpg"));
@@ -112,7 +112,7 @@ describe("library picker", () => {
     const { onPick } = setup();
     await screen.findByText("60 of 70 shown");
     fireEvent.click(screen.getByTitle("photo-03.jpg"));
-    fireEvent.change(screen.getByLabelText("Search Images"), { target: { value: "lobby" } });
+    fireEvent.change(screen.getByLabelText("Search images"), { target: { value: "lobby" } });
     await waitFor(() => expect(cards()).toHaveLength(1));
     expect(screen.getByText("1 selected")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
