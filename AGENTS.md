@@ -9,3 +9,4 @@
 - Capture uses an isolated camera sheet with session-scoped stream cleanup and passes JPEG Files into existing staging; uploads stay unchanged and camera failure uses a single-photo native input.
 - LivePreviewPage resolves a page to found | missing | unreachable (never a silent DbPage fallback); DesignTab gives missing+empty pages unsaved starter blocks and unreachable pages a Retry panel, so failed code loads can never be overwritten.
 - The draft-manifest reachable flag is stored with each cached manifest load; resolveLivePage only returns "missing" when the draft list (or, with no draft, the public list) was actually read, otherwise "unreachable".
+- "/" and "/home" are one page: lookups, caches and registration go through registerPage homeAliases/pageKey, and the front page is only ever stored as "/".

@@ -24,4 +24,4 @@
 - [ ] Before launch: turn on admin sign-in and drop temporary open-access rules
 - [ ] Re-enable uploads/publish features that still require sign-in (storage, publish-assets, users)
 - [x] Edit manually: no more "Content coming soon" — empty pages open with a heading + text block; unloadable code shows Retry
-- [ ] Home page: treat "/" and "/home" as one page so Edit manually works on both
+- [x] Home page: treat "/" and "/home" as one page so Edit manually works on both
