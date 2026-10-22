@@ -82,7 +82,7 @@ export function loadSiteManifest(force = false): Promise<SiteManifest> {
   if (!force && cached && Date.now() - cached.at < TTL_MS) return cached.promise;
   const promise = (async () => {
     const draftUrl = siteManifestUrl();
-    const urls = [...new Set([draftUrl, draftUrl, fallbackManifestUrl()])];
+    const urls = [...new Set([draftUrl, fallbackManifestUrl()])];
     // The draft address is tried twice (a short pause between) before falling back.
     if (draftBase) urls.splice(1, 0, draftUrl);
     let failure: unknown;
