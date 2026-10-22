@@ -15,6 +15,13 @@
       "when": 1792030875923,
       "tag": "0001_add_object_registry_content",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792650662602,
+      "tag": "0002_unique_page_paths",
+      "breakpoints": true
     }
   ]
 }
