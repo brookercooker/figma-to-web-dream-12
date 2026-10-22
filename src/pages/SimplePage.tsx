@@ -9,7 +9,7 @@ interface Props {
   children?: React.ReactNode;
 }
 
-/** Minimal placeholder page — a title + empty content area ready to be filled in later. */
+/** Minimal page: a title, then whatever content it is given (nothing extra when empty). */
 const SimplePage = ({ title, children }: Props) => (
   <div className="min-h-screen bg-background">
     <div className="mx-auto max-w-[1400px] px-4 sm:px-8 pt-4 pb-2">
@@ -19,7 +19,7 @@ const SimplePage = ({ title, children }: Props) => (
       <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-light text-foreground tracking-[-0.01em] leading-tight">
         {title}
       </h1>
-      {children ?? <p className="mt-6 text-muted-foreground text-sm">Content coming soon.</p>}
+      {children}
     </section>
   </div>
 );
@@ -58,10 +58,5 @@ export const AboutPage = () => {
   );
 };
 
-
-export const ShippingPolicyPage = () => <SimplePage title="Shipping Policy" />;
-export const ReturnPolicyPage = () => <SimplePage title="Return Policy" />;
-export const PrivacyPolicyPage = () => <SimplePage title="Privacy Policy" />;
-export const TermsConditionsPage = () => <SimplePage title="Terms & Conditions" />;
 
 export default SimplePage;
