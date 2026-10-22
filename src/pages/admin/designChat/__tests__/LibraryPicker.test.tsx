@@ -28,7 +28,7 @@ const setup = (kind: "images" | "objects" = "images") => {
   fireEvent.click(screen.getByRole("button", { name: label }));
   return { onPick, onOpenFull };
 };
-const cards = () => within(screen.getByRole("dialog")).getAllByRole("button", { name: /^photo-|^Hero|^Flyer/ });
+const cards = () => within(screen.getByRole("dialog")).getAllByRole("button").filter((b) => /^(photo-|Hero|Flyer)/.test(b.getAttribute("title") ?? ""));
 
 describe("library picker", () => {
   it("opens a large popup with search that narrows the grid", async () => {
