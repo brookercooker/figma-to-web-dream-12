@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DeveloperReviewPage from "../DeveloperReviewPage";
 import type { RelayState } from "../designChat/helper";
@@ -40,8 +40,11 @@ describe("Developer review error details", () => {
   it("keeps the details unavailable to non-admins", async () => {
     mocks.admin = false;
     mocks.review = { review: { state: "error", headline: "Private review details" } };
-    open();
-    await vi.waitFor(() => expect(screen.queryByRole("heading", { name: "Developer review" })).toBeNull());
+    render(<MemoryRouter initialEntries={["/manage/developer"]}><Routes>
+      <Route path="/manage/developer" element={<DeveloperReviewPage />} />
+      <Route path="/manage/pages" element={<p>Pages list</p>} />
+    </Routes></MemoryRouter>);
+    await screen.findByText("Pages list");
     expect(screen.queryByText("Private review details")).toBeNull();
   });
 });
