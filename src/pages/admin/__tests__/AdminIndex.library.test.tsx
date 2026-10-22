@@ -14,7 +14,7 @@ vi.mock("../designChat/ChatPanel", () => ({ default: () => <div>chat</div> }));
 vi.mock("../designChat/PreviewTools", () => ({ default: () => null, SubmitButton: () => null }));
 vi.mock("../designChat/LibraryPicker", () => ({ default: ({ label, onPick, onOpenFull }: any) => (
   <span><button aria-haspopup="dialog" aria-label={label} onClick={() => onPick({ kind: "image", id: "x", name: "X", url: "u", labels: [] })}>{label}</button>
-    <button onClick={onOpenFull}>Open {label} page</button></span>) }));
+    <button onClick={onOpenFull}>Open {label} Page</button></span>) }));
 vi.mock("@/prototype/client", () => ({ supabase: { auth: { getUser: async () => ({ data: { user: null } }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) } } }));
 for (const tab of ["PagesTab", "ObjectsTab", "ImagesTab", "VideoTab", "DesignChatTab", "DesignTab", "ObjectDesignPage"]) vi.doMock(`../${tab}`, () => ({ default: () => null }));
 
@@ -39,15 +39,15 @@ describe("top bar library buttons", () => {
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/pages");
     await waitFor(() => expect(screen.queryByRole("button", { name: "Expand Chat" })).toBeNull());
   });
-  it("Open Images page navigates", () => {
+  it("Open Images Page navigates", () => {
     open();
-    fireEvent.click(screen.getByText("Open Images page"));
+    fireEvent.click(screen.getByText("Open Images Page"));
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/images");
   });
   it("while editing by hand, the three buttons navigate as before", () => {
     m.editing = true;
     open();
-    expect(screen.queryByText("Open Videos page")).toBeNull();
+    expect(screen.queryByText("Open Videos Page")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Videos" }));
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/videos");
     expect(m.add).not.toHaveBeenCalled();

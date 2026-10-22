@@ -120,7 +120,7 @@ describe("library picker", () => {
   });
   it("has a link to the full page that closes the popup", async () => {
     const { onOpenFull } = setup();
-    fireEvent.click(await screen.findByRole("button", { name: /Open Images page/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Open Images Page/ }));
     expect(onOpenFull).toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
