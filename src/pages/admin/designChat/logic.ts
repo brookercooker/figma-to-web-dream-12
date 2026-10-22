@@ -110,7 +110,7 @@ export function problemsModel(s: RelayState | null): ProblemsModel | null {
       return { title: r.headline, sub: summary.includes(unchanged) ? summary : `${unchanged} ${summary}`, items: [] };
     }
     return { title: "The review couldn't finish.", sub: fallback, items: [],
-      devNote: "If it keeps happening, a developer can see the details on the Developer review page." };
+      devNote: "If it keeps happening, a developer can see the details on the Developer Review page." };
   }
   if (p.status === "blocked" && r && r.state === "failure") {
     const all = (r.findings || []).filter(blocking);
