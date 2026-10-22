@@ -1,4 +1,6 @@
 import { leafOf } from "../labelPath";
+import { colorFor } from "../labelColors";
+import type { LabelColorOf } from "./LibraryCard";
 
 export type BuiltFilter = "all" | "code" | "manager";
 export type SortKey = "name" | "name-desc" | "newest" | "oldest" | "label" | "built";
@@ -7,8 +9,8 @@ const chip = (on: boolean) =>
   `text-xs px-2.5 py-1 rounded-full border transition-colors ${on ? "bg-foreground text-background border-foreground" : "hover:bg-muted text-muted-foreground"}`;
 
 /** Label chips, the objects-only "Where it's built" filter, sort, count and Clear filters. */
-export default function LibraryFilterBar({ labels, label, setLabel, built, setBuilt, showBuilt, sort, setSort, showDates, shown, total, filtering, onClear }: {
-  labels: string[]; label: string; setLabel: (l: string) => void;
+export default function LibraryFilterBar({ colorOf = (p) => colorFor(p), labels, label, setLabel, built, setBuilt, showBuilt, sort, setSort, showDates, shown, total, filtering, onClear }: {
+  colorOf?: LabelColorOf; labels: string[]; label: string; setLabel: (l: string) => void;
   built: BuiltFilter; setBuilt: (b: BuiltFilter) => void; showBuilt: boolean;
   sort: SortKey; setSort: (s: SortKey) => void; showDates: boolean;
   shown: number; total: number; filtering: boolean; onClear: () => void;
@@ -18,9 +20,14 @@ export default function LibraryFilterBar({ labels, label, setLabel, built, setBu
       {labels.length > 0 && (
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by label">
           <button type="button" aria-pressed={label === ""} data-picker-own-enter="" onClick={() => setLabel("")} className={chip(label === "")}>All</button>
-          {labels.map((l) => (
-            <button key={l} type="button" title={l} aria-pressed={label === l} data-picker-own-enter="" onClick={() => setLabel(label === l ? "" : l)} className={chip(label === l)}>{leafOf(l)}</button>
-          ))}
+          {labels.map((l) => {
+            const c = colorOf(l), on = label === l;
+            return (
+              <button key={l} type="button" title={l} aria-pressed={on} data-picker-own-enter="" onClick={() => setLabel(on ? "" : l)}
+                className="text-xs px-2.5 py-1 rounded-full border transition-opacity hover:opacity-80"
+                style={on ? { background: c.swatch, borderColor: c.swatch, color: "white" } : { background: c.bg, borderColor: c.border, color: c.text }}>{leafOf(l)}</button>
+            );
+          })}
         </div>
       )}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
