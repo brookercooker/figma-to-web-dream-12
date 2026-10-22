@@ -10,7 +10,7 @@ import { matchesLabelFilter } from "../labelPath";
 import { useLabelsForScope } from "../useAllLabels";
 import LibraryCard, { type LabelColorOf } from "./LibraryCard";
 import { colorFor } from "../labelColors";
-import LibraryFilterBar, { type BuiltFilter, type SortKey } from "./LibraryFilterBar";
+import LibraryFilterBar, { type SortKey } from "./LibraryFilterBar";
 import type { ChatReference } from "./references";
 
 export type LibraryKind = "images" | "videos" | "objects";
@@ -19,7 +19,7 @@ const NOUN = { images: "images", videos: "videos", objects: "objects" } as const
 const FULL = { images: "Images", videos: "Videos", objects: "Objects" } as const;
 const TITLE = { images: "Pick an image", videos: "Pick a video", objects: "Pick an object" } as const;
 
-type Row = { ref: ChatReference; search: (term: string) => boolean; labels: string[]; note?: string; inCode?: boolean; createdAt?: string };
+type Row = { ref: ChatReference; search: (term: string) => boolean; labels: string[]; note?: string; createdAt?: string };
 
 const byName = (a: Row, b: Row) => a.ref.name.localeCompare(b.ref.name);
 const time = (r: Row) => { const t = r.createdAt ? Date.parse(r.createdAt) : NaN; return Number.isNaN(t) ? null : t; };
@@ -37,7 +37,6 @@ export function sortRows(rows: Row[], sort: SortKey): Row[] {
     if (!la || !lb) return la === lb ? byName(a, b) : !la ? 1 : -1;
     return la.localeCompare(lb) || byName(a, b);
   });
-  if (sort === "built") return out.sort((a, b) => Number(!a.inCode) - Number(!b.inCode) || byName(a, b));
   return out.sort(byName);
 }
 
@@ -59,7 +58,7 @@ async function loadRows(kind: LibraryKind): Promise<Row[]> {
     const type = o.component_key ? "built in code" : "built in the Site Manager";
     return {
       ref: { kind: "object", id: o.id, name: o.name, componentKey: o.component_key, type, thumb: o.thumbnail_url ?? undefined },
-      search: (t) => objectMatches(o, t), labels: o.labels ?? [], note: type, inCode: !!o.component_key, createdAt: o.createdAt,
+      search: (t) => objectMatches(o, t), labels: o.labels ?? [], note: type, createdAt: o.createdAt,
     };
   });
 }
@@ -72,7 +71,6 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const [rows, setRows] = useState<Row[] | null>(null);
   const [term, setTerm] = useState("");
   const [labelF, setLabelF] = useState("");
-  const [built, setBuilt] = useState<BuiltFilter>("all");
   const [limit, setLimit] = useState(PAGE);
   const [sort, setSort] = useState<SortKey>("name");
   const [selected, setSelected] = useState<Row[]>([]);
@@ -90,7 +88,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
 
   useEffect(() => {
     if (!open) return;
-    setTerm(""); setLabelF(""); setBuilt("all"); setSort("name"); setLimit(PAGE); setSelected([]);
+    setTerm(""); setLabelF(""); setSort("name"); setLimit(PAGE); setSelected([]);
     void refetchRef.current();
     let live = true;
     setRows(null);
@@ -99,12 +97,11 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   }, [open, kind]);
 
   const matches = useMemo(() => sortRows((rows ?? [])
-    .filter((r) => r.search(term) && (!labelF || matchesLabelFilter(r.labels, labelF))
-      && (built === "all" || (built === "code") === !!r.inCode)), sort), [rows, term, labelF, built, sort]);
+    .filter((r) => r.search(term) && (!labelF || matchesLabelFilter(r.labels, labelF))), sort), [rows, term, labelF, sort]);
   const showDates = useMemo(() => (rows ?? []).some((r) => !!r.createdAt), [rows]);
-  useEffect(() => setLimit(PAGE), [term, labelF, built]);
-  const filtering = term.trim() !== "" || labelF !== "" || built !== "all";
-  const clear = () => { setTerm(""); setLabelF(""); setBuilt("all"); };
+  useEffect(() => setLimit(PAGE), [term, labelF]);
+  const filtering = term.trim() !== "" || labelF !== "";
+  const clear = () => { setTerm(""); setLabelF(""); };
   const FallbackIcon = kind === "images" ? ImageIcon : kind === "videos" ? Film : Box;
 
   const selectedIds = useMemo(() => new Set(selected.map((r) => r.ref.id)), [selected]);
@@ -163,8 +160,8 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
               placeholder={`Search ${NOUN[kind]} by name or label…`} className="h-11 pl-9 text-base"
  />
           </div>
-          <LibraryFilterBar colorOf={colorOf} labels={allLabels} label={labelF} setLabel={setLabelF} built={built} setBuilt={setBuilt}
-            showBuilt={kind === "objects"} sort={sort} setSort={setSort} showDates={showDates} shown={Math.min(limit, matches.length)} total={matches.length} filtering={filtering} onClear={clear} />
+          <LibraryFilterBar colorOf={colorOf} labels={allLabels} label={labelF} setLabel={setLabelF}
+            sort={sort} setSort={setSort} showDates={showDates} shown={Math.min(limit, matches.length)} total={matches.length} filtering={filtering} onClear={clear} />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
           {rows === null ? (

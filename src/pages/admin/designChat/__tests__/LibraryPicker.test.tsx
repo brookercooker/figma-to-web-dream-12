@@ -51,13 +51,6 @@ describe("library picker", () => {
     fireEvent.click(chip);
     expect(await screen.findByText("60 of 70 shown")).toBeInTheDocument();
   });
-  it("objects can be filtered by where they're built", async () => {
-    setup("objects");
-    await screen.findByText("2 of 2 shown");
-    fireEvent.click(screen.getByRole("button", { name: "Built in code" }));
-    await waitFor(() => expect(cards()).toHaveLength(1));
-    expect(cards()[0]).toHaveAttribute("title", "Hero");
-  });
   it("Show more reveals 60 more", async () => {
     setup();
     await screen.findByText("60 of 70 shown");
@@ -192,12 +185,6 @@ describe("library picker", () => {
     setup(); await screen.findByText("60 of 70 shown");
     sortTo("label");
     expect(titles().slice(0, 4)).toEqual(["photo-02.jpg", "photo-07.jpg", "photo-08.jpg", "photo-00.jpg"]);
-  });
-  it("objects can sort by where they're built", async () => {
-    setup("objects"); await screen.findByText("2 of 2 shown");
-    expect(titles()).toEqual(["Flyer", "Hero"]);
-    sortTo("built");
-    expect(titles()).toEqual(["Hero", "Flyer"]);
   });
   it("sort resets on reopen", async () => {
     setup(); await screen.findByText("60 of 70 shown");
