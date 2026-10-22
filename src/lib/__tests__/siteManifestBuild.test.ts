@@ -120,3 +120,12 @@ describe("buildManifest (the real site in this project)", () => {
     expect(Object.keys(m.files).some((f) => f.includes("/pages/admin/"))).toBe(false);
   });
 });
+
+describe("buildManifest (this site)", () => {
+  it("lists the routed coded pages, including lazyRetry and AboutPage forms", () => {
+    const m = buildManifest({ srcDir: path.resolve(__dirname, "../..") });
+    const paths = m.pages.map((p: { path: string }) => p.path);
+    for (const p of ["/shipping-policy", "/about", "/team", "/locations", "/contact"]) expect(paths).toContain(p);
+    expect(m.pages.find((p: { path: string }) => p.path === "/about")).toMatchObject({ file: "/src/pages/SimplePage.tsx", exportName: "AboutPage" });
+  });
+});
