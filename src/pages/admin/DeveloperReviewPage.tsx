@@ -4,6 +4,20 @@ import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { RELAY, RELAY_IS_HOSTED, relayHeaders } from "./designChat/helper";
+import { useHelperState } from "./designChat/useHelperState";
+
+function ReviewErrorDetails() {
+  const { state } = useHelperState(() => 4000);
+  const review = state?.draft?.review;
+  if (review?.state !== "error") return null;
+  return (
+    <div role="region" aria-label="Review error details" className="border-b px-6 py-4 space-y-2 text-sm">
+      <p className="font-medium whitespace-pre-wrap break-words">{review.headline || "No reason was reported by the design service."}</p>
+      {review.summary && <p className="whitespace-pre-wrap break-words">{review.summary}</p>}
+      <p className="text-xs text-muted-foreground">{review.retry === true ? "Staff can retry this themselves" : "Needs a developer"}</p>
+    </div>
+  );
+}
 
 export default function DeveloperReviewPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -53,6 +67,7 @@ export default function DeveloperReviewPage() {
           <h1 className="text-base font-medium tracking-tight">Developer review</h1>
         </div>
       </header>
+      <ReviewErrorDetails />
       {RELAY_IS_HOSTED ? (
         <iframe
           ref={iframeRef}
