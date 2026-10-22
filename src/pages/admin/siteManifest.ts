@@ -38,6 +38,7 @@ export const SUPPORTED_VERSION = 1;
 let draftBase: string | null = null;
 let knownPaths = new Set<string>();
 export const MANIFEST_CHANGED = "nova-manifest-changed";
+export function hasDraftManifestBase() { return !!draftBase; }
 export function setManifestBase(url: string) {
   if (url === draftBase) return;
   draftBase = url || null;
@@ -72,10 +73,11 @@ const TTL_MS = 60_000;
 let draftRetryMs = 2000;
 /** Tests: shorten the pause before the draft manifest is retried. */
 export function setDraftRetryDelay(ms: number) { draftRetryMs = ms; }
-let draftReachable = true;
+let lastDraftReachable = true;
 /** False when the last load could not read the draft preview's manifest (and fell back, or failed). */
-export function draftManifestReachable() { return draftReachable; }
-let cached: { at: number; promise: Promise<SiteManifest> } | null = null;
+/** Reflects the load that produced the current (possibly cached) manifest, so a cached fallback still reports the failure. */
+export function draftManifestReachable() { return cached?.draftOk ?? lastDraftReachable; }
+let cached: { at: number; promise: Promise<SiteManifest>; draftOk?: boolean } | null = null;
 
 /** Fetch the manifest (kept for a minute). Throws SiteManifestUnavailable if it can't be had. */
 export function loadSiteManifest(force = false): Promise<SiteManifest> {
@@ -86,7 +88,7 @@ export function loadSiteManifest(force = false): Promise<SiteManifest> {
     // The draft address is tried twice (a short pause between) before falling back.
     if (draftBase) urls.splice(1, 0, draftUrl);
     let failure: unknown;
-    draftReachable = true;
+    let draftReachable = true;
     for (const [index, url] of urls.entries()) {
       const isDraft = !!draftBase && url === draftUrl;
       if (isDraft && index > 0) await new Promise((r) => setTimeout(r, draftRetryMs));
@@ -95,6 +97,8 @@ export function loadSiteManifest(force = false): Promise<SiteManifest> {
         if (!res.ok) throw new SiteManifestUnavailable(`The site manifest returned ${res.status}.`);
         const manifest = parseSiteManifest(await res.json());
         knownPaths = codePagePaths(manifest);
+        lastDraftReachable = draftReachable;
+        if (entry && cached === entry) entry.draftOk = draftReachable;
         window.dispatchEvent(new Event(MANIFEST_CHANGED));
         return manifest;
       } catch (e) {
@@ -105,9 +109,11 @@ export function loadSiteManifest(force = false): Promise<SiteManifest> {
         }
       }
     }
+    lastDraftReachable = draftReachable;
     throw new SiteManifestUnavailable(`Couldn't reach the site manifest (${failure instanceof Error ? failure.message : "network error"}).`);
   })();
-  cached = { at: Date.now(), promise };
+  const entry: NonNullable<typeof cached> = { at: Date.now(), promise };
+  cached = entry;
   promise.catch(() => { if (cached?.promise === promise) cached = null; }); // a failure isn't remembered
   return promise;
 }
