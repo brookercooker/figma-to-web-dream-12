@@ -25,3 +25,4 @@
 - [ ] Re-enable uploads/publish features that still require sign-in (storage, publish-assets, users)
 - [x] Edit manually: no more "Content coming soon" — empty pages open with a heading + text block; unloadable code shows Retry
 - [x] Home page: treat "/" and "/home" as one page so Edit manually works on both
+- [ ] Top bar: Objects/Images/Videos open a search-and-pick menu that adds library references to the chat
