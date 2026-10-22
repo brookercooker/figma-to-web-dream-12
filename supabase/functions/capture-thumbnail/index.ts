@@ -3,6 +3,7 @@
 // browser can bypass the app's client-side AdminGate.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { captureConfigured } from "./config.ts";
 
 const CF_ACCOUNT_ID = Deno.env.get("CLOUDFLARE_ACCOUNT_ID")!;
 const CF_TOKEN = Deno.env.get("CLOUDFLARE_BROWSER_RENDERING_TOKEN")!;
@@ -33,6 +34,12 @@ Deno.serve(async (req) => {
     const { data: roleRows } = await admin.from("user_roles").select("role").eq("user_id", uid);
     const isAdmin = (roleRows ?? []).some((r: any) => r.role === "admin");
     if (!isAdmin) return json({ error: "forbidden" }, 403);
+
+    // Optional thumbnails must not turn an unconfigured service into a runtime failure.
+    // Reuse the client's existing expected-skip handling; keep previous thumbnails untouched.
+    if (!captureConfigured(CF_ACCOUNT_ID, CF_TOKEN)) {
+      return json({ ok: false, skipped: "route_not_resolved", error: "route_not_resolved", detail: "Thumbnail service is not configured — keeping the previous thumbnail." });
+    }
 
     const body = (await req.json()) as Body;
     if (!body?.kind || !body?.id || !body?.path || !body?.origin) {

@@ -33,6 +33,7 @@ import Footer from "@/components/Footer";
 import InsertGap, { type InsertType } from "./InsertGap";
 import InlineEditSurface, { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
 import InlineStylePanel from "./InlineStylePanel";
+import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
 
@@ -160,6 +161,11 @@ function PageImportProbe({ path, onDone }: { path: string; onDone: (parts: { nam
 }
 
 export default function DesignTab({ embedded = false, pageId }: { embedded?: boolean; pageId?: string } = {}) {
+  const blockCanvasRef = useRef<HTMLDivElement>(null);
+  const blockLinkGuard = useEditorLinkGuard(blockCanvasRef, true, (e) => {
+    const block = (e.target as Element).closest<HTMLElement>("[data-page-block]");
+    if (block?.dataset.pageBlock) setActiveId(block.dataset.pageBlock);
+  }, true);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   // Embedded in the Site Manager's edit mode, the page comes from the working page, not the address.
@@ -991,10 +997,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
             key={`${page.id}-${page.updated_at}-inline`}
             src={previewSrc(page.path)}
             title={`${page.name} current content`}
-            className="h-[46vh] w-full bg-background"
+            className="h-[46vh] w-full bg-background pointer-events-none"
+            tabIndex={-1}
           />
         ) : (
-          <div className="h-[46vh] overflow-y-auto">
+          <div data-editor-content className="h-[46vh] overflow-y-auto">
             <InlinePagePreview name={page.name} blocks={savedBlocks} />
           </div>
         )}
@@ -1198,7 +1205,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                 )}
               </div>
             ) : (
-            <div className={embedded ? "bg-background" : "rounded-lg border bg-background overflow-hidden"} style={deviceStyle}>
+            <div ref={blockCanvasRef} {...blockLinkGuard} className={embedded ? "bg-background" : "rounded-lg border bg-background overflow-hidden"} style={deviceStyle}>
               {!hasExisting && (
                 <ChromePreview label="Site header">
                   <Header />
@@ -1285,7 +1292,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                             </div>
                           )}
                           {!collapsed[b.id] && (
-                            <div className="pointer-events-none">
+                            <div data-editor-content className="pointer-events-none">
                               <BlockView block={b} />
                             </div>
                           )}

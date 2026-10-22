@@ -16,6 +16,7 @@ import { ChevronDown, ChevronRight, ExternalLink, GripVertical, icons } from "lu
 import DOMPurify from "dompurify";
 import { findObjectRoots, loadObjectComponents, objectComponentsNow, type ObjectRoot } from "@/lib/objectScopes";
 import { pageChunks, chunkName } from "@/lib/pageChunks";
+import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 
 export type InlineEdits = Record<string, string>;
 /** "page" or the registry key of a shared object. */
@@ -509,13 +510,19 @@ export default function InlineEditSurface({
     }
   };
 
+  const linkGuard = useEditorLinkGuard(ref, editing, onClick);
+
   return (
     <div ref={outer} className="relative">
     <div
       ref={ref}
       className={editing ? "inline-edit-surface" : undefined}
       onInput={onInput}
-      onClickCapture={onClick}
+      {...linkGuard}
+      onClickCapture={(e) => {
+        linkGuard.onClickCapture(e);
+        if (!e.isPropagationStopped()) void onClick(e);
+      }}
       onPointerDownCapture={onPointerDown}
       onKeyDown={onKeyDown}
     >

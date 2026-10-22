@@ -1,4 +1,6 @@
 # Roadmap — coded object import fidelity
+- [x] Disable visitor link actions while preserving editor selection.
+- [x] Show Minimize inside native and fallback full-screen preview/editor, except during picture capture.
 - [x] Preserve alignment (centered stays centered)
 - [x] Keep icons attached to buttons/text and icons used as images
 - [x] Preserve layout: videos beside text stay side-by-side
