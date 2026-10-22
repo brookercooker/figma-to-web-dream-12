@@ -41,7 +41,7 @@ describe("resolveLivePage", () => {
   });
   it("reports missing when the manifest loaded and has no such page", async () => {
     expect((await resolveLivePage("/brand-new")).status).toBe("missing");
-    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("manifest loaded: yes, entry found: no"));
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("manifest loaded: yes, draft manifest reachable: yes, entry found: no"));
   });
   it("reports unreachable when the draft list failed and the public list lacks the page", async () => {
     m.draftOk = false;

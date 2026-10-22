@@ -82,6 +82,7 @@ let cached: { at: number; promise: Promise<SiteManifest>; draftOk?: boolean } | 
 /** Fetch the manifest (kept for a minute). Throws SiteManifestUnavailable if it can't be had. */
 export function loadSiteManifest(force = false): Promise<SiteManifest> {
   if (!force && cached && Date.now() - cached.at < TTL_MS) return cached.promise;
+  const entry: { at: number; promise: Promise<SiteManifest>; draftOk?: boolean } = { at: Date.now(), promise: null as unknown as Promise<SiteManifest> };
   const promise = (async () => {
     const draftUrl = siteManifestUrl();
     const urls = [...new Set([draftUrl, fallbackManifestUrl()])];
@@ -98,7 +99,7 @@ export function loadSiteManifest(force = false): Promise<SiteManifest> {
         const manifest = parseSiteManifest(await res.json());
         knownPaths = codePagePaths(manifest);
         lastDraftReachable = draftReachable;
-        if (entry && cached === entry) entry.draftOk = draftReachable;
+        entry.draftOk = draftReachable;
         window.dispatchEvent(new Event(MANIFEST_CHANGED));
         return manifest;
       } catch (e) {
@@ -112,7 +113,7 @@ export function loadSiteManifest(force = false): Promise<SiteManifest> {
     lastDraftReachable = draftReachable;
     throw new SiteManifestUnavailable(`Couldn't reach the site manifest (${failure instanceof Error ? failure.message : "network error"}).`);
   })();
-  const entry: NonNullable<typeof cached> = { at: Date.now(), promise };
+  entry.promise = promise;
   cached = entry;
   promise.catch(() => { if (cached?.promise === promise) cached = null; }); // a failure isn't remembered
   return promise;
