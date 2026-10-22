@@ -34,6 +34,7 @@ import InsertGap, { type InsertType } from "./InsertGap";
 import InlineEditSurface, { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
 import InlineStylePanel from "./InlineStylePanel";
 import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
+import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
 
@@ -184,6 +185,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [createOpen, setCreateOpen] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [videoFor, setVideoFor] = useState<string | null>(null);
+  const [imageAt, setImageAt] = useState<number | null>(null);
+  const [videoAt, setVideoAt] = useState<number | null>(null);
+  const scrollToNew = useRef<string | null>(null);
   // block id waiting for an object choice, or "new" when adding one
   const [objectFor, setObjectFor] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -373,29 +377,36 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     setDirty(true);
   };
 
-  const addBlock = (type: Block["type"], at?: number) => {
-    const base = { id: newId(), align: "left" as BlockAlign };
-    const block: Block =
-      type === "image"
-        ? { ...base, type: "image", url: "", alt: "", width: 100 } as ImageBlock
-        : type === "video"
-        ? { ...base, type: "video", url: "", width: 100 } as VideoBlock
-        : type === "heading"
-          ? { ...base, type: "heading", text: "New heading", size: "lg" } as TextBlock
-          : { ...base, type: "text", text: "Write something here.", size: "md" } as TextBlock;
-    setBlocks((prev) => {
-      const i = at === undefined ? prev.length : Math.max(0, Math.min(prev.length, at));
-      return [...prev.slice(0, i), block, ...prev.slice(i)];
-    });
+  const addPickedBlock = (block: Block, at: number) => {
+    setBlocks((prev) => insertPickedBlock(prev, block, at));
+    scrollToNew.current = block.id;
     setActiveId(block.id);
     setShowLive(false);
     setDirty(true);
-    if (type === "image") setPickerFor(block.id);
-    if (type === "video") setVideoFor(block.id);
+  };
+
+  useEffect(() => {
+    if (!scrollToNew.current || showLive) return;
+    const el = blockCanvasRef.current?.querySelector<HTMLElement>(`[data-page-block="${scrollToNew.current}"]`);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    scrollToNew.current = null;
+  }, [blocks, showLive]);
+
+  const addBlock = (type: Block["type"], at?: number) => {
+    const position = pageInsertPosition(blocks, activeId, at);
+    if (type === "image") { setImageAt(position); setPickerFor("new"); return; }
+    if (type === "video") { setVideoAt(position); setVideoFor("new"); return; }
+    const base = { id: newId(), align: "left" as BlockAlign };
+    const block: Block =
+      type === "heading"
+          ? { ...base, type: "heading", text: "New heading", size: "lg" } as TextBlock
+          : { ...base, type: "text", text: "Write something here.", size: "md" } as TextBlock;
+    addPickedBlock(block, position);
   };
 
   const insertAt = (type: InsertType, at: number) => {
-    if (type === "object") { setObjectAt(at); setObjectFor("new"); return; }
+    if (type === "object") { setObjectAt(pageInsertPosition(blocks, activeId, at)); setObjectFor("new"); return; }
     addBlock(type, at);
   };
 
@@ -681,7 +692,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const addRow = (at: number, label: string) => (
     <div className="my-3 flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2">
       <span className="mr-1 text-xs text-muted-foreground">{label}</span>
-      <Button variant="outline" size="sm" className="gap-2" onClick={() => { setObjectAt(at); setObjectFor("new"); }}>
+      <Button variant="outline" size="sm" className="gap-2" onClick={() => insertAt("object", at)}>
         <Boxes className="w-4 h-4" /> Object
       </Button>
       <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image", at)}>
@@ -754,17 +765,24 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   ) : null;
   const addButtons = (
     <>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => setObjectFor("new")}>
+              <Button variant="outline" size="sm" className="gap-2" title="Add an object" onClick={() => insertAt("object", pageInsertPosition(blocks, activeId))}>
                 <Boxes className="w-4 h-4" /> Object
               </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image")}>
+              <Button variant="outline" size="sm" className="gap-2" title="Add an image" onClick={() => addBlock("image")}>
                 <ImageIcon className="w-4 h-4" /> Image
               </Button>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video")}>
+              <Button variant="outline" size="sm" className="gap-2" title="Add a video" onClick={() => addBlock("video")}>
                 <Film className="w-4 h-4" /> Video
               </Button>
     </>
   );
+
+  const quickAddBar = embedded ? (
+    <div role="toolbar" aria-label="Add to this page" className="sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b bg-background/95 px-3 py-2 backdrop-blur">
+      <span className="text-xs text-muted-foreground">Add to this page:</span>
+      {addButtons}
+    </div>
+  ) : null;
 
   const stylePanel = (
     <>
@@ -1152,6 +1170,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                 )}
                 <div className={quick && !embedded ? "grid grid-cols-[1fr_260px]" : embedded ? "h-full" : ""}>
                 <div className={`${h70} overflow-y-auto bg-background`}>
+                  {quickAddBar}
                   {(() => {
                     const C = codedPages[previewSrc(page.path)];
                     return (
@@ -1205,6 +1224,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                 )}
               </div>
             ) : (
+            <>
+            {quickAddBar}
             <div ref={blockCanvasRef} {...blockLinkGuard} className={embedded ? "bg-background" : "rounded-lg border bg-background overflow-hidden"} style={deviceStyle}>
               {!hasExisting && (
                 <ChromePreview label="Site header">
@@ -1364,6 +1385,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                 </ChromePreview>
               )}
             </div>
+            </>
             )}
           </EmbeddedBox>
         )}
@@ -1375,7 +1397,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       {page && toolbarHidden && (
         <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 flex items-center gap-2 rounded-full border bg-background/95 px-3 py-2 shadow-lg backdrop-blur animate-in fade-in slide-in-from-bottom-2">
           <span className="px-1 text-xs text-muted-foreground">Add</span>
-          <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={() => setObjectFor("new")}>
+          <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={() => insertAt("object", pageInsertPosition(blocks, activeId))}>
             <Boxes className="w-4 h-4" /> Object
           </Button>
           <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={() => addBlock("image")}>
@@ -1395,16 +1417,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       />
       <ObjectPickerDialog
         open={!!objectFor}
-        onOpenChange={(v) => { if (!v) setObjectFor(null); }}
+        onOpenChange={(v) => { if (!v) { setObjectFor(null); setObjectAt(null); } }}
         onPick={({ id, name }) => {
           if (objectFor === "new") {
             const block: ObjectBlock = { id: newId(), type: "object", objectId: id, name, align: "left" };
-            setBlocks((prev) => {
-              const i = objectAt === null ? prev.length : Math.max(0, Math.min(prev.length, objectAt));
-              return [...prev.slice(0, i), block, ...prev.slice(i)];
-            });
-            setActiveId(block.id);
-            setShowLive(false);
+            addPickedBlock(block, pageInsertPosition(blocks, activeId, objectAt));
           } else if (objectFor) {
             update(objectFor, { objectId: id, name } as Partial<Block>);
           }
@@ -1415,10 +1432,13 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       />
       <VideoPickerDialog
         open={!!videoFor}
-        onOpenChange={(v) => { if (!v) setVideoFor(null); }}
+        onOpenChange={(v) => { if (!v) { setVideoFor(null); setVideoAt(null); } }}
         onPick={({ url, poster }) => {
-          if (videoFor) update(videoFor, { url, poster: poster ?? undefined } as Partial<Block>);
+          if (videoFor === "new") {
+            addPickedBlock({ id: newId(), type: "video", align: "left", width: 100, url, poster: poster ?? undefined } as VideoBlock, pageInsertPosition(blocks, activeId, videoAt));
+          } else if (videoFor) update(videoFor, { url, poster: poster ?? undefined } as Partial<Block>);
           setVideoFor(null);
+          setVideoAt(null);
         }}
       />
       <ImagePickerDialog
@@ -1428,10 +1448,13 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       />
       <ImagePickerDialog
         open={!!pickerFor}
-        onOpenChange={(v) => { if (!v) setPickerFor(null); }}
+        onOpenChange={(v) => { if (!v) { setPickerFor(null); setImageAt(null); } }}
         onPick={({ url, alt }) => {
-          if (pickerFor) update(pickerFor, { url, alt: alt || "" } as Partial<Block>);
+          if (pickerFor === "new") {
+            addPickedBlock({ id: newId(), type: "image", align: "left", width: 100, url, alt: alt || "" } as ImageBlock, pageInsertPosition(blocks, activeId, imageAt));
+          } else if (pickerFor) update(pickerFor, { url, alt: alt || "" } as Partial<Block>);
           setPickerFor(null);
+          setImageAt(null);
         }}
       />
     </div>
