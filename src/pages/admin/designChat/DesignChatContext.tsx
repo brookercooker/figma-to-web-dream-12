@@ -4,6 +4,7 @@ import { useHelperState } from "./useHelperState";
 import { usePreview } from "./usePreview";
 import { usePreviewPage, type PreviewPage } from "./usePreviewPage";
 import { useDrawing, type Drawing } from "./useDrawing";
+import type { RegistrablePage } from "./registerPage";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview
@@ -63,10 +64,11 @@ export type DesignChat = {
   openObject: (id: string, section?: string) => void;
   closeObject: () => void;
   /** The address the visitor is on inside the preview (null until the site reports one). */
-  previewLocation: { path: string; search: string } | null;
+  previewLocation: { path: string; search: string; notFound?: boolean } | null;
   /** The Site Manager page at that address, if any. */
   previewPage: PreviewPage | null;
   previewPageLoading: boolean;
+  previewRegistrable: RegistrablePage | null;
   /** The pencil on the preview: marks drawn over it, sent with the next request. */
   drawing: Drawing;
 };
@@ -126,7 +128,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const openObject = useCallback((id: string, section?: string) => { if (editing) setObjectOpen({ id, section }); }, [editing]);
   const closeObject = useCallback(() => setObjectOpen(null), []);
 
-  const [previewLocation, setPreviewLocation] = useState<{ path: string; search: string } | null>(null);
+  const [previewLocation, setPreviewLocation] = useState<{ path: string; search: string; notFound?: boolean } | null>(null);
   const rememberPath = preview.rememberPath;
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -135,20 +137,21 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       if (typeof d.path !== "string" || !d.path.startsWith("/") || d.path.length > 300) return;
       if (!event.source || !Array.from(document.querySelectorAll("iframe")).some((f) => f.contentWindow === event.source)) return;
       const search = typeof d.search === "string" && d.search.length <= 300 ? d.search : "";
-      setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search ? cur : { path: d.path, search }));
+      const notFound = d.notFound === true;
+      setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search && Boolean(cur.notFound) === notFound ? cur : { path: d.path, search, ...(notFound ? { notFound: true } : {}) }));
       rememberPath(d.path + search);
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [rememberPath]);
-  const { page: previewPage, loading: previewPageLoading } = usePreviewPage(previewLocation?.path ?? null);
+  const { page: previewPage, loading: previewPageLoading, registrable: previewRegistrable } = usePreviewPage(previewLocation?.path ?? null, previewLocation?.notFound);
   const drawing = useDrawing({ device, path: previewLocation?.path ?? null });
 
   const value = useMemo<DesignChat>(() => ({
     state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
-    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, drawing, objectOpen, openObject, closeObject,
-  }), [objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
+    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject,
+  }), [objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

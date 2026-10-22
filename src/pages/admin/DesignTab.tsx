@@ -35,6 +35,7 @@ import InlineEditSurface, { readStyle, styleKey, type InlineChunk, type InlineEd
 import InlineStylePanel from "./InlineStylePanel";
 import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
+import LivePreviewPage from "./designChat/LivePreviewPage";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
 
@@ -304,7 +305,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     const qs = new URLSearchParams(window.location.search);
     // Embedded, the page always opens ready to edit.
     const wantEdit = embedded || qs.get("mode") === "edit";
-    const inPlace = !parsed.length && !!page && !!codedPages[previewSrc(page.path)];
+    const inPlace = !parsed.length && !!page && (embedded || !!codedPages[previewSrc(page.path)]);
     // Coded pages are edited in place, so they stay on the page view.
     setShowLive(!wantEdit || inPlace);
     if (!embedded && qs.has("mode")) {
@@ -314,7 +315,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     }
     // Only pages that really exist in code get the locked "Current page" section.
     // Newly created pages start empty, with the site header and footer around them.
-    setHasExisting(!parsed.length && !!page && canIframe(page.path));
+    setHasExisting(!parsed.length && !!page && (embedded || canIframe(page.path)));
     setCurrentFirst(true);
     setQuick(wantEdit && inPlace);
     setInlineSel(null);
@@ -908,7 +909,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   );
 
   // Embedded: the editing options are drawn in the Site Manager's left column instead of around the canvas.
-  const notEditable = !!page && hasExisting && !codedPages[previewSrc(page.path)];
+  const notEditable = !embedded && !!page && hasExisting && !codedPages[previewSrc(page.path)];
   const blockLabel = (b: Block) =>
     b.type === "object" ? `Object: ${b.name ?? "Saved object"}`
     : b.type === "image" ? "Image"
@@ -1156,7 +1157,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
             </div>
             )}
 
-            {showLive && hasExisting && codedPages[previewSrc(page.path)] && (quick || device === "desktop") ? (
+            {showLive && hasExisting && (embedded || codedPages[previewSrc(page.path)]) && (quick || device === "desktop") ? (
               <div className={frame} style={deviceStyle}>
                 {quick && !embedded && (
                   <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
@@ -1187,7 +1188,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                         onReorder={reorderChunks}
                         onOpenObject={async (k, section) => { const id = objectRows.current[k]; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, section); return; } navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`); }}
                       >
-                        <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense>
+                        <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}>{C ? <C /> : <LivePreviewPage path={previewSrc(page.path)} />}</Suspense>
                       </InlineEditSurface>
                     );
                   })()}
