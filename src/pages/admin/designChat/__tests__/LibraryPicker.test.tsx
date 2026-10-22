@@ -191,7 +191,7 @@ describe("library picker", () => {
   it("groups by first label with unlabelled items last", async () => {
     setup(); await screen.findByText("60 of 70 shown");
     sortTo("label");
-    expect(titles().slice(0, 3)).toEqual(["photo-02.jpg", "photo-07.jpg", "photo-00.jpg"]);
+    expect(titles().slice(0, 4)).toEqual(["photo-02.jpg", "photo-07.jpg", "photo-08.jpg", "photo-00.jpg"]);
   });
   it("objects can sort by where they're built", async () => {
     setup("objects"); await screen.findByText("2 of 2 shown");
