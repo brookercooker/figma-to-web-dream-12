@@ -14,6 +14,7 @@ import PreviewTools, { SubmitButton } from "./designChat/PreviewTools";
 import { DesignChatProvider, useDesignChat } from "./designChat/DesignChatContext";
 import { EditorSlotProvider, useEditorSlot } from "./designChat/EditorSlot";
 import ConfirmDialog from "./ConfirmDialog";
+import LibraryPicker from "./designChat/LibraryPicker";
 import { toast } from "sonner";
 
 const PagesTab = lazy(() => import("./PagesTab"));
@@ -184,6 +185,18 @@ function AdminShell() {
               <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager sections">
                 {TABS.map(({ key, label, Icon }) => {
                   const active = tab === key;
+                  const className = `inline-flex items-center gap-2 whitespace-nowrap ${compact ? "px-2.5" : "px-3"} py-2 rounded-md text-sm font-medium transition-colors border ${
+                    active
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-transparent text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
+                  }`;
+                  const showLabel = !compact || (active && squeeze < 3);
+                  // Objects, Images and Videos pick an item for the chat; while editing by hand (chat hidden) they navigate as before.
+                  if (!editing && (key === "objects" || key === "images" || key === "videos")) return (
+                    <LibraryPicker key={key} kind={key} label={label} Icon={Icon} active={active} showLabel={showLabel} className={className}
+                      onPick={(ref) => { designChat.refs.addReference(ref); setChatCollapsed(false); }}
+                      onOpenFull={() => navigate(`/manage/${key}`)} />
+                  );
                   return (
                     <button
                       key={key}
@@ -191,14 +204,10 @@ function AdminShell() {
                       title={label}
                       aria-label={label}
                       aria-current={active ? "page" : undefined}
-                      className={`inline-flex items-center gap-2 whitespace-nowrap ${compact ? "px-2.5" : "px-3"} py-2 rounded-md text-sm font-medium transition-colors border ${
-                        active
-                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                          : "bg-transparent text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
-                      }`}
+                      className={className}
                     >
                       <Icon className="w-4 h-4" />
-                      {(!compact || (active && squeeze < 3)) && <span>{label}</span>}
+                      {showLabel && <span>{label}</span>}
                     </button>
                   );
                 })}
