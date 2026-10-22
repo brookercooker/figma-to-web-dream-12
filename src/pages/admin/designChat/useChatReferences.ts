@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { referenceKey, type ChatReference } from "./references";
 
 /** Library items picked for the next chat request. The same item is never added twice. */
@@ -11,6 +11,6 @@ export function useChatReferences() {
   }, []);
   const removeReference = useCallback((key: string) => setReferences((cur) => cur.filter((x) => referenceKey(x) !== key)), []);
   const clearReferences = useCallback(() => setReferences([]), []);
-  return { references, addReference, removeReference, clearReferences, focusTick };
+  return useMemo(() => ({ references, addReference, removeReference, clearReferences, focusTick }), [references, addReference, removeReference, clearReferences, focusTick]);
 }
 export type ChatReferences = ReturnType<typeof useChatReferences>;

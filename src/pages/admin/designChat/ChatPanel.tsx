@@ -28,7 +28,7 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel() {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, startEditing, stopEditing, previewLocation, previewPage, previewRegistrable, selectPage } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, startEditing, stopEditing, previewLocation, previewPage, previewRegistrable, selectPage, refs } = useDesignChat();
   const navigate = useNavigate();
   const { saveAll } = useEditorSlot();
   const [finishing, setFinishing] = useState(false);
@@ -67,6 +67,8 @@ export default function ChatPanel() {
   valueRef.current = text;
 
   const attachments = useAttachments(state?.uploads, setHint);
+  // A library item was picked in the top bar: put the cursor in the box so the person can say what to do with it.
+  useEffect(() => { if (refs.focusTick) textRef.current?.focus(); }, [refs.focusTick]);
   const voice = useVoice(useCallback(() => valueRef.current, []), setText, setHint);
 
   const busy = Boolean(state?.busy);
@@ -115,6 +117,7 @@ export default function ChatPanel() {
     }
     if (!message) {
       if (hasDrawing) setHint("Say what you'd like done with your drawing.", true);
+      else if (refs.references.length && !attachments.files.length) setHint(`Say what you'd like done with the attached item${refs.references.length > 1 ? "s" : ""}.`, true);
       else if (attachments.files.length) setHint(`Say what you'd like done with the attached file${attachments.files.length > 1 ? "s" : ""}.`, true);
       return;
     }
@@ -129,13 +132,13 @@ export default function ChatPanel() {
       if (d) { marks = d.marks; image = d.image; }
     }
     const res = await postToHelper("/send", {
-      message, uploadIds: attachments.ids(), ...(workingPage ? { page: workingPage } : {}),
+      message: withReferences(message, refs.references), uploadIds: attachments.ids(), ...(workingPage ? { page: workingPage } : {}),
       ...(marks ? { marks } : {}), ...(image ? { image } : {}),
     });
     if (res.ok) {
       const took = Number(res.data?.marks ?? 0);
       const expected = hasDrawing && marks ? (marks as { marks: unknown[] }).marks.length : 0;
-      setText(""); attachments.clear(); drawing.cancel();
+      setText(""); attachments.clear(); refs.clearReferences(); drawing.cancel();
       setHint(expected && took !== expected ? "Your request was sent, but the service didn't take in your drawing." : expected ? `Sent with ${took} ${took === 1 ? "mark" : "marks"}${res.data?.picture ? " and a picture" : ""}.` : "", expected > 0 && took !== expected);
     } else setHint(res.error, true);
     refreshSoon();
@@ -262,6 +265,25 @@ export default function ChatPanel() {
               className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-border hover:text-foreground">
               <X className="h-3 w-3" />
             </button>
+          </div>
+        )}
+
+        {refs.references.length > 0 && (
+          <div className="flex flex-wrap gap-1.5" aria-label="Library items for this request">
+            {refs.references.map((r) => {
+              const Icon = r.kind === "image" ? ImageIcon : r.kind === "video" ? Film : Box;
+              return (
+                <span key={referenceKey(r)} className="inline-flex max-w-full items-center gap-1.5 rounded-full border bg-muted py-0.5 pl-1 pr-1 text-xs">
+                  {r.thumb ? <img src={r.thumb} alt="" className="h-5 w-5 rounded-full object-cover" /> : <Icon className="ml-1 h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />}
+                  <span className="text-muted-foreground">{kindLabel(r.kind)}</span>
+                  <span className="max-w-[180px] truncate">{r.name}</span>
+                  <button type="button" aria-label={`Remove ${r.name}`} onClick={() => refs.removeReference(referenceKey(r))}
+                    className="grid h-5 w-5 place-items-center rounded-full text-muted-foreground hover:bg-border hover:text-foreground">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              );
+            })}
           </div>
         )}
 
