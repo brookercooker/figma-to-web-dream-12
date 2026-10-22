@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type ComponentType } from "react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { loadSiteManifest } from "../siteManifest";
 import DbPage from "@/pages/DbPage";
 
@@ -27,9 +27,7 @@ export default function LivePreviewPage({ path }: { path: string }) {
     return () => { active = false; };
   }, [path]);
   if (!resolved) return <div className="min-h-[60vh]" aria-hidden="true" />;
-  return <MemoryRouter key={path} initialEntries={[path]}>
-    <Suspense fallback={<div className="min-h-[60vh]" aria-hidden="true" />}>
-      <Routes><Route path="/:slug" element={Page ? <Page /> : <DbPage />} /><Route path="*" element={Page ? <Page /> : <DbPage />} /></Routes>
-    </Suspense>
-  </MemoryRouter>;
+  return <Suspense fallback={<div className="min-h-[60vh]" aria-hidden="true" />}>
+      <Routes location={path}><Route path="/:slug" element={Page ? <Page /> : <DbPage />} /><Route path="*" element={Page ? <Page /> : <DbPage />} /></Routes>
+    </Suspense>;
 }
