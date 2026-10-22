@@ -35,7 +35,7 @@ import InlineEditSurface, { readStyle, styleKey, type InlineChunk, type InlineEd
 import InlineStylePanel from "./InlineStylePanel";
 import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
-import LivePreviewPage from "./designChat/LivePreviewPage";
+import LivePreviewPage, { type LiveStatus } from "./designChat/LivePreviewPage";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
 
@@ -208,6 +208,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [quick, setQuick] = useState(false);
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
   const [resetKey, setResetKey] = useState(0);
+  // Embedded pages not in the coded list: what loading their code found, and a counter that re-runs the load.
+  const [liveStatus, setLiveStatus] = useState<LiveStatus | null>(null);
+  const [liveReload, setLiveReload] = useState(0);
   const [inlineSel, setInlineSel] = useState<InlineSelection | null>(null);
   const [foldedChunks, setFoldedChunks] = useState<Set<string>>(new Set());
   // Edits on shared objects, keyed by object; saved on the object so every page shows them.
@@ -321,6 +324,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     setInlineSel(null);
     setFoldedChunks(new Set());
     setInlineEdits(page?.inline_edits ?? {});
+    setLiveStatus(null);
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
@@ -535,6 +539,22 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
 
   const remove = (id: string) => {
     setBlocks((prev) => prev.filter((b) => b.id !== id));
+    setDirty(true);
+  };
+
+  /** A page with no code and no blocks opens in the block editor with a heading and an empty text block, held unsaved. */
+  const onLiveStatus = (status: LiveStatus) => {
+    setLiveStatus(status);
+    if (status !== "missing" || !page || parseBlocks(page.content).length) return;
+    const textId = newId();
+    setBlocks([
+      { id: newId(), type: "heading", text: page.name, align: "left", size: "xl" },
+      { id: textId, type: "text", text: "", align: "left", size: "md" },
+    ]);
+    setActiveId(textId);
+    setHasExisting(false);
+    setShowLive(false);
+    setQuick(false);
     setDirty(true);
   };
 
@@ -1174,6 +1194,13 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                   {quickAddBar}
                   {(() => {
                     const C = codedPages[previewSrc(page.path)];
+                    if (!C && liveStatus === "unreachable") return (
+                      <div role="alert" className="mx-auto max-w-md px-6 py-24 text-center">
+                        <p className="font-serif text-2xl text-foreground">Couldn't load this page's design</p>
+                        <p className="mt-3 text-sm text-muted-foreground">If it keeps happening, tell a developer; the page's code may not be in the draft yet.</p>
+                        <Button className="mt-6" variant="outline" onClick={() => { setLiveStatus(null); setLiveReload((n) => n + 1); }}>Retry</Button>
+                      </div>
+                    );
                     return (
                       <InlineEditSurface
                         key={`${page.id}-${quick}-${resetKey}`}
@@ -1188,7 +1215,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                         onReorder={reorderChunks}
                         onOpenObject={async (k, section) => { const id = objectRows.current[k]; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, section); return; } navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`); }}
                       >
-                        <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}>{C ? <C /> : <LivePreviewPage path={previewSrc(page.path)} />}</Suspense>
+                        <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}>{C ? <C /> : <LivePreviewPage path={previewSrc(page.path)} onStatus={onLiveStatus} reloadKey={liveReload} />}</Suspense>
                       </InlineEditSurface>
                     );
                   })()}

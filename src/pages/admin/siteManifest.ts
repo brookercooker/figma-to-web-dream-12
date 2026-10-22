@@ -69,15 +69,27 @@ export function parseSiteManifest(x: unknown): SiteManifest {
 }
 
 const TTL_MS = 60_000;
+let draftRetryMs = 2000;
+/** Tests: shorten the pause before the draft manifest is retried. */
+export function setDraftRetryDelay(ms: number) { draftRetryMs = ms; }
+let draftReachable = true;
+/** False when the last load could not read the draft preview's manifest (and fell back, or failed). */
+export function draftManifestReachable() { return draftReachable; }
 let cached: { at: number; promise: Promise<SiteManifest> } | null = null;
 
 /** Fetch the manifest (kept for a minute). Throws SiteManifestUnavailable if it can't be had. */
 export function loadSiteManifest(force = false): Promise<SiteManifest> {
   if (!force && cached && Date.now() - cached.at < TTL_MS) return cached.promise;
   const promise = (async () => {
-    const urls = [...new Set([siteManifestUrl(), fallbackManifestUrl()])];
+    const draftUrl = siteManifestUrl();
+    const urls = [...new Set([draftUrl, fallbackManifestUrl()])];
+    // The draft address is tried twice (a short pause between) before falling back.
+    if (draftBase) urls.splice(1, 0, draftUrl);
     let failure: unknown;
+    draftReachable = true;
     for (const [index, url] of urls.entries()) {
+      const isDraft = !!draftBase && url === draftUrl;
+      if (isDraft && index > 0) await new Promise((r) => setTimeout(r, draftRetryMs));
       try {
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) throw new SiteManifestUnavailable(`The site manifest returned ${res.status}.`);
@@ -87,7 +99,10 @@ export function loadSiteManifest(force = false): Promise<SiteManifest> {
         return manifest;
       } catch (e) {
         failure = e;
-        if (index === 0 && draftBase) console.warn(`Draft page manifest could not be read (${e instanceof Error ? e.message : "network error"}); trying the public manifest.`);
+        if (isDraft) {
+          draftReachable = false;
+          console.warn(`Draft page manifest could not be read (${e instanceof Error ? e.message : "network error"})${index === 0 ? "; retrying" : "; trying the public manifest"}.`);
+        }
       }
     }
     throw new SiteManifestUnavailable(`Couldn't reach the site manifest (${failure instanceof Error ? failure.message : "network error"}).`);

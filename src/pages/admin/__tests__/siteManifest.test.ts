@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   SiteManifestUnavailable, codePagePaths, loadSiteManifest, pagesReferencing, pagesUsingObject,
   parseSiteManifest, resetSiteManifestCache, siteManifestUrl, type SiteManifest,
-  setManifestBase,
+  setManifestBase, setDraftRetryDelay, draftManifestReachable,
 } from "../siteManifest";
 import { imageNeedles, videoNeedles } from "../assetUsages";
 
@@ -60,11 +60,25 @@ describe("loading the manifest", () => {
   });
   it("falls back if the draft cannot be reached", async () => {
     setManifestBase("https://draft.example/?__lovable_token=test-token");
-    const fetcher = vi.fn().mockRejectedValueOnce(new Error("CORS")).mockResolvedValueOnce(new Response(JSON.stringify(manifest)));
+    setDraftRetryDelay(0);
+    const fetcher = vi.fn().mockRejectedValueOnce(new Error("CORS")).mockRejectedValueOnce(new Error("CORS")).mockResolvedValueOnce(new Response(JSON.stringify(manifest)));
     vi.stubGlobal("fetch", fetcher);
     expect((await loadSiteManifest()).buildId).toBe("b");
-    expect(fetcher).toHaveBeenCalledTimes(2);
-    expect(fetcher.mock.calls[1][0]).toBe("/site-manifest.json");
+    expect(fetcher).toHaveBeenCalledTimes(3); // draft, draft retry, fallback
+    expect(fetcher.mock.calls[1][0]).toBe("https://draft.example/site-manifest.json?__lovable_token=test-token");
+    expect(fetcher.mock.calls[2][0]).toBe("/site-manifest.json");
+    expect(draftManifestReachable()).toBe(false);
+  });
+  it("uses the draft retry when the first attempt fails, and does not cache a failure", async () => {
+    resetSiteManifestCache();
+    setManifestBase("https://draft2.example/");
+    setDraftRetryDelay(0);
+    const fetcher = vi.fn().mockRejectedValue(new Error("down"));
+    vi.stubGlobal("fetch", fetcher);
+    await expect(loadSiteManifest()).rejects.toThrow(SiteManifestUnavailable);
+    fetcher.mockReset().mockImplementation(async () => new Response(JSON.stringify(manifest)));
+    expect((await loadSiteManifest()).buildId).toBe("b");
+    expect(draftManifestReachable()).toBe(true);
   });
   it("rejects a manifest of another version or shape", () => {
     expect(() => parseSiteManifest({ version: 2, pages: [], files: {} })).toThrow(SiteManifestUnavailable);
