@@ -69,6 +69,20 @@ describe("loading the manifest", () => {
     expect(fetcher.mock.calls[2][0]).toBe("/site-manifest.json");
     expect(draftManifestReachable()).toBe(false);
   });
+  it("a cached fallback still reports the draft as unreachable, and a no-draft load as reachable", async () => {
+    resetSiteManifestCache();
+    setManifestBase("https://draft3.example/");
+    setDraftRetryDelay(0);
+    const fetcher = vi.fn().mockRejectedValueOnce(new Error("x")).mockRejectedValueOnce(new Error("x")).mockImplementation(async () => new Response(JSON.stringify(manifest)));
+    vi.stubGlobal("fetch", fetcher);
+    await loadSiteManifest();
+    await loadSiteManifest(); // from the cache
+    expect(fetcher).toHaveBeenCalledTimes(3);
+    expect(draftManifestReachable()).toBe(false);
+    setManifestBase("");
+    await loadSiteManifest();
+    expect(draftManifestReachable()).toBe(true);
+  });
   it("uses the draft retry when the first attempt fails, and does not cache a failure", async () => {
     resetSiteManifestCache();
     setManifestBase("https://draft2.example/");

@@ -3,13 +3,14 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LivePreviewPage, { normalisePagePath, resolveLivePage } from "../LivePreviewPage";
 
-const m = vi.hoisted(() => ({ load: vi.fn() }));
-vi.mock("../../siteManifest", () => ({ loadSiteManifest: (...a: unknown[]) => m.load(...a) }));
+const m = vi.hoisted(() => ({ load: vi.fn(), draftOk: true }));
+vi.mock("../../siteManifest", () => ({ loadSiteManifest: (...a: unknown[]) => m.load(...a), draftManifestReachable: () => m.draftOk }));
 vi.mock("../../codedPages", () => ({ codedPages: { "/coded-only": () => <h1>Coded backup</h1> } }));
 vi.mock("@/pages/RaceTestPage", () => ({ default: () => <h1>Live race page</h1> }));
 vi.mock("@/pages/TestPage", () => { throw new Error("chunk failed"); });
 
 beforeEach(() => {
+  m.draftOk = true;
   m.load.mockReset().mockResolvedValue({ pages: [
     { path: "/race-test-page", file: "/src/pages/RaceTestPage.tsx" },
     { path: "/test-page", file: "/src/pages/TestPage.tsx" },
@@ -40,7 +41,20 @@ describe("resolveLivePage", () => {
   });
   it("reports missing when the manifest loaded and has no such page", async () => {
     expect((await resolveLivePage("/brand-new")).status).toBe("missing");
-    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("manifest loaded: yes, entry found: no"));
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("manifest loaded: yes, draft manifest reachable: yes, entry found: no"));
+  });
+  it("reports unreachable when the draft list failed and the public list lacks the page", async () => {
+    m.draftOk = false;
+    expect((await resolveLivePage("/draft-only")).status).toBe("unreachable");
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("draft manifest reachable: no"));
+  });
+  it("reports missing when the draft list was read and lacks the page", async () => {
+    m.draftOk = true;
+    expect((await resolveLivePage("/draft-only")).status).toBe("missing");
+  });
+  it("reports missing with no draft at all (the public list is the authority)", async () => {
+    m.draftOk = true; // draftManifestReachable() is true when no draft address is set
+    expect((await resolveLivePage("/nowhere")).status).toBe("missing");
   });
   it("reports unreachable when the manifest can't be read", async () => {
     m.load.mockRejectedValue(new Error("down"));
