@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
@@ -108,6 +108,6 @@ describe("page editor quick add", () => {
     expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
     // Discard before unmount: this test never writes its example media to a page.
     const discard = mocks.slot.registerDiscard.mock.calls.at(-1)?.[0];
-    if (discard) fireEvent.click(document.createElement("button"));
+    if (discard) act(() => discard());
   });
 });
