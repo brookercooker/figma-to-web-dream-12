@@ -61,9 +61,9 @@ export default function PreviewPanel() {
           </div>
         )}
 
-        {coverFull && (
-          <Button type="button" size="sm" className="absolute right-4 top-4 z-30 gap-2 bg-foreground/80" onClick={toggleFull}>
-            <Minimize2 className="h-4 w-4" /> Exit full screen
+        {inFull && !drawing.capturing && (
+          <Button type="button" size="sm" aria-label="Exit full screen" title="Exit full screen" className="absolute right-4 top-4 z-40 gap-2 bg-foreground/80 text-background shadow-sm hover:bg-foreground/90" onClick={toggleFull}>
+            <Minimize2 className="h-4 w-4" /> Minimize
           </Button>
         )}
       </div>

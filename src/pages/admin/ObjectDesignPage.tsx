@@ -20,6 +20,7 @@ import { notifyContentEdited } from "./designChat/contentSync";
 import { useEditorSlot } from "./designChat/EditorSlot";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
 import EmbeddedBox from "./designChat/EmbeddedBox";
+import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1452,6 +1453,11 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     // Settings live in the side panel only — no floating toolbar on click.
     setToolbar(null);
   };
+
+  const linkGuard = useEditorLinkGuard(canvasRef, !preview, (e) => {
+    const block = (e.target as Element).closest<HTMLElement>("[data-block-id]");
+    if (block?.dataset.blockId) pickPart(block.dataset.blockId, e);
+  }, true);
 
 
   const load = async () => {
@@ -4565,6 +4571,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         <EmbeddedBox chat={embedded ? chat : null}>
         <section
           ref={canvasRef}
+          {...linkGuard}
           className={embedded ? "min-w-0 w-full" : "min-w-0 w-full mx-auto transition-[max-width]"}
           style={viewportWidth ? { maxWidth: viewportWidth } : undefined}
         >
@@ -4764,7 +4771,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                           </div>
                         </div>
                       ) : (
-                        <SectionView section={s} />
+                        <div data-editor-content><SectionView section={s} /></div>
                       )}
                     </BlockCanvas>
                     </>)}
