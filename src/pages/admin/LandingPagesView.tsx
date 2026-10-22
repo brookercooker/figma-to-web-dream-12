@@ -34,6 +34,7 @@ import { customLandingSlugs } from "../landing/customLandingPages";
 import { toRouteSlug } from "./slug";
 import { formatSchedule, formatScheduleShort, isoToLocalParts, localDateToIso } from "@/lib/landingDates";
 import { useAutoCaptureThumbnails, regenerateThumbnail } from "./useThumbnailCapture";
+import { PAGES_SYNCED, syncManifestPages } from "./manifestPageSync";
 
 interface Landing {
   id: string;
@@ -145,7 +146,13 @@ export default function LandingPagesView() {
       .order("name", { ascending: true });
     setRows((data ?? []).map((r: any) => ({ ...r, tags: r.tags ?? [] })));
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    void syncManifestPages();
+    const refresh = () => { void load(); };
+    window.addEventListener(PAGES_SYNCED, refresh);
+    return () => window.removeEventListener(PAGES_SYNCED, refresh);
+  }, []);
   useEffect(() => {
     const onFocus = () => load();
     const onVis = () => { if (document.visibilityState === "visible") load(); };

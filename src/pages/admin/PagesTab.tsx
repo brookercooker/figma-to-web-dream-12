@@ -643,9 +643,15 @@ export default function PagesTab() {
                 </td>
                 <td className="px-1 py-3 text-center">
                   <button
-                    onClick={() => navigate(`/manage/design?page=${p.id}`)}
-                    aria-label="Edit design"
-                    title="Edit design"
+                    onClick={() => {
+                      if (pageAccess(p) === "tweak" && designChat) {
+                        designChat.selectPage({ id: p.id, name: p.name, path: p.path });
+                        navigate("/manage/preview");
+                        designChat.startEditing();
+                      } else navigate(`/manage/design?page=${p.id}&mode=edit`);
+                    }}
+                    aria-label={pageAccess(p) === "tweak" ? `Tweak ${p.name}` : "Edit design"}
+                    title={pageAccess(p) === "tweak" ? "Tweak" : "Edit design"}
                     className="p-1.5 rounded border hover:bg-muted inline-flex"
                   >
                     <Pencil className="w-4 h-4" />

@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Sync draft manifest pages into Pages automatically, enforce unique paths, and verify draft manifest access.
 - [x] Automatically register real preview pages and open them for manual editing; verify an unlisted page.
 - [x] Move Edit manually into the chat controls, with Done editing while editing.
 - [x] Keep Enter sending and Shift+Enter for new lines, with no idle hint.

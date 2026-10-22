@@ -12,12 +12,15 @@ export function missingPageRows(manifestPages: Pick<SiteManifestPage, "path" | "
   const existing = new Set(existingRows.map((row) => alias(row.path)));
   return manifestPages.flatMap((page) => {
     const path = normalizePreviewPath(page.path);
+    if (path.includes(":")) return [];
     if (existing.has(alias(path))) return [];
     const candidate = pageToRegister(page.type === "landing" ? path.replace(/^\/landing\//, "/") : path);
     if (!candidate) return [];
     existing.add(alias(path));
-    // Stable placeholders keep planning pure; actual suffixes are assigned immediately before insertion.
-    return [pageRow({ name: candidate.name, path }, page.type, "pending")];
+    // Deterministic planning; actual random suffixes are assigned immediately before insertion.
+    let hash = 0;
+    for (const char of path) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+    return [pageRow({ name: candidate.name, path }, page.type, (hash & 0xffffff).toString(16).padStart(6, "0"))];
   });
 }
 
