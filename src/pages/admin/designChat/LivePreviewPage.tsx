@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, type ComponentType } from "react";
-import { Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, UNSAFE_LocationContext, UNSAFE_RouteContext } from "react-router-dom";
 import { loadSiteManifest } from "../siteManifest";
 import DbPage from "@/pages/DbPage";
 
@@ -27,7 +27,13 @@ export default function LivePreviewPage({ path }: { path: string }) {
     return () => { active = false; };
   }, [path]);
   if (!resolved) return <div className="min-h-[60vh]" aria-hidden="true" />;
-  return <Suspense fallback={<div className="min-h-[60vh]" aria-hidden="true" />}>
-      <Routes location={path}><Route path="/:slug" element={Page ? <Page /> : <DbPage />} /><Route path="*" element={Page ? <Page /> : <DbPage />} /></Routes>
-    </Suspense>;
+  return <UNSAFE_LocationContext.Provider value={null}>
+    <UNSAFE_RouteContext.Provider value={{ outlet: null, matches: [], isDataRoute: false }}>
+      <MemoryRouter key={path} initialEntries={[path]}>
+        <Suspense fallback={<div className="min-h-[60vh]" aria-hidden="true" />}>
+          <Routes><Route path="/:slug" element={Page ? <Page /> : <DbPage />} /><Route path="*" element={Page ? <Page /> : <DbPage />} /></Routes>
+        </Suspense>
+      </MemoryRouter>
+    </UNSAFE_RouteContext.Provider>
+  </UNSAFE_LocationContext.Provider>;
 }
