@@ -12,10 +12,11 @@ const mocks = vi.hoisted(() => ({
   start: vi.fn(),
   sync: vi.fn(),
   candidate: null as null | { name: string; path: string },
+  editing: false,
 }));
 vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({
   state: { busy: false, history: [] }, offline: false, refreshSoon: mocks.refresh,
-  workingPage: null, clearWorkingPage: vi.fn(), editing: false,
+  workingPage: null, clearWorkingPage: vi.fn(), editing: mocks.editing,
   drawing: { strokes: [], on: false, available: false, cancel: vi.fn(), toggle: vi.fn() },
   preview: { loaded: false }, startEditing: mocks.start, stopEditing: vi.fn(), selectPage: mocks.select,
   previewLocation: mocks.candidate ? { path: mocks.candidate.path, search: "" } : null,
@@ -40,10 +41,32 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.post.mockResolvedValue({ ok: true, data: {} });
   mocks.candidate = null;
+  mocks.editing = false;
   mocks.insert.mockReturnValue({ select: () => ({ single: async () => ({ data: { id: "registered", name: "Race Test Page", path: "/race-test-page" }, error: null }) }) });
 });
 
 describe("manual editing registration", () => {
+  it("keeps the editing button in the header outside the form, including while editing", () => {
+    const view = render(<MemoryRouter><ChatPanel /></MemoryRouter>);
+    const button = screen.getByRole("button", { name: "Edit this page by hand (without the chat)" });
+    const section = screen.getByRole("region", { name: "Design chat" });
+    const header = section.querySelector("header");
+    expect(header).toContainElement(button);
+    expect(section.firstElementChild).toBe(header);
+    expect(button.closest("form")).toBeNull();
+    expect(button).toHaveTextContent("Edit manually");
+
+    mocks.editing = true;
+    view.rerender(<MemoryRouter><ChatPanel /></MemoryRouter>);
+    const done = screen.getByRole("button", { name: "Edit this page by hand (without the chat)" });
+    expect(header).toBeVisible();
+    expect(header).toContainElement(done);
+    expect(done).toBeVisible();
+    expect(done).toHaveTextContent("Done editing");
+    expect(done).toHaveAttribute("aria-pressed", "true");
+    expect(done.closest("form")).toBeNull();
+    expect(section.querySelector("form")?.lastElementChild).toContainElement(screen.getByRole("button", { name: /^Send$/ }));
+  });
   it("enables a registrable page, creates exactly one ready draft row, and opens it", async () => {
     mocks.candidate = { name: "Race Test Page", path: "/race-test-page" };
     render(<MemoryRouter><ChatPanel /></MemoryRouter>);

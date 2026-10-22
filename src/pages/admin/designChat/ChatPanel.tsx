@@ -149,6 +149,13 @@ export default function ChatPanel() {
 
   return (
     <section className="flex h-full flex-col bg-background min-h-0 overflow-hidden" aria-label="Design chat">
+      <header className="flex items-center justify-between gap-2 border-b px-3 py-2">
+        <span className="text-sm font-medium">Chat</span>
+        <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label="Edit this page by hand (without the chat)" title={!editing && !editTarget?.id && !previewRegistrable ? "This address isn't a page that can be edited." : "Edit this page by hand (without the chat)"}
+          aria-pressed={editing} disabled={finishing || busy || (!editing && !editTarget?.id && !previewRegistrable)} onClick={() => void toggleEditing()}>
+          <SquarePen className="h-4 w-4" /> {editing ? "Done editing" : "Edit manually"}
+        </Button>
+      </header>
       <div ref={logRef} onScroll={onScroll} className={cn("flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 flex flex-col gap-2.5 text-sm", editing && "hidden")} role="log">
         {messages.length === 0 && (
           <div className="text-muted-foreground space-y-2">
@@ -317,10 +324,6 @@ export default function ChatPanel() {
               <Mic className="h-4 w-4" />
             </Button>
           )}
-          <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label="Edit this page by hand (without the chat)" title={!editing && !editTarget?.id && !previewRegistrable ? "This address isn't a page that can be edited." : "Edit this page by hand (without the chat)"}
-            aria-pressed={editing} disabled={finishing || busy || (!editing && !editTarget?.id && !previewRegistrable)} onClick={() => void toggleEditing()}>
-            <SquarePen className="h-4 w-4" /> {editing ? "Done editing" : "Edit manually"}
-          </Button>
           {(offline || hint.text) && <span role="status" className={cn("flex-1 min-w-0 text-xs", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>
             {offline ? "Can't reach the design service right now. It will keep trying." : hint.text}
           </span>}
