@@ -12,6 +12,7 @@ import {
   FileText, Trash2, CloudUpload,
 } from "lucide-react";
 import LabelPicker from "./LabelPicker";
+import CameraCaptureSheet from "./CameraCaptureSheet";
 import { colorFor } from "./labelColors";
 import { leafOf } from "./labelPath";
 import { usePages } from "./useAdminData";
@@ -161,6 +162,7 @@ export default function CapturePage() {
   const [summary, setSummary] = useState<{ images: number; videos: number; failed: number } | null>(null);
 
   const cameraRef = useRef<HTMLInputElement>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const libraryRef = useRef<HTMLInputElement>(null);
 
   const { data: allPages = [] } = usePages();
@@ -342,6 +344,19 @@ export default function CapturePage() {
 
   return (
     <div className="capture-app min-h-[100dvh] bg-background pb-40">
+      <CameraCaptureSheet
+        open={cameraOpen} onOpenChange={setCameraOpen} onCapture={(file) => stage([file])}
+        onUnavailable={(reason) => {
+          const messages = {
+            unsupported: "Live camera isn't available in this browser, so we opened your photo picker instead.",
+            denied: "Camera access was blocked, so we opened your photo picker instead. You can allow the camera in your browser settings.",
+            notfound: "No camera was found, so we opened your photo picker instead.",
+            error: "The camera couldn't be started, so we opened your photo picker instead.",
+          };
+          toast.info(messages[reason]);
+          cameraRef.current?.click();
+        }}
+      />
       <header className="capture-safe-top capture-safe-x sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto max-w-3xl px-4 py-2 flex items-center gap-2">
           <Button asChild variant="ghost" size="sm" className="gap-2 -ml-1 px-2">
@@ -365,8 +380,8 @@ export default function CapturePage() {
         {/* Capture controls */}
         <section className="space-y-3">
           <input
-            ref={cameraRef} type="file" accept="image/*,video/*,.webm,.mp4,.mov" capture="environment"
-            multiple className="sr-only" onChange={onPick} aria-label="Take a photo or video"
+            ref={cameraRef} type="file" accept="image/*" capture="environment"
+            className="sr-only" onChange={onPick} aria-label="Take a photo"
           />
           <input
             ref={libraryRef} type="file" accept="image/*,video/*,.webm,.mp4,.mov"
@@ -375,7 +390,7 @@ export default function CapturePage() {
           <div className="grid grid-cols-2 gap-3">
             <Button
               type="button" size="lg" disabled={busy}
-              onClick={() => cameraRef.current?.click()}
+              onClick={() => setCameraOpen(true)}
               className="h-24 flex-col gap-2 text-base rounded-xl transition-transform active:scale-[0.97]"
             >
               <Camera className="w-7 h-7" />

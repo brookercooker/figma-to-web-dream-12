@@ -1,0 +1,169 @@
+import { StrictMode } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import CapturePage from "../CapturePage";
+import CameraCaptureSheet from "../CameraCaptureSheet";
+
+const mocks = vi.hoisted(() => ({ info: vi.fn(), upload: vi.fn() }));
+vi.mock("sonner", () => ({ toast: { info: mocks.info, error: vi.fn(), success: vi.fn() } }));
+vi.mock("../useAdminData", () => ({ usePages: () => ({ data: [] }) }));
+vi.mock("../LabelPicker", () => ({ default: () => null }));
+vi.mock("../captureUpload", () => ({
+  uploadImageFile: mocks.upload, uploadVideoFile: vi.fn(), attachPageUsages: vi.fn(),
+  uniqueName: (name: string, taken: Set<string>) => {
+    let result = name, n = 1;
+    while (taken.has(result)) result = name.replace(/\.jpg$/, `-${n++}.jpg`);
+    return result;
+  },
+}));
+
+let stop: ReturnType<typeof vi.fn>;
+let getUserMedia: ReturnType<typeof vi.fn>;
+let stream: MediaStream;
+let drawImage: ReturnType<typeof vi.fn>;
+let toBlob: ReturnType<typeof vi.spyOn>;
+
+beforeEach(() => {
+  stop = vi.fn();
+  stream = { getTracks: () => [{ stop }] } as unknown as MediaStream;
+  getUserMedia = vi.fn().mockResolvedValue(stream);
+  Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: {
+    getUserMedia, enumerateDevices: vi.fn().mockResolvedValue([{ kind: "videoinput" }, { kind: "videoinput" }]),
+  } });
+  Object.defineProperty(document, "hidden", { configurable: true, value: false });
+  vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+  vi.spyOn(HTMLVideoElement.prototype, "videoWidth", "get").mockReturnValue(4096);
+  vi.spyOn(HTMLVideoElement.prototype, "videoHeight", "get").mockReturnValue(2160);
+  drawImage = vi.fn();
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ drawImage } as unknown as CanvasRenderingContext2D);
+  toBlob = vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(function (callback) {
+    expect(this.width).toBe(4096);
+    expect(this.height).toBe(2160);
+    callback(new Blob(["jpeg"], { type: "image/jpeg" }));
+  });
+  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:photo") });
+  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+  mocks.info.mockClear();
+  mocks.upload.mockReset().mockResolvedValue({ id: "photo" });
+});
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+
+function openPage() {
+  render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><CapturePage /></MemoryRouter></QueryClientProvider>);
+  fireEvent.click(screen.getByRole("button", { name: /^Take photo$/ }));
+}
+async function readyCamera() {
+  await waitFor(() => expect(screen.getByRole("button", { name: "Take picture" })).toBeEnabled());
+}
+
+describe("Capture live camera", () => {
+  it("opens Take photo directly and stages repeated native-resolution JPEG shots without uploading", async () => {
+    const picker = vi.spyOn(HTMLInputElement.prototype, "click");
+    openPage();
+    await readyCamera();
+    expect(getUserMedia).toHaveBeenCalledWith({ video: { facingMode: { ideal: "environment" }, width: { ideal: 4096 }, height: { ideal: 2160 } }, audio: false });
+    expect(picker).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Take picture" }));
+    fireEvent.click(screen.getByRole("button", { name: "Take picture" }));
+    expect(screen.getByText("2 taken")).toBeInTheDocument();
+    expect(drawImage).toHaveBeenCalledWith(screen.getByLabelText("Live camera"), 0, 0, 4096, 2160);
+    expect(toBlob).toHaveBeenCalledWith(expect.any(Function), "image/jpeg", 0.92);
+    const captured = vi.mocked(URL.createObjectURL).mock.calls[0]?.[0];
+    expect(captured).toBeInstanceOf(File);
+    expect((captured as File).name).toMatch(/^photo-\d{8}-\d{6}\.jpg$/);
+    expect((captured as File).type).toBe("image/jpeg");
+    expect(mocks.upload).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /^Done$/ }));
+    expect(screen.getByText(/Staged · 2 items/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upload 2" })).toBeEnabled();
+    expect(stop).toHaveBeenCalled();
+  });
+
+  it.each(["NotAllowedError", "NotFoundError", "NotReadableError"])("falls back to single-photo input for %s", async (name) => {
+    getUserMedia.mockRejectedValue(new DOMException("camera failed", name));
+    const picker = vi.spyOn(HTMLInputElement.prototype, "click");
+    openPage();
+    await waitFor(() => expect(picker).toHaveBeenCalledOnce());
+    expect(picker.mock.instances[0]).toBe(screen.getByLabelText("Take a photo"));
+    expect(screen.getByLabelText("Take a photo")).toHaveAttribute("accept", "image/*");
+    expect(screen.getByLabelText("Take a photo")).toHaveAttribute("capture", "environment");
+    expect(screen.getByLabelText("Take a photo")).not.toHaveAttribute("multiple");
+    expect(mocks.info).toHaveBeenCalledWith(expect.stringContaining(name === "NotAllowedError" ? "Camera access was blocked" : name === "NotFoundError" ? "No camera was found" : "couldn't be started"));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("falls back when mediaDevices is missing", async () => {
+    Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: undefined });
+    const picker = vi.spyOn(HTMLInputElement.prototype, "click");
+    openPage();
+    await waitFor(() => expect(picker).toHaveBeenCalledOnce());
+    expect(mocks.info).toHaveBeenCalledWith(expect.stringContaining("isn't available"));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("keeps Choose files as the multiple image and video picker", () => {
+    render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><CapturePage /></MemoryRouter></QueryClientProvider>);
+    const picker = vi.spyOn(HTMLInputElement.prototype, "click");
+    fireEvent.click(screen.getByRole("button", { name: "Choose files" }));
+    expect(picker.mock.instances[0]).toBe(screen.getByLabelText("Choose photos or videos"));
+    expect(screen.getByLabelText("Choose photos or videos")).toHaveAttribute("multiple");
+    expect(screen.getByLabelText("Choose photos or videos")).toHaveAttribute("accept", "image/*,video/*,.webm,.mp4,.mov");
+    expect(getUserMedia).not.toHaveBeenCalled();
+  });
+});
+
+describe("camera stream lifecycle", () => {
+  function sheet() {
+    const props = { open: true, onOpenChange: vi.fn(), onCapture: vi.fn(), onUnavailable: vi.fn() };
+    const rendered = render(<StrictMode><CameraCaptureSheet {...props} /></StrictMode>);
+    return { ...rendered, props };
+  }
+  it("cleans up on close and unmount under StrictMode", async () => {
+    const { rerender, unmount, props } = sheet();
+    await readyCamera();
+    expect(getUserMedia).toHaveBeenCalledOnce();
+    rerender(<StrictMode><CameraCaptureSheet {...props} open={false} /></StrictMode>);
+    expect(stop).toHaveBeenCalled();
+    stop.mockClear();
+    rerender(<StrictMode><CameraCaptureSheet {...props} /></StrictMode>);
+    await readyCamera();
+    unmount();
+    expect(stop).toHaveBeenCalled();
+  });
+  it("stops and closes when the tab becomes hidden", async () => {
+    const { props } = sheet();
+    await readyCamera();
+    Object.defineProperty(document, "hidden", { configurable: true, value: true });
+    fireEvent(document, new Event("visibilitychange"));
+    expect(stop).toHaveBeenCalled();
+    expect(props.onOpenChange).toHaveBeenCalledWith(false);
+  });
+  it("stops a late stream after closing while permission is pending", async () => {
+    let resolve: ((value: MediaStream) => void) | undefined;
+    getUserMedia.mockImplementation(() => new Promise<MediaStream>((r) => { resolve = r; }));
+    const { unmount, props } = sheet();
+    await waitFor(() => expect(getUserMedia).toHaveBeenCalledOnce());
+    fireEvent.click(screen.getByRole("button", { name: "Close camera" }));
+    await act(async () => resolve?.(stream));
+    expect(stop).toHaveBeenCalled();
+    expect(props.onUnavailable).not.toHaveBeenCalled();
+    unmount();
+  });
+  it("switches cameras after stopping the previous stream", async () => {
+    sheet();
+    await readyCamera();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Flip camera" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Flip camera" }));
+    await waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(2));
+    expect(stop).toHaveBeenCalled();
+    expect(getUserMedia.mock.calls[1]?.[0].video.facingMode).toEqual({ ideal: "user" });
+  });
+  it("hides Flip camera for a single video input", async () => {
+    vi.mocked(navigator.mediaDevices.enumerateDevices).mockResolvedValue([{ kind: "videoinput" } as MediaDeviceInfo]);
+    sheet();
+    await readyCamera();
+    expect(screen.queryByRole("button", { name: "Flip camera" })).toBeNull();
+  });
+});
