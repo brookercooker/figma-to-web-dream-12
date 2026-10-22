@@ -2,8 +2,9 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Box, Image as ImageIcon } from "lucide-react";
 import LibraryPicker from "../LibraryPicker";
+import { PALETTE, colorFor } from "../../labelColors";
 
-const many = Array.from({ length: 70 }, (_, n) => ({ id: `i${n}`, name: `photo-${String(n).padStart(2, "0")}.jpg`, url: `https://x/${n}.webp`, alt: `photo ${n}`, labels: n === 7 ? ["Rooms/Lobby"] : n === 2 ? ["Area/Kitchen"] : [], createdAt: n === 5 ? "2026-01-03T00:00:00Z" : n === 6 ? "2025-01-01T00:00:00Z" : undefined }));
+const many = Array.from({ length: 70 }, (_, n) => ({ id: `i${n}`, name: `photo-${String(n).padStart(2, "0")}.jpg`, url: `https://x/${n}.webp`, alt: `photo ${n}`, labels: n === 7 ? ["Rooms/Lobby"] : n === 8 ? ["Z/a", "Z/b", "Z/c", "Z/d", "Z/e"] : n === 2 ? ["Area/Kitchen"] : [], createdAt: n === 5 ? "2026-01-03T00:00:00Z" : n === 6 ? "2025-01-01T00:00:00Z" : undefined }));
 vi.mock("../../ImagePickerDialog", async () => {
   const real = await vi.importActual<any>("../../ImagePickerDialog");
   return { ...real, loadLibraryImages: async () => many };
@@ -16,7 +17,7 @@ vi.mock("../../ObjectPickerDialog", async () => {
     { id: "o2", name: "Flyer", component_key: null, labels: [] },
   ] };
 });
-vi.mock("../../useAllLabels", () => ({ useLabelsForScope: () => ({ data: [{ path: "Rooms/Lobby" }], refetch: vi.fn() }) }));
+vi.mock("../../useAllLabels", () => ({ useLabelsForScope: () => ({ data: [{ path: "Rooms/Lobby", color_index: 7 }], refetch: vi.fn() }) }));
 beforeEach(() => { (globalThis as any).ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} }; });
 afterEach(cleanup);
 
@@ -213,5 +214,27 @@ describe("library picker", () => {
     sortTo("label");
     expect(screen.getByText("1 selected")).toBeInTheDocument();
     expect(screen.getByTitle("photo-03.jpg")).toHaveAttribute("aria-pressed", "true");
+  });
+  const bgOf = (v: string) => { const d = document.createElement("div"); d.style.background = v; return d.style.background; };
+  it("card pills use the registered colour, or the hash fallback when unregistered", async () => {
+    setup(); await screen.findByText("60 of 70 shown");
+    const lobby = within(screen.getByTitle("photo-07.jpg")).getByTitle("Rooms/Lobby");
+    expect(lobby).toHaveTextContent("Lobby");
+    expect(lobby.style.background).toBe(bgOf(PALETTE[7].bg));
+    const kitchen = within(screen.getByTitle("photo-02.jpg")).getByTitle("Area/Kitchen");
+    expect(kitchen.style.background).toBe(bgOf(colorFor("Area/Kitchen").bg));
+  });
+  it("more than 3 labels shows +N listing the rest", async () => {
+    setup(); await screen.findByText("60 of 70 shown");
+    const card = screen.getByTitle("photo-08.jpg");
+    expect(card.querySelectorAll("[data-label-pill]")).toHaveLength(3);
+    expect(within(card).getByText("+2")).toHaveAttribute("title", "Z/d, Z/e");
+  });
+  it("label filter chips carry the label colour", async () => {
+    setup(); await screen.findByText("60 of 70 shown");
+    const chip = screen.getByRole("button", { name: "Lobby" });
+    expect(chip.style.background).toBe(bgOf(PALETTE[7].bg));
+    fireEvent.click(chip);
+    expect(chip.style.background).toBe(bgOf(PALETTE[7].swatch));
   });
 });
