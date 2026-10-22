@@ -150,7 +150,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
             <DialogTitle>{TITLE[kind]}</DialogTitle>
             <button type="button" onClick={() => { setOpen(false); onOpenFull(); }}
               className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />Open full {FULL[kind]} page
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />Open {FULL[kind]} page
             </button>
           </div>
           <DialogDescription className="sr-only">Search and pick {NOUN[kind]} to add to the chat.</DialogDescription>
