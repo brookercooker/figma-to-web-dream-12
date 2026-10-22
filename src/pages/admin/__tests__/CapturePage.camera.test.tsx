@@ -52,7 +52,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
 function openPage() {
   render(<QueryClientProvider client={new QueryClient()}><MemoryRouter><CapturePage /></MemoryRouter></QueryClientProvider>);
-  fireEvent.click(screen.getByRole("button", { name: "Take photo", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: /^Take photo$/ }));
 }
 async function readyCamera() {
   await waitFor(() => expect(screen.getByRole("button", { name: "Take picture" })).toBeEnabled());
@@ -73,9 +73,9 @@ describe("Capture live camera", () => {
     const captured = vi.mocked(URL.createObjectURL).mock.calls[0]?.[0];
     expect(captured).toBeInstanceOf(File);
     expect((captured as File).name).toMatch(/^photo-\d{8}-\d{6}\.jpg$/);
-    expect(captured?.type).toBe("image/jpeg");
+    expect((captured as File).type).toBe("image/jpeg");
     expect(mocks.upload).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Done", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Done$/ }));
     expect(screen.getByText(/Staged · 2 items/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upload 2" })).toBeEnabled();
     expect(stop).toHaveBeenCalled();

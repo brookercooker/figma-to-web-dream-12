@@ -93,7 +93,7 @@ export default function CameraCaptureSheet({ open, onOpenChange, onCapture, onUn
           }
         } catch { /* The camera remains usable when device enumeration is unavailable. */ }
       } catch (error) {
-        const name = error instanceof Error ? error.name : "";
+        const name = error && typeof error === "object" && "name" in error ? error.name : "";
         unavailable(name === "NotAllowedError" || name === "PermissionDeniedError" ? "denied"
           : name === "NotFoundError" || name === "DevicesNotFoundError" ? "notfound" : "error");
       }
