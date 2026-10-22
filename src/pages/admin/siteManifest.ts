@@ -40,7 +40,7 @@ let knownPaths = new Set<string>();
 export const MANIFEST_CHANGED = "nova-manifest-changed";
 export function setManifestBase(url: string) {
   if (url === draftBase) return;
-  draftBase = url;
+  draftBase = url || null;
   resetSiteManifestCache();
 }
 export function manifestHasPage(path: string) { return knownPaths.has(path === "/" ? "/home" : path.replace(/\/+$/, "")); }

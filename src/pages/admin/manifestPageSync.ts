@@ -2,7 +2,6 @@ import { supabase } from "@/prototype/client";
 import { toast } from "sonner";
 import { loadSiteManifest, type SiteManifestPage } from "./siteManifest";
 import { normalizePreviewPath, pageToRegister, pageRow, pageSlugSuffix } from "./designChat/registerPage";
-import { notifyContentEdited } from "./designChat/contentSync";
 
 export const PAGES_SYNCED = "nova-pages-synced";
 const alias = (path: string) => normalizePreviewPath(path) === "/home" ? "/" : normalizePreviewPath(path);
@@ -40,6 +39,8 @@ const once = buildOnce();
 
 export async function syncManifestPages() {
   try {
+    const { data: session } = await supabase.auth.getSession();
+    if (!session.session?.user) return;
     const manifest = await loadSiteManifest();
     await once(manifest.buildId || manifest.generatedAt, async () => {
       const { data: existing, error } = await (supabase as any).from("pages").select("path");
@@ -52,7 +53,6 @@ export async function syncManifestPages() {
       const added = result.data ?? [];
       if (!added.length) return;
       window.dispatchEvent(new Event(PAGES_SYNCED));
-      notifyContentEdited();
       const names = added.slice(0, 3).map((row: { name: string }) => row.name).join(", ");
       toast.success(`Added ${added.length} new pages to the Pages list: ${names}${added.length > 3 ? ` and ${added.length - 3} more` : ""}`);
     });
