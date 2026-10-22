@@ -9,7 +9,31 @@ import { useLabelsForScope } from "./useAllLabels";
 
 
 interface Choice { url: string; alt: string }
-interface LibraryImage extends Choice { labels: string[] }
+export interface LibraryImage extends Choice { id?: string; name?: string; labels: string[] }
+
+/** The image library as the page editor uses it: `url` is exactly what an image block stores. */
+export async function loadLibraryImages(limit = 120): Promise<LibraryImage[]> {
+  const { data } = await (supabase as any)
+    .from("images")
+    .select("id,filename,web_path,alt_text,tags")
+    .is("archived_at", null)
+    .limit(limit);
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    name: row.filename || row.alt_text || "",
+    url: (supabase as any).storage.from("images-web").getPublicUrl(row.web_path).data.publicUrl,
+    alt: row.alt_text || row.filename || "",
+    labels: Array.isArray(row.tags) ? row.tags.filter(Boolean) : [],
+  }));
+}
+
+/** Same search the picker uses: name/alt text and labels (full path or last part). */
+export function imageMatches(i: LibraryImage, term: string) {
+  const t = term.trim().toLowerCase();
+  if (!t) return true;
+  return i.alt.toLowerCase().includes(t) || (i.name ?? "").toLowerCase().includes(t) ||
+    i.labels.some((l) => l.toLowerCase().includes(t) || leafOf(l).toLowerCase().includes(t));
+}
 
 
 /** Pick an image from the library, paste a URL, or upload one from the computer. */
@@ -28,19 +52,7 @@ export default function ImagePickerDialog({
   useEffect(() => {
     if (!open) return;
     setQ(""); setUrl(""); setLabel("");
-    (async () => {
-      const { data } = await (supabase as any)
-        .from("images")
-        .select("filename,web_path,alt_text,tags")
-        .is("archived_at", null)
-        .limit(120);
-      const mapped: LibraryImage[] = (data ?? []).map((row: any) => ({
-        url: (supabase as any).storage.from("images-web").getPublicUrl(row.web_path).data.publicUrl,
-        alt: row.alt_text || row.filename || "",
-        labels: Array.isArray(row.tags) ? row.tags.filter(Boolean) : [],
-      }));
-      setItems(mapped);
-    })();
+    void loadLibraryImages().then(setItems);
   }, [open]);
 
   // Labels come from the same per-tool label registry the Images page uses,
@@ -58,11 +70,7 @@ export default function ImagePickerDialog({
     const term = q.trim().toLowerCase();
     const list = items.filter((i) => {
       if (label && !matchesLabelFilter(i.labels, label)) return false;
-      if (!term) return true;
-      return (
-        i.alt.toLowerCase().includes(term) ||
-        i.labels.some((l) => l.toLowerCase().includes(term) || leafOf(l).toLowerCase().includes(term))
-      );
+      return imageMatches(i, term);
     });
     // Sort by label first so search results group together by label.
     return list.sort((a, b) => {
