@@ -58,17 +58,19 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const picked = useRef(false); // after a pick, the chat box keeps focus instead of the tab button
 
   const { data: labelRows = [], refetch } = useLabelsForScope(kind);
+  const refetchRef = useRef(refetch);
+  refetchRef.current = refetch;
   const allLabels = useMemo(() => labelRows.map((r) => r.path).sort((a, b) => a.localeCompare(b)), [labelRows]);
 
   useEffect(() => {
     if (!open) return;
     setTerm(""); setLabelF(""); setBuilt("all"); setLimit(PAGE); setAdded(new Set()); setKeepOpen(false);
-    void refetch();
+    void refetchRef.current();
     let live = true;
     setRows(null);
     loadRows(kind).then((r) => { if (live) setRows(r); }).catch(() => { if (live) setRows([]); });
     return () => { live = false; };
-  }, [open, kind, refetch]);
+  }, [open, kind]);
 
   const matches = useMemo(() => (rows ?? [])
     .filter((r) => r.search(term) && (!labelF || matchesLabelFilter(r.labels, labelF))
