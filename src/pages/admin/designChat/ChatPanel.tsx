@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { FileText, Loader2, Mic, Paperclip, Pencil, SquarePen, Send, X } from "lucide-react";
+import { Box, FileText, Film, Image as ImageIcon, Loader2, Mic, Paperclip, Pencil, SquarePen, Send, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEditorSlot } from "./EditorSlot";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { useHint } from "./useHint";
 import { useVoice } from "./useVoice";
 import { toast } from "sonner";
 import { registerPreviewPage } from "./usePreviewPage";
+import { kindLabel, referenceKey, withReferences } from "./references";
 
 const SUGGESTIONS = [
   "Make the headline larger",
@@ -117,7 +118,7 @@ export default function ChatPanel() {
     }
     if (!message) {
       if (hasDrawing) setHint("Say what you'd like done with your drawing.", true);
-      else if (refs.references.length && !attachments.files.length) setHint(`Say what you'd like done with the attached item${refs.references.length > 1 ? "s" : ""}.`, true);
+      else if (refs.references.length && !attachments.files.length) setHint("Say what you'd like done with the attached item(s).", true);
       else if (attachments.files.length) setHint(`Say what you'd like done with the attached file${attachments.files.length > 1 ? "s" : ""}.`, true);
       return;
     }
