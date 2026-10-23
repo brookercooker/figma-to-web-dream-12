@@ -24,7 +24,7 @@ const SWAP_TIMEOUT_MS = 20000; // show a copy even if its load event never comes
 type Frame = { id: number; url: string };
 
 /** `path` is the page of the design site to show (null = its home page). Changing it loads that page. */
-export function usePreview(state: RelayState | null, path: string | null = null) {
+export function usePreview(state: RelayState | null, path: string | null = null, nav = 0) {
   const [frames, setFrames] = useState<Frame[]>([]);
   const [shownId, setShownId] = useState(0);
   const [loaded, setLoaded] = useState(false); // the first copy is on screen
@@ -141,14 +141,14 @@ export function usePreview(state: RelayState | null, path: string | null = null)
     };
   }, [loadPreview]);
 
-  // A different page was picked: load it (without the "updating" message, nothing was changed).
+  // A different page was picked (or Back/Forward, which bumps `nav`): load it (without the "updating" message, nothing was changed).
   const firstPath = useRef(true);
   useEffect(() => {
     if (firstPath.current) { firstPath.current = false; return; }
     remembered.current = null; // a page was picked on purpose
     if (loading.current) reloadAfter.current = true; // an address is being fetched for the old page; fetch again when it's done
     else loadPreview();
-  }, [path, loadPreview]);
+  }, [path, nav, loadPreview]);
 
   // Follow the helper.
   const version = state?.previewVersion;
