@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { formatBytes } from "@/lib/imageOptimize";
 import { uploadImageFile } from "./captureUpload";
-import { pickTileSrc } from "./imageTileSrc";
+import { tileSrcCandidates } from "./imageTileSrc";
 import TagsPanel from "./TagsPanel";
 import { Copy, Trash2, Search, Archive, ArchiveRestore, AlertTriangle, RefreshCw, Download, Globe, Lock } from "lucide-react";
 import { GATED_BUCKET, clearAssetUrlCache } from "@/lib/assetUrl";
@@ -132,6 +132,7 @@ export default function ImagesTab() {
   const [confirmDelete, setConfirmDelete] = useState<{ imgs: Img[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [brokenIds, setBrokenIds] = useState<Set<string>>(new Set());
+  const [failedTileSources, setFailedTileSources] = useState<Record<string, string[]>>({});
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
   const localPreviewsRef = useRef<Record<string, string>>({});
   const [uploadPreviews, setUploadPreviews] = useState<{ url: string; name: string }[]>([]);
@@ -391,6 +392,11 @@ export default function ImagesTab() {
       arrivedThumbsRef.current[img.id] = thumb;
     }
     removeLocalPreviews(ready);
+    if (newlyReady.length) setFailedTileSources((current) => {
+      const next = { ...current };
+      newlyReady.forEach((id) => delete next[id]);
+      return next;
+    });
     if (newlyReady.length) setBrokenIds((current) => {
       const next = new Set(current);
       newlyReady.forEach((id) => next.delete(id));
@@ -875,7 +881,8 @@ export default function ImagesTab() {
           const gated = (img as any).visibility === "gated";
           const signedThumb = img.web_path ? thumbUrls[img.web_path] : undefined;
           const local = localPreviews[img.id];
-          const thumb = pickTileSrc({ gated, thumb: signedThumb, local, webUrl: img.web_url });
+          const candidates = tileSrcCandidates({ gated, thumb: signedThumb, local, webUrl: img.web_url });
+          const thumb = candidates.find((src) => !(failedTileSources[img.id] ?? []).includes(src)) ?? null;
           const broken = brokenIds.has(img.id);
           const isJustAdded = justAddedIds.includes(img.id);
           return (
@@ -968,17 +975,10 @@ export default function ImagesTab() {
                 return (
                   <img key={thumb} src={thumb} alt={img.alt_text || img.filename}
                     onClick={() => setDetail(img)}
-                    onError={(e) => {
-                      const el = e.currentTarget;
-                      // A local preview is temporary; wait for the real thumbnail.
-                      if (local && thumb === local && !signedThumb) return;
-                      if (gated) {
-                        if (signedThumb && el.getAttribute("src") === signedThumb) markBroken(img.id);
-                        return;
-                      }
-                      // Public thumbnails retain their one raw-URL fallback.
-                      if (img.web_url && el.getAttribute("src") !== img.web_url) { el.src = img.web_url; return; }
-                      markBroken(img.id);
+                    onError={() => {
+                      const failed = [...(failedTileSources[img.id] ?? []), thumb];
+                      setFailedTileSources((current) => ({ ...current, [img.id]: failed }));
+                      if (candidates.every((src) => failed.includes(src))) markBroken(img.id);
                     }}
                     width={320} height={320}
                     className="w-full aspect-square object-contain cursor-pointer bg-muted"

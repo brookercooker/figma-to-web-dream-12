@@ -25,7 +25,7 @@ vi.mock("../../ObjectPickerDialog", async () => {
 vi.mock("../../useAllLabels", () => ({ useLabelsForScope: () => ({ data: [{ path: "Rooms/Lobby", color_index: 7 }], refetch: vi.fn() }) }));
 beforeEach(() => {
   thumbs.data = {}; thumbs.calls.mockClear();
-  many.forEach((i, n) => Object.assign(i, { visibility: n % 2 === 0 ? "gated" : "public", webPath: `${n}.webp` }));
+  many.forEach((i, n) => Object.assign(i, { visibility: n % 2 === 0 ? "gated" : "public", webPath: `${n}.webp`, webUrl: `/__l5e/assets-v1/id/${n}.jpg` }));
   (globalThis as any).ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
 });
 afterEach(cleanup);
@@ -40,10 +40,15 @@ const setup = (kind: "images" | "objects" = "images") => {
 const cards = () => within(screen.getByRole("dialog")).getAllByRole("button").filter((b) => /^(photo-|Hero|Flyer)/.test(b.getAttribute("title") ?? ""));
 
 describe("library picker", () => {
-  it("never uses a gated raw URL while signing is pending, but keeps the public fallback", async () => {
+  it("uses stored Lovable asset URLs regardless of visibility while thumbnails are pending", async () => {
+    setup(); await screen.findByText("60 of 70 shown");
+    expect(screen.getByTitle("photo-00.jpg").querySelector("img")).toHaveAttribute("src", "/__l5e/assets-v1/id/0.jpg");
+    expect(screen.getByTitle("photo-01.jpg").querySelector("img")).toHaveAttribute("src", "/__l5e/assets-v1/id/1.jpg");
+  });
+  it("does not use a private staging URL while signing is pending", async () => {
+    Object.assign(many[0], { webUrl: "https://x/images-web-gated/0.webp" });
     setup(); await screen.findByText("60 of 70 shown");
     expect(screen.getByTitle("photo-00.jpg").querySelector("img")).toBeNull();
-    expect(screen.getByTitle("photo-01.jpg").querySelector("img")).toHaveAttribute("src", "https://x/1.webp");
   });
   it("uses signed gated and public transformed thumbnails without changing the picked URL", async () => {
     thumbs.data = { "images-web-gated": { "0.webp": "https://signed/0" }, "images-web": { "1.webp": "https://public/thumb/1" } };
@@ -68,10 +73,25 @@ describe("library picker", () => {
     const img = card.querySelector("img");
     if (!img) throw new Error("Expected signed thumbnail");
     fireEvent.error(img);
+    const fallback = card.querySelector("img");
+    expect(fallback).toHaveAttribute("src", "/__l5e/assets-v1/id/0.jpg");
+    if (!fallback) throw new Error("Expected web URL fallback");
+    fireEvent.error(fallback);
     expect(card.querySelector("img")).toBeNull();
     fireEvent.click(card);
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: "i0", url: "https://x/0.webp" }));
+  });
+  it("keeps the picture after a storage thumbnail fails but the asset URL loads", async () => {
+    thumbs.data = { "images-web": { "1.webp": "https://public/thumb/1" } };
+    setup(); await screen.findByText("60 of 70 shown");
+    const card = screen.getByTitle("photo-01.jpg");
+    const img = card.querySelector("img");
+    if (!img) throw new Error("Expected public thumbnail");
+    fireEvent.error(img);
+    expect(card.querySelector("img")).toHaveAttribute("src", "/__l5e/assets-v1/id/1.jpg");
+    fireEvent.load(card.querySelector("img") as HTMLImageElement);
+    expect(card.querySelector("img")).toHaveAttribute("src", "/__l5e/assets-v1/id/1.jpg");
   });
   it("opens a large popup with search that narrows the grid", async () => {
     setup();
