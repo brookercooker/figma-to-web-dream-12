@@ -1420,7 +1420,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
       delete target.dataset.inlineNoLinks;
       target.style.outline = "";
       target.style.outlineOffset = "";
-      target.removeEventListener("blur", commit);
+      target.removeEventListener("blur", onBlur);
       target.removeEventListener("keydown", onKey);
       target.removeEventListener("click", stop);
       if (iconLabelEl) {
@@ -4896,6 +4896,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                   onChange={(e) => patchImage(sec.id, idx, { href: e.target.value })}
                 />
               </label>
+              {sec.images?.[idx] && <PictureLinkControl image={sec.images[idx]} onChange={(changes) => patchImage(sec.id, idx, changes)} />}
               {sec.layout !== "behind" && (
                 <>
                   <label className="flex items-center gap-1 text-xs text-muted-foreground">
