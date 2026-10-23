@@ -16,5 +16,5 @@ it("records unchecked fingerprints and requires confirmation for reset all", () 
   fireEvent.click(screen.getByRole('button',{name:'Record Fingerprints'})); expect(record).toHaveBeenCalledOnce();
   fireEvent.click(screen.getByRole('button',{name:'Reset Element'})); expect(discard).toHaveBeenCalledWith('page','0.1');
   fireEvent.click(screen.getByRole('button',{name:'Reset All Edits on This Page'})); expect(resetAll).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button',{name:'Reset All Edits', exact:true} as never)); expect(resetAll).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole('button',{name:/^Reset All Edits$/})); expect(resetAll).toHaveBeenCalledOnce();
 });
