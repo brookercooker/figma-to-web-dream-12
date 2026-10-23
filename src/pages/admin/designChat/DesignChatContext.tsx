@@ -80,13 +80,17 @@ export type DesignChat = {
 
 const Ctx = createContext<DesignChat | null>(null);
 
+export function helperPollingInterval(s: RelayState | null, recent: boolean): number {
+  return s && (s.busy || s.previewChecking === true || s.publish?.status === "reviewing" || recent) ? 1000 : 4000;
+}
+
 export function DesignChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => { void syncManifestPages(); }, []);
   // The preview hook needs the helper's state; the helper's polling speed needs to know when the preview last reloaded.
   const lastReload = useRef<{ current: number } | null>(null);
   const { state, offline, refreshSoon } = useHelperState((s: RelayState | null) => {
     const recent = lastReload.current ? Date.now() - lastReload.current.current < 180_000 : false;
-    return s && (s.busy || s.publish?.status === "reviewing" || recent) ? 1000 : 4000;
+    return helperPollingInterval(s, recent);
   });
 
   const [previewPath, setPreviewPath] = useState<string | null>(null);
