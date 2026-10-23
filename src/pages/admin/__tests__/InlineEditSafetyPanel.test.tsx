@@ -5,7 +5,8 @@ afterEach(cleanup);
 it("discards only the selected orphan and keeps the other action inert", () => {
   const discard = vi.fn();
   render(<InlineEditSafetyPanel reports={{page:{applied:[],unchecked:[],rejected:[],orphaned:[{path:'0.1',kinds:['html'],reason:'The text under it changed.'}]}}} selection={null} editsFor={() => ({'0.1':'Light transforms rooms'})} discard={discard} record={vi.fn()} resetAll={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button',{name:/Edits That Could Not Be Applied/}));
+  const group = screen.getByRole('button',{name:/Edits That Could Not Be Applied/});
+  if (group.getAttribute('aria-expanded') === 'false') fireEvent.click(group);
   fireEvent.click(screen.getByRole('button',{name:'Keep For Now'})); expect(discard).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button',{name:'Discard This Edit'})); expect(discard).toHaveBeenCalledWith('page','0.1');
 });
@@ -17,4 +18,12 @@ it("records unchecked fingerprints and requires confirmation for reset all", () 
   fireEvent.click(screen.getByRole('button',{name:'Reset Element'})); expect(discard).toHaveBeenCalledWith('page','0.1');
   fireEvent.click(screen.getByRole('button',{name:'Reset All Edits on This Page'})); expect(resetAll).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button',{name:/^Reset All Edits$/})); expect(resetAll).toHaveBeenCalledOnce();
+});
+it("labels orphaned link edits and resets all keys at their selected path", () => {
+  const discard = vi.fn(), el = document.createElement('a');
+  render(<InlineEditSafetyPanel reports={{page:{applied:[],unchecked:[],rejected:[],orphaned:[{path:'0',kinds:['link'],reason:'The code changed.'}]}}} selection={{scope:'page',key:'0',kind:'text',el}} editsFor={() => ({'link:0':'{"href":"/lighting"}','fp:0':'{}'})} discard={discard} record={vi.fn()} resetAll={vi.fn()} />);
+  const group = screen.getByRole('button',{name:/Edits That Could Not Be Applied/});
+  if (group.getAttribute('aria-expanded') === 'false') fireEvent.click(group);
+  expect(screen.getByText('Link')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'Reset Element'})); expect(discard).toHaveBeenCalledWith('page','0');
 });

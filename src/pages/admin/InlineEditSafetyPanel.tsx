@@ -20,7 +20,7 @@ export default function InlineEditSafetyPanel({ reports, selection, editsFor, di
   const label = (scope: string, path: string, kinds: string[]) => {
     const text = Object.entries(editsFor(scope)).find(([key]) => { const p = parseKey(key); return p?.kind === "html" && p.path === path; })?.[1];
     const plain = text?.replace(/<[^>]*>/g, "").trim().slice(0, 70);
-    return kinds.includes("html") ? `Text ${scope === "page" ? "on this page" : "in this shared object"}${plain ? `, saved edit starts with: ${plain}…` : ""}` : kinds.includes("img") ? "Picture" : kinds.includes("icon") ? "Icon" : "Appearance or position";
+    return kinds.includes("link") ? "Link" : kinds.includes("html") ? `Text ${scope === "page" ? "on this page" : "in this shared object"}${plain ? `, saved edit starts with: ${plain}…` : ""}` : kinds.includes("img") ? "Picture" : kinds.includes("icon") ? "Icon" : "Appearance or position";
   };
   return <div className="mt-4 space-y-3 border-t pt-3">
     {orphaned.length > 0 && <ToolGroup title="Edits That Could Not Be Applied" icon={ShieldAlert} summary={String(orphaned.length)}>

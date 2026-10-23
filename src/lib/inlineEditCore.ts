@@ -2,7 +2,8 @@
 import DOMPurify from "dompurify";
 
 export type InlineEdits = Record<string, string>;
-export type Kind = "html" | "style" | "img" | "icon" | "fp";
+export type Kind = "html" | "style" | "img" | "icon" | "link" | "fp";
+export interface LinkEdit { href?: string; target?: "_blank"; unlinked?: true }
 export interface Fingerprint { v: 1; tag: string; t: string; s?: string }
 export interface ReplayReport {
   applied: string[];
@@ -15,7 +16,7 @@ export function parseKey(key: string): { kind: Kind; path: string } | null {
   const colon = key.indexOf(":");
   const kind = colon < 0 ? "html" : key.slice(0, colon);
   const path = colon < 0 ? key : key.slice(colon + 1);
-  return ["html", "style", "img", "icon", "fp"].includes(kind) &&
+  return ["html", "style", "img", "icon", "link", "fp"].includes(kind) &&
     (colon < 0 || kind !== "html") && PATH.test(path) ? { kind: kind as Kind, path } : null;
 }
 // Properties written by InlineStylePanel, plus the existing surface's reorder controls.
@@ -36,6 +37,14 @@ function isFingerprint(value: unknown): value is Fingerprint {
   const f = value as Record<string, unknown>;
   return f.v === 1 && typeof f.tag === "string" && typeof f.t === "string" &&
     (f.s === undefined || typeof f.s === "string");
+}
+/** Kept identical to the Manager's validInlineHref destination rule. */
+export function validLinkHref(href: string): boolean {
+  if (!href || /[\s\u0000-\u001f\u007f\\]/.test(href)) return false;
+  if (/^https?:\/\//i.test(href)) {
+    try { return !!new URL(href).hostname; } catch { return false; }
+  }
+  return /^(mailto:|tel:|\/(?!\/)|#)/i.test(href);
 }
 export function validateEdits(edits: unknown): { ok: InlineEdits; rejected: ReplayReport["rejected"] } {
   const ok: InlineEdits = {}, rejected: ReplayReport["rejected"] = [];
@@ -58,6 +67,19 @@ export function validateEdits(edits: unknown): { ok: InlineEdits; rejected: Repl
         catch { reason = "Picture address is not allowed"; }
       }
       if (/[\u0000-\u001f\u007f]/.test(value) || value.includes("\\")) reason = "Picture address is not allowed";
+    } else if (parsed.kind === "link") {
+      try {
+        const link: unknown = JSON.parse(value);
+        if (!link || typeof link !== "object" || Array.isArray(link)) reason = "Link must be a JSON object";
+        else {
+          const fields = link as Record<string, unknown>;
+          if (Object.keys(fields).some((field) => !["href", "target", "unlinked"].includes(field)) ||
+            ("href" in fields && (typeof fields.href !== "string" || !validLinkHref(fields.href))) ||
+            ("target" in fields && (fields.target !== "_blank" || !("href" in fields))) ||
+            ("unlinked" in fields && (fields.unlinked !== true || "href" in fields || "target" in fields)) ||
+            (!("href" in fields) && fields.unlinked !== true)) reason = "Link contains an unsupported destination or setting";
+        }
+      } catch { reason = "Link must be a JSON object"; }
     } else if (parsed.kind === "fp") {
       try { if (!isFingerprint(JSON.parse(value))) reason = "Invalid fingerprint"; }
       catch { reason = "Invalid fingerprint"; }
@@ -80,17 +102,23 @@ export function fingerprintMatches(saved: Partial<Fingerprint>, current: Fingerp
   return saved.tag === current.tag && (saved.t === undefined || saved.t === current.t) &&
     (saved.s === undefined || saved.s === current.s);
 }
-interface Original { html: string; src: string | null; srcset: string | null; style: string | null; icon: boolean; fp: Fingerprint }
+interface Original { html: string; src: string | null; srcset: string | null; style: string | null; icon: boolean; fp: Fingerprint; link: Record<string, string | null> }
+const LINK_ATTRIBUTES = ["href", "target", "rel", "data-inline-link", "data-inline-href", "data-inline-target"];
 // Shared snapshots also let withFingerprints read originals after replay/typing.
 const originals = new WeakMap<Element, Original>();
 function snapshot(el: Element): Original {
   let original = originals.get(el);
   if (!original) {
     original = { html: el.innerHTML, src: el.getAttribute("src"), srcset: el.getAttribute("srcset"),
-      style: el.getAttribute("style"), icon: !!el.querySelector("svg"), fp: fingerprintOf(el) };
+      style: el.getAttribute("style"), icon: !!el.querySelector("svg"), fp: fingerprintOf(el),
+      link: Object.fromEntries(LINK_ATTRIBUTES.map((key) => [key, el.getAttribute(key)])) };
     originals.set(el, original);
   }
   return original;
+}
+export function originalLink(el: Element): { href: string | null; target: string | null } {
+  const original = snapshot(el);
+  return { href: original.link.href, target: original.link.target };
 }
 export function resolvePath(root: Element, path: string): Element | null {
   if (!PATH.test(path)) return null;
@@ -129,6 +157,7 @@ function restore(entry: Applied, kinds: Set<Kind>) {
   if ((kinds.has("html") || kinds.has("icon")) && el.innerHTML !== o.html) el.innerHTML = o.html;
   if (kinds.has("img")) { attribute(el, "src", o.src); attribute(el, "srcset", o.srcset); }
   if (kinds.has("style")) attribute(el, "style", o.style);
+  if (kinds.has("link")) for (const key of LINK_ATTRIBUTES) attribute(el, key, o.link[key]);
 }
 export function createReplay() {
   const roots = new Map<Element, Map<string, Applied>>();
@@ -222,6 +251,19 @@ export function createReplay() {
         }
         const img = values.get("img");
         if (img !== undefined) { attribute(el, "src", img); attribute(el, "srcset", null); }
+        const linkValue = values.get("link");
+        if (linkValue !== undefined) {
+          const link = JSON.parse(linkValue) as LinkEdit;
+          const desired: Record<string, string | null> = { ...o.link, "data-inline-link": link.unlinked ? "off" : "1" };
+          if (el.tagName.toLowerCase() === "a") {
+            desired.href = link.unlinked ? null : link.href ?? null;
+            if (link.href) { desired.target = link.target ?? null; desired.rel = link.target ? "noopener noreferrer" : o.link.rel; }
+          } else if (link.href) {
+            desired["data-inline-href"] = link.href;
+            desired["data-inline-target"] = link.target ?? null;
+          }
+          for (const key of LINK_ATTRIBUTES) attribute(el, key, desired[key]);
+        }
         entry.kinds = new Set(kinds); next.set(path, entry);
         report.applied.push(...group.map((v) => v.key));
       }
@@ -231,4 +273,45 @@ export function createReplay() {
     },
     restoreAll() { for (const entries of roots.values()) for (const entry of entries.values()) restore(entry, entry.kinds); roots.clear(); },
   };
+}
+
+/** Capture suppression prevents the original React Router `to`/onClick from winning. */
+export function installLinkHandler(doc: Document, opts: { enabled?: () => boolean; navigate?: (href: string) => boolean } = {}): () => void {
+  const handle = (event: MouseEvent) => {
+    if (opts.enabled?.() === false || event.button > 1) return;
+    const node = event.target;
+    const target = node instanceof Element ? node : node instanceof Node ? node.parentElement : null;
+    const el = target?.closest("[data-inline-link]");
+    const win = doc.defaultView;
+    if (!el || !win) return;
+    const state = el.getAttribute("data-inline-link");
+    if (state !== "off" && state !== "1") return;
+    event.preventDefault(); event.stopImmediatePropagation();
+    if (state === "off") return;
+    const anchor = el.tagName.toLowerCase() === "a";
+    const href = el.getAttribute(anchor ? "href" : "data-inline-href");
+    if (!href || !validLinkHref(href)) return;
+    const targetName = el.getAttribute(anchor ? "target" : "data-inline-target");
+    if (targetName === "_blank" || event.ctrlKey || event.metaKey || event.shiftKey || event.button === 1) {
+      win.open(href, "_blank", "noopener,noreferrer"); return;
+    }
+    if (href.startsWith("#")) {
+      let id = href.slice(1);
+      try { id = decodeURIComponent(id); } catch { /* Keep a literal malformed fragment. */ }
+      const destination = doc.getElementById(id) ?? doc.getElementsByName(id)[0];
+      destination?.scrollIntoView();
+      win.history.pushState(null, "", href); return;
+    }
+    if (opts.navigate?.(href) === true) return;
+    win.location.assign(href);
+  };
+  const auxiliary = (event: MouseEvent) => {
+    const node = event.target;
+    const target = node instanceof Element ? node : node instanceof Node ? node.parentElement : null;
+    if (target?.closest("a[href]")) return; // Native middle-click handling is already correct for real anchors.
+    handle(event);
+  };
+  doc.addEventListener("click", handle, true);
+  doc.addEventListener("auxclick", auxiliary, true);
+  return () => { doc.removeEventListener("click", handle, true); doc.removeEventListener("auxclick", auxiliary, true); };
 }
