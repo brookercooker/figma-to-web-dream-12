@@ -53,7 +53,7 @@ describe("library picker", () => {
   });
   it.each(["video", "object"] as const)("keeps %s thumbnails cropped as before", (kind) => {
     const item = kind === "video"
-      ? { kind, id: "v", name: "Video", url: "video", thumb: "poster" }
+      ? { kind, id: "v", name: "Video", url: "video", thumb: "poster", labels: [] }
       : { kind, id: "o", name: "Object", type: "built in code", thumb: "object-thumb" };
     const { container } = render(<LibraryCard item={item} labels={[]} selected={false} FallbackIcon={Box} onPick={vi.fn()} />);
     expect(container.querySelector("img")).toHaveClass("object-cover");
