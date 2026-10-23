@@ -72,7 +72,7 @@ describe("inline text links", () => {
   it("opens the selection popover, rejects an invalid address and applies with Enter", () => {
     const { host, range } = words("Selected words");
     render(<InlineLinkControl />); select(range);
-    fireEvent.click(screen.getByRole("button", { name: "Link", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Link$/ }));
     const input = screen.getByRole("textbox", { name: "Address" });
     fireEvent.change(input, { target: { value: "javascript:alert(1)" } });
     fireEvent.click(screen.getByRole("button", { name: "Apply Link" }));
@@ -88,13 +88,13 @@ describe("inline text links", () => {
     if (!text) throw new Error("missing text");
     range.setStart(text, 2); range.collapse(true);
     render(<InlineLinkControl />); select(range);
-    expect(screen.getByRole("button", { name: "Link", exact: true })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getByRole("button", { name: "Link", exact: true }));
+    expect(screen.getByRole("button", { name: /^Link$/ })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: /^Link$/ }));
     fireEvent.change(screen.getByRole("textbox", { name: "Address" }), { target: { value: "/new" } });
     fireEvent.click(screen.getByRole("button", { name: "Apply Link" }));
     expect(cleanEditedHtml(host.innerHTML)).toBe('<a href="/new" data-underline="1">words</a>');
     select(range);
-    fireEvent.click(screen.getByRole("button", { name: "Link", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Link$/ }));
     fireEvent.click(screen.getByRole("button", { name: "Remove Link" }));
     expect(cleanEditedHtml(host.innerHTML)).toBe("words");
   });
@@ -104,13 +104,13 @@ describe("inline text links", () => {
     else { const button = document.createElement("button"); host.replaceWith(button); button.append(host); }
     range.selectNodeContents(host);
     render(<InlineLinkControl />); select(range);
-    expect(screen.getByRole("button", { name: "Link", exact: true })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^Link$/ })).toBeDisabled();
   });
   it("Cancel and Escape leave selected text unchanged", () => {
     const { host, range } = words();
     render(<InlineLinkControl />); select(range);
     for (const cancel of [false, true]) {
-      fireEvent.click(screen.getByRole("button", { name: "Link", exact: true }));
+      fireEvent.click(screen.getByRole("button", { name: /^Link$/ }));
       fireEvent.change(screen.getByRole("textbox", { name: "Address" }), { target: { value: "/unused" } });
       if (cancel) fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
       else fireEvent.keyDown(screen.getByRole("textbox", { name: "Address" }), { key: "Escape" });
