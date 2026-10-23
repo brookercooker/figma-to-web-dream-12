@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Check, Undo2, ArrowLeft, Code, Pencil, MessageSquare, Loader2 } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Check, Undo2, ArrowLeft, Code, Loader2 } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import SiteManagerLogo from "./SiteManagerLogo";
 import ChatPanel from "./designChat/ChatPanel";
@@ -16,7 +16,7 @@ import { EditorSlotProvider, useEditorSlot } from "./designChat/EditorSlot";
 import ConfirmDialog from "./ConfirmDialog";
 import LibraryPicker from "./designChat/LibraryPicker";
 import { toast } from "sonner";
-import { ModeSwitchProvider, useModeSwitch } from "./designChat/ModeSwitchContext";
+import { ModeSwitchProvider } from "./designChat/ModeSwitchContext";
 import ModeToggle from "./designChat/ModeToggle";
 
 const PagesTab = lazy(() => import("./PagesTab"));
@@ -70,19 +70,15 @@ export default function AdminIndex() {
 function AdminShell() {
   const designChat = useDesignChat();
   const { workingPage, editing, mode, stopEditing, clearWorkingPage, objectOpen, closeObject } = designChat;
-  const modeSwitch = useModeSwitch();
   const manual = mode === "manual";
-  const askClaude = async () => {
-    if (await modeSwitch?.requestChat()) { setChatCollapsed(false); navigate("/manage/preview"); }
-  };
-  const bannerRef = useRef<HTMLDivElement>(null);
+  const editingHeaderRef = useRef<HTMLDivElement>(null);
   const previousMode = useRef(mode);
   const [announcement, setAnnouncement] = useState("");
   useEffect(() => {
     if (previousMode.current === mode) return;
     previousMode.current = mode;
     setAnnouncement(manual ? "Manual Edit Mode. You are editing by hand." : "Chat Mode. Claude makes the changes.");
-    if (manual) bannerRef.current?.focus();
+    if (manual) editingHeaderRef.current?.focus();
     else requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Describe a Change"]')?.focus());
   }, [mode, manual]);
   const { setSlot, saveAll, discardAll, hasChanges } = useEditorSlot();
@@ -274,15 +270,6 @@ function AdminShell() {
 
           <div className="relative min-h-0 flex-1">
           <main className="relative h-full overflow-y-auto">
-            {manual && <>
-              <div ref={bannerRef} tabIndex={-1} role="status" className="sticky top-0 z-40 flex flex-wrap items-center gap-2 bg-background px-3 py-2 text-sm shadow-sm">
-                <Pencil className="h-4 w-4 shrink-0 text-manual" aria-hidden />
-                <div className="min-w-0 flex-1"><strong className="text-manual">Editing By Hand.</strong> You are changing this page yourself. Claude is not making changes right now.
-                  {designChat.state?.busy && <p className="mt-1 flex items-center gap-1.5 font-medium"><Loader2 className="h-4 w-4 animate-spin" aria-hidden />Claude Is Still Working on a Change</p>}
-                </div>
-                <Button variant="outline" size="sm" className="gap-1.5" title="Ask Claude Instead" onClick={() => void askClaude()}><MessageSquare className="h-4 w-4" aria-hidden />Ask Claude Instead</Button>
-              </div>
-            </>}
             {previewOpened && (
               <div className={tab === "preview" && !editing ? "h-full" : "hidden"}>
                 <Suspense fallback={null}>
@@ -358,10 +345,10 @@ function AdminShell() {
                   </Button>
                 )}
               </div>
-              <div className="flex shrink-0 flex-col gap-2 border-b px-3 py-3">
+              <div ref={editingHeaderRef} tabIndex={-1} className="flex shrink-0 flex-col gap-2 border-b px-3 py-3">
+                {designChat.state?.busy && <p role="status" className="flex items-center gap-1.5 text-xs font-medium"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />Claude Is Still Working on a Change</p>}
                 <div className="min-w-0">
-                  <p className="flex items-center gap-1.5 text-xs text-manual"><Pencil className="h-3 w-3" aria-hidden />Editing By Hand</p>
-                  <p className="truncate text-lg font-semibold leading-tight" title={workingPage.name}>{workingPage.name}</p>
+                  <p className="truncate text-lg font-semibold leading-tight" title={workingPage.name}>Editing {workingPage.name}</p>
                 </div>
                 <div className="flex gap-1.5">
                   <Button type="button" size="sm" className="flex-1 gap-1.5" disabled={finishing} onClick={() => void saveChanges()}><Check className="h-4 w-4" aria-hidden />{finishing ? "Saving…" : "Finish Editing"}</Button>
@@ -369,10 +356,6 @@ function AdminShell() {
                 </div>
               </div>
               <div ref={setSlot} aria-label="Page Editing Options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
-              <div data-manual-chat-bar className="flex shrink-0 flex-wrap items-center gap-1.5 border-t px-3 py-2 text-xs">
-                <MessageSquare className="h-4 w-4 text-manual" aria-hidden /><span>Want Claude To Do This?</span>
-                <Button variant="ghost" size="sm" className="h-auto whitespace-normal p-1 text-xs" title="Ask Claude Instead" onClick={() => void askClaude()}>Ask Claude Instead</Button>
-              </div>
             </div>
           )}
           <div hidden={manual || chatCollapsed} className={cn("min-h-0 flex-1", (manual || chatCollapsed) && "hidden")} aria-hidden={manual || chatCollapsed}>

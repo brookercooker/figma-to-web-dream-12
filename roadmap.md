@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Clean up redundant mode prompts and unify selected switch styling; preserve guards, hidden chat and stationary outline; verify tests and signed-in Home without saves.
 - [x] Replace manual-entry buttons and preview chip with one pinned guarded mode switch, chooser and collapsed icons; 405 tests and tsgo pass, signed-in Home checked at desktop/narrow widths in light/dark without saves; hosted preview/media remain unavailable.
 - [x] Separate Chat Mode and Manual Mode chrome and guard switching; 399 tests and tsgo pass, signed-in Home mode controls verified at desktop/narrow widths in light/dark without content saves; hosted preview and Home media remain unavailable.
 - [x] Verify shared-renderer checksum and whole-card/inline-text link controls: 310 tests and tsgo pass; signed-in live edits save/read back and temporary object removed.
