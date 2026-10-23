@@ -802,7 +802,7 @@ export default function ImagesTab() {
             size="sm"
             variant="outline"
             className="gap-1.5"
-            onClick={() => { setBrokenIds(new Set()); invalidate(); toast.success("Images refreshed"); }}
+            onClick={() => { setBrokenIds(new Set()); setFailedTileSources({}); invalidate(); toast.success("Images refreshed"); }}
             title="Refetch from the database and clear cached thumbnails"
           >
             <RefreshCw className="w-3 h-3" /> Refresh
