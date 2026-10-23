@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   location: null as null | string,
   page: null as null | { id: string; name: string; path: string },
   editing: false,
+  guard: vi.fn(),
   refs: { references: [] as any[], addReference: vi.fn(), removeReference: vi.fn(), clearReferences: vi.fn(), focusTick: 0 },
 }));
 vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({
@@ -28,6 +29,7 @@ vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({
   previewRegistrable: mocks.candidate,
 }) }));
 vi.mock("../contentSync", () => ({ notifyContentEdited: mocks.sync }));
+vi.mock("../ModeSwitchContext", () => ({ useModeSwitch: () => ({ requestChat: mocks.guard, requestManual: async (open: () => void) => open() }) }));
 vi.mock("@/prototype/client", () => ({ supabase: {
   from: () => ({ insert: mocks.insert }),
 } }));
@@ -50,27 +52,28 @@ beforeEach(() => {
   mocks.refs = { references: [], addReference: vi.fn(), removeReference: vi.fn(), clearReferences: vi.fn(), focusTick: 0 };
   mocks.page = null;
   mocks.editing = false;
+  mocks.guard.mockResolvedValue(false);
   mocks.insert.mockReturnValue({ select: () => ({ single: async () => ({ data: { id: "registered", name: "Race Test Page", path: "/race-test-page" }, error: null }) }) });
 });
 
 describe("manual editing registration", () => {
   it("keeps the editing button in the header outside the form, including while editing", () => {
     const view = render(<MemoryRouter><ChatPanel /></MemoryRouter>);
-    const button = screen.getByRole("button", { name: "Edit this page by hand (without the chat)" });
+    const button = screen.getByRole("button", { name: "Edit It Myself" });
     const section = screen.getByRole("region", { name: "Design Chat" });
     const header = section.querySelector("header");
     expect(header).toContainElement(button);
     expect(section.firstElementChild).toBe(header);
     expect(button.closest("form")).toBeNull();
-    expect(button).toHaveTextContent("Edit Manually");
+    expect(button).toHaveTextContent("Edit It Myself");
 
     mocks.editing = true;
     view.rerender(<MemoryRouter><ChatPanel /></MemoryRouter>);
-    const done = screen.getByRole("button", { name: "Edit this page by hand (without the chat)" });
+    const done = screen.getByRole("button", { name: "Ask Claude Instead" });
     expect(header).toBeVisible();
     expect(header).toContainElement(done);
     expect(done).toBeVisible();
-    expect(done).toHaveTextContent("Done Editing");
+    expect(done).toHaveTextContent("Ask Claude Instead");
     expect(done).toHaveAttribute("aria-pressed", "true");
     expect(done.closest("form")).toBeNull();
     expect(section.querySelector("form")?.lastElementChild).toContainElement(screen.getByRole("button", { name: /^Send$/ }));
@@ -78,7 +81,7 @@ describe("manual editing registration", () => {
   it("enables a registrable page, creates exactly one ready draft row, and opens it", async () => {
     mocks.candidate = { name: "Race Test Page", path: "/race-test-page" };
     render(<MemoryRouter><ChatPanel /></MemoryRouter>);
-    const button = screen.getByRole("button", { name: "Edit this page by hand (without the chat)" });
+    const button = screen.getByRole("button", { name: "Edit It Myself" });
     expect(button).toBeEnabled();
     fireEvent.click(button);
     fireEvent.click(button);
@@ -102,6 +105,17 @@ function messageBox() {
 }
 
 describe("chat sending shortcuts", () => {
+  it("uses the shared switch guard before sending from Manual Mode", async () => {
+    mocks.editing = true;
+    const input = messageBox();
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(mocks.guard).toHaveBeenCalledTimes(1));
+    expect(mocks.post).not.toHaveBeenCalled();
+    expect(input).toHaveValue("Make the headline larger");
+    mocks.guard.mockResolvedValue(true);
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(mocks.post).toHaveBeenCalledTimes(1));
+  });
   it("leaves Shift+Enter to the browser without sending", () => {
     const input = messageBox();
     expect(fireEvent.keyDown(input, { key: "Enter", shiftKey: true })).toBe(true);
@@ -133,7 +147,7 @@ describe("chat sending shortcuts", () => {
 });
 
 describe("Edit Manually on the front page", () => {
-  const button = () => screen.getByRole("button", { name: "Edit this page by hand (without the chat)" });
+  const button = () => screen.getByRole("button", { name: "Edit It Myself" });
   it("is enabled for /home when the home row is stored at /, and opens that row", async () => {
     mocks.location = "/home";
     mocks.page = { id: "home", name: "Homepage", path: "/" };

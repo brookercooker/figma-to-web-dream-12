@@ -13,6 +13,7 @@
 - The draft-manifest reachable flag is stored with each cached manifest load; resolveLivePage only returns "missing" when the draft list (or, with no draft, the public list) was actually read, otherwise "unreachable".
 - "/" and "/home" are one page: lookups, caches and registration go through registerPage homeAliases/pageKey, and the front page is only ever stored as "/".
 - Top-bar Objects/Images/Videos open LibraryPicker (except while editing by hand) using the pickers' exported loaders; picked items live in DesignChatContext refs and are sent as a plain-text block appended to the message, so the /send format never changes.
+- Site Manager mode derives only from DesignChat editing; ModeSwitchProvider guards entry and chat sends through EditorSlot's existing save/discard/hasChanges callbacks, while manual chrome stays outside the untouched canvas and chat stays mounted hidden.
 
 ## Capitalisation
 - Object rich-text links use selection-preserving controls and cleanEditedHtml; keep ObjectSections byte-identical to the public site's shared renderer, so editor-only behavior belongs outside it.

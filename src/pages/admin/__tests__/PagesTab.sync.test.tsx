@@ -28,7 +28,7 @@ describe("Pages list synchronization", () => {
     state.rows = [{ id: "new", slug_id: "fresh-code-page-123abc", name: "Fresh Code Page", path: "/fresh-code-page", page_type: "static", build_status: "ready", tags: [], updated_at: "2026-10-22T06:30:00Z", archived_at: null }];
     act(() => { window.dispatchEvent(new Event(PAGES_SYNCED)); });
     await waitFor(() => expect(screen.getByRole("link", { name: "Fresh Code Page" })).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: "Tweak Fresh Code Page" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Edit It Myself: Fresh Code Page" })).toBeEnabled();
     expect(state.load).toHaveBeenCalledTimes(2);
   });
 });
