@@ -86,11 +86,54 @@ export function emphasisClasses(style: TextStyle | undefined) {
  */
 const ALLOWED_INLINE = /^(b|strong|i|em|u|s|br)$/i;
 
-export function sanitizeInline(input: string): string {
+type RichTextOptions = { noLinks?: boolean };
+
+/** Only explicit web/contact destinations, local paths and anchors are allowed. */
+function inlineHref(href: string | null): string | undefined {
+  if (!href || /[\s\u0000-\u001f\u007f\\]/.test(href)) return undefined;
+  if (/^https?:\/\//i.test(href)) {
+    try { return new URL(href).hostname ? href : undefined; } catch { return undefined; }
+  }
+  return /^(mailto:|tel:|\/(?!\/)|#)/i.test(href) ? href : undefined;
+}
+
+function inlineAttr(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Validated segment attributes shared by display and contentEditable round-trips. */
+function inlineLinkAttrs(el: Element): string {
+  const color = el.getAttribute("data-color");
+  const font = el.getAttribute("data-font");
+  const underline = el.getAttribute("data-underline");
+  const weight = el.getAttribute("data-weight");
+  return [
+    color && segmentColorCss(color) ? ` data-color="${inlineAttr(color)}"` : "",
+    font === "serif" || font === "sans" ? ` data-font="${font}"` : "",
+    underline === "0" || underline === "1" ? ` data-underline="${underline}"` : "",
+    weight && /^\d+(\.\d+)?$/.test(weight) && Number(weight) >= 300 && Number(weight) <= 700 ? ` data-weight="${weight}"` : "",
+  ].join("");
+}
+
+function inlineLinkOpen(el: Element, noLinks?: boolean): string {
+  const href = inlineHref(el.getAttribute("href"));
+  if (!href) return "";
+  const attrs = inlineLinkAttrs(el);
+  const color = /data-color="([^"]*)"/.exec(attrs)?.[1];
+  const font = /data-font="([^"]*)"/.exec(attrs)?.[1];
+  const weight = /data-weight="([^"]*)"/.exec(attrs)?.[1];
+  const css = segmentColorCss(color);
+  const classes = [font === "serif" ? "font-serif font-light" : font === "sans" ? "font-sans" : "", el.getAttribute("data-underline") === "0" ? "no-underline" : "underline underline-offset-4"].filter(Boolean).join(" ");
+  const style = [css ? `color:${css}` : "", weight ? `font-weight:${weight}` : ""].filter(Boolean).join(";");
+  return `<${noLinks ? "span" : "a"}${noLinks ? "" : ` href="${inlineAttr(href)}"`}${attrs} class="${classes}"${style ? ` style="${style}"` : ""}${!noLinks && /^https?:\/\//i.test(href) ? ' target="_blank" rel="noopener noreferrer"' : ""}>`;
+}
+
+export function sanitizeInline(input: string, options: RichTextOptions = {}): string {
   const escaped = input
     .replace(/&(?!(amp|lt|gt|nbsp|#\d+);)/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+  const links: string[] = [];
   return escaped
     .replace(/&lt;(\/?)([a-zA-Z]+)\s*\/?&gt;/g, (m, slash: string, tag: string) =>
       ALLOWED_INLINE.test(tag) ? `<${slash}${tag.toLowerCase()}>` : m,
@@ -101,7 +144,16 @@ export function sanitizeInline(input: string): string {
       const size = /data-size="([^"]*)"/.exec(attrs)?.[1];
       return segmentSpanOpen(color, font, size);
     })
-    .replace(/&lt;\/span&gt;/g, "</span>");
+    .replace(/&lt;\/span&gt;/g, "</span>")
+    .replace(/&lt;(\/?)a\b([\s\S]*?)&gt;/gi, (_m, slash: string, attrs: string) => {
+      if (slash) return links.pop() ?? "";
+      const root = document.createElement("div");
+      root.innerHTML = `<a${attrs.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")}>`;
+      const el = root.firstElementChild;
+      const open = el ? inlineLinkOpen(el, options.noLinks || links.some(Boolean)) : "";
+      links.push(open ? open.startsWith("<span") ? "</span>" : "</a>" : "");
+      return open;
+    });
 }
 
 /** CSS colour for a highlighted segment: a brand token or a hex value. */
@@ -127,16 +179,21 @@ export function segmentSpanOpen(color?: string, font?: string, size?: string): s
 }
 
 /** Spread onto an element to render text with its inline formatting. */
-export function richText(text: string) {
-  return { dangerouslySetInnerHTML: { __html: sanitizeInline(text) } };
+export function richText(text: string, options: RichTextOptions = {}) {
+  return { dangerouslySetInnerHTML: { __html: sanitizeInline(text, options) } };
+}
+
+/** Preserve legacy plain fields verbatim unless the new inline-link markup is used. */
+function richTextOrPlain(text: string, options: RichTextOptions = {}) {
+  return /<a\b/i.test(text) ? richText(text, options) : { children: text };
 }
 
 /** Same as richText, but shows faded wording in the editor when nothing is typed yet. */
-export function richTextOrPlaceholder(text: string, editing: boolean) {
+export function richTextOrPlaceholder(text: string, editing: boolean, options: RichTextOptions = {}) {
   if (!text?.trim() && editing) {
     return { children: "Add text", "data-empty-text": "" } as const;
   }
-  return richText(text);
+  return richText(text, options);
 }
 
 export const TEXT_FONTS: { value: TextFont; label: string }[] = [
@@ -327,6 +384,8 @@ export interface SectionImage {
   texts?: ImageText[];
   /** optional destination opened when the image is clicked */
   href?: string;
+  /** when true and `href` is set, the whole card (picture, caption and its text boxes) is one link, not just the picture */
+  linkCard?: boolean;
   /** which image grid inside the block this image belongs to (default 0) */
   group?: number;
   /** which part of the picture stays in view when it is cropped (CSS object-position) */
@@ -1222,7 +1281,7 @@ export const SECTION_ICON_NAMES = Object.keys(SECTION_ICONS);
 export const SectionEditing = createContext(false);
 
 export function SectionIcon({
-  name, style, fallbackColor, label, labelSide = "after", labelAlign,
+  name, style, fallbackColor, label, labelSide = "after", labelAlign, noLinks,
 }: {
   name: string;
   style?: TextStyle;
@@ -1230,6 +1289,7 @@ export function SectionIcon({
   label?: string;
   labelSide?: "before" | "after" | "above" | "below";
   labelAlign?: SectionAlign;
+  noLinks?: boolean;
 }) {
   const Icon = SECTION_ICONS[name?.trim()] ?? SECTION_ICONS.sparkles;
   const size = style?.sizePx ?? 28;
@@ -1259,7 +1319,7 @@ export function SectionIcon({
       data-icon-label=""
       className="whitespace-pre-wrap leading-snug"
       style={{ color, fontSize, textAlign, width: stack ? "100%" : undefined, display: stack ? "block" : undefined }}
-      {...richText(text)}
+      {...richText(text, { noLinks })}
     />
   ) : (
     <span
@@ -1388,6 +1448,24 @@ function scrimStyle(scrim: ImageScrim | undefined, strength = 55): React.CSSProp
   };
 }
 
+/** Only opted-in cards gain a wrapper; legacy markup is left untouched. */
+const LinkedCardContext = createContext(false);
+function ImageCard({ image, children }: { image: SectionImage; children: React.ReactNode }) {
+  const href = image.href?.trim();
+  if (!image.linkCard || !href) return <>{children}</>;
+  const external = /^(https?:)?\/\//i.test(href);
+  return (
+    <LinkedCardContext.Provider value={true}>
+      <a href={href} className="block h-full group/pic" {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>{children}</a>
+    </LinkedCardContext.Provider>
+  );
+}
+
+/** Defaults for attached wording in legacy image-only section types, when opted in. */
+function imageCardSection(image: SectionImage, captionStyle?: TextStyle): FreeSection {
+  return { id: "image-card", type: "free", images: [image], layout: "stacked", imageSide: "left", gallery: "grid", columns: 1, align: "left", height: "md", captionStyle };
+}
+
 function Pic({
   image, className, scrim, scrimStrength, shadow,
 }: {
@@ -1395,6 +1473,7 @@ function Pic({
   scrim?: ImageScrim; scrimStrength?: number; shadow?: ImageShadow;
 }) {
   const [broken, setBroken] = useState<string | null>(null);
+  const linkedCard = useContext(LinkedCardContext);
   if (!image?.url || broken === image.url) return <Placeholder className={className} />;
   const href = image.href?.trim();
   const wash = scrimStyle(scrim, scrimStrength);
@@ -1423,8 +1502,8 @@ function Pic({
       {wash ? <span aria-hidden className="pointer-events-none absolute inset-0" style={wash} /> : null}
     </>
   );
-  const box = `${className} group/pic relative overflow-hidden ${shadow && shadow !== "none" ? IMAGE_SHADOW_CLASS[shadow] : ""}`;
-  if (href) {
+  const box = `${className} ${linkedCard ? "" : "group/pic"} relative overflow-hidden ${shadow && shadow !== "none" ? IMAGE_SHADOW_CLASS[shadow] : ""}`;
+  if (href && !linkedCard) {
     const external = /^(https?:)?\/\//i.test(href);
     return (
       <a
@@ -1455,6 +1534,8 @@ export type ButtonBox = { padX: number; padY: number; borderWidth?: number; bord
 function SectionButton({
   label, href, variant = "solid", style, bg, icon, iconSide = "before", box,
 }: { label: string; href: string; variant?: ButtonSection["variant"]; style?: TextStyle; bg?: TextColor; icon?: string; iconSide?: "before" | "after"; box?: ButtonBox }) {
+  const linkedCard = useContext(LinkedCardContext);
+  const Tag = linkedCard ? "span" : "a";
   const base = "inline-flex items-center justify-center gap-2 uppercase tracking-[0.18em] transition-colors";
   const fill = bg ?? "ink";
   const custom = isCustomColor(fill);
@@ -1479,18 +1560,31 @@ function SectionButton({
   }
   if (!icon) {
     return (
-      <a href={href || "#"} className={`${base} ${styles} ${text}`} style={inline} {...richText(label)} />
+      <Tag {...(linkedCard ? {} : { href: href || "#" })} className={`${base} ${styles} ${text}`} style={inline} {...richText(label, { noLinks: true })} />
     );
   }
   const Icon = SECTION_ICONS[icon.trim()] ?? SECTION_ICONS.sparkles;
   const glyphSize = Math.max(12, Math.round((style?.sizePx ?? 14) * 1.1));
   const glyph = <Icon style={{ width: glyphSize, height: glyphSize }} strokeWidth={1.6} className="shrink-0" />;
   return (
-    <a href={href || "#"} className={`${base} ${styles} ${text}`} style={inline}>
+    <Tag {...(linkedCard ? {} : { href: href || "#" })} className={`${base} ${styles} ${text}`} style={inline}>
       {iconSide === "before" ? glyph : null}
-      <span {...richText(label)} />
+      <span {...richText(label, { noLinks: true })} />
       {iconSide === "after" ? glyph : null}
-    </a>
+    </Tag>
+  );
+}
+
+function OverlayButton({ section }: { section: OverlaySection }) {
+  const linkedCard = useContext(LinkedCardContext);
+  const Tag = linkedCard ? "span" : "a";
+  return (
+    <Tag
+      {...(linkedCard ? {} : { href: section.buttonHref || "#" })}
+      style={textInlineStyle(section.labelStyle)}
+      className={`mt-2 inline-flex items-center border border-cream px-7 py-3 uppercase tracking-[0.18em] transition-colors hover:bg-cream hover:text-ink ${bodyClasses(section.labelStyle, { color: "cream", size: "sm" })}`}
+      {...richTextOrPlain(section.buttonLabel ?? "", { noLinks: true })}
+    />
   );
 }
 
@@ -1515,15 +1609,17 @@ function Carousel({ section }: { section: CarouselSection }) {
           key={idx}
           className={`absolute inset-0 transition-opacity duration-700 ${idx === i ? "opacity-100" : "opacity-0"}`}
         >
+          <ImageCard image={img}>
           <Pic image={img} className="h-full w-full" />
           {img.caption ? (
             <div
               style={textInlineStyle(section.captionStyle)}
               className={`absolute bottom-0 inset-x-0 bg-ink/50 px-6 py-3 ${bodyClasses(section.captionStyle, { color: "cream", size: "sm" })}`}
-            >
-              {img.caption}
-            </div>
+              {...richTextOrPlain(img.caption, { noLinks: !!(img.linkCard && img.href?.trim()) })}
+            />
           ) : null}
+          {img.linkCard && img.href?.trim() && img.texts?.length ? <div className="absolute inset-x-0 top-0 px-6 py-3"><OverlayImageTexts section={imageCardSection(img)} image={img} index={idx} /></div> : null}
+          </ImageCard>
         </div>
       ))}
       {n > 1 && (
@@ -1563,16 +1659,18 @@ function Carousel({ section }: { section: CarouselSection }) {
 
 /** An image plus its caption and any extra text boxes, optionally boxed by a border. */
 function FreeFigureBody({
-  section, image, index, onDark,
-}: { section: FreeSection; image: SectionImage; index: number; onDark?: boolean }) {
+  section, image, index, onDark, picClass,
+}: { section: FreeSection; image: SectionImage; index: number; onDark?: boolean; picClass?: string }) {
   const imgTextEditing = useContext(SectionEditing);
   const blockAlign: SectionAlign = section.captionAlign ?? "left";
   const align = alignTextOnly[image.captionAlign ?? blockAlign];
   const baseColor: TextColor = onDark ? "cream" : "stone";
   const texts = image.texts ?? [];
   const bordered = !!section.imageBorder;
+  const noLinks = !!(image.linkCard && image.href?.trim());
 
   return (
+    <ImageCard image={image}>
     <div
       className={`h-full ${bordered ? "overflow-hidden" : ""}`}
       style={{ ...(bordered ? imageBorderStyleOf(section) : {}), ...(bordered && (texts.length || image.caption) && (section.imageBorderPad ?? 12) < 12 ? { padding: 12 } : {}), ...(imageWidthStyle(section) ?? {}) }}
@@ -1580,7 +1678,7 @@ function FreeFigureBody({
       <div data-part={`image:${index}`} style={imageBoxStyle(section)}>
         <Pic
           image={image}
-          className={`w-full rounded-lg ${imageBoxClass(section)} ${section.imageHeightPx ? "h-full" : ""}`}
+          className={picClass ?? `w-full rounded-lg ${imageBoxClass(section)} ${section.imageHeightPx ? "h-full" : ""}`}
           scrim={section.imageScrim}
           scrimStrength={section.imageScrimStrength}
           shadow={section.imageShadow}
@@ -1591,7 +1689,7 @@ function FreeFigureBody({
           data-part={`caption:${index}`}
           className={`mt-3 leading-relaxed ${align} ${bodyClasses(section.captionStyle, { color: baseColor, size: "sm" })}`}
           style={textInlineStyle(section.captionStyle)}
-          {...richText(image.caption)}
+          {...richText(image.caption, { noLinks })}
         />
       ) : null}
       {groupInline(texts, (t, ti) => {
@@ -1613,7 +1711,7 @@ function FreeFigureBody({
         if (t.kind === "icon") {
           return (
             <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
-              <SectionIcon name={t.text} style={t.style} label={t.iconLabel} labelSide={t.iconLabelSide} labelAlign={t.iconLabelAlign} fallbackColor={onDark ? "cream" : "ink"} />
+              <SectionIcon name={t.text} style={t.style} label={t.iconLabel} labelSide={t.iconLabelSide} labelAlign={t.iconLabelAlign} fallbackColor={onDark ? "cream" : "ink"} noLinks={noLinks} />
             </div>
           );
         }
@@ -1639,12 +1737,13 @@ function FreeFigureBody({
               data-text-body=""
               className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
               style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
-              {...richTextOrPlaceholder(t.text, imgTextEditing)}
+              {...richTextOrPlaceholder(t.text, imgTextEditing, { noLinks })}
             />
           </TextWithIcon>
         );
       })}
     </div>
+    </ImageCard>
   );
 }
 
@@ -2199,6 +2298,7 @@ function OverlayImageTexts({
   section, image, index,
 }: { section: FreeSection; image: SectionImage; index: number }) {
   const ovlTextEditing = useContext(SectionEditing);
+  const noLinks = !!(image.linkCard && image.href?.trim());
   const texts = image.texts ?? [];
   if (!texts.length) return null;
   const blockAlign: SectionAlign = section.align ?? "left";
@@ -2223,7 +2323,7 @@ function OverlayImageTexts({
         if (t.kind === "icon") {
           return (
             <div key={t.id} data-part={`imagetext:${index}:${ti}`} className={`mt-3 ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]}`} style={imageTextPadStyle(t)}>
-              <SectionIcon name={t.text} style={t.style} label={t.iconLabel} labelSide={t.iconLabelSide} labelAlign={t.iconLabelAlign} fallbackColor="cream" />
+              <SectionIcon name={t.text} style={t.style} label={t.iconLabel} labelSide={t.iconLabelSide} labelAlign={t.iconLabelAlign} fallbackColor="cream" noLinks={noLinks} />
             </div>
           );
         }
@@ -2249,7 +2349,7 @@ function OverlayImageTexts({
               data-text-body=""
               className={`${t.kind === "subheading" ? "mt-0" : "mt-3"} leading-relaxed ${alignTextOnly[t.align ?? image.captionAlign ?? blockAlign]} ${t.kind === "eyebrow" ? "uppercase tracking-[0.24em]" : ""} ${cls}`}
               style={{ ...textInlineStyle(ts), ...imageTextPadStyle(t) }}
-              {...richTextOrPlaceholder(t.text, ovlTextEditing)}
+              {...richTextOrPlaceholder(t.text, ovlTextEditing, { noLinks })}
             />
           </TextWithIcon>
         );
@@ -2296,6 +2396,7 @@ function FreeView({ section }: { section: FreeSection }) {
               key={i}
               className={`group/pic relative basis-0 grow min-w-0 overflow-hidden rounded-lg ${overlayHeight[section.height]}`}
             >
+              <ImageCard image={img}>
               <div data-part={`image:${i}`} className="absolute inset-0">
                 <Pic
                   image={img}
@@ -2306,8 +2407,10 @@ function FreeView({ section }: { section: FreeSection }) {
               </div>
               {(section.imageScrim ?? "none") === "none" ? <div className="absolute inset-0 bg-ink/35" /> : null}
               <div className={`relative flex h-full flex-col ${OVERLAY_VALIGN_CLASS[img.textVAlign ?? section.overlayVAlign ?? "middle"]} px-8 sm:px-14 py-16 ${overlayHeight[section.height]}`}>
+                {img.linkCard && img.href?.trim() && img.caption ? <figcaption {...richText(img.caption, { noLinks: true })} /> : null}
                 <OverlayImageTexts section={section} image={img} index={i} />
               </div>
+              </ImageCard>
             </div>
           ))}
         </div>
@@ -2369,7 +2472,7 @@ function FreeView({ section }: { section: FreeSection }) {
 export function SectionView({ section }: { section: Section }) {
   const heading = (text?: string, style?: TextStyle) =>
     text ? (
-      <h2 style={textInlineStyle(style)} className={`mb-8 ${headingClasses(style, { color: "ink", size: "md" })}`}>{text}</h2>
+      <h2 style={textInlineStyle(style)} className={`mb-8 ${headingClasses(style, { color: "ink", size: "md" })}`} {...richTextOrPlain(text)} />
     ) : null;
 
   switch (section.type) {
@@ -2400,6 +2503,7 @@ export function SectionView({ section }: { section: Section }) {
           {heading(section.heading, section.textStyle)}
           <div className={`grid gap-4 ${colClass[section.columns]}`}>
             {section.images.map((img, i) => (
+              img.linkCard && img.href?.trim() ? <FreeFigureBody key={i} section={imageCardSection(img)} image={img} index={i} picClass="w-full aspect-[4/5] rounded-lg" /> :
               <Pic key={i} image={img} className="w-full aspect-[4/5] rounded-lg" />
             ))}
           </div>
@@ -2413,10 +2517,13 @@ export function SectionView({ section }: { section: Section }) {
           <div className={`grid gap-8 ${colClass[section.columns]}`}>
             {section.images.map((img, i) => (
               <figure key={i}>
+                <ImageCard image={img}>
                 <Pic image={img} className="w-full aspect-[4/3] rounded-lg" />
                 {img.caption ? (
-                  <figcaption style={textInlineStyle(section.captionStyle)} className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: "stone", size: "sm" })}`}>{img.caption}</figcaption>
+                  <figcaption style={textInlineStyle(section.captionStyle)} className={`mt-3 leading-relaxed ${bodyClasses(section.captionStyle, { color: "stone", size: "sm" })}`} {...richTextOrPlain(img.caption, { noLinks: !!(img.linkCard && img.href?.trim()) })} />
                 ) : null}
+                {img.linkCard && img.href?.trim() && img.texts?.length ? <OverlayImageTexts section={imageCardSection(img)} image={img} index={i} /> : null}
+                </ImageCard>
               </figure>
             ))}
           </div>
@@ -2427,30 +2534,26 @@ export function SectionView({ section }: { section: Section }) {
       return (
         <section className="py-12">
           <div className={`relative overflow-hidden rounded-lg ${overlayHeight[section.height]}`}>
+            <ImageCard image={section.image}>
             <Pic image={section.image} className="absolute inset-0 h-full w-full" />
             <div className="absolute inset-0 bg-ink/35" />
             <div
               className={`relative flex h-full flex-col justify-center gap-4 px-8 sm:px-14 py-16 ${alignText[section.align]} ${overlayHeight[section.height]}`}
             >
               {section.eyebrow ? (
-                <p className={`uppercase tracking-[0.24em] ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "cream", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}>{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "cream", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))} {...richTextOrPlain(section.eyebrow, { noLinks: !!(section.image.linkCard && section.image.href?.trim()) })} />
               ) : null}
-              <h2 style={textInlineStyle(section.textStyle)} className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "xl" })}`}>
-                {section.heading}
-              </h2>
+              <h2 style={textInlineStyle(section.textStyle)} className={`max-w-2xl ${headingClasses(section.textStyle, { color: "cream", size: "xl" })}`} {...richTextOrPlain(section.heading, { noLinks: !!(section.image.linkCard && section.image.href?.trim()) })} />
               {section.body ? (
-                <p style={textInlineStyle(section.bodyStyle)} className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "cream", size: "md" })}`}>{section.body}</p>
+                <p style={textInlineStyle(section.bodyStyle)} className={`max-w-xl leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "cream", size: "md" })}`} {...richTextOrPlain(section.body, { noLinks: !!(section.image.linkCard && section.image.href?.trim()) })} />
               ) : null}
               {section.buttonLabel ? (
-                <a
-                  href={section.buttonHref || "#"}
-                  style={textInlineStyle(section.labelStyle)}
-                  className={`mt-2 inline-flex items-center border border-cream px-7 py-3 uppercase tracking-[0.18em] transition-colors hover:bg-cream hover:text-ink ${bodyClasses(section.labelStyle, { color: "cream", size: "sm" })}`}
-                >
-                  {section.buttonLabel}
-                </a>
+                <OverlayButton section={section} />
               ) : null}
+              {section.image.linkCard && section.image.href?.trim() && section.image.caption ? <figcaption {...richText(section.image.caption, { noLinks: true })} /> : null}
+              {section.image.linkCard && section.image.href?.trim() && section.image.texts?.length ? <OverlayImageTexts section={imageCardSection(section.image)} image={section.image} index={0} /> : null}
             </div>
+            </ImageCard>
           </div>
         </section>
       );
@@ -2460,15 +2563,17 @@ export function SectionView({ section }: { section: Section }) {
         <section className="py-12">
           <div className="grid gap-8 sm:gap-12 md:grid-cols-2 items-center">
             <div className={section.imageSide === "right" ? "md:order-2" : ""}>
+              {section.image.linkCard && section.image.href?.trim() ? <FreeFigureBody section={imageCardSection(section.image)} image={section.image} index={0} picClass="w-full aspect-[4/3] rounded-lg" /> :
               <Pic image={section.image} className="w-full aspect-[4/3] rounded-lg" />
+              }
             </div>
             <div className="max-w-xl">
               {section.eyebrow ? (
-                <p className={`uppercase tracking-[0.24em] mb-3 ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "stone", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))}>{section.eyebrow}</p>
+                <p className={`uppercase tracking-[0.24em] mb-3 ${bodyClasses(withEyebrowDefaults(section.eyebrowStyle), { color: "stone", size: "sm" })}`} style={textInlineStyle(withEyebrowDefaults(section.eyebrowStyle))} {...richTextOrPlain(section.eyebrow)} />
               ) : null}
-              <h2 style={textInlineStyle(section.textStyle)} className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "xl" })}`}>{section.heading}</h2>
+              <h2 style={textInlineStyle(section.textStyle)} className={`mb-4 ${headingClasses(section.textStyle, { color: "ink", size: "xl" })}`} {...richTextOrPlain(section.heading)} />
               {section.body ? (
-                <p style={textInlineStyle(section.bodyStyle)} className={`leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "stone", size: "md" })}`}>{section.body}</p>
+                <p style={textInlineStyle(section.bodyStyle)} className={`leading-relaxed whitespace-pre-wrap ${bodyClasses(section.bodyStyle, { color: "stone", size: "md" })}`} {...richTextOrPlain(section.body)} />
               ) : null}
               {section.buttonLabel ? (
                 <div className="mt-6">
@@ -2538,6 +2643,10 @@ export function cleanEditedHtml(html: string): string {
     const el = n as HTMLElement;
     const tag = el.tagName.toLowerCase();
     const inner = Array.from(el.childNodes).map(walk).join("");
+    if (tag === "a") {
+      const href = inlineHref(el.getAttribute("href"));
+      return href ? `<a href="${inlineAttr(href)}"${inlineLinkAttrs(el)}>${inner}</a>` : inner;
+    }
     if (tag === "br") return "<br>";
     if (tag === "div" || tag === "p") return inner ? `${inner}<br>` : "";
     const style = el.getAttribute("style") ?? "";
