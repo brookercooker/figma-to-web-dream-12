@@ -59,8 +59,7 @@ export default function ObjectLiveThumbnail({ componentKey, storedThumb }: {
     return requestLease({}, setActive);
   }, [visible, entry, storedThumb, failure, width > 0]);
   useEffect(() => {
-    if (!active) return;
-    committed.current = false;
+    if (!active) { committed.current = false; return; }
     const timer = window.setTimeout(() => { if (!committed.current) setFailure("Component mount timed out"); }, MOUNT_TIMEOUT);
     return () => window.clearTimeout(timer);
   }, [active, componentKey]);
