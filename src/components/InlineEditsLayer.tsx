@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/db";
-import InlineEditSurface, { type InlineEdits } from "@/components/InlineEditSurface";
+import InlineEditSurface from "@/components/InlineEditSurface";
+import type { InlineEdits } from "@/lib/inlineEditCore";
 
 /** Shows in-place edits made in the page editor on the public site. */
 export default function InlineEditsLayer({ path, children }: { path: string; children: ReactNode }) {
