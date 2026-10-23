@@ -127,9 +127,6 @@ export default function ChatPanel() {
 
   return (
     <section className="flex h-full flex-col bg-background min-h-0 overflow-hidden" aria-label="Design Chat">
-      <header className="flex items-center justify-between gap-2 border-b px-3 py-2">
-        <span className="text-sm font-medium">Chat</span>
-      </header>
       <div ref={logRef} onScroll={onScroll} className={cn("flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 flex flex-col gap-2.5 text-sm", editing && "hidden")} role="log">
         {messages.length === 0 && (
           <div className="text-muted-foreground space-y-2">
