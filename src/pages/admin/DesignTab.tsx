@@ -831,7 +831,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     />
                     <InlineEditSafetyPanel reports={inlineReports} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
-                      record={() => { const maps = inlineApi.current?.record(); if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); }}
+                      record={() => { const maps = inlineApi.current?.record(); if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
                       resetAll={() => { changeInline({}); for (const scope of Object.keys(inlineReports)) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
     </>
   );
