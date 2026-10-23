@@ -22,6 +22,7 @@ describe("Site Manager mode cues", () => {
     const view = render(app());
     const input = screen.getByLabelText("Held Chat Text"); fireEvent.change(input, { target: { value: "Keep this request" } });
     expect(screen.getByRole("radio", { name: "Chat Mode" })).toHaveAttribute("aria-checked", "true");
+    expect(document.querySelector("[data-mode-switch]")?.previousElementSibling).toContainElement(screen.getByRole("heading", { level: 1 }));
     expect(document.querySelector("[data-manual-outline]")).toBeNull();
     m.manual = true; view.rerender(app());
     const canvas = await screen.findByTestId("canvas");
@@ -33,6 +34,7 @@ describe("Site Manager mode cues", () => {
     expect(overlay).toHaveClass("pointer-events-none", "absolute");
     expect(overlay).not.toContainElement(canvas);
     expect(screen.getByText("Editing By Hand.")).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Manual Edit Mode" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByText("Want Claude To Do This?")).toBeVisible();
     expect(screen.getAllByRole("button", { name: "Ask Claude Instead" })).toHaveLength(2);
     expect(screen.queryByText("Chat Mode: Claude Makes the Changes")).toBeNull();
