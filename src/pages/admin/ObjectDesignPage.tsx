@@ -1,4 +1,6 @@
 import ConfirmDialog from "./ConfirmDialog";
+import CodedObjectEditor from "./CodedObjectEditor";
+import type { InlineEdits } from "@/lib/inlineEditCore";
 import InlineLinkControl from "./InlineLinkControl";
 import PictureLinkControl from "./PictureLinkControl";
 import { mergePictureChanges } from "./inlineLinks";
@@ -266,6 +268,7 @@ interface ObjectRow {
   status: string;
   component_key: string | null;
   content: unknown;
+  inline_edits?: InlineEdits;
   updated_at: string;
 }
 
@@ -1081,6 +1084,9 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
   const [importing, setImporting] = useState(false);
+  // Only an explicit appearance-warning confirmation enables the block path.
+  const [blockModeId, setBlockModeId] = useState<string | null>(null);
+  const [convertConfirm, setConvertConfirm] = useState<string | null>(null);
   /** One not-yet-converted part being turned into blocks. */
   const [converting, setConverting] = useState<{ id: string; chunk: string } | null>(null);
   /** Opened from a page section: show just that part until "Show full object". */
@@ -1478,7 +1484,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   const load = async () => {
     const { data } = await (supabase as any)
       .from("object_registry")
-      .select("id,slug_id,name,status,component_key,content,updated_at")
+      .select("id,slug_id,name,status,component_key,content,inline_edits,updated_at")
       .is("archived_at", null)
       .order("name", { ascending: true });
     setObjects((data ?? []) as ObjectRow[]);
@@ -2015,10 +2021,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   const enterEdit = () => {
     setPreview(false);
     setLibraryOpen(false);
-    if (!sections.length && codedKey) {
-      setImporting(true);
-      return;
-    }
+    if (codedKey && blockModeId !== object?.id) return;
     setSections((prev) => {
       if (prev.length) {
         setActiveId((cur) => (cur && prev.some((s) => s.id === cur) ? cur : prev[0].id));
@@ -2036,7 +2039,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   const convertChunk = (id: string) => {
     const s = sections.find((x) => x.id === id);
     if (!s || s.type !== "locked" || s.chunk === undefined) return;
-    setConverting({ id, chunk: s.chunk });
+    setConvertConfirm(id);
   };
   const finishChunk = (imported: Section[]) => {
     const target = converting;
@@ -2057,14 +2060,6 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     setDirty(true);
   };
 
-  useEffect(() => {
-    if (!object || preview || importing || converting) return;
-    if (!sections.length && codedKey) { setImporting(true); return; }
-    if (focusChunk == null) return;
-    const hit = sections.find((x) => x.type === "locked" && x.chunk === focusChunk);
-    if (hit) convertChunk(hit.id);
-  }, [object?.id, preview, sections, importing, converting, focusChunk]); // eslint-disable-line react-hooks/exhaustive-deps
-
   /** Jump once per opening to the section chosen on the page (all sections stay shown). */
   const jumpedRef = useRef<string | null>(null);
   useEffect(() => {
@@ -2073,8 +2068,6 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     const hit = sections.find((x) => (x as { origin?: string }).origin === focusChunk)
       ?? sections.find((x) => x.type === "locked" && x.chunk === focusChunk);
     if (!hit) return;
-    // A matching locked part is being turned into blocks by the effect above; wait for those blocks.
-    if (hit.type === "locked" && codedKey) return;
     jumpedRef.current = object.id;
     setActiveId(hit.id);
     const id = hit.id;
@@ -2280,12 +2273,12 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   const dirtyRef = useRef(false);
   dirtyRef.current = dirty;
   useEffect(() => {
-    if (!embedded) return;
+    if (!embedded || (codedKey && blockModeId !== object?.id)) return;
     registerSave(() => saveHeldRef.current());
     registerDiscard(() => setDirty(false));
     registerHasChanges(() => dirtyRef.current);
     return () => { registerSave(null); registerDiscard(null); registerHasChanges(null); };
-  }, [embedded, registerSave, registerDiscard, registerHasChanges]);
+  }, [embedded, codedKey, blockModeId, object?.id, registerSave, registerDiscard, registerHasChanges]);
   useEffect(() => {
     if (!embedded || !dirty) return;
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
@@ -2295,7 +2288,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
 
   // Auto-save: quietly store changes shortly after the user stops editing.
   useEffect(() => {
-    if (embedded || !dirty || !object) return;
+    if (embedded || !dirty || !object || (codedKey && blockModeId !== object.id)) return;
     const id = object.id;
     const content = sections;
     const t = window.setTimeout(async () => {
@@ -4435,6 +4428,13 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     </div>
   );
 
+  if (object && codedKey && blockModeId !== object.id) return (
+    <CodedObjectEditor key={object.id} object={{ ...object, component_key: codedKey }} embedded={embedded}
+      focusSection={focusSection ?? focusChunk ?? undefined} onConvert={() => {
+        setBlockModeId(object.id); setPreview(false); setSections([]); setImporting(true); setDirty(false);
+      }} />
+  );
+
   return (
     <div className={embedded ? "h-full min-h-0 bg-background" : "min-h-screen bg-background"}>
       {!embedded && (
@@ -4518,6 +4518,10 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
         confirmLabel="Delete object"
         onConfirm={() => deletingObj && deleteObject(deletingObj)}
       />
+      <ConfirmDialog open={convertConfirm !== null} onOpenChange={(open) => { if (!open) setConvertConfirm(null); }}
+        title="Convert to Blocks?" confirmLabel="Convert to Blocks" destructive={false}
+        description="The converted version can look different from the original. Visitors will keep seeing the original coded version until the object is switched over."
+        onConfirm={() => { const s = sections.find((x) => x.id === convertConfirm); if (s?.type === "locked" && s.chunk !== undefined) setConverting({ id: s.id, chunk: s.chunk }); setConvertConfirm(null); }} />
 
       <main
         className={embedded ? "h-full min-h-0" : `grid grid-cols-1 gap-6 px-4 py-6 ${
@@ -4601,8 +4605,6 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               Turning this object into editable blocks…
               <CodedImportProbe
                 codedKey={codedKey}
-                split
-                focus={focusChunk}
                 width={viewportWidth || canvasRef.current?.clientWidth || 1000}
                 onDone={finishImport}
               />
