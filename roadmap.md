@@ -30,3 +30,4 @@
 
 - [x] Milestone 1, step 1: fail-closed fingerprint replay, reliable reset, side-panel orphan review and validation tests; full suite and tsgo passed, signed-in reset controls checked.
 - [x] Milestone 1, step 2: fingerprinted link destinations, new-tab/off/reset controls and capture-phase navigation; 381 tests and tsgo passed, signed-in Homepage save/read-back and shared Categories picker verified; temporary saved edit removed.
+- [ ] Milestone 1, step 3: open coded objects in place, gate conversion, and verify shared edits and save-before-return.
