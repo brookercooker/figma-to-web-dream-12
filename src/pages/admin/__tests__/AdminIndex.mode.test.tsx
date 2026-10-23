@@ -26,7 +26,7 @@ describe("Site Manager mode cues", () => {
     m.manual = true; view.rerender(app());
     const canvas = await screen.findByTestId("canvas");
     expect(canvas.parentElement?.parentElement?.tagName).toBe("MAIN");
-    const overlay = document.querySelector("[data-manual-outline]");
+    const overlay = document.querySelector<HTMLDivElement>("[data-manual-outline]");
     const main = canvas.closest("main");
     expect(main).not.toContainElement(overlay);
     expect(overlay?.parentElement).toBe(main?.parentElement);
