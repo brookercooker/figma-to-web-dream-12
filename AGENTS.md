@@ -9,6 +9,7 @@
 - Manual editing registers visitor pages through a deduplicated path cache; empty-content embedded pages resolve live components from the public-site manifest, so new public routes do not require editor allowlist updates.
 - Manifest synchronization and edit policy share the draft-first manifest loader; sync batches missing paths once per build and relies on a unique pages.path index to prevent cross-tab duplicates without changing existing records.
 - Capture uses an isolated camera sheet with session-scoped stream cleanup and passes JPEG Files into existing staging; uploads stay unchanged and camera failure uses a single-photo native input.
+- Images grid source selection uses a pure imageTileSrc helper and component-owned object URLs until signed thumbnails arrive, so private staging URLs never become tile fallbacks and previews are revoked on arrival, deletion or unmount.
 - LivePreviewPage resolves a page to found | missing | unreachable (never a silent DbPage fallback); DesignTab gives missing+empty pages unsaved starter blocks and unreachable pages a Retry panel, so failed code loads can never be overwritten.
 - The draft-manifest reachable flag is stored with each cached manifest load; resolveLivePage only returns "missing" when the draft list (or, with no draft, the public list) was actually read, otherwise "unreachable".
 - "/" and "/home" are one page: lookups, caches and registration go through registerPage homeAliases/pageKey, and the front page is only ever stored as "/".

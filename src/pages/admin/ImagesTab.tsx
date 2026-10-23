@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { formatBytes } from "@/lib/imageOptimize";
 import { uploadImageFile } from "./captureUpload";
+import { pickTileSrc } from "./imageTileSrc";
 import TagsPanel from "./TagsPanel";
 import { Copy, Trash2, Search, Archive, ArchiveRestore, AlertTriangle, RefreshCw, Download, Globe, Lock } from "lucide-react";
 import { GATED_BUCKET, clearAssetUrlCache } from "@/lib/assetUrl";
@@ -131,6 +132,37 @@ export default function ImagesTab() {
   const [confirmDelete, setConfirmDelete] = useState<{ imgs: Img[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [brokenIds, setBrokenIds] = useState<Set<string>>(new Set());
+  const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
+  const localPreviewsRef = useRef<Record<string, string>>({});
+  const [uploadPreviews, setUploadPreviews] = useState<{ url: string; name: string }[]>([]);
+  const objectUrlsRef = useRef(new Set<string>());
+  const mountedRef = useRef(true);
+  const arrivedThumbsRef = useRef<Record<string, string>>({});
+  const revokePreview = (url: string) => {
+    if (objectUrlsRef.current.delete(url)) URL.revokeObjectURL(url);
+  };
+  const removeLocalPreviews = (ids: string[]) => {
+    const next = { ...localPreviewsRef.current };
+    let changed = false;
+    for (const id of ids) {
+      if (!next[id]) continue;
+      revokePreview(next[id]);
+      delete next[id];
+      changed = true;
+    }
+    if (changed) {
+      localPreviewsRef.current = next;
+      if (mountedRef.current) setLocalPreviews(next);
+    }
+  };
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      objectUrlsRef.current.clear();
+    };
+  }, []);
   const backfilledRef = useRef(false);
   // Tick every 30s so relative timestamps stay fresh.
   const [, setNowTick] = useState(0);
@@ -348,6 +380,23 @@ export default function ImagesTab() {
     () => ({ ...(publicThumbs as Record<string, string>), ...(gatedThumbs as Record<string, string>) }),
     [publicThumbs, gatedThumbs],
   );
+  useEffect(() => {
+    const newlyReady: string[] = [];
+    const ready: string[] = [];
+    for (const img of images) {
+      const thumb = img.web_path ? thumbUrls[img.web_path] : undefined;
+      if (!thumb) continue;
+      ready.push(img.id);
+      if (arrivedThumbsRef.current[img.id] !== thumb) newlyReady.push(img.id);
+      arrivedThumbsRef.current[img.id] = thumb;
+    }
+    removeLocalPreviews(ready);
+    if (newlyReady.length) setBrokenIds((current) => {
+      const next = new Set(current);
+      newlyReady.forEach((id) => next.delete(id));
+      return next.size === current.size ? current : next;
+    });
+  }, [images, thumbUrls, localPreviews]);
 
   /** Move selected images between the private staging bucket and the public one. */
   const setVisibility = async (ids: string[], action: "publish" | "gate") => {
@@ -409,6 +458,12 @@ export default function ImagesTab() {
 
     setBusy(true);
     setUploadProgress({ done: 0, total: imgs.length });
+    const previews = imgs.map((file) => {
+      const url = URL.createObjectURL(file);
+      objectUrlsRef.current.add(url);
+      return { url, name: file.name };
+    });
+    setUploadPreviews(previews);
     const created: Img[] = [];
     const taken = new Set<string>((images as Img[]).map((i) => i.filename));
 
@@ -419,8 +474,18 @@ export default function ImagesTab() {
       try {
         const data = await uploadImageFile(file, { filename: finalName });
         created.push(data);
+        if (mountedRef.current) {
+          const url = URL.createObjectURL(file);
+          objectUrlsRef.current.add(url);
+          localPreviewsRef.current = { ...localPreviewsRef.current, [data.id]: url };
+          setLocalPreviews(localPreviewsRef.current);
+          qc.setQueryData<Img[]>(["admin", "images"], (current = []) => [data, ...current.filter((img) => img.id !== data.id)]);
+        }
       } catch (e: unknown) {
         toast.error(`${file.name}: ${e instanceof Error ? e.message : "upload failed"}`);
+      } finally {
+        revokePreview(previews[idx].url);
+        if (mountedRef.current) setUploadPreviews((current) => current.filter((preview) => preview.url !== previews[idx].url));
       }
       setUploadProgress({ done: idx + 1, total: imgs.length });
     }
@@ -507,7 +572,7 @@ export default function ImagesTab() {
         const { error } = await (supabase as any).from("images").delete().in("id", ids);
         if (error) throw error;
       },
-      onCommitted: () => { setHiddenIds((s) => { const n = new Set(s); ids.forEach((i) => n.delete(i)); return n; }); invalidate(); },
+      onCommitted: () => { removeLocalPreviews(ids); setHiddenIds((s) => { const n = new Set(s); ids.forEach((i) => n.delete(i)); return n; }); invalidate(); },
     });
   };
 
@@ -606,13 +671,19 @@ export default function ImagesTab() {
         }`}
         onClick={() => fileRef.current?.click()}
       >
-        {dragActive
+        <div className="flex flex-wrap items-center justify-center gap-2">
+        {uploadPreviews.map((preview) => (
+          <img key={preview.url} src={preview.url} alt={preview.name} width={48} height={48}
+            className="h-12 w-12 shrink-0 rounded-lg object-cover bg-muted" />
+        ))}
+        <span>{dragActive
           ? `Drop ${dragCount || ""} file${dragCount === 1 ? "" : "s"} to upload`
           : uploadProgress
             ? `Uploading ${uploadProgress.done} of ${uploadProgress.total}…`
             : busy
               ? "Uploading…"
-              : "Drop images here or click to select files from your computer"}
+              : "Drop images here or click to select files from your computer"}</span>
+        </div>
         <input ref={fileRef} type="file" accept="image/*" multiple hidden aria-label="Upload Images" onChange={onPick} />
       </div>
 
@@ -725,7 +796,7 @@ export default function ImagesTab() {
             size="sm"
             variant="outline"
             className="gap-1.5"
-            onClick={() => { invalidate(); toast.success("Images refreshed"); }}
+            onClick={() => { setBrokenIds(new Set()); invalidate(); toast.success("Images refreshed"); }}
             title="Refetch from the database and clear cached thumbnails"
           >
             <RefreshCw className="w-3 h-3" /> Refresh
@@ -801,7 +872,10 @@ export default function ImagesTab() {
         ))}
         {!imagesLoading && shown.map((img) => {
           const sel = selected.has(img.id);
-          const thumb = (img.web_path && (thumbUrls as Record<string,string>)[img.web_path]) || img.web_url;
+          const gated = (img as any).visibility === "gated";
+          const signedThumb = img.web_path ? thumbUrls[img.web_path] : undefined;
+          const local = localPreviews[img.id];
+          const thumb = pickTileSrc({ gated, thumb: signedThumb, local, webUrl: img.web_url });
           const broken = brokenIds.has(img.id);
           const isJustAdded = justAddedIds.includes(img.id);
           return (
@@ -888,15 +962,22 @@ export default function ImagesTab() {
                     />
                   );
                 }
+                if (thumb === null) {
+                  return <div onClick={() => setDetail(img)} className="w-full aspect-square animate-pulse bg-muted cursor-pointer" />;
+                }
                 return (
-                  <img src={thumb} alt={img.alt_text || img.filename}
+                  <img key={thumb} src={thumb} alt={img.alt_text || img.filename}
                     onClick={() => setDetail(img)}
                     onError={(e) => {
-                      // A transformed/signed thumbnail can 404 when the stored
-                      // path is stale — retry once with the raw image URL
-                      // before declaring the asset broken.
                       const el = e.currentTarget;
-                      if (img.web_url && el.src !== img.web_url) { el.src = img.web_url; return; }
+                      // A local preview is temporary; wait for the real thumbnail.
+                      if (local && thumb === local && !signedThumb) return;
+                      if (gated) {
+                        if (signedThumb && el.getAttribute("src") === signedThumb) markBroken(img.id);
+                        return;
+                      }
+                      // Public thumbnails retain their one raw-URL fallback.
+                      if (img.web_url && el.getAttribute("src") !== img.web_url) { el.src = img.web_url; return; }
                       markBroken(img.id);
                     }}
                     width={320} height={320}
