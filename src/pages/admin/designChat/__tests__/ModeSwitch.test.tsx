@@ -7,7 +7,7 @@ vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({ editing: m.edit
 vi.mock("../EditorSlot", () => ({ useEditorSlot: () => ({ hasChanges: () => m.dirty, saveAll: m.save, discardAll: m.discard }) }));
 function Controls() {
   const guard = useModeSwitch();
-  return <><button onClick={async () => m.result(await guard?.requestChat())}>Ask Claude Instead</button><button onClick={() => void guard?.requestManual(m.enter)}>Edit It Myself</button></>;
+  return <><button onClick={async () => m.result(await guard?.requestChat())}>Ask Claude Instead</button><button onClick={() => void guard?.requestManual(m.enter)}>Manual Edit Mode</button></>;
 }
 const open = () => render(<ModeSwitchProvider><Controls /></ModeSwitchProvider>);
 beforeEach(() => { vi.clearAllMocks(); m.editing = true; m.busy = false; m.open = 0; m.dirty = true; m.save.mockResolvedValue(true); });
@@ -39,14 +39,14 @@ describe("mode switch safeguards", () => {
   it.each([false, "throw"])("stays manual when saving fails (%s)", async (failure) => {
     if (failure === "throw") m.save.mockRejectedValue(new Error("private detail")); else m.save.mockResolvedValue(false);
     open(); fireEvent.click(screen.getByText("Ask Claude Instead")); fireEvent.click(screen.getByText("Save And Switch"));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("You are still in Manual Mode"));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("You are still in Manual Edit Mode"));
     expect(screen.getByRole("alertdialog")).toBeVisible(); expect(m.stop).not.toHaveBeenCalled(); expect(m.result).not.toHaveBeenCalled();
   });
   it.each(["busy", "review"])("requires confirmation before editing with Claude %s", async (kind) => {
     m.editing = false; m.busy = kind === "busy"; m.open = kind === "review" ? 1 : 0;
-    open(); fireEvent.click(screen.getByText("Edit It Myself")); expect(m.enter).not.toHaveBeenCalled();
+    open(); fireEvent.click(screen.getByText("Manual Edit Mode")); expect(m.enter).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("Cancel")); expect(m.enter).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByText("Edit It Myself")); fireEvent.click(screen.getByText("Continue Editing"));
+    fireEvent.click(screen.getByText("Manual Edit Mode")); fireEvent.click(screen.getByText("Continue Editing"));
     await waitFor(() => expect(m.enter).toHaveBeenCalledTimes(1));
   });
 });

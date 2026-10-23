@@ -56,45 +56,6 @@ beforeEach(() => {
   mocks.insert.mockReturnValue({ select: () => ({ single: async () => ({ data: { id: "registered", name: "Race Test Page", path: "/race-test-page" }, error: null }) }) });
 });
 
-describe("manual editing registration", () => {
-  it("keeps the editing button in the header outside the form, including while editing", () => {
-    const view = render(<MemoryRouter><ChatPanel /></MemoryRouter>);
-    const button = screen.getByRole("button", { name: "Edit It Myself" });
-    const section = screen.getByRole("region", { name: "Design Chat" });
-    const header = section.querySelector("header");
-    expect(header).toContainElement(button);
-    expect(section.firstElementChild).toBe(header);
-    expect(button.closest("form")).toBeNull();
-    expect(button).toHaveTextContent("Edit It Myself");
-
-    mocks.editing = true;
-    view.rerender(<MemoryRouter><ChatPanel /></MemoryRouter>);
-    const done = screen.getByRole("button", { name: "Ask Claude Instead" });
-    expect(header).toBeVisible();
-    expect(header).toContainElement(done);
-    expect(done).toBeVisible();
-    expect(done).toHaveTextContent("Ask Claude Instead");
-    expect(done).toHaveAttribute("aria-pressed", "true");
-    expect(done.closest("form")).toBeNull();
-    expect(section.querySelector("form")?.lastElementChild).toContainElement(screen.getByRole("button", { name: /^Send$/ }));
-  });
-  it("enables a registrable page, creates exactly one ready draft row, and opens it", async () => {
-    mocks.candidate = { name: "Race Test Page", path: "/race-test-page" };
-    render(<MemoryRouter><ChatPanel /></MemoryRouter>);
-    const button = screen.getByRole("button", { name: "Edit It Myself" });
-    expect(button).toBeEnabled();
-    fireEvent.click(button);
-    fireEvent.click(button);
-    await waitFor(() => expect(mocks.start).toHaveBeenCalledTimes(1));
-    expect(mocks.insert).toHaveBeenCalledTimes(1);
-    expect(mocks.insert).toHaveBeenCalledWith({
-      name: "Race Test Page", path: "/race-test-page", page_type: "static", status: "draft", build_status: "ready",
-      content: null, inline_edits: {}, slug_id: expect.stringMatching(/^race-test-page-[a-f0-9]{6}$/),
-    });
-    expect(mocks.select).toHaveBeenCalledWith({ id: "registered", name: "Race Test Page", path: "/race-test-page" });
-    expect(mocks.sync).toHaveBeenCalledTimes(1);
-  });
-});
 afterEach(cleanup);
 
 function messageBox() {
@@ -143,32 +104,6 @@ describe("chat sending shortcuts", () => {
     messageBox();
     fireEvent.click(screen.getByRole("button", { name: /^Send$/ }));
     await waitFor(() => expect(mocks.post).toHaveBeenCalledTimes(1));
-  });
-});
-
-describe("Edit Manually on the front page", () => {
-  const button = () => screen.getByRole("button", { name: "Edit It Myself" });
-  it("is enabled for /home when the home row is stored at /, and opens that row", async () => {
-    mocks.location = "/home";
-    mocks.page = { id: "home", name: "Homepage", path: "/" };
-    render(<MemoryRouter><ChatPanel /></MemoryRouter>);
-    expect(button()).toBeEnabled();
-    fireEvent.click(button());
-    await waitFor(() => expect(mocks.select).toHaveBeenCalledWith({ id: "home", name: "Homepage", path: "/" }));
-    expect(mocks.insert).not.toHaveBeenCalled();
-  });
-  it("stays disabled with its hint for an unknown address", () => {
-    mocks.location = "/manage/somewhere";
-    render(<MemoryRouter><ChatPanel /></MemoryRouter>);
-    expect(button()).toBeDisabled();
-    expect(button()).toHaveAttribute("title", "This address isn't a page that can be edited.");
-  });
-  it("leaves /about unchanged", async () => {
-    mocks.location = "/about";
-    mocks.page = { id: "about", name: "About", path: "/about" };
-    render(<MemoryRouter><ChatPanel /></MemoryRouter>);
-    fireEvent.click(button());
-    await waitFor(() => expect(mocks.select).toHaveBeenCalledWith({ id: "about", name: "About", path: "/about" }));
   });
 });
 

@@ -21,7 +21,7 @@ describe("Site Manager mode cues", () => {
   it("shows manual-only cues without wrapping the canvas and keeps chat mounted", async () => {
     const view = render(app());
     const input = screen.getByLabelText("Held Chat Text"); fireEvent.change(input, { target: { value: "Keep this request" } });
-    expect(screen.getByText("Chat Mode: Claude Makes the Changes")).toBeVisible();
+    expect(screen.getByRole("radio", { name: "Chat Mode" })).toHaveAttribute("aria-checked", "true");
     expect(document.querySelector("[data-manual-outline]")).toBeNull();
     m.manual = true; view.rerender(app());
     const canvas = await screen.findByTestId("canvas");
@@ -37,7 +37,7 @@ describe("Site Manager mode cues", () => {
     expect(screen.getAllByRole("button", { name: "Ask Claude Instead" })).toHaveLength(2);
     expect(screen.queryByText("Chat Mode: Claude Makes the Changes")).toBeNull();
     expect(input).not.toBeVisible(); expect(input).toHaveValue("Keep this request"); expect(m.mounts).toBe(1);
-    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Manual Mode. You are editing by hand.");
+    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Manual Edit Mode. You are editing by hand.");
     expect(screen.getByRole("region", { name: "Page Editing Options" })).toBeVisible();
     m.manual = false; view.rerender(app());
     expect(input).toBeVisible(); expect(input).toHaveValue("Keep this request"); expect(m.mounts).toBe(1);
