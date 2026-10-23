@@ -13,7 +13,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ChevronDown, ChevronRight, ExternalLink, GripVertical, icons } from "lucide-react";
-import { clean, createReplay, parseKey, resolvePath, withFingerprints, type ReplayReport } from "@/lib/inlineEditCore";
+import { clean, createReplay, installLinkHandler, parseKey, resolvePath, withFingerprints, type ReplayReport } from "@/lib/inlineEditCore";
 import type { InlineEdits } from "@/lib/inlineEditCore";
 export type { InlineEdits } from "@/lib/inlineEditCore";
 import { findObjectRoots, loadObjectComponents, objectComponentsNow, type ObjectRoot } from "@/lib/objectScopes";
@@ -28,7 +28,7 @@ export type InlineReports = Record<string, ReplayReport>;
 /** "page" or the registry key of a shared object. */
 export type InlineScope = string;
 /** `side` is set when the line is an edge (border) of a larger element. */
-export interface InlineSelection { key: string; kind: "text" | "image" | "divider"; el: HTMLElement; scope: InlineScope; side?: "top" | "bottom" | "left" | "right" }
+export interface InlineSelection { key: string; kind: "text" | "image" | "divider"; el: HTMLElement; scope: InlineScope; side?: "top" | "bottom" | "left" | "right"; link?: { key: string; el: HTMLElement; scope: InlineScope } }
 /** Icons offered for buttons and links (lucide names). */
 export const LINK_ICONS = ["ArrowRight", "ArrowUpRight", "ChevronRight", "ExternalLink", "Plus", "MapPin", "Phone", "Mail", "Calendar", "ShoppingBag", "Heart", "Download", "Play", "Search", "Star", "Sparkles", "Lightbulb", "Lamp"] as const;
 export const styleKey = (key: string) => `style:${key}`;
@@ -125,8 +125,9 @@ export interface InlineChunk { key: string; parent: string; el: HTMLElement }
 
 export default function InlineEditSurface({
   children, edits, objectEdits = {}, editing = false, onChange, onPickImage, onSelect, selectedKey,
-  collapsed, onToggleCollapse, onReorder, onOpenObject, sections = true, isolate, apiRef, onReport,
+  collapsed, onToggleCollapse, onReorder, onOpenObject, sections = true, isolate, apiRef, onReport, navigate,
 }: {
+  navigate?: (href: string) => boolean;
   apiRef?: React.MutableRefObject<InlineEditController | null>;
   onReport?: (reports: InlineReports) => void;
   /** Open a shared object in the object editor; `section` is the part's path inside the object. */
@@ -150,6 +151,12 @@ export default function InlineEditSurface({
   onReorder?: (from: InlineChunk, to: InlineChunk, after: boolean, all: InlineChunk[]) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const linkOptions = useRef({ editing, navigate });
+  linkOptions.current = { editing, navigate };
+  useEffect(() => installLinkHandler(document, {
+    enabled: () => !linkOptions.current.editing,
+    navigate: (href) => linkOptions.current.navigate?.(href) ?? false,
+  }), []);
   const editsRef = useRef(edits);
   editsRef.current = edits;
   const objRef = useRef(objectEdits);
@@ -384,12 +391,16 @@ export default function InlineEditSurface({
     if (t.closest("a,button")) e.preventDefault();
     const root = ref.current;
     if (!root || barAt(e.clientX, e.clientY)) return;
+    const linkElement = t.closest<HTMLElement>('a,button,[role="button"],[role="link"],[onclick]');
+    const linkScope = linkElement && root.contains(linkElement) ? scopeOf(linkElement) : null;
+    const link = linkElement && linkScope ? { el: linkElement, key: pathOf(linkScope.root, linkElement), scope: linkScope.scope } : undefined;
+    const select = (selection: InlineSelection) => onSelect?.({ ...selection, link });
     const img = t.closest("img[data-inline-image]") as HTMLImageElement | null;
     if (img) {
       e.preventDefault();
       e.stopPropagation();
       const { scope, root: base } = scopeOf(img);
-      onSelect?.({ key: pathOf(base, img), kind: "image", el: img, scope });
+      select({ key: pathOf(base, img), kind: "image", el: img, scope });
       return;
     }
     // Dividers are thin, so a click within a few pixels counts.
@@ -412,18 +423,19 @@ export default function InlineEditSurface({
       if (best) {
         e.preventDefault();
         const { scope, root: base } = scopeOf(best.el);
-        onSelect?.({ key: pathOf(base, best.el), kind: "divider", el: best.el, scope, side: best.side });
+        select({ key: pathOf(base, best.el), kind: "divider", el: best.el, scope, side: best.side });
         return;
       }
     }
     if (div && !txt) {
       e.preventDefault();
       const { scope, root: base } = scopeOf(div);
-      onSelect?.({ key: pathOf(base, div), kind: "divider", el: div, scope });
+      select({ key: pathOf(base, div), kind: "divider", el: div, scope });
     } else if (txt) {
       const { scope, root: base } = scopeOf(txt);
-      onSelect?.({ key: pathOf(base, txt), kind: "text", el: txt, scope });
-    } else onSelect?.(null);
+      select({ key: pathOf(base, txt), kind: "text", el: txt, scope });
+    } else if (link) select({ key: link.key, kind: "text", el: link.el, scope: link.scope });
+    else onSelect?.(null);
   };
 
   // ---- Moving a selected text box or picture among its neighbours ----
