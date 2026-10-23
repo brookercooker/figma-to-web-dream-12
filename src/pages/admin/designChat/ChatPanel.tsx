@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Box, FileText, Film, Image as ImageIcon, Loader2, Mic, Paperclip, Pencil, SquarePen, Send, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { useEditorSlot } from "./EditorSlot";
+import { Box, FileText, Film, Image as ImageIcon, Loader2, Mic, Paperclip, Pencil, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -12,8 +10,6 @@ import { fmtDur, fmtSize, isWorking, problemsModel, visibleText, workHint, workL
 import { useAttachments } from "./useAttachments";
 import { useHint } from "./useHint";
 import { useVoice } from "./useVoice";
-import { toast } from "sonner";
-import { registerPreviewPage } from "./usePreviewPage";
 import { kindLabel, referenceKey, withReferences } from "./references";
 import { useModeSwitch } from "./ModeSwitchContext";
 
@@ -30,37 +26,8 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel() {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, startEditing, stopEditing, previewLocation, previewPage, previewRegistrable, selectPage, refs } = useDesignChat();
-  const navigate = useNavigate();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs } = useDesignChat();
   const modeSwitch = useModeSwitch();
-  const { saveAll } = useEditorSlot();
-  const [finishing, setFinishing] = useState(false);
-  const opening = useRef(false);
-  const editTarget = previewLocation ? previewPage : workingPage?.id ? workingPage : null;
-  const toggleEditing = async () => {
-    if (finishing || opening.current) return;
-    if (editing) {
-      if (modeSwitch) { await modeSwitch.requestChat(); return; }
-      setFinishing(true);
-      try { if (await saveAll()) stopEditing(); } finally { setFinishing(false); }
-      return;
-    }
-    if (!editTarget?.id && !previewRegistrable) return;
-    opening.current = true;
-    setFinishing(true);
-    try {
-      const open = async () => {
-        const target = editTarget?.id ? editTarget : previewRegistrable ? await registerPreviewPage(previewRegistrable) : null;
-        if (!target?.id) return;
-        selectPage({ id: target.id, name: target.name, path: target.path });
-        navigate("/manage/preview");
-        startEditing();
-      };
-      if (modeSwitch) await modeSwitch.requestManual(open); else await open();
-    } catch {
-      toast.error("Couldn't open this page for editing. Try again.");
-    } finally { opening.current = false; setFinishing(false); }
-  };
   const [text, setText] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [dragging, setDragging] = useState(false);
@@ -162,10 +129,6 @@ export default function ChatPanel() {
     <section className="flex h-full flex-col bg-background min-h-0 overflow-hidden" aria-label="Design Chat">
       <header className="flex items-center justify-between gap-2 border-b px-3 py-2">
         <span className="text-sm font-medium">Chat</span>
-        <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label={editing ? "Ask Claude Instead" : "Edit It Myself"} title={!editing && !editTarget?.id && !previewRegistrable ? "This address isn't a page that can be edited." : editing ? "Ask Claude Instead" : "Edit It Myself"}
-          aria-pressed={editing} disabled={finishing || (!editing && !editTarget?.id && !previewRegistrable)} onClick={() => void toggleEditing()}>
-          <SquarePen className="h-4 w-4" /> {editing ? "Ask Claude Instead" : "Edit It Myself"}
-        </Button>
       </header>
       <div ref={logRef} onScroll={onScroll} className={cn("flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 flex flex-col gap-2.5 text-sm", editing && "hidden")} role="log">
         {messages.length === 0 && (
