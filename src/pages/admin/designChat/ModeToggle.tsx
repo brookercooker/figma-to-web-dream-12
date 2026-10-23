@@ -11,17 +11,40 @@ import { workingPageFrom } from "./pageSelection";
 import ModePageChooser from "./ModePageChooser";
 
 export default function ModeToggle({ collapsed = false, onChat }: { collapsed?: boolean; onChat: () => void }) {
-  const { mode, workingPage, selectPage, startEditing } = useDesignChat();
+  const chat = useDesignChat();
+  const { mode, selectPage, startEditing } = chat;
+  const latest = useRef(chat);
+  latest.current = chat;
   const guard = useModeSwitch();
   const navigate = useNavigate();
   const [chooser, setChooser] = useState(false);
   const switching = useRef(false);
-  const enter = async (page: WorkingPage) => {
+  const enter = async (chosenPage?: WorkingPage) => {
     if (switching.current) return;
     switching.current = true;
     try {
+      let page = chosenPage;
+      if (!page) {
+        const deadline = Date.now() + 3000;
+        while (true) {
+          const current = latest.current;
+          if (current.previewLocation && !current.previewLocation.notFound) {
+            if (current.previewPage) { page = current.previewPage; break; }
+            if (current.previewPageLoading) {
+              if (Date.now() >= deadline) break;
+              await new Promise<void>((resolve) => setTimeout(resolve, 50));
+              continue;
+            }
+            if (current.previewRegistrable) { page = current.previewRegistrable; break; }
+          }
+          page = current.workingPage ?? undefined;
+          break;
+        }
+      }
+      if (!page) { setChooser(true); return; }
+      const selectedPage = page;
       await guard?.requestManual(async () => {
-        const target = page.id ? page : await registerPreviewPage(page);
+        const target = selectedPage.id ? selectedPage : await registerPreviewPage(selectedPage);
         selectPage(workingPageFrom(target)); navigate("/manage/preview"); startEditing();
       });
     } catch { toast.error("Couldn't open this page for editing. Try again."); }
@@ -30,8 +53,7 @@ export default function ModeToggle({ collapsed = false, onChat }: { collapsed?: 
   const change = async (next: string) => {
     if (!next || next === mode || switching.current) return;
     if (next === "chat") { if (await guard?.requestChat()) { onChat(); navigate("/manage/preview"); } }
-    else if (workingPage) await enter(workingPage);
-    else setChooser(true);
+    else await enter();
   };
   return <>
     <ToggleGroup type="single" value={mode} onValueChange={(next) => void change(next)} aria-label="Editing Mode" data-mode-switch
