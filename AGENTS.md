@@ -1,5 +1,6 @@
 
 - In-place override replay and fingerprints use the standalone inlineEditCore module, shared verbatim with the public site; preserve original snapshots and treat fp keys as metadata so reset and code-change safety stay consistent.
+- Link destinations use fingerprinted link overrides and capture-phase replay handlers; disable visitor handlers during manual editing so original code actions cannot override destinations or block selection.
 - Coded pages are edited in place via InlineEditSurface; page overrides live in pages.inline_edits, shared-object overrides in object_registry.inline_edits (objects found via React fiber walk in lib/objectScopes), both keyed by DOM position and re-applied site-wide by InlineEditsLayer — avoids lossy conversion and keeps objects consistent everywhere.
 - Coded objects open as live, as-built parts (locked sections with codedKey+chunk rendered by CodedChunk); only parts the user edits are converted, in place within the whole object — keeps untouched parts pixel-identical.
 - Editor canvases share useEditorLinkGuard; visitor actions dispatch selection explicitly before propagation is blocked, keeping navigation disabled without disabling editor controls.

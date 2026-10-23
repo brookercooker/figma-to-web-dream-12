@@ -29,3 +29,4 @@
 - [x] Top bar: Objects/Images/Videos open a search-and-pick menu that adds library references to the chat
 
 - [x] Milestone 1, step 1: fail-closed fingerprint replay, reliable reset, side-panel orphan review and validation tests; full suite and tsgo passed, signed-in reset controls checked.
+- [ ] Milestone 1, step 2: fingerprinted link destinations, new-tab/off/reset controls and capture-phase navigation; verify full tests, types and editor flow.
