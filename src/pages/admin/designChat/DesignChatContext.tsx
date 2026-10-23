@@ -7,6 +7,7 @@ import { useDrawing, type Drawing } from "./useDrawing";
 import type { RegistrablePage } from "./registerPage";
 import { syncManifestPages } from "../manifestPageSync";
 import { useChatReferences, type ChatReferences } from "./useChatReferences";
+import { emptyHistory, visit, step, canBack, canForward, type PreviewHistory } from "./previewHistory";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview

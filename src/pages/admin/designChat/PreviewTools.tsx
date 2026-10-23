@@ -1,4 +1,4 @@
-import { ExternalLink, Maximize2, Minimize2, Monitor, Smartphone, Tablet } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Maximize2, Minimize2, Monitor, Smartphone, Tablet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { postToHelper } from "./helper";
@@ -9,12 +9,20 @@ import { useDesignChat, type Device } from "./DesignChatContext";
  * and Full screen; always, a link to the published site. Submit for review lives in the chat column's header (SubmitButton).
  */
 export default function PreviewTools({ showViewControls, tight = false }: { showViewControls: boolean; tight?: boolean }) {
-  const { state, device, setDevice, inFull, toggleFull } = useDesignChat();
+  const { state, device, setDevice, inFull, toggleFull, previewNav } = useDesignChat();
 
   return (
     <div className="flex shrink-0 items-center gap-2">
       {showViewControls && (
         <>
+          {previewNav && (
+            <div className="flex">
+              <Button type="button" variant="outline" size="icon" className="h-9 w-9 rounded-r-none" onClick={previewNav.back}
+                disabled={!previewNav.canBack} aria-label="Back" title="Back"><ChevronLeft className="h-4 w-4" /></Button>
+              <Button type="button" variant="outline" size="icon" className="-ml-px h-9 w-9 rounded-l-none" onClick={previewNav.forward}
+                disabled={!previewNav.canForward} aria-label="Forward" title="Forward"><ChevronRight className="h-4 w-4" /></Button>
+            </div>
+          )}
           {!tight && <ToggleGroup type="single" value={device} onValueChange={(v) => v && setDevice(v as Device)} variant="outline" size="sm"
             className="hidden lg:flex gap-0 [&>button]:rounded-none [&>button:first-child]:rounded-l-md [&>button:last-child]:rounded-r-md [&>button+button]:-ml-px" aria-label="Preview Size">
             <ToggleGroupItem value="mobile" aria-label="Mobile Preview" title="Mobile Preview"><Smartphone className="h-4 w-4" /></ToggleGroupItem>
