@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Check, Undo2, ArrowLeft, Code } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Check, Undo2, ArrowLeft, Code, Pencil, MessageSquare, Loader2 } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import SiteManagerLogo from "./SiteManagerLogo";
 import ChatPanel from "./designChat/ChatPanel";
@@ -16,6 +16,7 @@ import { EditorSlotProvider, useEditorSlot } from "./designChat/EditorSlot";
 import ConfirmDialog from "./ConfirmDialog";
 import LibraryPicker from "./designChat/LibraryPicker";
 import { toast } from "sonner";
+import { ModeSwitchProvider, useModeSwitch } from "./designChat/ModeSwitchContext";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -59,7 +60,7 @@ export default function AdminIndex() {
   return (
     <DesignChatProvider>
       <EditorSlotProvider>
-        <AdminShell />
+        <ModeSwitchProvider><AdminShell /></ModeSwitchProvider>
       </EditorSlotProvider>
     </DesignChatProvider>
   );
@@ -67,7 +68,22 @@ export default function AdminIndex() {
 
 function AdminShell() {
   const designChat = useDesignChat();
-  const { workingPage, editing, stopEditing, clearWorkingPage, objectOpen, closeObject } = designChat;
+  const { workingPage, editing, mode, stopEditing, clearWorkingPage, objectOpen, closeObject } = designChat;
+  const modeSwitch = useModeSwitch();
+  const manual = mode === "manual";
+  const askClaude = async () => {
+    if (await modeSwitch?.requestChat()) { setChatCollapsed(false); navigate("/manage/preview"); }
+  };
+  const bannerRef = useRef<HTMLDivElement>(null);
+  const previousMode = useRef(mode);
+  const [announcement, setAnnouncement] = useState("");
+  useEffect(() => {
+    if (previousMode.current === mode) return;
+    previousMode.current = mode;
+    setAnnouncement(manual ? "Manual Mode. You are editing by hand." : "Chat Mode. Claude makes the changes.");
+    if (manual) bannerRef.current?.focus();
+    else requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Describe a Change"]')?.focus());
+  }, [mode, manual]);
   const { setSlot, saveAll, discardAll, hasChanges } = useEditorSlot();
   // Saves the editor's held changes, then leaves edit mode; on a failed save it stays in edit mode.
   const [finishing, setFinishing] = useState(false);
@@ -177,6 +193,7 @@ function AdminShell() {
 
   return (
     <>
+      <div className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</div>
       <div className="flex h-screen flex-col overflow-hidden bg-background lg:flex-row">
         {/* Right: the top bar (tabs, preview tools, Capture, account menu) and whichever tab is open. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -255,6 +272,16 @@ function AdminShell() {
           <ChangeMyPasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
 
           <main className="relative min-h-0 flex-1 overflow-y-auto">
+            {manual && <>
+              <div ref={bannerRef} tabIndex={-1} role="status" className="sticky top-0 z-40 flex flex-wrap items-center gap-2 bg-background px-3 py-2 text-sm shadow-sm">
+                <Pencil className="h-4 w-4 shrink-0 text-manual" aria-hidden />
+                <div className="min-w-0 flex-1"><strong className="text-manual">Editing By Hand.</strong> You are changing this page yourself. Claude is not making changes right now.
+                  {designChat.state?.busy && <p className="mt-1 flex items-center gap-1.5 font-medium"><Loader2 className="h-4 w-4 animate-spin" aria-hidden />Claude Is Still Working on a Change</p>}
+                </div>
+                <Button variant="outline" size="sm" className="gap-1.5" title="Ask Claude Instead" onClick={() => void askClaude()}><MessageSquare className="h-4 w-4" aria-hidden />Ask Claude Instead</Button>
+              </div>
+              <div data-manual-outline aria-hidden="true" className="pointer-events-none absolute inset-0 z-40 ring-1 ring-inset ring-manual" />
+            </>}
             {previewOpened && (
               <div className={tab === "preview" && !editing ? "h-full" : "hidden"}>
                 <Suspense fallback={null}>
@@ -297,42 +324,39 @@ function AdminShell() {
         <aside
           className={cn(
             "flex shrink-0 flex-col border-t lg:order-first lg:h-screen lg:border-r lg:border-t-0 lg:transition-[width] lg:duration-200",
-            chatCollapsed ? "h-auto lg:w-12" : "h-[45vh] lg:w-[clamp(320px,26vw,400px)]",
+            chatCollapsed && !manual ? "h-auto lg:w-12" : "h-[45vh] lg:w-[clamp(320px,26vw,400px)]",
           )}
-          aria-label="Chat"
+          aria-label={manual ? "Manual Mode" : "Chat"}
         >
-          {chatCollapsed && (
+          {chatCollapsed && !manual && (
             <div className="flex shrink-0 justify-start p-1.5 lg:justify-center">
               <Button type="button" variant="ghost" size="icon" className="h-9 w-9" aria-label="Expand Chat" title="Expand Chat" aria-expanded={false} onClick={() => setChatCollapsed(false)}>
                 <PanelLeftOpen className="h-4 w-4" />
               </Button>
             </div>
           )}
-          <div className={cn("flex shrink-0 items-center gap-2 border-b bg-background px-3 py-2.5", chatCollapsed && "hidden")}>
+          <div className={cn("flex shrink-0 items-center gap-2 border-b bg-background px-3 py-2.5", chatCollapsed && !manual && "hidden")}>
             <h1 className="whitespace-nowrap">
               <SiteManagerLogo />
             </h1>
             <div className="flex-1" />
             {!editing && <SubmitButton />}
-            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded={true} onClick={() => setChatCollapsed(true)}>
+            {!manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded={true} onClick={() => setChatCollapsed(true)}>
               <PanelLeftClose className="h-4 w-4" />
-            </Button>
+            </Button>}
           </div>
-          {editing && workingPage && (
-            <div className={cn("flex min-h-0 flex-1 flex-col", chatCollapsed && "hidden")}>
+          {manual && workingPage && (
+            <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex items-center justify-between px-3 pt-2">
                 {objectOpen && (
-                  <button type="button" aria-label="Back to Page" disabled={finishing} onClick={() => void backToPage()} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+                  <Button type="button" variant="ghost" size="sm" aria-label="Back to Page" disabled={finishing} onClick={() => void backToPage()} className="h-7 gap-1.5 text-xs text-muted-foreground">
                     <ArrowLeft className="h-3 w-3" aria-hidden />Back to Page
-                  </button>
+                  </Button>
                 )}
-                <button type="button" aria-label="Return to Preview" disabled={finishing} onClick={() => void finishEditing()} className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-                  <Eye className="h-3 w-3" aria-hidden />Return to Preview
-                </button>
               </div>
               <div className="flex shrink-0 flex-col gap-2 border-b px-3 py-3">
                 <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">Editing</p>
+                  <p className="flex items-center gap-1.5 text-xs text-manual"><Pencil className="h-3 w-3" aria-hidden />Editing By Hand</p>
                   <p className="truncate text-lg font-semibold leading-tight" title={workingPage.name}>{workingPage.name}</p>
                 </div>
                 <div className="flex gap-1.5">
@@ -341,9 +365,13 @@ function AdminShell() {
                 </div>
               </div>
               <div ref={setSlot} aria-label="Page Editing Options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
+              <div data-manual-chat-bar className="flex shrink-0 flex-wrap items-center gap-1.5 border-t px-3 py-2 text-xs">
+                <MessageSquare className="h-4 w-4 text-manual" aria-hidden /><span>Want Claude To Do This?</span>
+                <Button variant="ghost" size="sm" className="h-auto whitespace-normal p-1 text-xs" title="Ask Claude Instead" onClick={() => void askClaude()}>Ask Claude Instead</Button>
+              </div>
             </div>
           )}
-          <div className={cn("min-h-0", editing ? "shrink-0" : "flex-1", chatCollapsed && "hidden")}>
+          <div className={cn("min-h-0 flex-1", (manual || chatCollapsed) && "hidden")} aria-hidden={manual || chatCollapsed}>
             <ChatPanel />
           </div>
         </aside>
@@ -351,9 +379,9 @@ function AdminShell() {
       <ConfirmDialog
         open={confirmDiscard}
         onOpenChange={setConfirmDiscard}
-        title="Discard your changes?"
+        title="Discard Your Changes?"
         description="Everything you changed since your last save in this editor will be lost. This can't be undone."
-        confirmLabel="Discard changes"
+        confirmLabel="Discard Changes"
         onConfirm={() => { setConfirmDiscard(false); doDiscard(); }}
       />
     </>

@@ -9,8 +9,7 @@ import { useDesignChat, type Device } from "./DesignChatContext";
  * and Full screen; always, a link to the published site. Submit for review lives in the chat column's header (SubmitButton).
  */
 export default function PreviewTools({ showViewControls, tight = false }: { showViewControls: boolean; tight?: boolean }) {
-  const { state, device, setDevice, inFull, toggleFull, editing } = useDesignChat();
-  const mode = editing ? "manual" : "chat";
+  const { state, device, setDevice, inFull, toggleFull, mode } = useDesignChat();
 
   return (
     <div className="flex shrink-0 items-center gap-2">

@@ -15,6 +15,7 @@ import { useVoice } from "./useVoice";
 import { toast } from "sonner";
 import { registerPreviewPage } from "./usePreviewPage";
 import { kindLabel, referenceKey, withReferences } from "./references";
+import { useModeSwitch } from "./ModeSwitchContext";
 
 const SUGGESTIONS = [
   "Make the headline larger",
@@ -31,13 +32,15 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
 export default function ChatPanel() {
   const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, startEditing, stopEditing, previewLocation, previewPage, previewRegistrable, selectPage, refs } = useDesignChat();
   const navigate = useNavigate();
+  const modeSwitch = useModeSwitch();
   const { saveAll } = useEditorSlot();
   const [finishing, setFinishing] = useState(false);
   const opening = useRef(false);
   const editTarget = previewLocation ? previewPage : workingPage?.id ? workingPage : null;
   const toggleEditing = async () => {
-    if (finishing || opening.current || state?.busy) return;
+    if (finishing || opening.current) return;
     if (editing) {
+      if (modeSwitch) { await modeSwitch.requestChat(); return; }
       setFinishing(true);
       try { if (await saveAll()) stopEditing(); } finally { setFinishing(false); }
       return;
@@ -46,11 +49,14 @@ export default function ChatPanel() {
     opening.current = true;
     setFinishing(true);
     try {
-      const target = editTarget?.id ? editTarget : previewRegistrable ? await registerPreviewPage(previewRegistrable) : null;
-      if (!target?.id) return;
-      selectPage({ id: target.id, name: target.name, path: target.path });
-      navigate("/manage/preview");
-      startEditing();
+      const open = async () => {
+        const target = editTarget?.id ? editTarget : previewRegistrable ? await registerPreviewPage(previewRegistrable) : null;
+        if (!target?.id) return;
+        selectPage({ id: target.id, name: target.name, path: target.path });
+        navigate("/manage/preview");
+        startEditing();
+      };
+      if (modeSwitch) await modeSwitch.requestManual(open); else await open();
     } catch {
       toast.error("Couldn't open this page for editing. Try again.");
     } finally { opening.current = false; setFinishing(false); }
@@ -123,6 +129,7 @@ export default function ChatPanel() {
       return;
     }
     if (attachments.uploading) { setHint("Still uploading your files. One moment."); return; }
+    if (editing && (!modeSwitch || !await modeSwitch.requestChat())) return;
     voice.stop();
     // The drawing: ask the site what is under it, and take the picture if it was switched on.
     let marks: unknown;
@@ -155,9 +162,9 @@ export default function ChatPanel() {
     <section className="flex h-full flex-col bg-background min-h-0 overflow-hidden" aria-label="Design Chat">
       <header className="flex items-center justify-between gap-2 border-b px-3 py-2">
         <span className="text-sm font-medium">Chat</span>
-        <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label="Edit this page by hand (without the chat)" title={!editing && !editTarget?.id && !previewRegistrable ? "This address isn't a page that can be edited." : "Edit this page by hand (without the chat)"}
-          aria-pressed={editing} disabled={finishing || busy || (!editing && !editTarget?.id && !previewRegistrable)} onClick={() => void toggleEditing()}>
-          <SquarePen className="h-4 w-4" /> {editing ? "Done Editing" : "Edit Manually"}
+        <Button type="button" variant="outline" size="sm" className="shrink-0 gap-1.5" aria-label={editing ? "Ask Claude Instead" : "Edit It Myself"} title={!editing && !editTarget?.id && !previewRegistrable ? "This address isn't a page that can be edited." : editing ? "Ask Claude Instead" : "Edit It Myself"}
+          aria-pressed={editing} disabled={finishing || (!editing && !editTarget?.id && !previewRegistrable)} onClick={() => void toggleEditing()}>
+          <SquarePen className="h-4 w-4" /> {editing ? "Ask Claude Instead" : "Edit It Myself"}
         </Button>
       </header>
       <div ref={logRef} onScroll={onScroll} className={cn("flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 flex flex-col gap-2.5 text-sm", editing && "hidden")} role="log">
