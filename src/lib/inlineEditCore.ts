@@ -162,6 +162,7 @@ export function createReplay() {
         let reason = "";
         if (!el) reason = "This part of the page is no longer there.";
         else if (kinds.includes("img") && el.tagName.toLowerCase() !== "img") reason = "This part of the page is no longer a picture.";
+        else if (kinds.includes("style") && !(el instanceof HTMLElement)) reason = "This part of the page can no longer use these appearance settings.";
         else if ((kinds.includes("html") || kinds.includes("icon")) && /^(img|input|br|hr|video|iframe|svg)$/i.test(el.tagName)) reason = "This part of the page is no longer the right kind of element.";
         const fpKey = `fp:${path}`;
         if (!reason && el && fpKey in edits) {
