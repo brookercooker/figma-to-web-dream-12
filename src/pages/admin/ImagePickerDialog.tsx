@@ -9,13 +9,13 @@ import { useLabelsForScope } from "./useAllLabels";
 
 
 interface Choice { url: string; alt: string }
-export interface LibraryImage extends Choice { id?: string; name?: string; labels: string[]; createdAt?: string }
+export interface LibraryImage extends Choice { id?: string; name?: string; labels: string[]; createdAt?: string; visibility?: string; webPath?: string }
 
 /** The image library as the page editor uses it: `url` is exactly what an image block stores. */
 export async function loadLibraryImages(limit = 120): Promise<LibraryImage[]> {
   const { data } = await (supabase as any)
     .from("images")
-    .select("id,filename,web_path,alt_text,tags,created_at")
+    .select("id,filename,web_path,alt_text,tags,created_at,visibility")
     .is("archived_at", null)
     .limit(limit);
   return (data ?? []).map((row: any) => ({
@@ -25,6 +25,8 @@ export async function loadLibraryImages(limit = 120): Promise<LibraryImage[]> {
     alt: row.alt_text || row.filename || "",
     labels: Array.isArray(row.tags) ? row.tags.filter(Boolean) : [],
     createdAt: row.created_at ?? undefined,
+    visibility: row.visibility,
+    webPath: row.web_path,
   }));
 }
 
