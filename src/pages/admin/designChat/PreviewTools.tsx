@@ -1,4 +1,4 @@
-import { ExternalLink, Maximize2, Minimize2, Monitor, Smartphone, Tablet } from "lucide-react";
+import { ExternalLink, Maximize2, Minimize2, Monitor, Smartphone, Tablet, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { postToHelper } from "./helper";
@@ -9,10 +9,12 @@ import { useDesignChat, type Device } from "./DesignChatContext";
  * and Full screen; always, a link to the published site. Submit for review lives in the chat column's header (SubmitButton).
  */
 export default function PreviewTools({ showViewControls, tight = false }: { showViewControls: boolean; tight?: boolean }) {
-  const { state, device, setDevice, inFull, toggleFull } = useDesignChat();
+  const { state, device, setDevice, inFull, toggleFull, editing } = useDesignChat();
+  const mode = editing ? "manual" : "chat";
 
   return (
     <div className="flex shrink-0 items-center gap-2">
+      {showViewControls && mode === "chat" && <span className="inline-flex max-w-[160px] items-center gap-1.5 text-xs text-muted-foreground lg:max-w-[220px]"><MessageSquare className="h-4 w-4 shrink-0" aria-hidden />Chat Mode: Claude Makes the Changes</span>}
       {showViewControls && (
         <>
           {!tight && <ToggleGroup type="single" value={device} onValueChange={(v) => v && setDevice(v as Device)} variant="outline" size="sm"

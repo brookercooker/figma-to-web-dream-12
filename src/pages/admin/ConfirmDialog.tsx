@@ -3,6 +3,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   open: boolean;
@@ -12,11 +13,16 @@ interface Props {
   confirmLabel?: string;
   destructive?: boolean;
   onConfirm: () => void;
+  cancelLabel?: string;
+  secondaryLabel?: string;
+  onSecondary?: () => void;
+  busy?: boolean;
 }
 
 export default function ConfirmDialog({
   open, onOpenChange, title, description,
   confirmLabel = "Confirm", destructive = true, onConfirm,
+  cancelLabel = "Cancel", secondaryLabel, onSecondary, busy = false,
 }: Props) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -28,9 +34,11 @@ export default function ConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={busy}>{cancelLabel}</AlertDialogCancel>
+          {secondaryLabel && <Button type="button" variant="outline" disabled={busy} onClick={onSecondary}>{secondaryLabel}</Button>}
           <AlertDialogAction
-            onClick={onConfirm}
+            disabled={busy}
+            onClick={(event) => { if (secondaryLabel || busy) event.preventDefault(); onConfirm(); }}
             className={destructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
           >
             {confirmLabel}

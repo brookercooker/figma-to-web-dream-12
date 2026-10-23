@@ -60,6 +60,7 @@ export default {
         brass: "hsl(var(--nova-brass))",
         glow: "hsl(var(--nova-glow))",
         garnet: "hsl(var(--nova-garnet))",
+        manual: "hsl(var(--nova-manual))",
         nova: {
           cream: "hsl(var(--nova-cream))",
           ink: "hsl(var(--nova-ink))",
