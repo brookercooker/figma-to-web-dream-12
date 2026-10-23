@@ -271,7 +271,8 @@ function AdminShell() {
 
           <ChangeMyPasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
 
-          <main className="relative min-h-0 flex-1 overflow-y-auto">
+          <div className="relative min-h-0 flex-1">
+          <main className="relative h-full overflow-y-auto">
             {manual && <>
               <div ref={bannerRef} tabIndex={-1} role="status" className="sticky top-0 z-40 flex flex-wrap items-center gap-2 bg-background px-3 py-2 text-sm shadow-sm">
                 <Pencil className="h-4 w-4 shrink-0 text-manual" aria-hidden />
@@ -280,7 +281,6 @@ function AdminShell() {
                 </div>
                 <Button variant="outline" size="sm" className="gap-1.5" title="Ask Claude Instead" onClick={() => void askClaude()}><MessageSquare className="h-4 w-4" aria-hidden />Ask Claude Instead</Button>
               </div>
-              <div data-manual-outline aria-hidden="true" className="pointer-events-none absolute inset-0 z-40 ring-1 ring-inset ring-manual" />
             </>}
             {previewOpened && (
               <div className={tab === "preview" && !editing ? "h-full" : "hidden"}>
@@ -317,6 +317,8 @@ function AdminShell() {
               </div>
             )}
           </main>
+          {manual && <div data-manual-outline aria-hidden="true" className="pointer-events-none absolute inset-0 z-40 ring-1 ring-inset ring-manual" />}
+          </div>
         </div>
 
         {/* Left: the chat column, on every tab, with its own header (logo, Submit for review, collapse); the account menu sits at the right end of the top bar.

@@ -26,8 +26,10 @@ describe("Site Manager mode cues", () => {
     m.manual = true; view.rerender(app());
     const canvas = await screen.findByTestId("canvas");
     expect(canvas.parentElement?.parentElement?.tagName).toBe("MAIN");
-    const overlay = document.querySelector("[data-manual-outline]");
-    expect(overlay?.parentElement).toBe(canvas.parentElement?.parentElement);
+    const overlay = document.querySelector<HTMLDivElement>("[data-manual-outline]");
+    const main = canvas.closest("main");
+    expect(main).not.toContainElement(overlay);
+    expect(overlay?.parentElement).toBe(main?.parentElement);
     expect(overlay).toHaveClass("pointer-events-none", "absolute");
     expect(overlay).not.toContainElement(canvas);
     expect(screen.getByText("Editing By Hand.")).toBeVisible();
@@ -41,6 +43,7 @@ describe("Site Manager mode cues", () => {
     expect(input).toBeVisible(); expect(input).toHaveValue("Keep this request"); expect(m.mounts).toBe(1);
     expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Chat Mode. Claude makes the changes.");
     expect(document.querySelector("[data-manual-chat-bar]")).toBeNull();
+    expect(document.querySelector("[data-manual-outline]")).toBeNull();
   });
   it("plainly shows an ongoing Claude change in Manual Mode", async () => {
     m.manual = true; m.busy = true; render(app());
