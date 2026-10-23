@@ -2,9 +2,11 @@ import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/db";
 import InlineEditSurface from "@/components/InlineEditSurface";
 import type { InlineEdits } from "@/lib/inlineEditCore";
+import { useNavigate } from "react-router-dom";
 
 /** Shows in-place edits made in the page editor on the public site. */
 export default function InlineEditsLayer({ path, children }: { path: string; children: ReactNode }) {
+  const navigate = useNavigate();
   const [edits, setEdits] = useState<InlineEdits>({});
   const [objectEdits, setObjectEdits] = useState<Record<string, InlineEdits>>({});
   useEffect(() => {
@@ -23,5 +25,8 @@ export default function InlineEditsLayer({ path, children }: { path: string; chi
   }, [path]);
   // One stable key for all Site Manager routes so the manager (and its chat state) survives tab changes.
   const surfaceKey = path.startsWith("/manage") || path.startsWith("/admin") ? "manager" : path;
-  return <InlineEditSurface key={surfaceKey} edits={edits} objectEdits={objectEdits}>{children}</InlineEditSurface>;
+  return <InlineEditSurface key={surfaceKey} edits={edits} objectEdits={objectEdits} navigate={(href) => {
+    if (!/^\/(?!\/)/.test(href)) return false;
+    navigate(href); return true;
+  }}>{children}</InlineEditSurface>;
 }

@@ -154,7 +154,8 @@ export default function InlineEditSurface({
   const linkOptions = useRef({ editing, navigate });
   linkOptions.current = { editing, navigate };
   useEffect(() => installLinkHandler(document, {
-    enabled: () => !linkOptions.current.editing,
+    // A visitor layer may wrap this editor; it must also leave clicks to the editor guard.
+    enabled: () => !linkOptions.current.editing && !document.querySelector(".inline-edit-surface"),
     navigate: (href) => linkOptions.current.navigate?.(href) ?? false,
   }), []);
   const editsRef = useRef(edits);
