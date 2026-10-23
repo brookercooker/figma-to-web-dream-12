@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [x] Correct Images grid and library thumbnail candidate fallbacks without changing selection; 439 tests and preview checks pass; first 48 grid images loaded via hosted asset delivery. Picker browser count remains blocked by browser termination/timeouts when loading the real image set.
 - [x] Open the viewed preview page on manual-mode entry, with a three-second loading wait and existing fallbacks; all 418 tests and preview build pass; signed-in end-to-end viewed-page check blocked by the existing preview fetch failure.
 - [x] Clean up redundant mode prompts and unify selected switch styling; guards, hidden chat and stationary outline preserved; 409 tests and tsgo pass; signed-in Home checked at desktop/narrow widths in light/dark without saves.
 - [x] Replace manual-entry buttons and preview chip with one pinned guarded mode switch, chooser and collapsed icons; 405 tests and tsgo pass, signed-in Home checked at desktop/narrow widths in light/dark without saves; hosted preview/media remain unavailable.
