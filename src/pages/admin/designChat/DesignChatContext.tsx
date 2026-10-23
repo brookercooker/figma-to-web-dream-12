@@ -37,6 +37,7 @@ export function workingReducer(s: WorkingState, a: WorkingAction): WorkingState 
 }
 
 export type DesignChat = {
+  mode: "chat" | "manual";
   state: RelayState | null;
   offline: boolean;
   refreshSoon: () => void;
@@ -99,6 +100,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const editBoxRef = useRef<HTMLDivElement>(null);
   const [work, dispatch] = useReducer(workingReducer, { workingPage: null, editing: false });
   const editing = work.editing;
+  const mode = editing ? "manual" : "chat";
 
   useEffect(() => {
     const sync = () => setFull(Boolean(document.fullscreenElement));
@@ -155,10 +157,11 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const refs = useChatReferences();
 
   const value = useMemo<DesignChat>(() => ({
+    mode,
     state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
     editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, refs,
-  }), [refs, objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
+  }), [mode, refs, objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

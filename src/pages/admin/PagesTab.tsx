@@ -15,6 +15,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
 import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, Pencil, MessageSquare } from "lucide-react";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
+import { useModeSwitch } from "./designChat/ModeSwitchContext";
 import { CopyRefButton, buildPageRef } from "./copyReference";
 import { clearAllRouteSnapshots } from "./routeSnapshot";
 import { reservedPrefixFor } from "./reservedPaths";
@@ -88,6 +89,7 @@ const openLive = (path: string) => {
 export default function PagesTab() {
   const navigate = useNavigate();
   const designChat = useDesignChatOptional(); // present inside the Site Manager, where the chat is on the right
+  const modeSwitch = useModeSwitch();
   const [pages, setPages] = useState<Page[]>([]);
   const [q, setQ] = useState("");
   const [searchField, setSearchField] = useState<Field>("all");
@@ -468,7 +470,7 @@ export default function PagesTab() {
         <button type="button" onClick={() => navigate("/manage/design")}
           className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] border border-transparent shadow-md transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
           <Pencil className="w-[18px] h-[18px] opacity-80" />
-          <span className="text-[15px] font-medium tracking-wide uppercase">Edit Pages</span>
+          <span className="text-[15px] font-medium tracking-wide">Edit It Myself</span>
         </button>
         <AddButtonRow subtle text="Add new page" label="Page" onClick={() => setCreating(true)} />
       </div>
@@ -631,9 +633,9 @@ export default function PagesTab() {
                     return (
                       <button
                         onClick={() => { designChat.selectPage({ id: p.id, name: p.name, path: pagePath }); navigate("/manage/preview"); }}
-                        aria-label={`Work on ${p.name} with the chat`}
+                        aria-label={`Ask Claude To Change It: ${p.name}`}
                         aria-pressed={chosen}
-                        title={chosen ? "The chat is working on this page" : "Work on this page with the chat"}
+                        title="Ask Claude To Change It"
                         className={`p-1.5 rounded border inline-flex ${chosen ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted"}`}
                       >
                         <MessageSquare className="w-4 h-4" />
@@ -642,20 +644,21 @@ export default function PagesTab() {
                   })()}
                 </td>
                 <td className="px-1 py-3 text-center">
-                  <button
+                  <Button variant="outline" size="icon"
                     onClick={() => {
-                      if (pageAccess(p) === "tweak" && designChat) {
+                      const open = () => { if (pageAccess(p) === "tweak" && designChat) {
                         designChat.selectPage({ id: p.id, name: p.name, path: p.path });
                         navigate("/manage/preview");
                         designChat.startEditing();
-                      } else navigate(`/manage/design?page=${p.id}&mode=edit`);
+                      } else navigate(`/manage/design?page=${p.id}&mode=edit`); };
+                      if (modeSwitch) void modeSwitch.requestManual(open); else open();
                     }}
-                    aria-label={pageAccess(p) === "tweak" ? `Tweak ${p.name}` : "Edit Design"}
-                    title={pageAccess(p) === "tweak" ? "Tweak" : "Edit Design"}
+                    aria-label={`Edit It Myself: ${p.name}`}
+                    title="Edit It Myself"
                     className="p-1.5 rounded border hover:bg-muted inline-flex"
                   >
                     <Pencil className="w-4 h-4" />
-                  </button>
+                  </Button>
                 </td>
                 <td className="px-1 py-3 text-center">
                   <button
