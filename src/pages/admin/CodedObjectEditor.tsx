@@ -2,7 +2,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import InlineEditSurface, { type InlineEditController, type InlineReports, type InlineSelection } from "@/components/InlineEditSurface";
+import InlineEditSurface, { pathOf, type InlineEditController, type InlineReports, type InlineSelection } from "@/components/InlineEditSurface";
 import { objectRegistry } from "@/components/objects/registry";
 import { resolvePath, withoutPath, type InlineEdits } from "@/lib/inlineEditCore";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,7 @@ export default function CodedObjectEditor({ object, embedded, focusSection, onCo
     focused.current = true;
     const link = el.closest<HTMLElement>('a,button,[role="button"],[role="link"]');
     setSelection({ scope: key, key: focusSection, el, kind: el.tagName === "IMG" ? "image" : "text",
-      ...(link && root.contains(link) ? { link: { el: link, scope: key, key: focusSection } } : {}) });
+      ...(link && root.contains(link) ? { link: { el: link, scope: key, key: pathOf(root, link) } } : {}) });
     el.scrollIntoView({ block: "start", behavior: "smooth" });
   }, [editing, focusSection, reports, key]);
   const editsFor = (scope: string) => scope === key ? edits : {};
@@ -124,6 +124,6 @@ export default function CodedObjectEditor({ object, embedded, focusSection, onCo
     <ImagePickerDialog open={!!imageAsk} onOpenChange={(open) => { if (!open) { imageAsk?.(null); setImageAsk(null); } }} onPick={(img) => { imageAsk?.(img.url); setImageAsk(null); }} />
     <ConfirmDialog open={confirm} onOpenChange={setConfirm} title="Convert to Blocks?" destructive={false} confirmLabel="Convert to Blocks"
       description="The converted version can look different from the original. Visitors will keep seeing the original coded version until the object is switched over."
-      onConfirm={onConvert} />
+      onConfirm={() => { void saveRef.current().then((ok) => { if (ok) onConvert(); }); }} />
   </div>;
 }
