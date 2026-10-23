@@ -115,7 +115,7 @@ export function withFingerprints(edits: InlineEdits, root: Element, resolve: (ro
   }
   return out;
 }
-interface Applied { el: Element; kinds: Set<Kind>; styleProps: Set<string>; html?: string; icon?: string }
+interface Applied { el: Element; kinds: Set<Kind>; styleProps: Set<string>; html?: string; icon?: string; rendered?: string; composed?: string }
 export interface ReplayOptions {
   /** Adapter for the existing icon library; keeps this shared file free of React/app imports. */
   iconMarkup?: (name: string, className: string) => string | null;
@@ -194,7 +194,9 @@ export function createReplay() {
               }
             }
           }
-          if (document.activeElement !== el && el.innerHTML !== holder.innerHTML) el.innerHTML = holder.innerHTML;
+          const unchanged = entry.composed === holder.innerHTML && entry.rendered === el.innerHTML;
+          if (!unchanged && document.activeElement !== el && el.innerHTML !== holder.innerHTML) el.innerHTML = holder.innerHTML;
+          entry.composed = holder.innerHTML;
           entry.html = html; entry.icon = icon;
         }
         const styleValue = values.get("style");
@@ -223,6 +225,7 @@ export function createReplay() {
         entry.kinds = new Set(kinds); next.set(path, entry);
         report.applied.push(...group.map((v) => v.key));
       }
+      for (const entry of next.values()) entry.rendered = entry.el.innerHTML;
       roots.set(root, next);
       return report;
     },

@@ -28,4 +28,4 @@
 - [x] Home page: treat "/" and "/home" as one page so Edit manually works on both
 - [x] Top bar: Objects/Images/Videos open a search-and-pick menu that adds library references to the chat
 
-- [ ] Milestone 1, step 1: fail-closed fingerprint replay, reliable reset, side-panel orphan review and validation tests.
+- [x] Milestone 1, step 1: fail-closed fingerprint replay, reliable reset, side-panel orphan review and validation tests; full suite and tsgo passed, signed-in reset controls checked.
