@@ -13,12 +13,18 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ChevronDown, ChevronRight, ExternalLink, GripVertical, icons } from "lucide-react";
-import DOMPurify from "dompurify";
+import { clean, createReplay, parseKey, resolvePath, withFingerprints, type ReplayReport } from "@/lib/inlineEditCore";
+import type { InlineEdits } from "@/lib/inlineEditCore";
+export type { InlineEdits } from "@/lib/inlineEditCore";
 import { findObjectRoots, loadObjectComponents, objectComponentsNow, type ObjectRoot } from "@/lib/objectScopes";
 import { pageChunks, chunkName } from "@/lib/pageChunks";
 import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 
-export type InlineEdits = Record<string, string>;
+export interface InlineEditController {
+  prepare: (scope: InlineScope, edits: InlineEdits) => InlineEdits;
+  record: () => Record<string, InlineEdits>;
+}
+export type InlineReports = Record<string, ReplayReport>;
 /** "page" or the registry key of a shared object. */
 export type InlineScope = string;
 /** `side` is set when the line is an edge (border) of a larger element. */
@@ -56,26 +62,11 @@ function byPath(root: Element, path: string): Element | null {
   return n;
 }
 
-const clean = (html: string) =>
-  DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ["b", "strong", "i", "em", "br", "span", "u", "font", "svg", "path", "circle", "line", "polyline", "polygon", "rect"],
-    ALLOWED_ATTR: ["style", "color", "class", "viewBox", "d", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "width", "height", "cx", "cy", "r", "x", "y", "x1", "y1", "x2", "y2", "rx", "ry", "points", "xmlns", "aria-hidden", "data-inline-icon"],
-  });
-
-/** Swap (or hide) the icon inside a button or link. Value: lucide name, or "none". */
-function applyIcon(el: HTMLElement, value: string) {
-  const old = el.querySelector("svg");
-  if (old?.getAttribute("data-inline-icon") === value) return;
-  if (value === "none") { if (old) { old.style.display = "none"; old.setAttribute("data-inline-icon", "none"); } return; }
+/** React/lucide adapter; shared replay never imports the app. */
+const iconMarkup = (value: string, cls: string): string | null => {
   const Icon = (icons as Record<string, Parameters<typeof createElement>[0]>)[value];
-  if (!Icon) return;
-  const cls = old?.getAttribute("class") ?? "inline-block h-4 w-4 ml-2 align-[-2px]";
-  const holder = document.createElement("span");
-  holder.innerHTML = renderToStaticMarkup(createElement(Icon as React.ComponentType<Record<string, unknown>>, { className: cls, "aria-hidden": true }));
-  const svg = holder.firstElementChild as SVGElement;
-  svg.setAttribute("data-inline-icon", value);
-  if (old) old.replaceWith(svg); else el.appendChild(svg);
-}
+  return Icon ? renderToStaticMarkup(createElement(Icon as React.ComponentType<Record<string, unknown>>, { className: cls, "aria-hidden": true })) : null;
+};
 
 /** A see-through copy of `el` that follows the pointer while dragging. */
 function makeGhost(el: HTMLElement, x: number, y: number) {
@@ -130,44 +121,14 @@ function editableTexts(root: Element): HTMLElement[] {
   });
 }
 
-function applyEdits(root: Element, edits: InlineEdits, tag: string) {
-  const attr = `data-inline-styled-${tag}`;
-  const entries = Object.entries(edits).sort(([a], [b]) => Number(a.startsWith("icon:")) - Number(b.startsWith("icon:")));
-  for (const [key, value] of entries) {
-    if (key.startsWith("icon:")) {
-      const el = byPath(root, key.slice(5)) as HTMLElement | null;
-      if (el) applyIcon(el, value);
-    } else if (key.startsWith("style:")) {
-      const el = byPath(root, key.slice(6)) as HTMLElement | null;
-      if (!el) continue;
-      let obj: Record<string, string> = {};
-      try { obj = JSON.parse(value); } catch { /* ignore */ }
-      (el.getAttribute(attr) ?? "").split(",").filter(Boolean).forEach((prop) => {
-        if (!(prop in obj)) el.style.removeProperty(prop);
-      });
-      for (const [prop, v] of Object.entries(obj)) {
-        if (el.style.getPropertyValue(prop) !== v) el.style.setProperty(prop, v, "important");
-      }
-      el.setAttribute(attr, Object.keys(obj).join(","));
-    } else if (key.startsWith("img:")) {
-      const el = byPath(root, key.slice(4));
-      if (el instanceof HTMLImageElement && el.getAttribute("src") !== value) {
-        el.src = value;
-        el.removeAttribute("srcset");
-      }
-    } else {
-      const el = byPath(root, key) as HTMLElement | null;
-      if (el && document.activeElement !== el && el.innerHTML !== value) el.innerHTML = value;
-    }
-  }
-}
-
 export interface InlineChunk { key: string; parent: string; el: HTMLElement }
 
 export default function InlineEditSurface({
   children, edits, objectEdits = {}, editing = false, onChange, onPickImage, onSelect, selectedKey,
-  collapsed, onToggleCollapse, onReorder, onOpenObject, sections = true, isolate,
+  collapsed, onToggleCollapse, onReorder, onOpenObject, sections = true, isolate, apiRef, onReport,
 }: {
+  apiRef?: React.MutableRefObject<InlineEditController | null>;
+  onReport?: (reports: InlineReports) => void;
   /** Open a shared object in the object editor; `section` is the part's path inside the object. */
   onOpenObject?: (key: string, section: string) => void;
   /** Draw section bars (off in the object editor). */
@@ -194,6 +155,34 @@ export default function InlineEditSurface({
   const objRef = useRef(objectEdits);
   objRef.current = objectEdits;
   const objectsRef = useRef<ObjectRoot[]>([]);
+  const replay = useRef(createReplay());
+  const objectReplays = useRef(new Map<Element, ReturnType<typeof createReplay>>());
+  const reportRef = useRef(onReport); reportRef.current = onReport;
+  const reportSig = useRef("");
+  const rootFor = (scope: string) => scope === "page" ? ref.current : objectsRef.current.find((o) => o.key === scope)?.el;
+  const prepare = (scope: string, next: InlineEdits): InlineEdits => {
+    const base = rootFor(scope);
+    if (!base) return next;
+    const current = scope === "page" ? editsRef.current : objRef.current[scope] ?? {};
+    const oldPaths = new Set(Object.keys(current).flatMap((key) => { const p = parseKey(key); return p && p.kind !== "fp" ? [p.path] : []; }));
+    const newPaths = new Set(Object.keys(next).flatMap((key) => { const p = parseKey(key); return p && p.kind !== "fp" ? [p.path] : []; }));
+    const out = { ...next };
+    for (const key of Object.keys(out)) { const p = parseKey(key); if (p?.kind === "fp" && !newPaths.has(p.path)) delete out[key]; }
+    const fresh = Object.fromEntries(Object.entries(out).filter(([key]) => { const p = parseKey(key); return p && !oldPaths.has(p.path); }));
+    const recorded = withFingerprints(fresh, base, resolvePath);
+    for (const [key, value] of Object.entries(recorded)) if (parseKey(key)?.kind === "fp" && !(key in out)) out[key] = value;
+    return out;
+  };
+  useEffect(() => {
+    if (!apiRef) return;
+    apiRef.current = { prepare, record: () => {
+      const out: Record<string, InlineEdits> = {};
+      if (ref.current) out.page = withFingerprints(editsRef.current, ref.current, resolvePath);
+      for (const o of objectsRef.current) out[o.key] = withFingerprints(objRef.current[o.key] ?? {}, o.el, resolvePath);
+      return out;
+    } };
+    return () => { apiRef.current = null; };
+  });
   const chunksRef = useRef<InlineChunk[]>([]);
   const collapsedRef = useRef(collapsed);
   collapsedRef.current = collapsed;
@@ -211,8 +200,23 @@ export default function InlineEditSurface({
     if (!root) return;
     const map = objectComponentsNow();
     objectsRef.current = map ? findObjectRoots(root, map) : [];
-    applyEdits(root, editsRef.current, "page");
-    for (const o of objectsRef.current) applyEdits(o.el, objRef.current[o.key] ?? {}, "obj");
+    const reports: InlineReports = { page: replay.current.apply(root, editsRef.current, { iconMarkup }) };
+    const active = new Set<Element>(objectsRef.current.map((o) => o.el));
+    for (const [el, instance] of objectReplays.current) if (!active.has(el)) { instance.restoreAll(); objectReplays.current.delete(el); }
+    for (const o of objectsRef.current) {
+      let instance = objectReplays.current.get(o.el);
+      if (!instance) { instance = createReplay(); objectReplays.current.set(o.el, instance); }
+      const result = instance.apply(o.el, objRef.current[o.key] ?? {}, { iconMarkup });
+      const previous = reports[o.key];
+      reports[o.key] = previous ? {
+        applied: [...new Set([...previous.applied, ...result.applied])],
+        unchecked: [...new Set([...previous.unchecked, ...result.unchecked])],
+        orphaned: [...previous.orphaned, ...result.orphaned].filter((r, i, rows) => rows.findIndex((v) => v.path === r.path) === i),
+        rejected: [...previous.rejected, ...result.rejected],
+      } : result;
+    }
+    const signature = JSON.stringify(reports);
+    if (signature !== reportSig.current) { reportSig.current = signature; reportRef.current?.(reports); }
     if (isolate !== undefined && objectsRef.current[0]) {
       const target = byPath(objectsRef.current[0].el, isolate) as HTMLElement | null;
       if (target) {
@@ -310,7 +314,7 @@ export default function InlineEditSurface({
     if (!ref.current || !el || !onChange) return;
     const { scope, root } = scopeOf(el);
     const cur = scope === "page" ? editsRef.current : (objRef.current[scope] ?? {});
-    onChange(scope, { ...cur, [pathOf(root, el)]: clean(el.innerHTML) });
+    onChange(scope, prepare(scope, { ...cur, [pathOf(root, el)]: clean(el.innerHTML) }));
   };
 
   /** The chunk whose heading bar is under the pointer, if any. */
@@ -497,7 +501,7 @@ export default function InlineEditSurface({
       };
       if (!pcs.display.includes("flex") && !pcs.display.includes("grid")) patch(parent, { display: "flex", "flex-direction": "column" });
       kids.forEach((c, i) => patch(c, { order: String(i) }));
-      onChange(s.scope, out);
+      onChange(s.scope, prepare(s.scope, out));
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);

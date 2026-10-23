@@ -33,6 +33,9 @@ import Footer from "@/components/Footer";
 import InsertGap, { type InsertType } from "./InsertGap";
 import InlineEditSurface, { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
 import InlineStylePanel from "./InlineStylePanel";
+import InlineEditSafetyPanel from "./InlineEditSafetyPanel";
+import { hasVisibleEdits, withoutPath } from "@/lib/inlineEditCore";
+import type { InlineEditController, InlineReports } from "@/components/InlineEditSurface";
 import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import LivePreviewPage, { type LiveStatus } from "./designChat/LivePreviewPage";
@@ -207,6 +210,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   // In-place editing of a coded page: type over text, click pictures to swap.
   const [quick, setQuick] = useState(false);
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
+  const inlineApi = useRef<InlineEditController | null>(null);
+  const [inlineReports, setInlineReports] = useState<InlineReports>({});
   const [resetKey, setResetKey] = useState(0);
   // Embedded pages not in the coded list: what loading their code found, and a counter that re-runs the load.
   const [liveStatus, setLiveStatus] = useState<LiveStatus | null>(null);
@@ -229,6 +234,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     });
   }, []);
   const changeScope = (scope: InlineScope, next: InlineEdits) => {
+    next = inlineApi.current?.prepare(scope, next) ?? next;
     if (scope === "page") return changeInline(next);
     setObjectEdits((cur) => ({ ...cur, [scope]: next }));
     const id = objectRows.current[scope];
@@ -260,6 +266,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const pickImage = () => new Promise<string | null>((resolve) => setImgAsk(() => resolve));
   const inlineTimer = useRef<number>();
   const changeInline = (next: InlineEdits) => {
+    next = inlineApi.current?.prepare("page", next) ?? next;
     setInlineEdits(next);
     const id = selectedId;
     if (embedded) { pendingInline.current = { pageId: id, next }; setTweaksPending(true); return; }
@@ -822,6 +829,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                         if (url) changeScope(inlineSel.scope, { ...scopeEdits(inlineSel.scope), [`img:${inlineSel.key}`]: url });
                       }}
                     />
+                    <InlineEditSafetyPanel reports={inlineReports} selection={inlineSel} editsFor={scopeEdits}
+                      discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
+                      record={() => { const maps = inlineApi.current?.record(); if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
+                      resetAll={() => { changeInline({}); for (const scope of Object.keys(inlineReports)) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
     </>
   );
   const blockTools = (b: Block, i: number) => (
@@ -943,7 +954,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         <p className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">This page can't be edited here.</p>
       ) : quick && showLive ? (
         <>
-          {Object.keys(inlineEdits).length > 0 && (
+          {hasVisibleEdits(inlineEdits) && (
             <Button variant="outline" size="sm" className="self-start" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo All Changes</Button>
           )}
           <div>{stylePanel}</div>
@@ -1184,7 +1195,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     <p className="text-xs text-muted-foreground">
                       Click any wording to type over it, or select wording or a picture to change its style on the right. Changes save on their own.
                     </p>
-                    {Object.keys(inlineEdits).length > 0 && (
+                    {hasVisibleEdits(inlineEdits) && (
                       <Button variant="ghost" size="sm" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo All Changes</Button>
                     )}
                   </div>
@@ -1204,6 +1215,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     return (
                       <InlineEditSurface
                         key={`${page.id}-${quick}-${resetKey}`}
+                        apiRef={inlineApi}
+                        onReport={setInlineReports}
                         edits={inlineEdits}
                         objectEdits={objectEdits}
                         editing={quick}
