@@ -46,7 +46,7 @@ export default function ModeToggle({ collapsed = false, onChat }: { collapsed?: 
           }
         }} data-mode={value}
         className={cn("gap-1.5 text-xs leading-tight focus-visible:ring-2 focus-visible:ring-ring", collapsed ? "h-8 w-8 p-0" : "h-11 min-w-0 px-1",
-          value === "manual" ? "data-[state=on]:bg-manual data-[state=on]:text-background data-[state=on]:font-semibold" : "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:font-semibold")}>
+          value === "manual" ? "data-[state=on]:bg-manual data-[state=on]:text-background data-[state=on]:hover:bg-manual data-[state=on]:hover:text-background data-[state=on]:font-semibold" : "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary data-[state=on]:hover:text-primary-foreground data-[state=on]:font-semibold")}>
         <Icon className="h-4 w-4 shrink-0" aria-hidden />{!collapsed && <span>{label}</span>}
       </ToggleGroupItem>)}
     </ToggleGroup>

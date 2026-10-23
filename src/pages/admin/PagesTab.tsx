@@ -509,7 +509,6 @@ export default function PagesTab() {
           <col style={{ width: 90 }} />
           <col style={{ width: 48 }} />
           <col style={{ width: 48 }} />
-          <col style={{ width: 48 }} />
         </colgroup>
 
         <thead>
