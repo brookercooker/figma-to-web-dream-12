@@ -206,7 +206,15 @@ export function createReplay() {
               if (v) el.style.setProperty(prop, v, priority); else el.style.removeProperty(prop);
             }
           }
-          for (const [prop, v] of Object.entries(style)) if (el.style.getPropertyValue(prop) !== v || el.style.getPropertyPriority(prop) !== "important") el.style.setProperty(prop, v, "important");
+          const desired = document.createElement("div");
+          for (const [prop, v] of Object.entries(style)) {
+            desired.style.setProperty(prop, v, "important");
+            const normalized = desired.style.getPropertyValue(prop);
+            const priority = desired.style.getPropertyPriority(prop);
+            if (el.style.getPropertyValue(prop) !== normalized || el.style.getPropertyPriority(prop) !== priority) {
+              if (normalized) el.style.setProperty(prop, normalized, priority); else el.style.removeProperty(prop);
+            }
+          }
           entry.styleProps = new Set(Object.keys(style));
         }
         const img = values.get("img");
