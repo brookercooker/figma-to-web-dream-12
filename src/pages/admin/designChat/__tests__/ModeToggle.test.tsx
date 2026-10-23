@@ -20,8 +20,8 @@ function Harness({ collapsed = false }: { collapsed?: boolean }) {
 beforeEach(() => { vi.clearAllMocks(); m.initial = "chat"; m.page = { id: "home", name: "Homepage", path: "/" }; m.dirty = false; m.busy = false; m.open = 0; m.save.mockResolvedValue(true); });
 afterEach(cleanup);
 const open = (collapsed = false) => render(<MemoryRouter><Harness collapsed={collapsed} /></MemoryRouter>);
-const chat = () => screen.getByRole("radio", { name: "Chat Mode" });
-const manual = () => screen.getByRole("radio", { name: "Manual Edit Mode" });
+const chat = () => screen.getByRole("radio", { name: "Chat Mode", hidden: true });
+const manual = () => screen.getByRole("radio", { name: "Manual Edit Mode", hidden: true });
 describe("segmented mode switch", () => {
   it("has one selected mode, ignores selected clicks and switches working page only", async () => {
     open(); expect(chat()).toHaveAttribute("aria-checked", "true"); expect(manual()).toHaveAttribute("aria-checked", "false");

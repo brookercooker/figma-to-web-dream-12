@@ -41,7 +41,7 @@ vi.mock("../helper", () => ({
 vi.mock("../useAttachments", () => ({ useAttachments: () => ({
   files: [], uploading: false, ids: () => [], clear: vi.fn(),
 }) }));
-vi.mock("../useVoice", () => ({ useVoice: () => ({ supported: false, stop: mocks.stopVoice }) }));
+vi.mock("../useVoice", () => ({ useVoice: () => ({ supported: true, stop: mocks.stopVoice, toggle: vi.fn() }) }));
 vi.mock("../ApprovalCard", () => ({ default: () => null }));
 
 beforeEach(() => {
@@ -57,6 +57,21 @@ beforeEach(() => {
 });
 
 afterEach(cleanup);
+
+describe("mode-only entry and hidden chat controls", () => {
+  it("has no manual entry in the chat or empty state and preserves hidden controls", () => {
+    const view = render(<MemoryRouter><div hidden={mocks.editing}><ChatPanel /></div></MemoryRouter>);
+    expect(screen.queryByText(/Edit It Myself/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Attach pictures or documents" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Speak your request" })).toBeVisible();
+    mocks.editing = true;
+    view.rerender(<MemoryRouter><div hidden={mocks.editing}><ChatPanel /></div></MemoryRouter>);
+    expect(screen.queryByRole("button", { name: "Attach pictures or documents" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Speak your request" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Draw on the preview" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Attach pictures or documents", hidden: true })).not.toBeVisible();
+  });
+});
 
 function messageBox() {
   render(<MemoryRouter><ChatPanel /></MemoryRouter>);
