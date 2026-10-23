@@ -6,6 +6,7 @@ import { ThumbnailContext } from "@/lib/thumbnail";
 const MAX_LIVE = 12;
 const MOUNT_TIMEOUT = 8000;
 const leases = new Map<object, { active: boolean; update: (active: boolean) => void }>();
+let rotation: ReturnType<typeof setInterval> | undefined;
 function allocate() {
   let count = [...leases.values()].filter((entry) => entry.active).length;
   for (const entry of leases.values()) {
@@ -16,7 +17,19 @@ function allocate() {
 }
 function requestLease(key: object, update: (active: boolean) => void) {
   leases.set(key, { active: false, update }); allocate();
-  return () => { leases.delete(key); allocate(); };
+  // A tall viewport can show more than the cap: give waiting visible cells a turn.
+  if (!rotation) rotation = setInterval(() => {
+    if (![...leases.values()].some((entry) => !entry.active)) return;
+    const batch = [...leases.entries()].filter(([, entry]) => entry.active);
+    for (const [id, entry] of batch) {
+      leases.delete(id); entry.active = false; entry.update(false); leases.set(id, entry);
+    }
+    allocate();
+  }, 10000);
+  return () => {
+    leases.delete(key); allocate();
+    if (!leases.size && rotation) { clearInterval(rotation); rotation = undefined; }
+  };
 }
 
 class PreviewBoundary extends Component<{ children: ReactNode; onError: () => void }, { failed: boolean }> {
