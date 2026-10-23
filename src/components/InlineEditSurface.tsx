@@ -201,7 +201,7 @@ export default function InlineEditSurface({
     const map = objectComponentsNow();
     objectsRef.current = map ? findObjectRoots(root, map) : [];
     const reports: InlineReports = { page: replay.current.apply(root, editsRef.current, { iconMarkup }) };
-    const active = new Set(objectsRef.current.map((o) => o.el));
+    const active = new Set<Element>(objectsRef.current.map((o) => o.el));
     for (const [el, instance] of objectReplays.current) if (!active.has(el)) { instance.restoreAll(); objectReplays.current.delete(el); }
     for (const o of objectsRef.current) {
       let instance = objectReplays.current.get(o.el);
