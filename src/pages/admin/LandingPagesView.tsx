@@ -449,7 +449,7 @@ export default function LandingPagesView() {
           <button type="button" onClick={() => navigate("/manage/design")}
             className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] border border-transparent shadow-md transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
             <Pencil className="w-[18px] h-[18px] opacity-80" />
-            <span className="text-[15px] font-medium tracking-wide uppercase">Edit Pages</span>
+            <span className="text-[15px] font-medium tracking-wide">Edit It Myself</span>
           </button>
           <AddButtonRow subtle text="Add new page" label="Landing Page" onClick={() => setCreating(true)} />
         </div>
@@ -605,7 +605,7 @@ export default function LandingPagesView() {
                       {fmtDateTime(r.updated_at) || "—"}
                     </td>
                     <td className="px-1 py-3 text-center">
-                      <button className="p-1.5 rounded border hover:bg-muted inline-flex" aria-label="Edit Design" title="Edit Design"
+                      <button className="p-1.5 rounded border hover:bg-muted inline-flex" aria-label="Edit It Myself" title="Edit It Myself"
                         onClick={() => navigate(`/manage/design?page=${r.id}`)}>
                         <Pencil className="w-4 h-4" />
                       </button>

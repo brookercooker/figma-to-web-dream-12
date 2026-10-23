@@ -1,5 +1,5 @@
 # Roadmap — coded object import fidelity
-- [ ] Separate Chat Mode and Manual Mode chrome, guard switching, and verify tests plus signed-in Home across widths/themes without content saves.
+- [x] Separate Chat Mode and Manual Mode chrome and guard switching; 399 tests and tsgo pass, signed-in Home mode controls verified at desktop/narrow widths in light/dark without content saves; hosted preview and Home media remain unavailable.
 - [x] Verify shared-renderer checksum and whole-card/inline-text link controls: 310 tests and tsgo pass; signed-in live edits save/read back and temporary object removed.
 - [x] Add live Capture camera with repeated shots and native-picker fallback; 11 camera tests and 224 total tests pass, authenticated desktop/mobile camera staging and track cleanup verified with a simulated device.
 - [x] Sync manifest pages into Pages automatically and enforce unique paths; verified automatic additions and 198 tests.
