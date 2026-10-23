@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { Loader2, Minimize2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDesignChat, type Device } from "./DesignChatContext";
@@ -13,7 +13,7 @@ const WIDTH: Record<Device, string> = { mobile: "390px", tablet: "820px", deskto
  * screen, submit) are in the top bar, see PreviewTools.tsx.
  */
 export default function PreviewPanel() {
-  const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing, editing } = useDesignChat();
+  const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing, editing, previewNav } = useDesignChat();
   const location = useLocation();
   const visible = location.pathname.split("/")[2] === "preview" && !editing;
 
@@ -40,6 +40,20 @@ export default function PreviewPanel() {
               className={cn("absolute inset-0 h-full w-full border-0 bg-white", f.id !== preview.shownId && preview.shownId !== 0 && "invisible")}
             />
           ))}
+          {visible && previewNav && !drawing.on && !drawing.capturing && (
+            <div className="pointer-events-none absolute left-2 top-2 z-20 flex gap-1">
+              <Button type="button" variant="outline" size="icon"
+                className="pointer-events-auto h-8 w-8 rounded-md bg-background/85 shadow-sm backdrop-blur-sm hover:bg-background"
+                onClick={previewNav.back} disabled={!previewNav.canBack} aria-label="Back" title="Back">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button type="button" variant="outline" size="icon"
+                className="pointer-events-auto h-8 w-8 rounded-md bg-background/85 shadow-sm backdrop-blur-sm hover:bg-background"
+                onClick={previewNav.forward} disabled={!previewNav.canForward} aria-label="Forward" title="Forward">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
           {drawing.on && preview.loaded && <DrawLayer />}
         </div>
 
