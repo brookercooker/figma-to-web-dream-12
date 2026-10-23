@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Box, Image as ImageIcon } from "lucide-react";
 import LibraryPicker from "../LibraryPicker";
+import LibraryCard from "../LibraryCard";
 import { PALETTE, colorFor } from "../../labelColors";
 
 const many = Array.from({ length: 70 }, (_, n) => ({ id: `i${n}`, name: `photo-${String(n).padStart(2, "0")}.jpg`, url: `https://x/${n}.webp`, alt: `photo ${n}`, labels: n === 7 ? ["Rooms/Lobby"] : n === 8 ? ["Z/a", "Z/b", "Z/c", "Z/d", "Z/e"] : n === 2 ? ["Area/Kitchen"] : [], createdAt: n === 5 ? "2026-01-03T00:00:00Z" : n === 6 ? "2025-01-01T00:00:00Z" : undefined }));
@@ -40,6 +41,24 @@ const setup = (kind: "images" | "objects" = "images") => {
 const cards = () => within(screen.getByRole("dialog")).getAllByRole("button").filter((b) => /^(photo-|Hero|Flyer)/.test(b.getAttribute("title") ?? ""));
 
 describe("library picker", () => {
+  it("centers whole image thumbnails for both the thumbnail and web fallback", async () => {
+    thumbs.data = { "images-web-gated": { "0.webp": "https://signed/0" } };
+    setup(); await screen.findByText("60 of 70 shown");
+    const card = screen.getByTitle("photo-00.jpg");
+    const img = card.querySelector("img");
+    expect(img).toHaveClass("object-contain", "object-center");
+    if (!img) throw new Error("Expected thumbnail");
+    fireEvent.error(img);
+    expect(card.querySelector("img")).toHaveClass("object-contain", "object-center");
+  });
+  it.each(["video", "object"] as const)("keeps %s thumbnails cropped as before", (kind) => {
+    const item = kind === "video"
+      ? { kind, id: "v", name: "Video", url: "video", thumb: "poster" }
+      : { kind, id: "o", name: "Object", type: "built in code", thumb: "object-thumb" };
+    const { container } = render(<LibraryCard item={item} labels={[]} selected={false} FallbackIcon={Box} onPick={vi.fn()} />);
+    expect(container.querySelector("img")).toHaveClass("object-cover");
+    expect(container.querySelector("img")).not.toHaveClass("object-contain");
+  });
   it("uses stored Lovable asset URLs regardless of visibility while thumbnails are pending", async () => {
     setup(); await screen.findByText("60 of 70 shown");
     expect(screen.getByTitle("photo-00.jpg").querySelector("img")).toHaveAttribute("src", "/__l5e/assets-v1/id/0.jpg");

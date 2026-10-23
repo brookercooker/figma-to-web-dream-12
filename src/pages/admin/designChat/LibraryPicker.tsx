@@ -30,7 +30,7 @@ function ImageThumbnail({ candidates }: { candidates: string[] }) {
   const src = candidates.find((candidate) => !failedSources.has(candidate));
   if (!candidates.length) return <span className="block h-full w-full animate-pulse bg-muted" />;
   if (!src) return <span className="grid h-full w-full place-items-center px-2 text-center text-xs text-muted-foreground">Preview Unavailable</span>;
-  return <img key={src} src={src} alt="" loading="lazy" className="h-full w-full object-cover" onError={() => setFailedSources((s) => new Set([...s, src]))} />;
+  return <img key={src} src={src} alt="" loading="lazy" className="h-full w-full object-contain object-center" onError={() => setFailedSources((s) => new Set([...s, src]))} />;
 }
 
 const byName = (a: Row, b: Row) => a.ref.name.localeCompare(b.ref.name);
