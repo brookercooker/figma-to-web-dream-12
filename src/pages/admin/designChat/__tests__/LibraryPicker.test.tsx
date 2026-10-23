@@ -5,6 +5,11 @@ import LibraryPicker from "../LibraryPicker";
 import { PALETTE, colorFor } from "../../labelColors";
 
 const many = Array.from({ length: 70 }, (_, n) => ({ id: `i${n}`, name: `photo-${String(n).padStart(2, "0")}.jpg`, url: `https://x/${n}.webp`, alt: `photo ${n}`, labels: n === 7 ? ["Rooms/Lobby"] : n === 8 ? ["Z/a", "Z/b", "Z/c", "Z/d", "Z/e"] : n === 2 ? ["Area/Kitchen"] : [], createdAt: n === 5 ? "2026-01-03T00:00:00Z" : n === 6 ? "2025-01-01T00:00:00Z" : undefined }));
+const thumbs = vi.hoisted(() => ({ data: {} as Record<string, Record<string, string>>, calls: vi.fn() }));
+vi.mock("../../useAdminData", () => ({ useImageThumbnails: (bucket: string, paths: string[], width: number) => {
+  thumbs.calls(bucket, paths, width);
+  return { data: thumbs.data[bucket] ?? {} };
+} }));
 vi.mock("../../ImagePickerDialog", async () => {
   const real = await vi.importActual<any>("../../ImagePickerDialog");
   return { ...real, loadLibraryImages: async () => many };
@@ -18,7 +23,11 @@ vi.mock("../../ObjectPickerDialog", async () => {
   ] };
 });
 vi.mock("../../useAllLabels", () => ({ useLabelsForScope: () => ({ data: [{ path: "Rooms/Lobby", color_index: 7 }], refetch: vi.fn() }) }));
-beforeEach(() => { (globalThis as any).ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} }; });
+beforeEach(() => {
+  thumbs.data = {}; thumbs.calls.mockClear();
+  many.forEach((i, n) => Object.assign(i, { visibility: n % 2 === 0 ? "gated" : "public", webPath: `${n}.webp` }));
+  (globalThis as any).ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
+});
 afterEach(cleanup);
 
 const setup = (kind: "images" | "objects" = "images") => {
@@ -31,6 +40,39 @@ const setup = (kind: "images" | "objects" = "images") => {
 const cards = () => within(screen.getByRole("dialog")).getAllByRole("button").filter((b) => /^(photo-|Hero|Flyer)/.test(b.getAttribute("title") ?? ""));
 
 describe("library picker", () => {
+  it("never uses a gated raw URL while signing is pending, but keeps the public fallback", async () => {
+    setup(); await screen.findByText("60 of 70 shown");
+    expect(screen.getByTitle("photo-00.jpg").querySelector("img")).toBeNull();
+    expect(screen.getByTitle("photo-01.jpg").querySelector("img")).toHaveAttribute("src", "https://x/1.webp");
+  });
+  it("uses signed gated and public transformed thumbnails without changing the picked URL", async () => {
+    thumbs.data = { "images-web-gated": { "0.webp": "https://signed/0" }, "images-web": { "1.webp": "https://public/thumb/1" } };
+    const { onPick } = setup(); await screen.findByText("60 of 70 shown");
+    expect(screen.getByTitle("photo-00.jpg").querySelector("img")).toHaveAttribute("src", "https://signed/0");
+    expect(screen.getByTitle("photo-01.jpg").querySelector("img")).toHaveAttribute("src", "https://public/thumb/1");
+    fireEvent.click(screen.getByTitle("photo-00.jpg"));
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: "i0", url: "https://x/0.webp" }));
+  });
+  it("requests thumbnail batches only for shown images and updates them when filtering", async () => {
+    setup(); await screen.findByText("60 of 70 shown");
+    expect(thumbs.calls).toHaveBeenCalledWith("images-web-gated", Array.from({ length: 30 }, (_, n) => `${n * 2}.webp`), 320);
+    expect(thumbs.calls.mock.calls.every(([, paths]) => !paths.includes("60.webp"))).toBe(true);
+    fireEvent.change(screen.getByLabelText("Search images"), { target: { value: "photo-60" } });
+    await waitFor(() => expect(thumbs.calls).toHaveBeenCalledWith("images-web-gated", ["60.webp"], 320));
+  });
+  it("a failed final thumbnail remains selectable with its original reference", async () => {
+    thumbs.data = { "images-web-gated": { "0.webp": "https://signed/0" } };
+    const { onPick } = setup(); await screen.findByText("60 of 70 shown");
+    const card = screen.getByTitle("photo-00.jpg");
+    const img = card.querySelector("img");
+    if (!img) throw new Error("Expected signed thumbnail");
+    fireEvent.error(img);
+    expect(card.querySelector("img")).toBeNull();
+    fireEvent.click(card);
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ id: "i0", url: "https://x/0.webp" }));
+  });
   it("opens a large popup with search that narrows the grid", async () => {
     setup();
     expect(await screen.findByRole("heading", { name: "Pick an Image" })).toBeInTheDocument();
