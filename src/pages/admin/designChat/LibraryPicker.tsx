@@ -15,6 +15,7 @@ import type { ChatReference } from "./references";
 import { GATED_BUCKET } from "@/lib/assetUrl";
 import { useImageThumbnails } from "../useAdminData";
 import { tileSrcCandidates } from "../imageTileSrc";
+import ObjectLiveThumbnail from "../ObjectLiveThumbnail";
 
 export type LibraryKind = "images" | "videos" | "objects";
 const PAGE = 60;
@@ -201,7 +202,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
                       gated: r.visibility === "gated",
                       thumb: r.webPath ? (r.visibility === "gated" ? gatedThumbs : publicThumbs)[r.webPath] : undefined,
                       webUrl: r.webUrl ?? (r.ref.kind === "image" ? r.ref.url : ""),
-                    })} /> : undefined} />
+                    })} /> : r.ref.kind === "object" ? <ObjectLiveThumbnail componentKey={r.ref.componentKey} storedThumb={r.ref.thumb} /> : undefined} />
                 ))}
               </div>
               {matches.length > limit && (

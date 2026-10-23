@@ -41,7 +41,7 @@ import CreateObjectDialog from "./CreateObjectDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import TagsPanel from "./TagsPanel";
 import Thumbnail from "./Thumbnail";
-import ObjectMiniPreview from "./ObjectMiniPreview";
+import ObjectLiveThumbnail from "./ObjectLiveThumbnail";
 import LabelsCell from "./LabelsCell";
 import WorkStatusPopover from "./WorkStatusPopover";
 import { supabase } from "@/prototype/client";
@@ -505,7 +505,7 @@ export default function ObjectsTab() {
                       >
                         {hasComponent ? (
                           <div className="w-[96px] h-[60px] rounded border overflow-hidden bg-muted/30">
-                            <ObjectMiniPreview componentKey={obj.component_key} content={(obj as any).content} width={96} height={60} />
+                            <ObjectLiveThumbnail componentKey={obj.component_key} storedThumb={obj.thumbnail_url} />
                           </div>
                         ) : (
                           <div className="w-[96px] h-[60px] rounded border border-dashed border-brass/40 bg-brass/5 flex flex-col items-center justify-center text-[10px] text-brass uppercase tracking-wider">
