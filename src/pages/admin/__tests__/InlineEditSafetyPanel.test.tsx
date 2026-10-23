@@ -1,11 +1,12 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import InlineEditSafetyPanel from "../InlineEditSafetyPanel";
 afterEach(cleanup);
 it("discards only the selected orphan and keeps the other action inert", () => {
   const discard = vi.fn();
   render(<InlineEditSafetyPanel reports={{page:{applied:[],unchecked:[],rejected:[],orphaned:[{path:'0.1',kinds:['html'],reason:'The text under it changed.'}]}}} selection={null} editsFor={() => ({'0.1':'Light transforms rooms'})} discard={discard} record={vi.fn()} resetAll={vi.fn()} />);
-  fireEvent.click(screen.getByRole('button',{name:/Edits That Could Not Be Applied/}));
+  const group = screen.getByRole('button',{name:/Edits That Could Not Be Applied/});
+  if (group.getAttribute('aria-expanded') === 'false') fireEvent.click(group);
   fireEvent.click(screen.getByRole('button',{name:'Keep For Now'})); expect(discard).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole('button',{name:'Discard This Edit'})); expect(discard).toHaveBeenCalledWith('page','0.1');
 });

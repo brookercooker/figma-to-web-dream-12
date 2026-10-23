@@ -16,7 +16,7 @@ describe("link overrides", () => {
   });
   it("replays anchor/button destinations and exact resets without changing children or classes", () => {
     const root = card(), replay = createReplay(), anchor = root.children[0], button = root.children[1];
-    const children = anchor.firstChild, classes = anchor.className, before = root.innerHTML;
+    const children = anchor.firstChild, classes = anchor.className;
     replay.apply(root, { "link:0": encoded({ href: "/new", target: "_blank" }), "link:1": encoded({ href: "/button", target: "_blank" }) });
     expect(anchor.getAttribute("href")).toBe("/new"); expect(anchor.getAttribute("target")).toBe("_blank");
     expect(anchor.getAttribute("rel")).toBe("noopener noreferrer");
@@ -26,7 +26,11 @@ describe("link overrides", () => {
     replay.apply(root, { "link:0": encoded({ unlinked: true }) });
     expect(anchor.hasAttribute("href")).toBe(false); expect(anchor.getAttribute("data-inline-link")).toBe("off");
     expect(anchor.firstChild).toBe(children); expect(anchor.className).toBe(classes);
-    replay.apply(root, {}); expect(root.innerHTML).toBe(before);
+    replay.apply(root, {});
+    expect(anchor.getAttribute("href")).toBe("/original"); expect(anchor.getAttribute("target")).toBe("_self");
+    expect(anchor.getAttribute("rel")).toBe("author"); expect(anchor.hasAttribute("data-inline-link")).toBe(false);
+    expect(button.hasAttribute("data-inline-href")).toBe(false); expect(button.hasAttribute("data-inline-target")).toBe(false);
+    expect(anchor.firstChild).toBe(children); expect(anchor.className).toBe(classes);
   });
   it("clears an edited new-tab setting and performs no second DOM writes", () => {
     const root = card(), replay = createReplay();

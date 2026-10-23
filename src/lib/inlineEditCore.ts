@@ -254,7 +254,7 @@ export function createReplay() {
         const linkValue = values.get("link");
         if (linkValue !== undefined) {
           const link = JSON.parse(linkValue) as LinkEdit;
-          const desired = { ...o.link, "data-inline-link": link.unlinked ? "off" : "1" };
+          const desired: Record<string, string | null> = { ...o.link, "data-inline-link": link.unlinked ? "off" : "1" };
           if (el.tagName.toLowerCase() === "a") {
             desired.href = link.unlinked ? null : link.href ?? null;
             if (link.href) { desired.target = link.target ?? null; desired.rel = link.target ? "noopener noreferrer" : o.link.rel; }
