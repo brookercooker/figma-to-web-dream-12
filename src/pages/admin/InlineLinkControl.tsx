@@ -39,7 +39,12 @@ export default function InlineLinkControl() {
   const close = () => {
     setOpen(false);
     const current = saved.current;
-    if (current?.host.isConnected) current.host.focus();
+    if (current?.host.isConnected) {
+      current.host.focus();
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(current.range);
+    }
   };
   const apply = (remove = false) => {
     const current = saved.current;

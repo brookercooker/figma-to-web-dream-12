@@ -1443,7 +1443,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
       if (ev.key === "Escape") { ev.preventDefault(); target.blur(); }
       if (ev.key === "Enter" && field !== "body" && field !== "extra") { ev.preventDefault(); target.blur(); }
     };
-    const onBlur = () => queueMicrotask(() => { if (document.activeElement !== target) commit(); });
+    const onBlur = () => window.setTimeout(() => { if (document.activeElement !== target) commit(); }, 0);
     target.addEventListener("blur", onBlur);
     target.addEventListener("keydown", onKey);
     target.addEventListener("click", stop);
