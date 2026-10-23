@@ -34,6 +34,7 @@ import InsertGap, { type InsertType } from "./InsertGap";
 import InlineEditSurface, { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
 import InlineStylePanel from "./InlineStylePanel";
 import InlineEditSafetyPanel from "./InlineEditSafetyPanel";
+import InlineDestinationPanel from "./InlineDestinationPanel";
 import { hasVisibleEdits, withoutPath } from "@/lib/inlineEditCore";
 import type { InlineEditController, InlineReports } from "@/components/InlineEditSurface";
 import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
@@ -829,6 +830,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                         if (url) changeScope(inlineSel.scope, { ...scopeEdits(inlineSel.scope), [`img:${inlineSel.key}`]: url });
                       }}
                     />
+                    <InlineDestinationPanel selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
                     <InlineEditSafetyPanel reports={inlineReports} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
                       record={() => { const maps = inlineApi.current?.record(); if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
@@ -1220,6 +1222,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                         edits={inlineEdits}
                         objectEdits={objectEdits}
                         editing={quick}
+                        navigate={(href) => { if (!/^\/(?!\/)/.test(href)) return false; navigate(href); return true; }}
                         onChange={changeScope}
                         onSelect={setInlineSel}
                         selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null}
