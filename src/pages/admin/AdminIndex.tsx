@@ -17,6 +17,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import LibraryPicker from "./designChat/LibraryPicker";
 import { toast } from "sonner";
 import { ModeSwitchProvider, useModeSwitch } from "./designChat/ModeSwitchContext";
+import ModeToggle from "./designChat/ModeToggle";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -80,7 +81,7 @@ function AdminShell() {
   useEffect(() => {
     if (previousMode.current === mode) return;
     previousMode.current = mode;
-    setAnnouncement(manual ? "Manual Mode. You are editing by hand." : "Chat Mode. Claude makes the changes.");
+    setAnnouncement(manual ? "Manual Edit Mode. You are editing by hand." : "Chat Mode. Claude makes the changes.");
     if (manual) bannerRef.current?.focus();
     else requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Describe a Change"]')?.focus());
   }, [mode, manual]);
@@ -347,6 +348,7 @@ function AdminShell() {
               <PanelLeftClose className="h-4 w-4" />
             </Button>}
           </div>
+          <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />
           {manual && workingPage && (
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex items-center justify-between px-3 pt-2">

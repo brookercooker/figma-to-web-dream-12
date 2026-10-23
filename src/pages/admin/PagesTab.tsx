@@ -13,9 +13,9 @@ import TagsPanel from "./TagsPanel";
 import InlineEdit from "./InlineEdit";
 import ConfirmDialog from "./ConfirmDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
-import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, Pencil, MessageSquare } from "lucide-react";
+import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, MessageSquare } from "lucide-react";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
-import { useModeSwitch } from "./designChat/ModeSwitchContext";
+import { workingPageFrom } from "./designChat/pageSelection";
 import { CopyRefButton, buildPageRef } from "./copyReference";
 import { clearAllRouteSnapshots } from "./routeSnapshot";
 import { reservedPrefixFor } from "./reservedPaths";
@@ -32,7 +32,6 @@ import { useAutoCaptureThumbnails, regenerateThumbnail } from "./useThumbnailCap
 import WorkStatusPopover from "./WorkStatusPopover";
 import { syncManifestPages, PAGES_SYNCED } from "./manifestPageSync";
 import { MANIFEST_CHANGED } from "./siteManifest";
-import { pageAccess } from "./pagePolicy";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -89,7 +88,12 @@ const openLive = (path: string) => {
 export default function PagesTab() {
   const navigate = useNavigate();
   const designChat = useDesignChatOptional(); // present inside the Site Manager, where the chat is on the right
-  const modeSwitch = useModeSwitch();
+  const choosePage = (page: Page) => {
+    if (!designChat) return;
+    designChat.selectPage(workingPageFrom(page));
+    navigate("/manage/preview");
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-mode-switch] [data-mode="manual"]')?.focus());
+  };
   const [pages, setPages] = useState<Page[]>([]);
   const [q, setQ] = useState("");
   const [searchField, setSearchField] = useState<Field>("all");
@@ -467,11 +471,6 @@ export default function PagesTab() {
       />
 
       <div className="flex items-center gap-3 py-2">
-        <button type="button" onClick={() => navigate("/manage/design")}
-          className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] border border-transparent shadow-md transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
-          <Pencil className="w-[18px] h-[18px] opacity-80" />
-          <span className="text-[15px] font-medium tracking-wide">Edit It Myself</span>
-        </button>
         <AddButtonRow subtle text="Add new page" label="Page" onClick={() => setCreating(true)} />
       </div>
 
@@ -510,7 +509,6 @@ export default function PagesTab() {
           <col style={{ width: 90 }} />
           <col style={{ width: 48 }} />
           <col style={{ width: 48 }} />
-          <col style={{ width: 48 }} />
         </colgroup>
 
         <thead>
@@ -523,7 +521,6 @@ export default function PagesTab() {
             <th className="px-3 py-3 text-left truncate">Labels</th>
             <th className="px-3 py-3 text-left truncate">Last Mod</th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">Chat</span></th>
-            <th className="px-2 py-3 text-center truncate"><span className="sr-only">Edit</span></th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">Open</span></th>
             <th className="px-2 py-3 text-center truncate"><span className="sr-only">More</span></th>
           </tr>
@@ -553,6 +550,7 @@ export default function PagesTab() {
             return (
               <tr
                 key={p.id}
+                onClick={(event) => { if (!(event.target instanceof Element) || event.target.closest('button,a,input,select,textarea,[role="button"]')) return; choosePage(p); }}
                 draggable
                 onDragStart={(e) => onRowDragStart(e, p.id)}
                 className={`border-b align-top ${on ? "bg-primary/10" : "hover:bg-muted/40"}`}
@@ -576,13 +574,12 @@ export default function PagesTab() {
                 </td>
                 <td className="px-3 py-3 min-w-0" title={p.name}>
                   <div className="flex flex-col gap-0.5 min-w-0 items-start">
-                    <a
-                      href={p.path.startsWith("/") ? p.path : `/${p.path}`}
-                      className="text-sm truncate max-w-full block text-left hover:underline focus:outline-none focus:underline"
+                    <Button variant="link" onClick={() => choosePage(p)}
+                      className="h-auto p-0 text-sm truncate max-w-full block text-left"
                       title={p.name}
                     >
                       {p.name}
-                    </a>
+                    </Button>
                     <span className="font-mono text-[10px] text-muted-foreground truncate max-w-full" title={p.path}>
                       {p.path}
                     </span>
@@ -632,7 +629,7 @@ export default function PagesTab() {
                     const chosen = designChat.workingPage?.path === pagePath;
                     return (
                       <button
-                        onClick={() => { designChat.selectPage({ id: p.id, name: p.name, path: pagePath }); navigate("/manage/preview"); }}
+                        onClick={() => choosePage(p)}
                         aria-label={`Ask Claude To Change It: ${p.name}`}
                         aria-pressed={chosen}
                         title="Ask Claude To Change It"
@@ -642,23 +639,6 @@ export default function PagesTab() {
                       </button>
                     );
                   })()}
-                </td>
-                <td className="px-1 py-3 text-center">
-                  <Button variant="outline" size="icon"
-                    onClick={() => {
-                      const open = () => { if (pageAccess(p) === "tweak" && designChat) {
-                        designChat.selectPage({ id: p.id, name: p.name, path: p.path });
-                        navigate("/manage/preview");
-                        designChat.startEditing();
-                      } else navigate(`/manage/design?page=${p.id}&mode=edit`); };
-                      if (modeSwitch) void modeSwitch.requestManual(open); else open();
-                    }}
-                    aria-label={`Edit It Myself: ${p.name}`}
-                    title="Edit It Myself"
-                    className="p-1.5 rounded border hover:bg-muted inline-flex"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
                 </td>
                 <td className="px-1 py-3 text-center">
                   <button

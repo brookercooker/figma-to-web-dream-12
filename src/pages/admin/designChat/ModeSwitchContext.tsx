@@ -47,9 +47,9 @@ export function ModeSwitchProvider({ children }: { children: ReactNode }) {
     savingRef.current = true; setSaving(true); setError("");
     try {
       if (await saveAll()) { stopEditing(); complete(true); }
-      else setError("Your edits couldn't be saved. You are still in Manual Mode. Try saving again.");
+      else setError("Your edits couldn't be saved. You are still in Manual Edit Mode. Try saving again.");
     } catch {
-      setError("Your edits couldn't be saved. You are still in Manual Mode. Try saving again.");
+      setError("Your edits couldn't be saved. You are still in Manual Edit Mode. Try saving again.");
     } finally { savingRef.current = false; setSaving(false); }
   };
   return (
