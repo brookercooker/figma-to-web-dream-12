@@ -950,11 +950,11 @@ export default function VideoTab() {
                   <SignedThumbImg
                     url={v.poster_url}
                     alt={v.alt_text || v.name}
-                    className="w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover"
                     loading="lazy"
                     decoding="async"
                     fallback={
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                      <div className="absolute inset-0 w-full h-full flex items-center justify-center text-muted-foreground">
                         <Play className="w-8 h-8 opacity-40" />
                       </div>
                     }
