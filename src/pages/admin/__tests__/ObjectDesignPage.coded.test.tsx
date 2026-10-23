@@ -99,15 +99,15 @@ describe("coded object editing", () => {
   });
   it("standalone Edit toggling never imports; conversion requires confirmation and Cancel is inert", async () => {
     const r = open(false); await screen.findByText("Ceiling");
-    fireEvent.click(screen.getByRole("button", { name: "Preview", exact: true }));
-    fireEvent.click(screen.getByRole("button", { name: "Edit", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Preview$/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Edit$/ }));
     fireEvent.click(screen.getByRole("button", { name: "Convert to Blocks (Appearance May Change)" }));
     expect(screen.getByRole("alertdialog")).toHaveTextContent("Visitors will keep seeing the original coded version");
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(r.container.querySelector(".inline-edit-surface")).toBeTruthy();
     expect(mocks.importer).not.toHaveBeenCalled(); expect(mocks.writes).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Convert to Blocks (Appearance May Change)" }));
-    fireEvent.click(screen.getByRole("button", { name: "Convert to Blocks", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Convert to Blocks$/ }));
     await waitFor(() => expect(mocks.importer).toHaveBeenCalled(), { timeout: 4000 });
     expect(r.container.querySelector(".inline-edit-surface")).toBeNull();
   });
