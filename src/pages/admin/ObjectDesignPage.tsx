@@ -1,4 +1,7 @@
 import ConfirmDialog from "./ConfirmDialog";
+import InlineLinkControl from "./InlineLinkControl";
+import PictureLinkControl from "./PictureLinkControl";
+import { mergePictureChanges } from "./inlineLinks";
 import { Children, Fragment, isValidElement, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -209,6 +212,7 @@ function SelectionStylePanel() {
         <button type="button" onMouseDown={keep} onClick={() => formatSelection("bold")} className={`${btn} font-bold`}>B</button>
         <button type="button" onMouseDown={keep} onClick={() => formatSelection("italic")} className={`${btn} italic`}>I</button>
         <button type="button" onMouseDown={keep} onClick={() => formatSelection("underline")} className={`${btn} underline`}>U</button>
+        <InlineLinkControl />
         {TEXT_FONTS.map((f) => (
           <button key={f.value} type="button" onMouseDown={keep} onClick={() => styleSelection("data-font", f.value)} className={`${btn} ${f.value === "serif" ? "font-serif" : "font-sans"}`}>
             {f.label}
@@ -241,10 +245,13 @@ function useInlineSelection() {
   const [on, setOn] = useState(false);
   useEffect(() => {
     const check = () => {
+      if (document.querySelector("[data-inline-link-popup]")) return;
       const sel = window.getSelection();
-      const node = sel && sel.rangeCount && !sel.isCollapsed ? sel.anchorNode : null;
+      const anchor = sel?.anchorNode;
+      const anchorEl = anchor instanceof HTMLElement ? anchor : anchor?.parentElement;
+      const node = sel && sel.rangeCount && (!sel.isCollapsed || anchorEl?.closest("a")) ? sel.anchorNode : null;
       const el = node instanceof HTMLElement ? node : node?.parentElement;
-      setOn(!!el?.closest('[contenteditable="true"][data-text-body], [contenteditable="true"][data-part]'));
+      setOn(!!el?.closest('[contenteditable="true"]'));
     };
     document.addEventListener("selectionchange", check);
     return () => document.removeEventListener("selectionchange", check);
@@ -1389,6 +1396,11 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
 
 
     target.contentEditable = "true";
+    const section = sections.find((s) => s.id === sectionId);
+    const picture = imgText ? section && "images" in section ? section.images[imgText.img] : section && "image" in section ? section.image : undefined
+      : captionIdx >= 0 ? section && "images" in section ? section.images[captionIdx] : undefined : undefined;
+    const isButton = field === "buttonLabel" || (extraIdx >= 0 && section?.type === "free" && section.extras?.[extraIdx]?.kind === "button") || (imgText && picture?.texts?.[imgText.t]?.kind === "button");
+    target.dataset.inlineNoLinks = String(!!isButton || !!(picture?.linkCard && picture.href?.trim()));
     target.spellcheck = false;
     target.style.outline = "2px solid hsl(var(--primary))";
     target.style.outlineOffset = "2px";
@@ -1401,9 +1413,11 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
 
     const stop = (ev: Event) => ev.stopPropagation();
     const commit = () => {
+      if (document.querySelector("[data-inline-link-popup]")) return;
       // keeps any bold / italic / underline applied to parts of the text
       const value = cleanEditedHtml(target.innerHTML ?? "");
       target.contentEditable = "false";
+      delete target.dataset.inlineNoLinks;
       target.style.outline = "";
       target.style.outlineOffset = "";
       target.removeEventListener("blur", commit);
@@ -1429,7 +1443,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
       if (ev.key === "Escape") { ev.preventDefault(); target.blur(); }
       if (ev.key === "Enter" && field !== "body" && field !== "extra") { ev.preventDefault(); target.blur(); }
     };
-    target.addEventListener("blur", commit);
+    const onBlur = () => queueMicrotask(() => { if (document.activeElement !== target) commit(); });
+    target.addEventListener("blur", onBlur);
     target.addEventListener("keydown", onKey);
     target.addEventListener("click", stop);
   };
@@ -1699,11 +1714,11 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
       prev.map((s) => {
         if (s.id !== id) return s;
         if (index < 0 && "image" in s) {
-          return { ...s, image: { ...(s as any).image, ...changes } } as Section;
+          return { ...s, image: mergePictureChanges(s.image, changes) } as Section;
         }
         if ("images" in s) {
           const images = (s as any).images.map((img: SectionImage, i: number) =>
-            i === index ? { ...img, ...changes } : img,
+            i === index ? mergePictureChanges(img, changes) : img,
           );
           return { ...s, images } as Section;
         }
@@ -2378,6 +2393,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               onChange={(e) => patchImage(section.id, index, { href: e.target.value })}
             />
           )}
+          <PictureLinkControl image={image} onChange={(changes) => patchImage(section.id, index, changes)} />
           <Field label="Zoom in (%)">
             <div className="flex items-center gap-2">
               <input
@@ -2520,6 +2536,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
               </div>
               {tOpen && (
                 <>
+                  {image.linkCard && image.href?.trim() && <ToolNote>This picture is a whole-card link, so links inside its text are shown without their own link.</ToolNote>}
                   <Choice
                     value={t.align ?? image.captionAlign ?? (section as any).captionAlign ?? "left"}
                     options={[
