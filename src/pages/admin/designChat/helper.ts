@@ -66,6 +66,7 @@ export type RelayState = {
   job: Job | null;
   previewVersion: number;
   previewBuiltAt?: number | null;
+  previewChecking?: boolean;
   /** True when the design service takes drawings (marks and a picture) with a request. */
   drawing?: boolean;
   history: Entry[];
