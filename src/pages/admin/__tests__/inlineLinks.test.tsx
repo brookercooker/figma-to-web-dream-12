@@ -102,6 +102,7 @@ describe("inline text links", () => {
     const { host, range } = words();
     if (kind === "card") host.dataset.inlineNoLinks = "true";
     else { const button = document.createElement("button"); host.replaceWith(button); button.append(host); }
+    range.selectNodeContents(host);
     render(<InlineLinkControl />); select(range);
     expect(screen.getByRole("button", { name: "Link", exact: true })).toBeDisabled();
   });
