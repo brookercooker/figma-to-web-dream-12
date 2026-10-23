@@ -35,6 +35,8 @@ import { toRouteSlug } from "./slug";
 import { formatSchedule, formatScheduleShort, isoToLocalParts, localDateToIso } from "@/lib/landingDates";
 import { useAutoCaptureThumbnails, regenerateThumbnail } from "./useThumbnailCapture";
 import { PAGES_SYNCED, syncManifestPages } from "./manifestPageSync";
+import { useDesignChatOptional } from "./designChat/DesignChatContext";
+import { workingPageFrom } from "./designChat/pageSelection";
 
 interface Landing {
   id: string;
@@ -114,6 +116,12 @@ const FIELDS: { v: Field; label: string }[] = [
 ];
 
 export default function LandingPagesView() {
+  const designChat = useDesignChatOptional();
+  const choosePage = (page: Landing) => {
+    if (!designChat) return;
+    designChat.selectPage(workingPageFrom(page)); navigate("/manage/preview");
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-mode-switch] [data-mode="manual"]')?.focus());
+  };
   const [rows, setRows] = useState<Landing[]>([]);
   const [q, setQ] = useState("");
   const [searchField, setSearchField] = useState<Field>("all");
@@ -446,11 +454,6 @@ export default function LandingPagesView() {
         />
 
         <div className="flex items-center gap-3 py-2">
-          <button type="button" onClick={() => navigate("/manage/design")}
-            className="inline-flex items-center gap-3 px-10 py-3.5 rounded-full bg-[hsl(var(--nova-ink))] text-[hsl(var(--nova-sand))] border border-transparent shadow-md transition-all duration-300 hover:bg-[hsl(var(--nova-brass))] hover:text-[hsl(var(--nova-ink))] active:scale-[0.98]">
-            <Pencil className="w-[18px] h-[18px] opacity-80" />
-            <span className="text-[15px] font-medium tracking-wide">Edit It Myself</span>
-          </button>
           <AddButtonRow subtle text="Add new page" label="Landing Page" onClick={() => setCreating(true)} />
         </div>
 
@@ -501,7 +504,6 @@ export default function LandingPagesView() {
                 <th className="px-3 py-2 text-center">Copy</th>
                 <th className="px-3 py-2 text-left">Labels</th>
                 <th className="px-3 py-2 text-left">Last Mod</th>
-                <th className="px-2 py-2 text-center">Edit</th>
                 <th className="px-2 py-2 text-center"><span className="sr-only">Open</span></th>
                 <th className="px-2 py-2 text-center"><span className="sr-only">More</span></th>
               </tr>
@@ -522,7 +524,7 @@ export default function LandingPagesView() {
                 const sched = scheduleStatus(work, r.start_at, r.end_at);
                 const slug = r.path.replace(/^\/landing\//, "");
                 return (
-                  <tr key={r.id} className={`border-b align-top hover:bg-muted/40 ${selected.has(r.id) ? "bg-primary/5" : ""}`}>
+                  <tr key={r.id} onClick={(event) => { if (!(event.target instanceof Element) || event.target.closest('button,a,input,select,textarea,[role="button"]')) return; choosePage(r); }} className={`border-b align-top hover:bg-muted/40 ${selected.has(r.id) ? "bg-primary/5" : ""}`}>
                     <td className="px-1 py-3">
                       <input
                         type="checkbox"
@@ -543,13 +545,12 @@ export default function LandingPagesView() {
                     </td>
                     <td className="px-3 py-3 min-w-0" title={r.name}>
                       <div className="flex flex-col gap-0.5 min-w-0 items-start">
-                        <a
-                          href={r.path}
-                          className="text-sm truncate max-w-full block text-left hover:underline focus:outline-none focus:underline"
+                        <Button variant="link" onClick={() => choosePage(r)}
+                          className="h-auto p-0 text-sm truncate max-w-full block text-left"
                           title={r.name}
                         >
                           {r.name}
-                        </a>
+                        </Button>
                         <span className="font-mono text-[10px] text-muted-foreground truncate max-w-full" title={r.path}>
                           {r.path}
                         </span>
@@ -603,12 +604,6 @@ export default function LandingPagesView() {
                     </td>
                     <td className="px-2 py-3 text-xs text-muted-foreground whitespace-nowrap leading-tight" title={fmtDateTimeFull(r.updated_at)}>
                       {fmtDateTime(r.updated_at) || "—"}
-                    </td>
-                    <td className="px-1 py-3 text-center">
-                      <button className="p-1.5 rounded border hover:bg-muted inline-flex" aria-label="Edit It Myself" title="Edit It Myself"
-                        onClick={() => navigate(`/manage/design?page=${r.id}`)}>
-                        <Pencil className="w-4 h-4" />
-                      </button>
                     </td>
                     <td className="px-1 py-3 text-center">
                       <button className="p-1.5 rounded border hover:bg-muted inline-flex"
