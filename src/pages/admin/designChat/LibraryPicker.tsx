@@ -199,7 +199,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
                     thumbnail={kind === "images" ? <ImageThumbnail src={pickTileSrc({
                       gated: r.visibility === "gated",
                       thumb: r.webPath ? (r.visibility === "gated" ? gatedThumbs : publicThumbs)[r.webPath] : undefined,
-                      webUrl: r.ref.url ?? "",
+                      webUrl: r.ref.kind === "image" ? r.ref.url : "",
                     })} /> : undefined} />
                 ))}
               </div>
