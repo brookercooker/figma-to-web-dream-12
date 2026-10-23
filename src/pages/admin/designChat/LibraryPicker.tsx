@@ -29,9 +29,9 @@ type Row = { ref: ChatReference; search: (term: string) => boolean; labels: stri
 function ImageThumbnail({ candidates }: { candidates: string[] }) {
   const [failedSources, setFailedSources] = useState<Set<string>>(new Set());
   const src = candidates.find((candidate) => !failedSources.has(candidate));
-  if (!candidates.length) return <span className="block h-full w-full animate-pulse bg-muted" />;
-  if (!src) return <span className="grid h-full w-full place-items-center px-2 text-center text-xs text-muted-foreground">Preview Unavailable</span>;
-  return <img key={src} src={src} alt="" loading="lazy" className="h-full w-full object-contain object-center" onError={() => setFailedSources((s) => new Set([...s, src]))} />;
+  if (!candidates.length) return <span className="absolute inset-0 block h-full w-full animate-pulse bg-muted" />;
+  if (!src) return <span className="absolute inset-0 grid h-full w-full place-items-center px-2 text-center text-xs text-muted-foreground">Preview Unavailable</span>;
+  return <img key={src} src={src} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-contain object-center" onError={() => setFailedSources((s) => new Set([...s, src]))} />;
 }
 
 const byName = (a: Row, b: Row) => a.ref.name.localeCompare(b.ref.name);

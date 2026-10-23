@@ -16,9 +16,11 @@ export default function LibraryCard({ item, labels, note, selected, FallbackIcon
   return (
     <button type="button" onClick={onPick} data-picker-card="" title={item.name} aria-pressed={selected}
       className={`group flex flex-col overflow-hidden rounded-lg border bg-card text-left transition-colors ${selected ? "border-foreground ring-2 ring-foreground" : "hover:border-foreground/40"} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`}>
-      <span className="relative block aspect-[4/3] w-full bg-muted">
-        {thumbnail ?? (item.thumb ? <img src={item.thumb} alt="" loading="lazy" className={`h-full w-full ${item.kind === "image" ? "object-contain object-center" : "object-cover"}`} />
-          : <span className="grid h-full w-full place-items-center"><FallbackIcon className="h-8 w-8 text-muted-foreground" /></span>)}
+      <span data-thumb-frame="" className="relative block aspect-[4/3] w-full overflow-hidden bg-muted">
+        <span data-thumb-fill="" className="absolute inset-0 block h-full w-full">
+          {thumbnail ?? (item.thumb ? <img src={item.thumb} alt="" loading="lazy" className={`absolute inset-0 h-full w-full ${item.kind === "image" ? "object-contain object-center" : "object-cover"}`} />
+            : <span className="absolute inset-0 grid h-full w-full place-items-center"><FallbackIcon className="h-8 w-8 text-muted-foreground" /></span>)}
+        </span>
         {item.kind === "video" && (
           <span className="absolute left-2 top-2 rounded bg-background/85 p-1"><Film className="h-3.5 w-3.5" aria-hidden="true" /></span>
         )}
