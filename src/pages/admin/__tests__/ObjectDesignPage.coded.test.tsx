@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { MemoryRouter } from "react-router-dom";
 import ObjectDesignPage from "../ObjectDesignPage";
 import Categories from "@/components/objects/Categories";
+import { makeSection } from "@/components/ObjectSections";
 import { fingerprintOf } from "@/lib/inlineEditCore";
 
 const mocks = vi.hoisted(() => ({
@@ -112,7 +113,7 @@ describe("coded object editing", () => {
   });
   it("objects designed without a component key still open their saved block editor", async () => {
     mocks.row.component_key = null;
-    mocks.row.content = [{ id: "saved", type: "free", parts: [{ id: "text", kind: "paragraph", text: "Designed words" }] }];
+    mocks.row.content = [{ ...makeSection("free"), id: "saved", text: "Designed words" }];
     const r = open(); await waitFor(() => expect(r.container.querySelector("[data-block-id='saved']")).toBeTruthy());
     expect(r.container.querySelector(".inline-edit-surface")).toBeNull();
     expect(mocks.importer).not.toHaveBeenCalled();

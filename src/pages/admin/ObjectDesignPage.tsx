@@ -4431,7 +4431,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   if (object && codedKey && blockModeId !== object.id) return (
     <CodedObjectEditor key={object.id} object={{ ...object, component_key: codedKey }} embedded={embedded}
       focusSection={focusSection ?? focusChunk ?? undefined} onConvert={() => {
-        setBlockModeId(object.id); setPreview(false); setSections([]); setImporting(true); setDirty(false);
+        const existing = parseSections(object.content);
+        setBlockModeId(object.id); setPreview(false); setSections(existing); setImporting(!existing.length); setDirty(false);
       }} />
   );
 
