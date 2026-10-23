@@ -33,10 +33,9 @@ describe("Site Manager mode cues", () => {
     expect(overlay?.parentElement).toBe(main?.parentElement);
     expect(overlay).toHaveClass("pointer-events-none", "absolute");
     expect(overlay).not.toContainElement(canvas);
-    expect(screen.getByText("Editing By Hand.")).toBeVisible();
+    expect(screen.getByText("Editing Homepage")).toBeVisible();
     expect(screen.getByRole("radio", { name: "Manual Edit Mode" })).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByText("Want Claude To Do This?")).toBeVisible();
-    expect(screen.getAllByRole("button", { name: "Ask Claude Instead" })).toHaveLength(2);
+    expect(document.querySelector("[data-manual-chat-bar]")).toBeNull();
     expect(screen.queryByText("Chat Mode: Claude Makes the Changes")).toBeNull();
     expect(input).not.toBeVisible(); expect(input).toHaveValue("Keep this request"); expect(m.mounts).toBe(1);
     expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Manual Edit Mode. You are editing by hand.");
@@ -47,9 +46,23 @@ describe("Site Manager mode cues", () => {
     expect(document.querySelector("[data-manual-chat-bar]")).toBeNull();
     expect(document.querySelector("[data-manual-outline]")).toBeNull();
   });
-  it("plainly shows an ongoing Claude change in Manual Mode", async () => {
-    m.manual = true; m.busy = true; render(app());
-    expect(screen.getByText("Claude Is Still Working on a Change")).toBeVisible();
+  it.each([false, true])("removes redundant visible prompts in manual=%s", (manual) => {
+    m.manual = manual; const { container } = render(app());
+    expect(container.innerHTML).not.toMatch(/Ask Claude Instead|Want Claude To Do This\?|Editing By Hand/);
+    expect(container.querySelector('[title*="Ask Claude Instead"], [aria-label*="Ask Claude Instead"]')).toBeNull();
+  });
+  it("shows the ongoing Claude notice in the tools only while busy in Manual Mode", async () => {
+    m.manual = true; m.busy = true; const view = render(app());
+    const notice = screen.getByRole("status");
+    expect(notice).toHaveTextContent("Claude Is Still Working on a Change");
+    expect(notice).toBeVisible();
+    expect(notice.querySelector("svg")).toHaveClass("animate-spin");
+    expect(screen.getByRole("complementary", { name: "Manual Mode" })).toContainElement(notice);
+    expect(document.querySelector("main")).not.toContainElement(notice);
     await waitFor(() => expect(screen.getByTestId("canvas")).toBeVisible());
+    m.busy = false; view.rerender(app());
+    expect(screen.queryByText("Claude Is Still Working on a Change")).toBeNull();
+    m.busy = true; m.manual = false; view.rerender(app());
+    expect(screen.queryByText("Claude Is Still Working on a Change")).toBeNull();
   });
 });

@@ -27,7 +27,7 @@ describe("segmented mode switch", () => {
     open(); expect(chat()).toHaveAttribute("aria-checked", "true"); expect(manual()).toHaveAttribute("aria-checked", "false");
     fireEvent.click(chat()); expect(m.stop).not.toHaveBeenCalled();
     fireEvent.click(manual()); await waitFor(() => expect(manual()).toHaveAttribute("aria-checked", "true"));
-    expect(manual()).toHaveClass("data-[state=on]:bg-manual"); expect(m.select).toHaveBeenCalledWith(m.page);
+    expect(manual()).toHaveClass("data-[state=on]:bg-primary"); expect(m.select).toHaveBeenCalledWith(m.page);
     fireEvent.click(manual()); expect(m.start).toHaveBeenCalledTimes(1);
     fireEvent.click(chat()); await waitFor(() => expect(chat()).toHaveAttribute("aria-checked", "true"));
     expect(chat()).toHaveClass("data-[state=on]:bg-primary"); expect(manual()).toHaveAttribute("aria-checked", "false");
@@ -36,6 +36,15 @@ describe("segmented mode switch", () => {
     open(); chat().focus(); fireEvent.keyDown(chat(), { key: "ArrowRight" });
     await waitFor(() => expect(manual()).toHaveAttribute("aria-checked", "true"));
     fireEvent.keyDown(manual(), { key: "ArrowLeft" }); await waitFor(() => expect(chat()).toHaveAttribute("aria-checked", "true"));
+  });
+  it.each([false, true])("uses identical selected styles for both segments, collapsed=%s", async (collapsed) => {
+    open(collapsed);
+    const selectedClasses = (element: HTMLElement) => [...element.classList].filter((name) => name.startsWith("data-[state=on]:"));
+    const chatClasses = selectedClasses(chat());
+    fireEvent.click(manual()); await waitFor(() => expect(manual()).toHaveAttribute("aria-checked", "true"));
+    expect(selectedClasses(manual())).toEqual(chatClasses);
+    expect(manual()).toHaveClass("data-[state=on]:bg-primary", "data-[state=on]:text-primary-foreground");
+    expect(manual().className).not.toContain("bg-manual");
   });
   it("shows two labelled icon choices when collapsed", () => {
     open(true); expect(chat()).toHaveAttribute("title", "Chat Mode"); expect(manual()).toHaveAttribute("title", "Manual Edit Mode");
