@@ -58,6 +58,16 @@ describe("live object thumbnails", () => {
     show(false);
     expect(screen.queryByText("Real Object")).toBeNull();
   });
+  it("gives waiting visible cells a turn without exceeding the cap", () => {
+    vi.useFakeTimers();
+    const { container } = render(<>{Array.from({ length: 20 }, (_, n) => <ObjectLiveThumbnail key={n} componentKey="Known" />)}</>);
+    show(true);
+    const cells = container.querySelectorAll("[data-object-thumbnail]");
+    expect(cells[19]).toHaveAttribute("data-object-thumbnail", "pending");
+    act(() => vi.advanceTimersByTime(10000));
+    expect(cells[19]).toHaveAttribute("data-object-thumbnail", "live");
+    expect(screen.getAllByText("Real Object")).toHaveLength(12);
+  });
   it("falls back and releases a slot when a suspended component never mounts", () => {
     vi.useFakeTimers();
     const { container } = render(<ObjectLiveThumbnail componentKey="Never" />);
