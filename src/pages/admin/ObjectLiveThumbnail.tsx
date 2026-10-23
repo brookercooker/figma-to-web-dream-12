@@ -1,6 +1,7 @@
 import { Component, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { Box } from "lucide-react";
 import { objectRegistry } from "@/components/objects/registry";
+import { ThumbnailContext } from "@/lib/thumbnail";
 
 const MAX_LIVE = 12;
 const MOUNT_TIMEOUT = 8000;
@@ -75,7 +76,7 @@ export default function ObjectLiveThumbnail({ componentKey, storedThumb }: {
         : active && Live ? <PreviewBoundary key={componentKey} onError={() => setFailure("Component threw while rendering")}>
           <Suspense fallback={<div className="absolute inset-0 animate-pulse bg-muted" />}>
             <div className="absolute left-0 top-0 bg-background text-foreground" style={{ width: 1280, transform: `scale(${width / 1280})`, transformOrigin: "top left" }}>
-              <Live />
+              <ThumbnailContext.Provider value={true}><Live /></ThumbnailContext.Provider>
               <Mounted onMount={() => { committed.current = true; }} />
             </div>
           </Suspense>
