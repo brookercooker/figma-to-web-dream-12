@@ -58,11 +58,19 @@ describe("inlineEditCore", () => {
   });
   it("does not cause any second live DOM mutation including HTML plus icon and priorities", () => {
     const root = categories(), replay = createReplay();
-    const edits = { '0.2': 'Explore <svg><path d="M0 0"></path></svg>', 'icon:0.2': 'ArrowRight', 'style:0.1': '{"color":"blue"}', 'img:0.0': '/new.jpg' };
+    const edits = { '0.2': 'Explore <svg><path d="M0 0"></path></svg>', 'icon:0.2': 'ArrowRight', 'style:0.1': '{"color":"#ffffff"}', 'img:0.0': '/new.jpg' };
     const opts = { iconMarkup: () => '<svg><path d="M1 1"></path></svg>' };
     replay.apply(root, edits, opts);
     const observer = new MutationObserver(() => {}); observer.observe(root, { subtree: true, childList: true, attributes: true, characterData: true });
     replay.apply(root, edits, opts); expect(observer.takeRecords()).toEqual([]); observer.disconnect();
+  });
+  it("does not rewrite parent HTML after replaying a nested override", () => {
+    const root = categories(), replay = createReplay();
+    const edits = { '0.2': 'Explore <span>original</span>', '0.2.0': 'changed' };
+    replay.apply(root, edits);
+    const observer = new MutationObserver(() => {}); observer.observe(root, {subtree:true,childList:true,attributes:true});
+    replay.apply(root, edits); expect(observer.takeRecords()).toEqual([]);
+    expect(root.children[0].children[2].textContent).toBe('Explore changed'); observer.disconnect();
   });
   it("rejects unsafe CSS, javascript pictures, malformed styles and bad paths", () => {
     const { ok, rejected } = validateEdits({ 'style:0': '{"color":"url(evil)"}', 'style:1': '{"color":"javascript:evil"}', 'img:0': 'javascript:evil', '0.-1': 'wrong', 'style:2': '[]', 'style:3': '{"position":"fixed"}', '4': 42 });
