@@ -371,7 +371,7 @@ function AdminShell() {
               </div>
             </div>
           )}
-          <div className={cn("min-h-0 flex-1", (manual || chatCollapsed) && "hidden")} aria-hidden={manual || chatCollapsed}>
+          <div hidden={manual || chatCollapsed} className={cn("min-h-0 flex-1", (manual || chatCollapsed) && "hidden")} aria-hidden={manual || chatCollapsed}>
             <ChatPanel />
           </div>
         </aside>
