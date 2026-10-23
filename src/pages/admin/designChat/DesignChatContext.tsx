@@ -7,6 +7,7 @@ import { useDrawing, type Drawing } from "./useDrawing";
 import type { RegistrablePage } from "./registerPage";
 import { syncManifestPages } from "../manifestPageSync";
 import { useChatReferences, type ChatReferences } from "./useChatReferences";
+import { emptyHistory, visit, step, canBack, canForward, type PreviewHistory } from "./previewHistory";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview
@@ -76,6 +77,8 @@ export type DesignChat = {
   drawing: Drawing;
   /** Library items picked from the top bar for the next request. */
   refs: ChatReferences;
+  /** Back/Forward through the pages shown in the preview (both off while editing). Optional so older test mocks still fit. */
+  previewNav?: { canBack: boolean; canForward: boolean; back: () => void; forward: () => void };
 };
 
 const Ctx = createContext<DesignChat | null>(null);
@@ -94,7 +97,8 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   });
 
   const [previewPath, setPreviewPath] = useState<string | null>(null);
-  const preview = usePreview(state, previewPath);
+  const [navNonce, setNavNonce] = useState(0);
+  const preview = usePreview(state, previewPath, navNonce);
   lastReload.current = preview.lastReloadAt;
 
   const [device, setDevice] = useState<Device>("desktop");
@@ -156,6 +160,25 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, [rememberPath]);
+  // Back/Forward: every address the preview reports is visited; arrivals from Back/Forward match the current entry and add nothing.
+  const [history, setHistory] = useState<PreviewHistory>(emptyHistory);
+  useEffect(() => {
+    if (previewLocation) setHistory((h) => visit(h, previewLocation.path + previewLocation.search));
+  }, [previewLocation]);
+  const historyRef = useRef(history);
+  historyRef.current = history;
+  const go = useCallback((by: -1 | 1) => {
+    if (editing) return; // the editor is on screen; leaving it goes through Finish Editing / Discard Changes
+    const r = step(historyRef.current, by);
+    if (!r.address) return;
+    setHistory(r.history);
+    setPreviewPath(r.address);
+    setNavNonce((n) => n + 1);
+  }, [editing]);
+  const previewNav = useMemo(() => ({
+    canBack: !editing && canBack(history), canForward: !editing && canForward(history),
+    back: () => go(-1), forward: () => go(1),
+  }), [history, go, editing]);
   const { page: previewPage, loading: previewPageLoading, registrable: previewRegistrable } = usePreviewPage(previewLocation?.path ?? null, previewLocation?.notFound);
   const drawing = useDrawing({ device, path: previewLocation?.path ?? null });
   const refs = useChatReferences();
@@ -164,8 +187,8 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     mode,
     state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
-    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, refs,
-  }), [mode, refs, objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
+    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, refs, previewNav,
+  }), [mode, refs, previewNav, objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

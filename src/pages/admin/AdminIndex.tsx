@@ -31,10 +31,10 @@ type TabKey = "preview" | "pages" | "objects" | "images" | "videos";
 
 const TABS: { key: TabKey; label: string; Icon: typeof FileText }[] = [
   { key: "preview", label: "Preview", Icon: Eye },
-  { key: "pages",   label: "Pages",   Icon: FileText },
   { key: "objects", label: "Objects", Icon: Box },
   { key: "images",  label: "Images",  Icon: ImageIcon },
   { key: "videos",  label: "Videos",  Icon: VideoLucide },
+  { key: "pages",   label: "Pages",   Icon: FileText },
 ];
 
 function TabSkeleton() {
@@ -205,8 +205,8 @@ function AdminShell() {
                       : "bg-transparent text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
                   }`;
                   const showLabel = !compact || (active && squeeze < 3);
-                  // Objects, Images and Videos pick an item for the chat; while editing by hand (chat hidden) they navigate as before.
-                  if (!editing && (key === "objects" || key === "images" || key === "videos")) return (
+                  // On the Preview, Objects, Images and Videos pick an item for the chat; on a management tab, or while editing by hand, they navigate.
+                  if (!editing && tab === "preview" && (key === "objects" || key === "images" || key === "videos")) return (
                     <LibraryPicker key={key} kind={key} label={label} Icon={Icon} active={active} showLabel={showLabel} className={className}
                       onPick={(ref) => { designChat.refs.addReference(ref); setChatCollapsed(false); }}
                       onOpenFull={() => navigate(`/manage/${key}`)} />
@@ -231,9 +231,10 @@ function AdminShell() {
 
               <div aria-hidden className="h-9 w-px bg-border shrink-0" />
               {chatCollapsed && !editing && <SubmitButton />}
-              <Button asChild variant="outline" size="icon" className="h-9 w-9 shrink-0">
+              <Button asChild variant="outline" size="sm" className={`h-9 shrink-0 gap-2 ${compact ? "w-9 px-0" : ""}`}>
                 <Link to="/manage/capture" aria-label="Capture" title="Capture">
                   <Camera className="w-4 h-4" />
+                  {!compact && <span>Capture</span>}
                 </Link>
               </Button>
               <DropdownMenu>
