@@ -110,7 +110,7 @@ export default function CodedObjectEditor({ object, embedded, focusSection, onCo
     </header>}
     {!embedded && params.get("returnPage") && <Button size="sm" variant="ghost" onClick={async () => { if (await saveRef.current()) navigate(`/manage/design?page=${params.get("returnPage")}&mode=edit`); }}>Back to Page Editor</Button>}
     <div className="border-b bg-muted/40 px-4 py-2 text-xs text-muted-foreground">Changes Here Apply Everywhere This Object Is Used.</div>
-    <div className={embedded ? "h-full min-h-0" : "grid grid-cols-[minmax(0,1fr)_280px]"}>
+    <div className={embedded ? "h-full min-h-0" : "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px]"}>
       <EmbeddedBox chat={embedded ? chat : null}><div ref={canvas} className="min-w-0 overflow-y-auto">
         <InlineEditSurface apiRef={api} edits={{}} objectEdits={{ [key]: edits }} editing={editing} sections={false}
           onReport={setReports} onChange={change} onPickImage={pickImage} onSelect={setSelection}
