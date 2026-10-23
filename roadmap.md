@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Open the viewed preview page on manual-mode entry, with bounded loading wait and existing fallbacks; verify mode tests and full suite.
 - [x] Clean up redundant mode prompts and unify selected switch styling; guards, hidden chat and stationary outline preserved; 409 tests and tsgo pass; signed-in Home checked at desktop/narrow widths in light/dark without saves.
 - [x] Replace manual-entry buttons and preview chip with one pinned guarded mode switch, chooser and collapsed icons; 405 tests and tsgo pass, signed-in Home checked at desktop/narrow widths in light/dark without saves; hosted preview/media remain unavailable.
 - [x] Separate Chat Mode and Manual Mode chrome and guard switching; 399 tests and tsgo pass, signed-in Home mode controls verified at desktop/narrow widths in light/dark without content saves; hosted preview and Home media remain unavailable.
