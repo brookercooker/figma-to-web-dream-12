@@ -2,7 +2,6 @@ import { useEditorSlot } from "./designChat/EditorSlot";
 import { notifyContentEdited } from "./designChat/contentSync";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { codedPages } from "./codedPages";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -26,7 +25,6 @@ import { matchesLabelFilter } from "./labelPath";
 import PageMiniPreview from "./PageMiniPreview";
 import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, type CodeBlock, hasWideBlocks } from "@/components/PageBlocks";
 
-import { PageRoute } from "@/components/PageCodeSection";
 import SharedObjectNotice from "./SharedObjectNotice";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -793,8 +791,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     else navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`);
   };
   if (closed) return null;
-  const C = page ? codedPages[previewSrc(page.path)] : undefined;
-  const framed = !!page && !C && manifestHasPage(page.path);
+  const framed = !!page && manifestHasPage(page.path);
   return (<div className={embedded ? "h-full min-h-0" : "grid gap-4 lg:grid-cols-[240px_1fr]"}>
     {!embedded && <aside><Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search pages" />{filtered.map(p=><Button key={p.id} variant="ghost" className="w-full justify-start" onClick={()=>select(p.id)}>{p.name}</Button>)}{tools}</aside>}
     {page && <EmbeddedBox chat={embedded ? chat : null}>
@@ -814,7 +811,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
           onOpenObject={openInlineObject}
           onChange={changeScope} onSelect={sel=> { setInlineSel(sel); setActiveId(sel?.el.closest<HTMLElement>("[data-page-block]")?.dataset.pageBlock ?? ""); }}
           selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null}>
-          {C ? <PageRoute path={previewSrc(page.path)}><Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense></PageRoute> : !framed &&
+          {!framed &&
             <section className="mx-auto max-w-3xl px-6 py-10"><h1 className="font-serif text-3xl">{page.name}</h1><p data-empty-editable className="min-h-6" aria-label="Page Text"> </p></section>}
           {blocks.map((b,i)=><section key={b.id} data-page-block={b.id} className="relative">
             <BlockView block={b} />
