@@ -1,5 +1,5 @@
 # Roadmap — coded object import fidelity
-- [ ] Receive the public-site manifest through an origin-validated preview message bridge, reuse one off-screen receiver on management screens, and verify public-only page discovery without editor changes.
+- [x] Receive public-site manifests through an origin-validated preview message bridge with one reusable off-screen receiver; 538 tests and automated type checks pass, signed-in Pages fixture receives /draft and removes the receiver when a real frame mounts; editor untouched.
 - [x] Add Review Status, Undo Last Change and Help to the stable left-panel header; 530 tests pass, signed-in review/help/copy and desktop/narrow 56px header verified, editor code untouched.
 - [ ] Complete review-detail list and real single-change undo: blocked on relay pending-change IDs, names, descriptions, times, session/submission eligibility and an authenticated undo endpoint; current relay exposes only publish.open and chat messages. Manual single-change history is also unavailable without editor changes; Discard remains whole-session only.
 - [x] Make Submit for Review emerald and move Account from the top bar to the stable logo-free left-panel header; editor code untouched, 525 tests pass, signed-in Account menu opens in the 56px header.
@@ -20,7 +20,7 @@
 - [x] Verify shared-renderer checksum and whole-card/inline-text link controls: 310 tests and tsgo pass; signed-in live edits save/read back and temporary object removed.
 - [x] Add live Capture camera with repeated shots and native-picker fallback; 11 camera tests and 224 total tests pass, authenticated desktop/mobile camera staging and track cleanup verified with a simulated device.
 - [x] Sync manifest pages into Pages automatically and enforce unique paths; verified automatic additions and 198 tests.
-- [ ] Verify hosted draft manifest/token access and /draft listing: blocked by net::ERR_FAILED from the preview-address service and hosted preview manifest; same-origin fallback verified.
+- [ ] Verify the real public site's companion manifest sender end-to-end: draft embed address was unavailable during the signed-in Pages check; actual postMessage delivery, /draft code recognition and receiver handoff verified with a browser fixture, not the hosted public site.
 - [x] Automatically register real preview pages and open them for manual editing; verify an unlisted page.
 - [x] Move Edit manually into the chat controls, with Done editing while editing.
 - [x] Keep Enter sending and Shift+Enter for new lines, with no idle hint.
