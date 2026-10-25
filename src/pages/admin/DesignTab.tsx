@@ -798,7 +798,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         {embedded ? quickAddBar : <div className="flex gap-2">{addButtons}</div>}
         {!framed && <><SharedObjectNotice componentKey="Header" />
         <InlineEditSurface edits={{}} objectEdits={objectEdits} editing sections={false} apiRef={headerApi} onReport={setHeaderReports} onChange={changeScope} onSelect={setInlineSel}><Header /></InlineEditSurface></>}
-        {framed && <FramedPageEditor key={page.id} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
+        {framed && <FramedPageEditor key={`public-${page.id}`} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
