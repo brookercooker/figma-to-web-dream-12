@@ -60,6 +60,13 @@ describe("public page save/discard integration", () => {
     await act(async () => { await mocks.discard(); });
     expect(mocks.writes.mock.calls.at(-1)?.[1].inline_edits).toEqual(original);
   });
+  it("does not substitute an empty local page when the manifest is unavailable", async () => {
+    mocks.remote = false;
+    const s = await openRemote();
+    expect(s.container.querySelector("[data-empty-editable]")).toBeNull();
+    expect(s.container.querySelectorAll("iframe")).toHaveLength(1);
+    await act(async () => { await mocks.discard(); });
+  });
   it("holds public text changes in changeScope until Finish Editing and discards exactly", async () => {
     const s = await openRemote();
     s.send("edit-change", { scope: "page", next: { "0": "Changed Example Header", "fp:0": '{"v":1,"tag":"h1","t":"abc"}' } });
