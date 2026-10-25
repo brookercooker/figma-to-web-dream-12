@@ -3,7 +3,6 @@ import { notifyContentEdited } from "./designChat/contentSync";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { codedPages, pageChunks, chunkName } from "./codedPages";
-import type { Section } from "@/components/ObjectSections";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -167,10 +166,9 @@ function PageImportProbe({ path, onDone }: { path: string; onDone: (parts: CodeB
     return () => { cancelled = true; };
   }, [path]); // eslint-disable-line react-hooks/exhaustive-deps
   const C = codedPages[path];
-  if (!C) return null;
   return createPortal(
     <div ref={ref} className="import-probe bg-background" style={{ position: "fixed", left: -20000, top: 0, width: 1280, pointerEvents: "none" }}>
-      <PageRoute path={path}><Suspense fallback={<div className="animate-pulse h-10" />}><C /></Suspense></PageRoute>
+      <PageRoute path={path}><Suspense fallback={<div className="animate-pulse h-10" />}>{C ? <C /> : <LivePreviewPage path={path} />}</Suspense></PageRoute>
     </div>,
     document.body,
   );
@@ -429,12 +427,14 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
 
   const addPickedBlock = (block: Block, at: number) => {
     if (discarded.current || importing) return;
-    if (hasExisting && page && codedPages[previewSrc(page.path)]) {
+    if (hasExisting && page) {
       queuedAddition.current = block;
       setImporting(true);
       return;
     }
-    setBlocks((prev) => insertPickedBlock(prev, block, at));
+    const next = insertPickedBlock(blocks, block, at);
+    if (page) pendingSave.current = { pageId: page.id, snapshot: next };
+    setBlocks(next);
     scrollToNew.current = block.id;
     setActiveId(block.id);
     setShowLive(false);
@@ -496,7 +496,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   // Embedded, the Site Manager's size buttons size the wrapper around the editor; inside it everything fills at full width.
   const chat = useDesignChatOptional();
   const device: Device = embedded ? "desktop" : localDevice;
-  const deviceStyle = !embedded && DEVICE_WIDTH[device] ? { width: DEVICE_WIDTH[device]!, maxWidth: "100%", margin: "0 auto" } : undefined;
+  const deviceStyle = !embedded && DEVICE_WIDTH[device] ? { width: DEVICE_WIDTH[device], maxWidth: "100%", margin: "0 auto" } : undefined;
   const h70 = embedded ? "h-full" : "h-[70vh]";
   const frame = embedded ? "h-full overflow-hidden bg-background" : "border rounded-lg overflow-hidden bg-background";
   const startDrag = (e: React.MouseEvent, id: string) => {
@@ -520,7 +520,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       let next: { id: string; before: boolean } | null = null;
       if (el && el.dataset.pageBlock !== dragId) {
         const r = el.getBoundingClientRect();
-        next = { id: el.dataset.pageBlock!, before: lastY < r.top + r.height / 2 };
+        next = { id: el.dataset.pageBlock ?? "", before: lastY < r.top + r.height / 2 };
       }
       const cur = dropRef.current;
       if (cur?.id !== next?.id || cur?.before !== next?.before) { dropRef.current = next; setDropAt(next); }
@@ -1514,7 +1514,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         )}
       </section>
 
-      {page && importing && codedPages[previewSrc(page.path)] && (
+      {page && importing && (
         <PageImportProbe path={previewSrc(page.path)} onDone={finishImport} />
       )}
       {page && toolbarHidden && (
