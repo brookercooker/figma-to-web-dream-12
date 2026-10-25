@@ -40,7 +40,7 @@ describe("coded page section preservation", () => {
     const before = JSON.stringify(mocks.original);
     const r = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
     const original = await screen.findByRole("heading", { name: "Original Contact" });
-    const added = screen.getByText("Added Stats");
+    const added = await screen.findByText("Added Stats");
     expect(original.compareDocumentPosition(added) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await act(async () => { await mocks.discard(); });
     r.unmount();
