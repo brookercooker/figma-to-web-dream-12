@@ -66,6 +66,11 @@ export default function InlineStylePanel({
     delete out[styleKey(sel.key)];
     onChange(out);
   };
+  if (sel.kind === "locked") return <div className="space-y-3">
+    <ToolHeader icon={SquareDashed} title="Built in Code" />
+    <Button variant="outline" size="sm" onClick={() => set("display", "none")}>Delete Element</Button>
+    <Button variant="ghost" size="sm" onClick={reset}>Reset Element</Button>
+  </div>;
   const swatches = (cur: string | undefined, pick: (v: string) => void, keepFocus = false) => (
     <div className="flex gap-2">
       {COLOURS.map(([l, c]) => {

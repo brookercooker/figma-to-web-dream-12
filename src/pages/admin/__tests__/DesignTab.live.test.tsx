@@ -76,7 +76,7 @@ describe("Edit Manually on a page without code", () => {
   it("Discard Changes writes nothing", async () => {
     const r = open();
     await waitFor(() => expect(r.container.querySelectorAll("[data-page-block]")).toHaveLength(2));
-    act(() => mocks.discard?.());
+    await act(async () => { await mocks.discard?.(); });
     expect(mocks.hasChanges?.()).toBe(false);
     r.unmount();
     expect(contentWrites()).toHaveLength(0);

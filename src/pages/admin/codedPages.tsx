@@ -1,4 +1,5 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
+import { customLandingPages } from "@/pages/landing/customLandingPages";
 
 /** Page components that can be broken into editable blocks, keyed by path. */
 const SimplePages = () => import("@/pages/SimplePage.tsx");
@@ -21,6 +22,9 @@ export const codedPages: Record<string, LazyExoticComponent<ComponentType>> = {
   "/objects-flyer": lazy(() => import("@/pages/ObjectsFlyer.tsx")),
   "/brand-highlight": lazy(() => import("@/pages/BrandHighlightPage.tsx")),
   "/coming-soon": lazy(() => import("@/pages/ComingSoonPage.tsx")),
+  "/test-page": lazy(() => import("@/pages/TestPage.tsx")),
+  "/race-test-page": lazy(() => import("@/pages/RaceTestPage.tsx")),
+  ...Object.fromEntries(customLandingPages.map(({ slug, component }) => [`/landing/${slug}`, component])),
 };
 
 export { pageChunks, chunkName } from "@/lib/pageChunks";
