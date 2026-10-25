@@ -4,6 +4,7 @@ import InlineEditSurface from "@/components/InlineEditSurface";
 import type { InlineEdits } from "@/lib/inlineEditCore";
 import { useNavigate } from "react-router-dom";
 import PageBlocks, { parseBlocks } from "@/components/PageBlocks";
+import { codedPages } from "@/pages/admin/codedPages";
 
 /** Shows in-place edits made in the page editor on the public site. */
 export default function InlineEditsLayer({ path, children, objectsOnly = false }: { path: string; children: ReactNode; objectsOnly?: boolean }) {
@@ -32,5 +33,5 @@ export default function InlineEditsLayer({ path, children, objectsOnly = false }
   return <InlineEditSurface key={surfaceKey} edits={objectsOnly ? {} : edits} objectEdits={objectEdits} navigate={(href) => {
     if (!/^\/(?!\/)/.test(href)) return false;
     navigate(href); return true;
-  }}>{!objectsOnly && !path.startsWith("/manage") && !path.startsWith("/admin") && parseBlocks(content).some((b) => b.type === "code") ? <PageBlocks blocks={parseBlocks(content)} /> : children}</InlineEditSurface>;
+  }}>{children}{!objectsOnly && !path.startsWith("/manage") && !path.startsWith("/admin") && codedPages[path === "/" ? "/home" : path] && <PageBlocks blocks={parseBlocks(content)} />}</InlineEditSurface>;
 }
