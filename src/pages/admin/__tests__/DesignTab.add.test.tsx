@@ -109,6 +109,6 @@ describe("page editor quick add", () => {
     expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
     // Discard before unmount: this test never writes its example media to a page.
     const discard = mocks.slot.registerDiscard.mock.calls.at(-1)?.[0];
-    if (discard) act(() => discard());
+    if (discard) await act(async () => { await discard(); });
   });
 });

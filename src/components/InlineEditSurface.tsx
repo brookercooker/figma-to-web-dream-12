@@ -539,6 +539,7 @@ export default function InlineEditSurface({
     <div ref={outer} className="relative">
     <div
       ref={ref}
+      data-inline-root
       className={editing ? "inline-edit-surface" : undefined}
       onInput={onInput}
       {...linkGuard}

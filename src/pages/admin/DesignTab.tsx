@@ -28,7 +28,7 @@ import { matchesLabelFilter } from "./labelPath";
 import PageMiniPreview from "./PageMiniPreview";
 import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, type CodeBlock, hasWideBlocks } from "@/components/PageBlocks";
 
-import PageCodeSection from "@/components/PageCodeSection";
+import PageCodeSection, { PageRoute } from "@/components/PageCodeSection";
 import { fingerprintOf } from "@/lib/inlineEditCore";
 import SharedObjectNotice from "./SharedObjectNotice";
 import Header from "@/components/Header";
@@ -170,7 +170,7 @@ function PageImportProbe({ path, onDone }: { path: string; onDone: (parts: CodeB
   if (!C) return null;
   return createPortal(
     <div ref={ref} className="import-probe bg-background" style={{ position: "fixed", left: -20000, top: 0, width: 1280, pointerEvents: "none" }}>
-      <Suspense fallback={<div className="animate-pulse h-10" />}><C /></Suspense>
+      <PageRoute path={path}><Suspense fallback={<div className="animate-pulse h-10" />}><C /></Suspense></PageRoute>
     </div>,
     document.body,
   );
@@ -256,7 +256,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   }, []);
   const changeScope = (scope: InlineScope, next: InlineEdits) => {
     next = (scope === "Header" ? headerApi : inlineApi).current?.prepare(scope, next) ?? next;
-    if (scope === "page") return changeInline(next);
+    if (scope === "page") {
+      const active = blocks.find((b) => b.id === activeId);
+      if (active?.type === "code") { update(active.id, { inlineEdits: next }); return; }
+      return changeInline(next);
+    }
     setObjectEdits((cur) => ({ ...cur, [scope]: next }));
     const id = objectRows.current[scope];
     if (!id) return;
@@ -266,7 +270,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id).then(({ error }: any) => { if (!error) notifyContentEdited(); });
     }, 800);
   };
-  const scopeEdits = (scope: InlineScope) => (scope === "page" ? inlineEdits : objectEdits[scope] ?? {});
+  const scopeEdits = (scope: InlineScope) => {
+    const active = blocks.find((b) => b.id === activeId);
+    return scope === "page" ? (active?.type === "code" ? active.inlineEdits ?? {} : inlineEdits) : objectEdits[scope] ?? {};
+  };
   /** Reorder sections among siblings, using order styles on the page's own edits. */
   const reorderChunks = (from: InlineChunk, to: InlineChunk, after: boolean, all: InlineChunk[]) => {
     const sibs = all.filter((c) => c.parent === from.parent);
@@ -360,6 +367,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     setLiveStatus(null);
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+
+  useEffect(() => {
+    if (!page || parseBlocks(page.content).length || codedPages[previewSrc(page.path)]) return;
+    if (["/brands", "/ceiling", "/ceiling-lighting", "/fans", "/lamps", "/outdoor", "/room", "/wall", "/wall-lighting", "/draft", "/manage"].includes(page.path) || page.path.startsWith("/landing/")) onLiveStatus("missing");
+  }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [sortBy, setSortBy] = useState<"name" | "recent" | "label">("name");
   const filtered = useMemo(() => {
@@ -1294,7 +1306,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                         onReorder={reorderChunks}
                         onOpenObject={async (k, section) => { const id = objectRows.current[k]; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, section); return; } navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`); }}
                       >
-                        <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}>{C ? <PageCodeSection path={previewSrc(page.path)} chunk="" editing={quick} edits={inlineEdits} objectEdits={objectEdits} onChange={changeScope} onSelect={setInlineSel} apiRef={inlineApi} onReport={setInlineReports} /> : <LivePreviewPage path={previewSrc(page.path)} onStatus={onLiveStatus} reloadKey={liveReload} />}</Suspense>
+                        <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}>{C ? <PageRoute path={previewSrc(page.path)}><C /></PageRoute> : <LivePreviewPage path={previewSrc(page.path)} onStatus={onLiveStatus} reloadKey={liveReload} />}</Suspense>
                       </InlineEditSurface>
                     );
                   })()}
@@ -1536,7 +1548,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
           } else if (objectFor) {
             update(objectFor, { objectId: id, name } as Partial<Block>);
           }
-          setDirty(true);
           setObjectFor(null);
           setObjectAt(null);
         }}

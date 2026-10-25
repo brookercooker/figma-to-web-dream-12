@@ -4,6 +4,12 @@ import { codedPages } from "@/pages/admin/codedPages";
 import InlineEditSurface, { type InlineEditController, type InlineSelection, type InlineReports } from "./InlineEditSurface";
 import { fingerprintMatches, fingerprintOf, resolvePath, type InlineEdits, type Fingerprint } from "@/lib/inlineEditCore";
 
+export function PageRoute({ path, children }: { path: string; children: React.ReactNode }) {
+  return <UNSAFE_LocationContext.Provider value={null}><UNSAFE_RouteContext.Provider value={{ outlet: null, matches: [], isDataRoute: false }}>
+    <MemoryRouter initialEntries={[path]}><Routes><Route path={path.startsWith("/landing/") ? "/landing/:slug" : "*"} element={children} /></Routes></MemoryRouter>
+  </UNSAFE_RouteContext.Provider></UNSAFE_LocationContext.Provider>;
+}
+
 /** Keep the original React tree; isolate a section without flattening forms, maps or carousels. */
 export default function PageCodeSection({ path, chunk, fingerprint, edits = {}, objectEdits, editing = false, onChange, onSelect, onReport, apiRef }: {
   path: string; chunk: string; fingerprint?: Fingerprint; edits?: InlineEdits; objectEdits?: Record<string, InlineEdits>;
@@ -16,7 +22,7 @@ export default function PageCodeSection({ path, chunk, fingerprint, edits = {}, 
     const host = ref.current;
     if (!host) return;
     const isolate = () => {
-      const root = host.querySelector<HTMLElement>("[data-code-root]");
+      const root = host.querySelector<HTMLElement>("[data-inline-root]");
       if (!root || !root.children.length) return;
       const target = resolvePath(root, chunk);
       // A changed source fails closed: show the complete original rather than hide the wrong part.
@@ -34,15 +40,11 @@ export default function PageCodeSection({ path, chunk, fingerprint, edits = {}, 
   }, [chunk, fingerprint]);
   if (!C) return <p role="status" className="py-8 text-sm text-muted-foreground">This section's original code is unavailable.</p>;
   return <div ref={ref}>
-    <UNSAFE_LocationContext.Provider value={null}><UNSAFE_RouteContext.Provider value={{ outlet: null, matches: [], isDataRoute: false }}>
-      <MemoryRouter initialEntries={[path]}>
-        <Routes><Route path={path.startsWith("/landing/") ? "/landing/:slug" : "*"} element={
+    <PageRoute path={path}>
           <InlineEditSurface edits={edits} objectEdits={objectEdits} editing={editing} sections={false}
             onChange={onChange} onSelect={onSelect} onReport={onReport} apiRef={apiRef}>
-            <div data-code-root><Suspense fallback={<div className="h-40 animate-pulse bg-muted" />}><C /></Suspense></div>
+            <Suspense fallback={<div className="h-40 animate-pulse bg-muted" />}><C /></Suspense>
           </InlineEditSurface>
-        } /></Routes>
-      </MemoryRouter>
-    </UNSAFE_RouteContext.Provider></UNSAFE_LocationContext.Provider>
+    </PageRoute>
   </div>;
 }
