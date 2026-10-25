@@ -17,6 +17,7 @@ import LibraryPicker from "./designChat/LibraryPicker";
 import { toast } from "sonner";
 import { ModeSwitchProvider } from "./designChat/ModeSwitchContext";
 import ModeToggle from "./designChat/ModeToggle";
+import HeaderActions from "./designChat/HeaderActions";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -339,6 +340,7 @@ function AdminShell() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            <HeaderActions />
             <div className="flex-1" />
             {!manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded={true} onClick={() => setChatCollapsed(true)}>
               <PanelLeftClose className="h-4 w-4" />
