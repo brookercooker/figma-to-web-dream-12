@@ -8,6 +8,8 @@ import { usePreviewPage, type PreviewPage } from "./usePreviewPage";
 import { useDrawing, type Drawing } from "./useDrawing";
 import type { RegistrablePage } from "./registerPage";
 import { syncManifestPages } from "../manifestPageSync";
+import { MANIFEST_CHANGED } from "../siteManifest";
+import ManifestReceiverFrame from "./ManifestReceiverFrame";
 import { useChatReferences, type ChatReferences } from "./useChatReferences";
 import { emptyHistory, visit, step, canBack, canForward, type PreviewHistory } from "./previewHistory";
 
@@ -90,7 +92,12 @@ export function helperPollingInterval(s: RelayState | null, recent: boolean): nu
 }
 
 export function DesignChatProvider({ children }: { children: ReactNode }) {
-  useEffect(() => { void syncManifestPages(); }, []);
+  useEffect(() => {
+    const sync = () => { void syncManifestPages(); };
+    sync();
+    window.addEventListener(MANIFEST_CHANGED, sync);
+    return () => window.removeEventListener(MANIFEST_CHANGED, sync);
+  }, []);
   // The preview hook needs the helper's state; the helper's polling speed needs to know when the preview last reloaded.
   const lastReload = useRef<{ current: number } | null>(null);
   const { state, offline, refreshSoon } = useHelperState((s: RelayState | null) => {
@@ -155,6 +162,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       if (!d || typeof d !== "object" || d.source !== "nova-site" || d.type !== "location") return;
       if (typeof d.path !== "string" || !d.path.startsWith("/") || d.path.length > 300) return;
       if (!event.source || !Array.from(document.querySelectorAll("iframe")).some((f) => f.contentWindow === event.source)) return;
+      if (Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe[data-manifest-receiver]")).some((f) => f.contentWindow === event.source)) return;
       console.debug("[preview] location", d.path);
       const search = typeof d.search === "string" && d.search.length <= 300 ? d.search : "";
       const notFound = d.notFound === true;
@@ -194,7 +202,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, refs, previewNav,
   }), [mode, refs, previewNav, objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={value}><ManifestReceiverFrame />{children}</Ctx.Provider>;
 }
 
 /** The design chat's state. Only works inside <DesignChatProvider>. */

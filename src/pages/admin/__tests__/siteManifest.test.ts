@@ -3,6 +3,7 @@ import {
   SiteManifestUnavailable, codePagePaths, loadSiteManifest, pagesReferencing, pagesUsingObject,
   parseSiteManifest, resetSiteManifestCache, siteManifestUrl, type SiteManifest,
   setManifestBase, setDraftRetryDelay, draftManifestReachable,
+  manifestHasPage, requestFrameManifest, startSiteManifestBridge, MANIFEST_CHANGED, setManifestMessageDelay,
 } from "../siteManifest";
 import { imageNeedles, videoNeedles } from "../assetUsages";
 
@@ -22,7 +23,91 @@ const manifest: SiteManifest = {
   },
 };
 
-afterEach(() => { vi.unstubAllGlobals(); setManifestBase(""); resetSiteManifestCache(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); setManifestBase(""); resetSiteManifestCache(); setManifestMessageDelay(1500); document.querySelectorAll("iframe").forEach((frame) => frame.remove()); });
+
+describe("public frame manifest messages", () => {
+  const publicManifest: SiteManifest = { ...manifest, buildId: "public-build", pages: [...manifest.pages, { path: "/draft", type: "static", file: "/src/pages/DraftPage.tsx", objects: [], files: [] }] };
+  function deliver(origin: string, value: unknown = publicManifest) {
+    window.dispatchEvent(new MessageEvent("message", { origin, data: { source: "nova-site", type: "manifest", manifest: value } }));
+  }
+  it("accepts the draft origin and uses its code-only paths without HTTP", async () => {
+    setManifestBase("https://draft.example/?__lovable_token=test-token");
+    const changed = vi.fn(); window.addEventListener(MANIFEST_CHANGED, changed);
+    const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+    deliver("https://draft.example");
+    expect(await loadSiteManifest()).toEqual(publicManifest);
+    expect(manifestHasPage("/draft")).toBe(true);
+    expect(manifestHasPage("/")).toBe(true);
+    expect(draftManifestReachable()).toBe(true);
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(fetcher).not.toHaveBeenCalled();
+    window.removeEventListener(MANIFEST_CHANGED, changed);
+  });
+  it("accepts the configured public-site origin", async () => {
+    vi.stubEnv("VITE_PUBLIC_SITE_URL", "https://public.example/some-path");
+    setManifestBase("https://draft.example/");
+    deliver("https://public.example");
+    expect(await loadSiteManifest()).toEqual(publicManifest);
+    expect(manifestHasPage("/draft")).toBe(true);
+    expect(draftManifestReachable()).toBe(false);
+  });
+  it("rejects an unrelated origin, including a deceptive hostname suffix", () => {
+    setManifestBase("https://draft.example/");
+    deliver("https://untrusted.example"); deliver("https://draft.example.evil.test");
+    expect(manifestHasPage("/draft")).toBe(false);
+  });
+  it("ignores invalid manifests without overwriting a valid one", async () => {
+    setManifestBase("https://draft.example/");
+    deliver("https://draft.example");
+    deliver("https://draft.example", { version: 2, pages: [], files: {} });
+    deliver("https://draft.example", { version: 1, pages: [{ path: 3 }], files: {} });
+    expect(await loadSiteManifest()).toEqual(publicManifest);
+  });
+  it("requests from the mounted preview using its exact origin and prefers the reply", async () => {
+    setManifestBase("https://draft.example/?__lovable_token=test-token");
+    const frame = document.createElement("iframe"); frame.src = "https://draft.example/about?__lovable_token=test-token"; frame.dataset.sitePreview = "true"; document.body.appendChild(frame);
+    const target = frame.contentWindow;
+    if (!target) throw new Error("No frame window");
+    const post = vi.spyOn(target, "postMessage").mockImplementation(() => { deliver("https://draft.example"); });
+    const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+    expect(await loadSiteManifest()).toEqual(publicManifest);
+    expect(post).toHaveBeenCalledWith({ source: "nova-manager", type: "request-manifest" }, "https://draft.example");
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+  it("never requests a manifest from an untrusted frame", () => {
+    setManifestBase("https://draft.example/");
+    const frame = document.createElement("iframe"); frame.src = "https://evil.test/"; document.body.appendChild(frame);
+    const target = frame.contentWindow;
+    if (!target) throw new Error("No frame window");
+    const post = vi.spyOn(target, "postMessage");
+    expect(requestFrameManifest(frame)).toBe(false); expect(post).not.toHaveBeenCalled();
+  });
+  it("reuses one off-screen receiver and removes it when the real preview mounts", async () => {
+    setManifestBase("https://draft.example/?__lovable_token=test-token");
+    const stop = startSiteManifestBridge(); const stopOther = startSiteManifestBridge();
+    try {
+      const receiver = document.querySelector<HTMLIFrameElement>("iframe[data-manifest-receiver]");
+      expect(receiver?.getAttribute("aria-hidden")).toBe("true");
+      expect(receiver?.tabIndex).toBe(-1);
+      expect(receiver?.src).toBe("https://draft.example/?__lovable_token=test-token");
+      expect(document.querySelectorAll("iframe[data-manifest-receiver]")).toHaveLength(1);
+      const real = document.createElement("iframe"); real.src = "https://draft.example/about"; real.dataset.sitePreview = "true"; document.body.appendChild(real);
+      await new Promise((r) => setTimeout(r, 0));
+      expect(document.querySelector("iframe[data-manifest-receiver]")).toBeNull();
+      real.remove(); await new Promise((r) => setTimeout(r, 0));
+      expect(document.querySelectorAll("iframe[data-manifest-receiver]")).toHaveLength(1);
+    } finally { stop(); stopOther(); }
+    expect(document.querySelector("iframe[data-manifest-receiver]")).toBeNull();
+  });
+  it("falls back to HTTP after a missing reply and logs only once at debug level", async () => {
+    setManifestBase("https://draft.example/"); setManifestMessageDelay(0);
+    const frame = document.createElement("iframe"); frame.src = "https://draft.example/"; frame.dataset.sitePreview = "true"; document.body.appendChild(frame);
+    const warn = vi.spyOn(console, "warn"); const debug = vi.spyOn(console, "debug");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(manifest))));
+    await loadSiteManifest(); await loadSiteManifest(true);
+    expect(warn).not.toHaveBeenCalled(); expect(debug.mock.calls.length).toBeLessThanOrEqual(1);
+  });
+});
 
 describe("reading the manifest", () => {
   it("pages using an object", () => {
