@@ -20,8 +20,8 @@ vi.mock("@/components/Footer", () => ({ default: () => null }));
 vi.mock("../ObjectPickerDialog", () => ({ default: ({ open, onPick }: any) => open ? <button onClick={() => onPick({ id: "stats", name: "Example Stats Row" })}>Pick Stats</button> : null }));
 vi.mock("@/components/ObjectBlockView", () => ({ default: () => <p>Added Stats</p> }));
 vi.mock("../InlineStylePanel", () => ({ default: () => null }));
-vi.mock("../ImagePickerDialog", () => ({ default: () => null }));
-vi.mock("../VideoPickerDialog", () => ({ default: () => null }));
+vi.mock("../ImagePickerDialog", () => ({ default: ({ open, onPick }: any) => open ? <button onClick={() => onPick({ url: "/held.jpg", alt: "Held Image" })}>Pick Image</button> : null }));
+vi.mock("../VideoPickerDialog", () => ({ default: ({ open, onPick }: any) => open ? <button onClick={() => onPick({ url: "/held.mp4" })}>Pick Video</button> : null }));
 vi.mock("../CreatePageDialog", () => ({ default: () => null }));
 vi.mock("../TagsPanel", () => ({ default: () => null }));
 vi.mock("../PageMiniPreview", () => ({ default: () => null }));
@@ -108,16 +108,69 @@ describe("manifest-only public page save/discard integration", () => {
     expect(s.post).toHaveBeenCalledWith({ source: "nova-manager", type: "edit-exit" }, "https://public.example.com");
     expect(s.container.children).toHaveLength(0);
   });
-  it("appends picker sections beneath the unchanged original frame and discards without writes", async () => {
+  it("appends picker sections beneath the original frame, reloads once and discards without writes", async () => {
     const s = await openRemote();
     fireEvent.click(screen.getByRole("button", { name: "Object" }));
     fireEvent.click(screen.getByText("Pick Stats"));
     const added = await screen.findByText("Added Stats");
-    expect(s.container.querySelector("iframe")).toBe(s.frame);
-    expect(s.frame.compareDocumentPosition(added) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const frame = s.container.querySelector("iframe");
+    expect(frame).not.toBe(s.frame);
+    expect(frame?.compareDocumentPosition(added) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(s.container.querySelectorAll("iframe")).toHaveLength(1);
     await act(async () => { await mocks.discard(); });
     expect(mocks.writes).not.toHaveBeenCalled();
     expect(s.post).toHaveBeenCalledWith({ source: "nova-manager", type: "edit-exit" }, "https://public.example.com");
+    expect(s.container.querySelector("[data-page-block]")).toBeNull();
+    expect(s.container.children).toHaveLength(0);
+  });
+  it.each([ ["Image", "Pick Image", "image"], ["Video", "Pick Video", "video"] ])("holds an added %s locally until Finish", async (label, pick, type) => {
+    const s = await openRemote();
+    fireEvent.click(screen.getByRole("button", { name: label }));
+    fireEvent.click(screen.getByRole("button", { name: pick }));
+    const section = s.container.querySelector("[data-page-block]");
+    expect(section).not.toBeNull();
+    const frame = s.container.querySelector("iframe");
+    expect(frame?.compareDocumentPosition(section as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(mocks.writes).not.toHaveBeenCalled();
+    await act(async () => { expect(await mocks.save()).toBe(true); });
+    expect(mocks.writes.mock.calls.find(([, patch]) => patch.content)?.[1].content[0].type).toBe(type);
+    await act(async () => { await mocks.discard(); });
+    expect(s.container.children).toHaveLength(0);
+  });
+  it("keeps held order in sync with Sections, including edits and removal", async () => {
+    mocks.original.content = [
+      { id: "first", type: "image", url: "/first.jpg", alt: "First", align: "left", width: 100 },
+      { id: "second", type: "video", url: "/second.mp4", align: "left", width: 100 },
+    ];
+    const s = await openRemote(false);
+    const stubReloadedFrame = () => {
+      const current = s.container.querySelector("iframe")?.contentWindow;
+      if (!current) throw new Error("Missing reloaded frame window");
+      vi.spyOn(current, "postMessage").mockImplementation(() => {});
+    };
+    const order = () => [...s.container.querySelectorAll<HTMLElement>("[data-page-block]")].map(el => el.dataset.pageBlock);
+    expect(order()).toEqual(["first", "second"]);
+    const list = s.container.querySelector("ol");
+    if (!list) throw new Error("Missing Sections list");
+    const down = list.querySelector('[aria-label="Move Down"]');
+    if (!down) throw new Error("Missing reorder control");
+    fireEvent.click(down);
+    await waitFor(() => expect(order()).toEqual(["second", "first"]));
+    stubReloadedFrame();
+    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Contact", "Video", "Image"]);
+    const imageRow = [...list.querySelectorAll("li")].find(el => el.textContent === "Image");
+    const imageButton = imageRow?.querySelector("button");
+    if (!imageButton) throw new Error("Missing image section control");
+    fireEvent.click(imageButton);
+    fireEvent.click(screen.getByRole("button", { name: "Width 50%" }));
+    stubReloadedFrame();
+    expect(s.container.querySelector('[data-page-block="first"] figure')?.className).toContain("w-1/2");
+    const deletes = list.querySelectorAll('[aria-label="Delete Block"]');
+    fireEvent.click(deletes[0]);
+    await waitFor(() => expect(order()).toEqual(["first"]));
+    stubReloadedFrame();
+    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Contact", "Image"]);
+    s.unmount();
   });
   it("opens the interactive original in standalone editing too", async () => {
     const s = await openRemote(false);

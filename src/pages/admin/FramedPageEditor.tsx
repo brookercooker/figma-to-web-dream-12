@@ -12,6 +12,7 @@ export interface FramedPageEditorProps {
   objectEdits: Record<string, InlineEdits>;
   collapsed: Set<string>;
   selectedKey: string | null;
+  sectionRevision?: number;
   apiRef?: MutableRefObject<FramedEditorController | null>;
   onChange: (scope: string, next: InlineEdits) => void;
   onSelect: (selection: InlineSelection | null) => void;
@@ -108,13 +109,13 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     };
     window.addEventListener("message", receive);
     return () => { clearTimeout(timeout); exit(); window.removeEventListener("message", receive); if (props.apiRef) props.apiRef.current = null; };
-  }, [target, attempt]); // callbacks/state travel through latest, never reload the frame on edits.
+  }, [target, attempt, props.sectionRevision]); // Only explicit section actions reload; inline edits travel through latest.
   useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey]);
   return <div className="relative w-full">
     {status !== "ready" && <div role="status" className="flex items-center justify-center gap-3 bg-muted p-6 text-sm text-muted-foreground">
       {status === "loading" && target ? "Loading the page editor…" : "Couldn't reach the public page"}
       {(status === "failed" || !target) && <Button variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>Retry</Button>}
     </div>}
-    {target && <iframe key={`${target}|${attempt}`} ref={frame} src={target} title="Public Page Editor" data-site-preview="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : "block"}`} height={height} onError={() => setStatus("failed")} />}
+    {target && <iframe key={`${target}|${attempt}|${props.sectionRevision ?? 0}`} ref={frame} src={target} title="Public Page Editor" data-site-preview="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : "block"}`} height={height} onError={() => setStatus("failed")} />}
   </div>;
 }

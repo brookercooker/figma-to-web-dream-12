@@ -91,6 +91,21 @@ describe("edit-frame protocol", () => {
     const s = setup(); s.receive("edit-ready"); s.unmount();
     expect(s.send).toHaveBeenLastCalledWith({ source: "nova-manager", type: "edit-exit" }, "https://public.example.com");
   });
+  it("reloads exactly once for a held section revision, not inline edits or failing loads", () => {
+    vi.useFakeTimers();
+    const s = setup({ sectionRevision: 0 }); s.receive("edit-ready");
+    s.rerender(<FramedPageEditor {...s.props} sectionRevision={1} />);
+    const changed = s.container.querySelector("iframe");
+    expect(changed).not.toBe(s.frame);
+    expect(s.container.querySelectorAll("iframe")).toHaveLength(1);
+    s.rerender(<FramedPageEditor {...s.props} sectionRevision={1} edits={{ "0": "Held text" }} />);
+    expect(s.container.querySelector("iframe")).toBe(changed);
+    if (!changed) throw new Error("Missing reloaded frame");
+    fireEvent.error(changed);
+    act(() => vi.advanceTimersByTime(60000));
+    expect(s.container.querySelector("iframe")).toBe(changed);
+    expect(s.container.querySelectorAll("iframe")).toHaveLength(1);
+  });
   it("uses correlated queries for missing computed style and measurements", async () => {
     const s = setup(); s.receive("edit-ready");
     s.receive("edit-select", { selection: { key: "0", scope: "page", kind: "image", tag: "img", attrs: { src: "/test.jpg" } } });
