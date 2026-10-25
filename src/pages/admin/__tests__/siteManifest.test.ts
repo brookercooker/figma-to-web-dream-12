@@ -82,7 +82,18 @@ describe("public frame manifest messages", () => {
     const post = vi.spyOn(target, "postMessage");
     expect(requestFrameManifest(frame)).toBe(false); expect(post).not.toHaveBeenCalled();
   });
-  it("reuses one off-screen receiver and removes it when the real preview mounts", async () => {
+  it.each(["", "/manage/preview", "http://draft.example/", "https://", window.location.origin + "/manage/preview"])("does not create a receiver for missing, relative, non-HTTPS or same-origin target %s", (url) => {
+    setManifestBase(url);
+    const stop = startSiteManifestBridge();
+    try { expect(document.querySelector("iframe[data-manifest-receiver]")).toBeNull(); } finally { stop(); }
+  });
+  it("does not create a receiver inside a frame", () => {
+    setManifestBase("https://draft.example/");
+    vi.spyOn(window, "self", "get").mockReturnValue({} as Window & typeof globalThis);
+    const stop = startSiteManifestBridge();
+    try { expect(document.querySelector("iframe[data-manifest-receiver]")).toBeNull(); } finally { stop(); }
+  });
+  it("caps the receiver at one per page load, including errors, address changes and real-frame handoff", async () => {
     setManifestBase("https://draft.example/?__lovable_token=test-token");
     const stop = startSiteManifestBridge(); const stopOther = startSiteManifestBridge();
     try {
@@ -91,13 +102,23 @@ describe("public frame manifest messages", () => {
       expect(receiver?.tabIndex).toBe(-1);
       expect(receiver?.src).toBe("https://draft.example/?__lovable_token=test-token");
       expect(document.querySelectorAll("iframe[data-manifest-receiver]")).toHaveLength(1);
+      receiver?.dispatchEvent(new Event("error"));
+      receiver?.dispatchEvent(new Event("load"));
+      setManifestBase("https://other-draft.example/");
+      await new Promise((r) => setTimeout(r, 0));
+      expect(document.querySelector("iframe[data-manifest-receiver]")).toBe(receiver);
+      expect(receiver?.src).toBe("https://draft.example/?__lovable_token=test-token");
+      setManifestBase("https://draft.example/");
       const real = document.createElement("iframe"); real.src = "https://draft.example/about"; real.dataset.sitePreview = "true"; document.body.appendChild(real);
       await new Promise((r) => setTimeout(r, 0));
       expect(document.querySelector("iframe[data-manifest-receiver]")).toBeNull();
       real.remove(); await new Promise((r) => setTimeout(r, 0));
-      expect(document.querySelectorAll("iframe[data-manifest-receiver]")).toHaveLength(1);
+      expect(document.querySelectorAll("iframe[data-manifest-receiver]")).toHaveLength(0);
     } finally { stop(); stopOther(); }
     expect(document.querySelector("iframe[data-manifest-receiver]")).toBeNull();
+    const restart = startSiteManifestBridge();
+    expect(document.querySelector("iframe[data-manifest-receiver]")).toBeNull();
+    restart();
   });
   it("falls back to HTTP after a missing reply and logs only once at debug level", async () => {
     setManifestBase("https://draft.example/"); setManifestMessageDelay(0);

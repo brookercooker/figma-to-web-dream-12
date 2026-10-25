@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Stop manifest receiver self-framing and repeated navigation with strict target/top-level guards and a one-frame lifetime cap; verify Preview and Pages request counts.
 - [x] Receive public-site manifests through an origin-validated preview message bridge with one reusable off-screen receiver; 538 tests and automated type checks pass, signed-in Pages fixture receives /draft and removes the receiver when a real frame mounts; editor untouched.
 - [x] Add Review Status, Undo Last Change and Help to the stable left-panel header; 530 tests pass, signed-in review/help/copy and desktop/narrow 56px header verified, editor code untouched.
 - [ ] Complete review-detail list and real single-change undo: blocked on relay pending-change IDs, names, descriptions, times, session/submission eligibility and an authenticated undo endpoint; current relay exposes only publish.open and chat messages. Manual single-change history is also unavailable without editor changes; Discard remains whole-session only.
