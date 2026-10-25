@@ -1,5 +1,5 @@
 # Roadmap — coded object import fidelity
-- [ ] Fix original-section preservation, discard rollback and complete editable page coverage; audit existing saved content for missing originals.
+- [x] Preserve original React sections before additions, cancel embedded unmount writes and restore opening snapshots on discard; add editable test/custom landing mappings and plain-page starters. Contact add/discard verified signed-in with unchanged saved row; suspect old damage: Homepage, About, Team and Test Page (not restored automatically).
 - [x] Add relay-driven monotonic preview stages, elapsed time, retained/dimmed preview and confirmed-load completion notifications; 510 tests pass, desktop/narrow fixture checks pass, polling unchanged.
 - [ ] Disable visitor clicks while retaining scrolling in hosted cross-origin previews: requires a public-site message bridge; no such bridge currently exists, and iframe click interception also blocks scrolling. Real hosted build-cycle validation remains unavailable.
 - [x] Register/expose Header and edit it with shared scopes, visible manual canvas, destination/conversion safeguards and warning; 495 tests pass; signed-in save/read-back verified on /about and /team, temporary edit reset.

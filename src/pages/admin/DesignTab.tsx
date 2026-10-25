@@ -723,7 +723,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     return true;
   };
   const hasChangesRef = useRef<() => boolean>(() => false);
-  hasChangesRef.current = () => dirty || tweaksPending || !!pendingSave.current || !!pendingInline.current || Object.keys(pendingObjects.current).length > 0;
+  hasChangesRef.current = () => !discarded.current && (importing || dirty || tweaksPending || !!pendingSave.current || !!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
   useEffect(() => {
     if (!embedded) return;
     registerSave(() => saveAllRef.current());

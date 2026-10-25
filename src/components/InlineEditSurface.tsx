@@ -304,6 +304,7 @@ export default function InlineEditSurface({
       });
       root.querySelectorAll<HTMLElement>("[data-inline-image]").forEach((el) => delete el.dataset.inlineImage);
       root.querySelectorAll<HTMLElement>("[data-inline-divider]").forEach((el) => delete el.dataset.inlineDivider);
+      root.querySelectorAll<HTMLElement>("[data-inline-locked]").forEach((el) => delete el.dataset.inlineLocked);
       barsSig.current = ""; setBars([]);
       root.querySelectorAll<HTMLElement>("[data-inline-chunk]").forEach((el) => {
         delete el.dataset.inlineChunk; delete el.dataset.inlineObject; el.removeAttribute("data-inline-collapsed");
