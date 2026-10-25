@@ -110,10 +110,15 @@ function isDivider(el: HTMLElement): boolean {
   return (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") || parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderLeftWidth) > 0;
 }
 
-function editableTexts(root: Element): HTMLElement[] {
+const CHROME = "header,footer,nav,[role=banner],[role=contentinfo]";
+/** Only recognised shared chrome is editable; unrelated navigation/footer stays protected. */
+function protectedChrome(el: Element, objects: ObjectRoot[]): boolean {
+  return !!el.closest(CHROME) && !objects.some((o) => o.el.contains(el) && o.key === "Header");
+}
+function editableTexts(root: Element, objects: ObjectRoot[]): HTMLElement[] {
   return ([...root.querySelectorAll(TEXT_TAGS)] as HTMLElement[]).filter((el) => {
     if (!(el.textContent ?? "").trim()) return false;
-    if (el.closest("[data-inline-skip],form,header,footer,nav,[role=banner],[role=contentinfo]")) return false;
+    if (el.closest("[data-inline-skip],form") || protectedChrome(el, objects)) return false;
     if ([...el.children].some((c) => BLOCKISH.test(c.tagName))) return false;
     const parent = el.parentElement;
     if (parent && parent !== root && parent.matches(TEXT_TAGS) && ![...parent.children].some((c) => BLOCKISH.test(c.tagName))) return false;
@@ -238,17 +243,17 @@ export default function InlineEditSurface({
       }
     }
     if (!editing) return;
-    editableTexts(root).forEach((el) => {
+    editableTexts(root, objectsRef.current).forEach((el) => {
       if (el.dataset.inlineEditable) return;
       el.dataset.inlineEditable = "1";
       el.contentEditable = "true";
       el.spellcheck = true;
     });
     root.querySelectorAll("img").forEach((img) => {
-      if (!img.closest("header,footer,nav")) img.dataset.inlineImage = "1";
+      if (!protectedChrome(img, objectsRef.current)) img.dataset.inlineImage = "1";
     });
     root.querySelectorAll<HTMLElement>("div,span,hr,i").forEach((el) => {
-      if (el.dataset.inlineDivider || el.closest("header,footer,nav")) return;
+      if (el.dataset.inlineDivider || protectedChrome(el, objectsRef.current)) return;
       if (isDivider(el)) el.dataset.inlineDivider = "1";
     });
     if (!sections) return;
@@ -414,7 +419,7 @@ export default function InlineEditSurface({
     if (!div) {
       let best: { el: HTMLElement; side: NonNullable<InlineSelection["side"]>; area: number } | null = null;
       for (const el of root.querySelectorAll<HTMLElement>("*")) {
-        if (el.closest("header,footer,nav")) continue;
+        if (protectedChrome(el, objectsRef.current)) continue;
         const side = edgeAt(el, e.clientX, e.clientY);
         if (!side) continue;
         const r = el.getBoundingClientRect();
@@ -539,6 +544,15 @@ export default function InlineEditSurface({
       onClickCapture={(e) => {
         linkGuard.onClickCapture(e);
         if (!e.isPropagationStopped()) void onClick(e);
+      }}
+      onMouseOverCapture={(e) => {
+        if (editing && e.target instanceof Element && objectsRef.current.some((o) => o.key === "Header" && o.el.contains(e.target as Element))) e.stopPropagation();
+      }}
+      onPointerOverCapture={(e) => {
+        if (editing && e.target instanceof Element && objectsRef.current.some((o) => o.key === "Header" && o.el.contains(e.target as Element))) e.stopPropagation();
+      }}
+      onFocusCapture={(e) => {
+        if (editing && objectsRef.current.some((o) => o.key === "Header" && o.el.contains(e.target))) e.stopPropagation();
       }}
       onPointerDownCapture={onPointerDown}
       onKeyDown={onKeyDown}
