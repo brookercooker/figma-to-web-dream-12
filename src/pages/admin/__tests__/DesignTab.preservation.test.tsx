@@ -29,7 +29,7 @@ afterEach(cleanup);
 async function add() {
   const r = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
   await screen.findByText("Original Contact");
-  fireEvent.click(screen.getByRole("button", { name: "Object", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Object" }));
   fireEvent.click(screen.getByText("Pick Stats"));
   await waitFor(() => expect(r.container.querySelectorAll("[data-page-block]")).toHaveLength(3), { timeout: 4000 });
   return r;

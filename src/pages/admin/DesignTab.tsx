@@ -1347,9 +1347,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
             {quickAddBar}
             <div ref={blockCanvasRef} {...blockLinkGuard} className={embedded ? "bg-background" : "rounded-lg border bg-background overflow-hidden"} style={deviceStyle}>
               {!hasExisting && (
-                <ChromePreview label="Site Header">
+                <InlineEditSurface apiRef={headerApi} edits={{}} objectEdits={objectEdits} editing sections={false} onChange={changeScope} onSelect={setInlineSel} onReport={setHeaderReports}>
                   <Header />
-                </ChromePreview>
+                </InlineEditSurface>
               )}
 
               {importing && (
