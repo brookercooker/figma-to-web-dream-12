@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Connect manifest-only public pages to a guarded edit frame, snapshot selection tools and existing save/discard flow; verify handshake and bounded requests.
 - [x] Stop manifest receiver self-framing with HTTPS/cross-origin/top-level guards and a one-frame lifetime cap; visible preview also rejects unsafe embed URLs. 545 tests and automated type checks pass; signed-in Preview/Pages and injected self-target remain responsive with zero late document/script reloads and zero throttle warnings. Actual embed service returned no address during checks.
 - [x] Receive public-site manifests through an origin-validated preview message bridge with one reusable off-screen receiver; 538 tests and automated type checks pass, signed-in Pages fixture receives /draft and removes the receiver when a real frame mounts; editor untouched.
 - [x] Add Review Status, Undo Last Change and Help to the stable left-panel header; 530 tests pass, signed-in review/help/copy and desktop/narrow 56px header verified, editor code untouched.
