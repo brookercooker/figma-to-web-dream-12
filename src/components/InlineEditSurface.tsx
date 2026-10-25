@@ -28,7 +28,7 @@ export type InlineReports = Record<string, ReplayReport>;
 /** "page" or the registry key of a shared object. */
 export type InlineScope = string;
 /** `side` is set when the line is an edge (border) of a larger element. */
-export interface InlineSelection { key: string; kind: "text" | "image" | "divider"; el: HTMLElement; scope: InlineScope; side?: "top" | "bottom" | "left" | "right"; link?: { key: string; el: HTMLElement; scope: InlineScope } }
+export interface InlineSelection { key: string; kind: "text" | "image" | "divider" | "locked"; el: HTMLElement; scope: InlineScope; side?: "top" | "bottom" | "left" | "right"; link?: { key: string; el: HTMLElement; scope: InlineScope } }
 /** Icons offered for buttons and links (lucide names). */
 export const LINK_ICONS = ["ArrowRight", "ArrowUpRight", "ChevronRight", "ExternalLink", "Plus", "MapPin", "Phone", "Mail", "Calendar", "ShoppingBag", "Heart", "Download", "Play", "Search", "Star", "Sparkles", "Lightbulb", "Lamp"] as const;
 export const styleKey = (key: string) => `style:${key}`;
@@ -252,6 +252,9 @@ export default function InlineEditSurface({
     root.querySelectorAll("img").forEach((img) => {
       if (!img.closest("form,[data-inline-skip]") && !protectedChrome(img, objectsRef.current)) img.dataset.inlineImage = "1";
     });
+    root.querySelectorAll<HTMLElement>("form,video,iframe,svg,[data-inline-skip]").forEach((el) => {
+      if (!protectedChrome(el, objectsRef.current)) el.dataset.inlineLocked = "1";
+    });
     root.querySelectorAll<HTMLElement>("div,span,hr,i").forEach((el) => {
       if (el.dataset.inlineDivider || protectedChrome(el, objectsRef.current)) return;
       if (isDivider(el)) el.dataset.inlineDivider = "1";
@@ -394,7 +397,12 @@ export default function InlineEditSurface({
   const onClick = async (e: React.MouseEvent) => {
     if (!editing) return;
     const t = e.target as HTMLElement;
-    if (t.closest("form,svg,video,iframe,[data-inline-skip]")) return;
+    const locked = t.closest<HTMLElement>("[data-inline-locked]");
+    if (locked) {
+      const { scope, root } = scopeOf(locked);
+      onSelect?.({ key: pathOf(root, locked), el: locked, scope, kind: "locked" });
+      e.preventDefault(); return;
+    }
     if (t.closest("a,button")) e.preventDefault();
     const root = ref.current;
     if (!root || barAt(e.clientX, e.clientY)) return;
@@ -457,7 +465,7 @@ export default function InlineEditSurface({
     const [scope, key] = selectedKey.split("|");
     const base = scope === "page" ? ref.current : objectsRef.current.find((o) => o.key === scope)?.el;
     const el = base ? (byPath(base, key) as HTMLElement | null) : null;
-    return el && base && (el.dataset.inlineEditable || el.dataset.inlineImage) ? { el, base, scope } : null;
+    return el && base && (el.dataset.inlineEditable || el.dataset.inlineImage || el.dataset.inlineLocked) ? { el, base, scope } : null;
   };
   useEffect(() => {
     if (!editing) { setGrip(null); return; }
