@@ -41,6 +41,7 @@ export default function PreviewPanel() {
           {preview.frames.map((f) => (
             <iframe
               key={f.id}
+              data-site-preview="true"
               src={f.url}
               title={f.id === preview.shownId || preview.shownId === 0 ? "Design Preview" : "Design Preview (Loading)"}
               referrerPolicy="origin"

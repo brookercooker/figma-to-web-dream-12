@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Receive the public-site manifest through an origin-validated preview message bridge, reuse one off-screen receiver on management screens, and verify public-only page discovery without editor changes.
 - [x] Add Review Status, Undo Last Change and Help to the stable left-panel header; 530 tests pass, signed-in review/help/copy and desktop/narrow 56px header verified, editor code untouched.
 - [ ] Complete review-detail list and real single-change undo: blocked on relay pending-change IDs, names, descriptions, times, session/submission eligibility and an authenticated undo endpoint; current relay exposes only publish.open and chat messages. Manual single-change history is also unavailable without editor changes; Discard remains whole-session only.
 - [x] Make Submit for Review emerald and move Account from the top bar to the stable logo-free left-panel header; editor code untouched, 525 tests pass, signed-in Account menu opens in the 56px header.
