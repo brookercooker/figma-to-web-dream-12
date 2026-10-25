@@ -92,6 +92,7 @@ export default function CodedObjectEditor({ object, embedded, focusSection, onCo
   }, [editing, focusSection, reports, key]);
   const editsFor = (scope: string) => scope === key ? edits : {};
   const tools = <>
+    {key === "Header" && <SharedObjectNotice componentKey={key} />}
     <InlineStylePanel sel={selection} edits={edits} onChange={(next) => change(key, next)} onReplaceImage={async () => {
       if (!selection) return; const url = await pickImage();
       if (url) change(key, { ...current.current, [`img:${selection.key}`]: url });
