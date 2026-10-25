@@ -41,6 +41,7 @@ let messageDelayMs = 1500;
 let listening = false;
 let bridgeUsers = 0;
 let receiver: HTMLIFrameElement | null = null;
+let receiverCreated = false; // Hard lifetime cap: never navigate or recreate the hidden frame.
 let observedFrame: HTMLIFrameElement | null = null;
 let observer: MutationObserver | null = null;
 let loggedFallback = false;
@@ -77,14 +78,25 @@ export function requestFrameManifest(frame: HTMLIFrameElement): boolean {
   return true;
 }
 function requestObserved() { if (observedFrame) requestFrameManifest(observedFrame); }
+export function isSafePublicFrameUrl(target: unknown): target is string {
+  if (typeof target !== "string" || !target) return false;
+  try {
+    const url = new URL(target);
+    return url.protocol === "https:" && url.origin !== window.location.origin;
+  } catch { return false; }
+}
+function receiverTargetAllowed(): boolean {
+  return window.self === window.top && isSafePublicFrameUrl(draftBase);
+}
 function reconcileReceiver() {
   if (!bridgeUsers) return;
   const real = Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview]")).find((frame) => {
     const origin = originOf(frame.src); return origin && trustedOrigin(origin);
   });
-  if (real || !draftBase) { receiver?.remove(); receiver = null; }
+  if (real || !receiverTargetAllowed()) { receiver?.remove(); receiver = null; }
   else if (draftBase) {
-    if (!receiver) {
+    if (!receiver && !receiverCreated) {
+      receiverCreated = true;
       receiver = document.createElement("iframe");
       receiver.title = "Public Site Manifest Receiver";
       receiver.setAttribute("aria-hidden", "true");
@@ -94,7 +106,7 @@ function reconcileReceiver() {
       receiver.referrerPolicy = "origin";
       receiver.src = draftBase;
       document.body.appendChild(receiver);
-    } else if (receiver.src !== draftBase) receiver.src = draftBase;
+    }
   }
   const frame = real ?? receiver;
   if (frame !== observedFrame) {
