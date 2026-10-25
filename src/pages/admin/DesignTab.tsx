@@ -215,6 +215,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const inlineApi = useRef<InlineEditController | null>(null);
   const headerApi = useRef<InlineEditController | null>(null);
   const [inlineReports, setInlineReports] = useState<InlineReports>({});
+  const [headerReports, setHeaderReports] = useState<InlineReports>({});
   const [resetKey, setResetKey] = useState(0);
   // Embedded pages not in the coded list: what loading their code found, and a counter that re-runs the load.
   const [liveStatus, setLiveStatus] = useState<LiveStatus | null>(null);
@@ -837,7 +838,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                       }}
                     />
                     <InlineDestinationPanel selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
-                    <InlineEditSafetyPanel reports={inlineReports} selection={inlineSel} editsFor={scopeEdits}
+                    <InlineEditSafetyPanel reports={{ ...inlineReports, ...Object.fromEntries(Object.entries(headerReports).filter(([scope]) => scope !== "page")) }} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
                       record={() => { const maps = { ...inlineApi.current?.record(), ...Object.fromEntries(Object.entries(headerApi.current?.record() ?? {}).filter(([scope]) => scope !== "page")) }; if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
                       resetAll={() => { changeInline({}); for (const scope of new Set([...Object.keys(inlineReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
@@ -1212,7 +1213,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                 <div className={`${h70} overflow-y-auto bg-background`}>
                   {quickAddBar}
                   <SharedObjectNotice componentKey="Header" />
-                  <InlineEditSurface apiRef={headerApi} edits={{}} objectEdits={objectEdits} editing={quick} sections={false}
+                  <InlineEditSurface apiRef={headerApi} onReport={setHeaderReports} edits={{}} objectEdits={objectEdits} editing={quick} sections={false}
                     onChange={changeScope} onSelect={setInlineSel}
                     selectedKey={inlineSel?.scope === "Header" ? `Header|${inlineSel.key}` : null}>
                     <Header />

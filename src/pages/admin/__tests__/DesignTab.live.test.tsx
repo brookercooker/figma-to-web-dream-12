@@ -108,7 +108,8 @@ describe("unchanged pages", () => {
     mocks.status = "found";
     open();
     expect(await screen.findByRole("heading", { name: "Live coded page" })).toBeInTheDocument();
-    expect(screen.getByTestId("in-place")).toBeInTheDocument();
+    expect(screen.getAllByTestId("in-place")).toHaveLength(2);
+    expect(screen.getByRole("note")).toHaveTextContent("This edit changes the header on every page");
     expect(mocks.hasChanges?.()).toBe(false);
   });
   it("a page with database blocks opens its blocks", async () => {
