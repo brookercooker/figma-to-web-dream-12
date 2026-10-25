@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
-const mocks = vi.hoisted(() => ({ save: null as any, discard: null as any, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} } }));
+const mocks = vi.hoisted(() => ({ remote: false, save: null as any, discard: null as any, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} } }));
+vi.mock("../siteManifest", async (importOriginal) => ({ ...await importOriginal<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.reject(new Error("fixture")), manifestHasPage: () => mocks.remote, draftEmbedUrl: () => "https://public.example.com/?embed=fixture" }));
 vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: null, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: vi.fn() }) }));
 vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => null }));
 vi.mock("../designChat/contentSync", () => ({ notifyContentEdited: vi.fn() }));
@@ -11,7 +12,7 @@ vi.mock("../codedPages", () => ({ codedPages: { "/contact": () => <div><section>
   pageChunks: (root: HTMLElement) => [...root.querySelectorAll("section")], chunkName: (el: HTMLElement) => el.textContent }));
 vi.mock("../importCodedObject", () => ({ sectionsFromDom: () => [] }));
 vi.mock("@/prototype/client", () => ({ supabase: { from: (table: string) => {
-  const data = table === "pages" ? [{ id: "contact", path: "/contact", name: "Contact", updated_at: "original-date", ...mocks.original }] : [];
+  const data = table === "pages" ? [{ id: "contact", path: mocks.remote ? "/draft" : "/contact", name: "Contact", updated_at: "original-date", ...mocks.original }] : [];
   const q: any = { select: () => q, is: () => q, order: () => Promise.resolve({ data }), update: (patch: any) => { mocks.writes(table, patch); return { eq: () => Promise.resolve({ error: null }) }; }, then: (cb: any) => Promise.resolve({ data }).then(cb) }; return q;
 } } }));
 vi.mock("@/components/Header", () => ({ default: () => null }));
@@ -24,7 +25,7 @@ vi.mock("../VideoPickerDialog", () => ({ default: () => null }));
 vi.mock("../CreatePageDialog", () => ({ default: () => null }));
 vi.mock("../TagsPanel", () => ({ default: () => null }));
 vi.mock("../PageMiniPreview", () => ({ default: () => null }));
-beforeEach(() => { mocks.writes.mockClear(); mocks.original.content = null; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
+beforeEach(() => { mocks.remote = false; mocks.writes.mockClear(); mocks.original.content = null; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
 afterEach(cleanup);
 async function add() {
   const r = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
@@ -80,5 +81,47 @@ describe("coded page section preservation", () => {
     await add();
     await act(async () => { await mocks.save(); await mocks.discard(); });
     expect(mocks.writes.mock.calls.at(-1)).toEqual(["pages", { content: null, inline_edits: {}, updated_at: "original-date" }]);
+  });
+});
+
+describe("manifest-only public page save/discard integration", () => {
+  async function openRemote(embedded = true) {
+    mocks.remote = true;
+    const view = render(<MemoryRouter initialEntries={["/manage/design?page=contact"]}><DesignTab embedded={embedded} pageId="contact" /></MemoryRouter>);
+    const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+    if (!frame.contentWindow) throw new Error("Missing edit frame");
+    const post = vi.spyOn(frame.contentWindow, "postMessage");
+    const send = (type: string, payload = {}) => act(() => { window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source: frame.contentWindow, data: { source: "nova-site", type, ...payload } })); });
+    send("edit-ready");
+    return { ...view, frame, post, send };
+  }
+  it("holds public text changes in changeScope until Finish Editing and discards exactly", async () => {
+    const s = await openRemote();
+    s.send("edit-change", { scope: "page", next: { "0": "Changed Example Header", "fp:0": '{"v":1,"tag":"h1","t":"abc"}' } });
+    expect(mocks.writes).not.toHaveBeenCalled();
+    await act(async () => { expect(await mocks.save()).toBe(true); });
+    expect(mocks.writes).toHaveBeenCalledWith("pages", expect.objectContaining({ inline_edits: { "0": "Changed Example Header", "fp:0": '{"v":1,"tag":"h1","t":"abc"}' } }));
+    await act(async () => { await mocks.discard(); });
+    expect(mocks.writes.mock.calls.at(-1)).toEqual(["pages", { content: null, inline_edits: {}, updated_at: "original-date" }]);
+    expect(s.post).toHaveBeenCalledWith({ source: "nova-manager", type: "edit-exit" }, "https://public.example.com");
+    expect(s.container.children).toHaveLength(0);
+  });
+  it("appends picker sections beneath the unchanged original frame and discards without writes", async () => {
+    const s = await openRemote();
+    fireEvent.click(screen.getByRole("button", { name: "Object" }));
+    fireEvent.click(screen.getByText("Pick Stats"));
+    const added = await screen.findByText("Added Stats");
+    expect(s.container.querySelector("iframe")).toBe(s.frame);
+    expect(s.frame.compareDocumentPosition(added) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await act(async () => { await mocks.discard(); });
+    expect(mocks.writes).not.toHaveBeenCalled();
+    expect(s.post).toHaveBeenCalledWith({ source: "nova-manager", type: "edit-exit" }, "https://public.example.com");
+  });
+  it("opens the interactive original in standalone editing too", async () => {
+    const s = await openRemote(false);
+    expect(s.frame.src).toContain("/draft?embed=fixture&nova-edit=1");
+    expect(screen.queryByRole("heading", { name: "Contact" })).toBeNull();
+    s.unmount();
+    expect(s.post).toHaveBeenCalledWith({ source: "nova-manager", type: "edit-exit" }, "https://public.example.com");
   });
 });
