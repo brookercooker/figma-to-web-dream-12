@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Register and expose the shared Header, keep it visible/selectable in coded-page canvases, warn before saving, and verify replay; report public-site parity changes without editing that project.
 - [x] Move library picking into a right-side sheet, mark attached refs, and bound large label filters; 491 tests pass; signed-in picking, dedupe, dismissal and desktop/narrow light/dark panels verified without saving content.
 - [x] Group Pages/Capture under Tools and move the single accented Submit for Review beside Account; 486 tests and preview checks pass, signed-in menu navigation and 1280/390/320px layouts verified without publishing.
 - [x] Add bounded, inert live object thumbnails in the picker and Objects rows; all 29 objects rendered live in signed-in browser, zero fallbacks, peak 12 live mounts; selection and capture unchanged.
