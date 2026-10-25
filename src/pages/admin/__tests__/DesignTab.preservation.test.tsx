@@ -90,7 +90,9 @@ describe("manifest-only public page save/discard integration", () => {
     const view = render(<MemoryRouter initialEntries={["/manage/design?page=contact"]}><DesignTab embedded={embedded} pageId="contact" /></MemoryRouter>);
     const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
     if (!frame.contentWindow) throw new Error("Missing edit frame");
-    const post = vi.spyOn(frame.contentWindow, "postMessage");
+    const frameWindow = frame.contentWindow;
+    Object.defineProperty(frame, "contentWindow", { configurable: true, get: () => frameWindow });
+    const post = vi.spyOn(frameWindow, "postMessage").mockImplementation(() => {});
     const send = (type: string, payload = {}) => act(() => { window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source: frame.contentWindow, data: { source: "nova-site", type, ...payload } })); });
     send("edit-ready");
     return { ...view, frame, post, send };

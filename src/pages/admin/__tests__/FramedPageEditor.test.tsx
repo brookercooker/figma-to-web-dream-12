@@ -12,7 +12,9 @@ function setup(patch: Partial<FramedPageEditorProps> = {}) {
   const view = render(<FramedPageEditor {...props} />);
   const frame = view.container.querySelector("iframe");
   if (!frame?.contentWindow) throw new Error("Expected public frame");
-  const send = vi.spyOn(frame.contentWindow, "postMessage");
+  const frameWindow = frame.contentWindow;
+  Object.defineProperty(frame, "contentWindow", { configurable: true, get: () => frameWindow });
+  const send = vi.spyOn(frameWindow, "postMessage").mockImplementation(() => {});
   const receive = (type: string, payload = {}, origin = "https://public.example.com", source: MessageEventSource | null = frame.contentWindow) => act(() => { window.dispatchEvent(new MessageEvent("message", { origin, source, data: { source: "nova-site", type, ...payload } })); });
   return { ...view, props, frame, send, receive };
 }
