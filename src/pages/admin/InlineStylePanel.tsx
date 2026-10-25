@@ -231,6 +231,7 @@ export default function InlineStylePanel({
     <div>
       <ToolHeader icon={Type} title="Text" subtitle={textPreview.length > 40 ? `${textPreview.slice(0, 40)}…` : textPreview || undefined}
         menu={[{ label: "Reset Text Style", icon: RotateCcw, onSelect: reset }]} />
+      {remoteSnapshot(sel.el) && <ToolNote>Text styles apply to the whole selected element. Highlighted-word formatting isn't available through this page connection.</ToolNote>}
       {highlighted ? (
         <div className="pb-3">
           <ToolNote>

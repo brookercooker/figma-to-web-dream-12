@@ -150,7 +150,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     remote = remote || !!(inlineSel && remoteSnapshot(inlineSel.el));
     if (!remote) next = (scope === "Header" ? headerApi : inlineApi).current?.prepare(scope, next) ?? next;
     const snapshot = inlineSel && remoteSnapshot(inlineSel.el);
-    if (snapshot && scope === snapshot.scope && snapshot.fingerprint && Object.keys(next).length) next = { ...next, [`fp:${snapshot.key}`]: JSON.stringify(snapshot.fingerprint) };
+    if (snapshot && scope === snapshot.scope && snapshot.fingerprint && Object.keys(next).some(k => { const parsed = k.includes(":") ? k.slice(k.indexOf(":") + 1) : k; return parsed === snapshot.key && !k.startsWith("fp:"); })) next = { ...next, [`fp:${snapshot.key}`]: JSON.stringify(snapshot.fingerprint) };
+    if (snapshot?.link?.fingerprint && scope === snapshot.link.scope && next[`link:${snapshot.link.key}`]) next = { ...next, [`fp:${snapshot.link.key}`]: JSON.stringify(snapshot.link.fingerprint) };
     if (scope === "page") {
       return changeInline(next, remote);
     }
