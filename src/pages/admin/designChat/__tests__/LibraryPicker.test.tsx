@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Box, Image as ImageIcon } from "lucide-react";
 import LibraryPicker from "../LibraryPicker";
+import type { ChatReference } from "../references";
 import LibraryCard from "../LibraryCard";
 import { PALETTE, colorFor } from "../../labelColors";
 
@@ -23,24 +24,83 @@ vi.mock("../../ObjectPickerDialog", async () => {
     { id: "o2", name: "Flyer", component_key: null, labels: [] },
   ] };
 });
-vi.mock("../../useAllLabels", () => ({ useLabelsForScope: () => ({ data: [{ path: "Rooms/Lobby", color_index: 7 }], refetch: vi.fn() }) }));
+const labelData = vi.hoisted(() => ({ rows: [{ path: "Rooms/Lobby", color_index: 7 }] }));
+vi.mock("../../useAllLabels", () => ({ useLabelsForScope: () => ({ data: labelData.rows, refetch: vi.fn() }) }));
 beforeEach(() => {
   thumbs.data = {}; thumbs.calls.mockClear();
+  labelData.rows = [{ path: "Rooms/Lobby", color_index: 7 }];
+  HTMLElement.prototype.scrollIntoView = vi.fn();
   many.forEach((i, n) => Object.assign(i, { visibility: n % 2 === 0 ? "gated" : "public", webPath: `${n}.webp`, webUrl: `/__l5e/assets-v1/id/${n}.jpg` }));
   (globalThis as any).ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
 });
 afterEach(cleanup);
 
-const setup = (kind: "images" | "objects" = "images") => {
+const setup = (kind: "images" | "objects" = "images", addedRefs: ChatReference[] = []) => {
   const onPick = vi.fn(), onOpenFull = vi.fn();
   const label = kind === "images" ? "Images" : "Objects";
-  render(<LibraryPicker kind={kind} label={label} Icon={kind === "images" ? ImageIcon : Box} active={false} showLabel className="" onPick={onPick} onOpenFull={onOpenFull} />);
+  const view = render(<LibraryPicker addedRefs={addedRefs} kind={kind} label={label} Icon={kind === "images" ? ImageIcon : Box} active={false} showLabel className="" onPick={onPick} onOpenFull={onOpenFull} />);
   fireEvent.click(screen.getByRole("button", { name: label }));
-  return { onPick, onOpenFull };
+  return { onPick, onOpenFull, ...view };
 };
 const cards = () => within(screen.getByRole("dialog")).getAllByRole("button").filter((b) => /^(photo-|Hero|Flyer)/.test(b.getAttribute("title") ?? ""));
 
 describe("library picker", () => {
+  it("marks attached images, updates with refs and on reopen, and skips duplicates on Done", async () => {
+    const ref: ChatReference = { kind: "image", id: "i3", name: "photo-03.jpg", url: "url", labels: [] };
+    const { onPick, onOpenFull, rerender } = setup("images", [ref]);
+    await screen.findByText("60 of 70 shown");
+    const card = screen.getByTitle("photo-03.jpg");
+    expect(card).toHaveAccessibleName("photo-03.jpg — Already added");
+    expect(within(card).getByText("Added")).toBeInTheDocument();
+    fireEvent.click(card);
+    expect(within(card).getByText("Selected")).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle("photo-04.jpg"));
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(onPick.mock.calls.map(([picked]) => picked.id)).toEqual(["i4"]);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: "Images" }));
+    await screen.findByText("60 of 70 shown");
+    expect(within(screen.getByTitle("photo-03.jpg")).getByText("Added")).toBeInTheDocument();
+    rerender(<LibraryPicker addedRefs={[]} kind="images" label="Images" Icon={ImageIcon} active={false} showLabel className="" onPick={onPick} onOpenFull={onOpenFull} />);
+    expect(screen.queryByText("Added")).toBeNull();
+  });
+  it.each(["video", "object"] as const)("marks already-attached %s separately from selection", (kind) => {
+    const item: ChatReference = kind === "video" ? { kind, id: "v", name: "Video", url: "video", labels: [] } : { kind, id: "o", name: "Object", type: "built in code" };
+    render(<LibraryCard item={item} labels={[]} added selected={false} FallbackIcon={Box} onPick={vi.fn()} />);
+    expect(screen.getByRole("button", { name: `${item.name} — Already added` })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByText("Added")).toBeInTheDocument();
+    expect(screen.queryByText("Selected")).toBeNull();
+  });
+  it("filters through a searchable folder menu with over 200 labels and keeps the selection as a chip", async () => {
+    labelData.rows = Array.from({ length: 205 }, (_, n) => ({ path: `Folder/Label ${n}`, color_index: 7 }));
+    labelData.rows.push({ path: "Rooms/Lobby", color_index: 7 });
+    setup(); await screen.findByText("60 of 70 shown");
+    const group = screen.getByRole("group", { name: "Filter by Label" });
+    expect(group.querySelectorAll("[data-label-chips] button")).toHaveLength(8);
+    fireEvent.click(screen.getByRole("button", { name: "More Labels" }));
+    expect(screen.getAllByRole("option")).toHaveLength(212);
+    expect(screen.getByRole("option", { name: "Rooms/Lobby, 1 items" })).toHaveTextContent("1");
+    expect(screen.getByRole("option", { name: "Folder/Label 204, 0 items" })).toHaveTextContent("0");
+    fireEvent.change(screen.getByRole("combobox", { name: "Search Labels" }), { target: { value: "Rooms/Lobby" } });
+    await waitFor(() => expect(screen.getAllByRole("option")).toHaveLength(1));
+    fireEvent.click(screen.getByRole("option", { name: "Rooms/Lobby, 1 items" }));
+    await waitFor(() => expect(cards()).toHaveLength(1));
+    expect(within(group).getByRole("button", { name: "Lobby" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Clear Label" }));
+    await screen.findByText("60 of 70 shown");
+  });
+  it("keeps a rare selected label visible among the eight chips", async () => {
+    labelData.rows = Array.from({ length: 205 }, (_, n) => ({ path: `Folder/Label ${n}`, color_index: 7 }));
+    setup(); await screen.findByText("60 of 70 shown");
+    fireEvent.click(screen.getByRole("button", { name: "More Labels" }));
+    fireEvent.change(screen.getByRole("combobox", { name: "Search Labels" }), { target: { value: "Label 204" } });
+    await waitFor(() => expect(screen.getAllByRole("option")).toHaveLength(1));
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Search Labels" }), { key: "ArrowDown" });
+    fireEvent.keyDown(screen.getByRole("combobox", { name: "Search Labels" }), { key: "Enter" });
+    await waitFor(() => expect(screen.getByRole("button", { name: "Label 204" })).toHaveAttribute("aria-pressed", "true"));
+    expect(screen.getByRole("group", { name: "Filter by Label" }).querySelectorAll("[data-label-chips] button")).toHaveLength(8);
+    expect(screen.getByText("No images match")).toBeInTheDocument();
+  });
   it("centers whole image thumbnails for both the thumbnail and web fallback", async () => {
     thumbs.data = { "images-web-gated": { "0.webp": "https://signed/0" } };
     setup(); await screen.findByText("60 of 70 shown");
@@ -82,7 +142,7 @@ describe("library picker", () => {
     setup(); await screen.findByText("60 of 70 shown");
     expect(thumbs.calls).toHaveBeenCalledWith("images-web-gated", Array.from({ length: 30 }, (_, n) => `${n * 2}.webp`), 320);
     expect(thumbs.calls.mock.calls.every(([, paths]) => !paths.includes("60.webp"))).toBe(true);
-    fireEvent.change(screen.getByLabelText("Search images"), { target: { value: "photo-60" } });
+    fireEvent.change(screen.getByLabelText("Search Images"), { target: { value: "photo-60" } });
     await waitFor(() => expect(thumbs.calls).toHaveBeenCalledWith("images-web-gated", ["60.webp"], 320));
   });
   it("a failed final thumbnail remains selectable with its original reference", async () => {
@@ -112,13 +172,13 @@ describe("library picker", () => {
     fireEvent.load(card.querySelector("img") as HTMLImageElement);
     expect(card.querySelector("img")).toHaveAttribute("src", "/__l5e/assets-v1/id/1.jpg");
   });
-  it("opens a large popup with search that narrows the grid", async () => {
+  it("opens a side panel with search that narrows the grid", async () => {
     setup();
     expect(await screen.findByRole("heading", { name: "Pick an Image" })).toBeInTheDocument();
     expect(await screen.findByText("60 of 70 shown")).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Search images"), { target: { value: "lobby" } });
+    fireEvent.change(screen.getByLabelText("Search Images"), { target: { value: "lobby" } });
     await waitFor(() => expect(cards()).toHaveLength(1));
-    fireEvent.change(screen.getByLabelText("Search images"), { target: { value: "zzz" } });
+    fireEvent.change(screen.getByLabelText("Search Images"), { target: { value: "zzz" } });
     expect(await screen.findByText("No images match")).toBeInTheDocument();
     expect(screen.getByText("Try fewer words or clear the filters")).toBeInTheDocument();
   });
@@ -181,7 +241,7 @@ describe("library picker", () => {
   it("Enter in the search box finishes only with a selection", async () => {
     const { onPick } = setup();
     await screen.findByText("60 of 70 shown");
-    const box = screen.getByLabelText("Search images");
+    const box = screen.getByLabelText("Search Images");
     fireEvent.keyDown(box, { key: "Enter" });
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     fireEvent.click(screen.getByTitle("photo-03.jpg"));
@@ -193,7 +253,7 @@ describe("library picker", () => {
     const { onPick } = setup();
     await screen.findByText("60 of 70 shown");
     fireEvent.click(screen.getByTitle("photo-03.jpg"));
-    fireEvent.change(screen.getByLabelText("Search images"), { target: { value: "lobby" } });
+    fireEvent.change(screen.getByLabelText("Search Images"), { target: { value: "lobby" } });
     await waitFor(() => expect(cards()).toHaveLength(1));
     expect(screen.getByText("1 selected")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
