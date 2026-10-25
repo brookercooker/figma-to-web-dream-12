@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import { Button } from "@/components/ui/button";
 import type { InlineChunk, InlineEdits, InlineSelection } from "@/components/InlineEditSurface";
 import { editFrameUrl, editMap, trustedEditMessage } from "./framedPageProtocol";
@@ -32,8 +32,9 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const queries = useRef(new Map<string, { resolve: (value: unknown) => void; timer: ReturnType<typeof setTimeout> }>());
   const sequence = useRef(0);
   const selectionVersion = useRef(0);
+  const destination = useRef<Window | null>(null);
   const post = (type: string, payload: Record<string, unknown> = {}) => {
-    if (origin) frame.current?.contentWindow?.postMessage({ source: "nova-manager", type, ...payload }, origin);
+    if (origin) (destination.current ?? frame.current?.contentWindow)?.postMessage({ source: "nova-manager", type, ...payload }, origin);
   };
   const state = () => ({ edits: latest.current.edits, objectEdits: latest.current.objectEdits, collapsed: [...latest.current.collapsed], selectedKey: latest.current.selectedKey });
   const query: EditQuery = (op, scope, key, props) => {
@@ -45,14 +46,14 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       post("edit-query", { id, op, scope, key, ...(props ? { props } : {}) });
     });
   };
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!origin || !target) { setStatus("failed"); return; }
     ready.current = false; exited.current = false; setStatus("loading");
-    const contentWindow = frame.current?.contentWindow;
+    destination.current = frame.current?.contentWindow ?? null;
     const timeout = setTimeout(() => setStatus("failed"), 15000);
     const exit = () => {
       if (exited.current) return;
-      contentWindow?.postMessage({ source: "nova-manager", type: "edit-exit" }, origin); exited.current = true; ready.current = false;
+      post("edit-exit"); exited.current = true; ready.current = false;
       selectionVersion.current++;
       queries.current.forEach(({ resolve, timer }) => { clearTimeout(timer); resolve(null); });
       queries.current.clear();
