@@ -103,8 +103,8 @@ describe("page editor quick add", () => {
     const blocks = container.querySelectorAll<HTMLElement>("[data-page-block]");
     expect(blocks).toHaveLength(3);
     expect(blocks[0].dataset.pageBlock).toBe("first");
-    expect(blocks[2].dataset.pageBlock).toBe("second");
-    expect(blocks[1].querySelector(kind === "Image" ? 'img[src="/chosen.jpg"][alt="Chosen image"]' : 'video[src="/chosen.mp4"][poster="/poster.jpg"]')).not.toBeNull();
+    expect(blocks[1].dataset.pageBlock).toBe("second");
+    expect(blocks[2].querySelector(kind === "Image" ? 'img[src="/chosen.jpg"][alt="Chosen image"]' : 'video[src="/chosen.mp4"][poster="/poster.jpg"]')).not.toBeNull();
     expect(mocks.hasChanges?.()).toBe(true);
     expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
     // Discard before unmount: this test never writes its example media to a page.

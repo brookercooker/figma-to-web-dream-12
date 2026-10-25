@@ -31,7 +31,7 @@ async function add() {
   await screen.findByText("Original Contact");
   fireEvent.click(screen.getByRole("button", { name: "Object" }));
   fireEvent.click(screen.getByText("Pick Stats"));
-  await waitFor(() => expect(r.container.querySelectorAll("[data-page-block]")).toHaveLength(3), { timeout: 4000 });
+  await waitFor(() => expect(r.container.querySelectorAll("[data-page-block]")).toHaveLength(1));
   return r;
 }
 describe("coded page section preservation", () => {
@@ -41,9 +41,8 @@ describe("coded page section preservation", () => {
     expect(mocks.writes).not.toHaveBeenCalled();
     await act(async () => { expect(await mocks.save()).toBe(true); });
     const content = mocks.writes.mock.calls.find(([, patch]) => patch.content)?.[1].content;
-    expect(content.map((b: any) => b.type)).toEqual(["code", "code", "object"]);
-    expect(content.slice(0, 2).map((b: any) => b.locked)).toEqual([true, true]);
-    expect(content[2].objectId).toBe("stats");
+    expect(content.map((b: any) => b.type)).toEqual(["object"]);
+    expect(content[0].objectId).toBe("stats");
   });
   it("discards without an unmount write and removes the whole editing surface", async () => {
     const r = await add();

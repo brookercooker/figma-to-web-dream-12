@@ -117,7 +117,7 @@ function protectedChrome(el: Element, objects: ObjectRoot[]): boolean {
 }
 function editableTexts(root: Element, objects: ObjectRoot[]): HTMLElement[] {
   return ([...root.querySelectorAll(TEXT_TAGS)] as HTMLElement[]).filter((el) => {
-    if (!(el.textContent ?? "").trim()) return false;
+    if (!(el.textContent ?? "").trim() && !el.hasAttribute("data-empty-editable")) return false;
     if (el.closest("[data-inline-skip],form") || protectedChrome(el, objects)) return false;
     if ([...el.children].some((c) => BLOCKISH.test(c.tagName))) return false;
     const parent = el.parentElement;

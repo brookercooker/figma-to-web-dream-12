@@ -780,7 +780,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
           onChange={changeScope} onSelect={sel=> { setInlineSel(sel); setActiveId(sel?.el.closest<HTMLElement>("[data-page-block]")?.dataset.pageBlock ?? ""); }}
           selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null}>
           {C ? <PageRoute path={previewSrc(page.path)}><Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense></PageRoute> :
-            <section className="mx-auto max-w-3xl px-6 py-10"><h1 className="font-serif text-3xl">{page.name}</h1><p className="min-h-6" aria-label="Page Text"> </p></section>}
+            <section className="mx-auto max-w-3xl px-6 py-10"><h1 className="font-serif text-3xl">{page.name}</h1><p data-empty-editable className="min-h-6" aria-label="Page Text"> </p></section>}
           {blocks.map((b,i)=><section key={b.id} data-page-block={b.id} className="relative">
             <BlockView block={b} />
           </section>)}
