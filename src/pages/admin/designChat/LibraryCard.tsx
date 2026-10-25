@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
-import { Check, Film } from "lucide-react";
+import { Check, Film, CheckCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { ChatReference } from "./references";
 import { colorFor, type LabelColor } from "../labelColors";
 import { leafOf } from "../labelPath";
@@ -8,14 +9,14 @@ export type LabelColorOf = (path: string) => LabelColor;
 const MAX_PILLS = 3;
 
 /** One roomy, keyboard-focusable result card in the library picker. */
-export default function LibraryCard({ item, labels, note, selected, FallbackIcon, onPick, thumbnail, colorOf = (p) => colorFor(p) }: {
-  item: ChatReference; labels: string[]; note?: string; selected: boolean;
+export default function LibraryCard({ item, labels, note, selected, added = false, FallbackIcon, onPick, thumbnail, colorOf = (p) => colorFor(p) }: {
+  item: ChatReference; labels: string[]; note?: string; selected: boolean; added?: boolean;
   FallbackIcon: ComponentType<{ className?: string }>; onPick: () => void; colorOf?: LabelColorOf;
   thumbnail?: ReactNode;
 }) {
   return (
-    <button type="button" onClick={onPick} data-picker-card="" title={item.name} aria-pressed={selected}
-      className={`group flex flex-col overflow-hidden rounded-lg border bg-card text-left transition-colors ${selected ? "border-foreground ring-2 ring-foreground" : "hover:border-foreground/40"} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`}>
+    <Button variant="ghost" type="button" onClick={onPick} data-picker-card="" title={item.name} aria-pressed={selected} aria-label={added ? `${item.name} — Already added` : item.name}
+      className={`group h-auto min-w-0 items-stretch justify-start whitespace-normal p-0 font-normal flex flex-col overflow-hidden rounded-lg border bg-card text-left transition-colors ${selected ? "border-foreground ring-2 ring-foreground" : added ? "border-primary ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-foreground/40"} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`}>
       <span data-thumb-frame="" className="relative block aspect-[4/3] w-full overflow-hidden bg-muted">
         <span data-thumb-fill="" className="absolute inset-0 block h-full w-full">
           {thumbnail ?? (item.thumb ? <img src={item.thumb} alt="" loading="lazy" className={`absolute inset-0 h-full w-full ${item.kind === "image" ? "object-contain object-center" : "object-cover"}`} />
@@ -36,6 +37,7 @@ export default function LibraryCard({ item, labels, note, selected, FallbackIcon
             )}
           </span>
         )}
+        {added && <span className="absolute left-2 top-2 flex items-center gap-1 rounded bg-primary px-1.5 py-0.5 text-xs text-primary-foreground"><CheckCheck className="h-3 w-3" aria-hidden />Added</span>}
         {selected && (
           <span className="absolute right-2 top-2 flex items-center gap-1 rounded-full bg-foreground px-2 py-0.5 text-xs text-background">
             <Check className="h-3 w-3" aria-hidden="true" />Selected
@@ -46,6 +48,6 @@ export default function LibraryCard({ item, labels, note, selected, FallbackIcon
         <span className="line-clamp-2 text-sm leading-snug">{item.name}</span>
         {note && <span className="block text-xs text-muted-foreground">{note}</span>}
       </span>
-    </button>
+    </Button>
   );
 }
