@@ -148,6 +148,8 @@ async function requestManifest(): Promise<SiteManifest | null> {
 let knownPaths = new Set<string>();
 export const MANIFEST_CHANGED = "nova-manifest-changed";
 export function hasDraftManifestBase() { return !!draftBase; }
+/** Preserve the embed query when composing a public edit-frame address. */
+export function draftEmbedUrl() { return draftBase; }
 export function setManifestBase(url: string) {
   if (url === draftBase) return;
   draftBase = url || null;
