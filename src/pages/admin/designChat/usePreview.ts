@@ -38,6 +38,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   const updateStart = useRef<number | null>(null);
   const highStage = useRef<PreviewStage | null>(null);
   const jobStart = useRef<number | null>(null);
+  const completedJob = useRef<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const seq = useRef(0);
@@ -86,6 +87,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
       hideUpdating();
       highStage.current = null;
       updateStart.current = null;
+      completedJob.current = stateRef.current?.job?.startedAt ?? jobStart.current;
       setCompletedAt(Date.now());
     }
   }, [hideUpdating]);
@@ -178,12 +180,12 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   }, [version, embedEnabled, reloadSoon]);
   useEffect(() => {
     if (state === null) return;
-    if (builtAt && builtAt !== lastBuiltAt.current && (lastBuiltAt.current !== null || !!state?.previewChecking)) buildSeen(updating);
+    if (builtAt && builtAt !== lastBuiltAt.current && lastBuiltAt.current !== null) buildSeen(updating);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     lastBuiltAt.current = builtAt ?? 0;
   }, [builtAt, state === null]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const candidate = previewStage(state, updating, buildDetected);
+  const candidate = state?.job?.startedAt && state.job.startedAt === completedJob.current && !buildDetected ? null : previewStage(state, updating, buildDetected);
   const start = state?.job?.startedAt;
   if (start && start !== jobStart.current) {
     jobStart.current = start; highStage.current = null; updateStart.current = start;
