@@ -199,7 +199,7 @@ function AdminShell() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant={tab === "pages" ? "default" : "ghost"} size="sm"
-                      className={cn("shrink-0 border", tab === "pages" ? "border-primary shadow-sm" : "border-transparent text-muted-foreground", compact && "w-9 px-0")}
+                      className={cn("shrink-0 border", tab === "pages" ? "border-primary shadow-sm" : "border-transparent text-muted-foreground", compact && "w-8 px-0")}
                       aria-label="Tools" title="Tools" aria-current={tab === "pages" ? "page" : undefined}>
                       <Wrench className="h-4 w-4" aria-hidden />
                       {!compact && <span>Tools</span>}
@@ -217,7 +217,7 @@ function AdminShell() {
                 </DropdownMenu>
                 {TABS.map(({ key, label, Icon }) => {
                   const active = tab === key;
-                  const className = `inline-flex items-center gap-2 whitespace-nowrap ${compact ? "px-2.5" : "px-3"} py-2 rounded-md text-sm font-medium transition-colors border ${
+                  const className = `inline-flex shrink-0 items-center gap-2 whitespace-nowrap ${compact ? (active && squeeze < 3 ? "px-2.5" : "w-8 px-0") : "px-3"} py-2 rounded-md text-sm font-medium transition-colors border ${
                     active
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "bg-transparent text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
@@ -247,11 +247,11 @@ function AdminShell() {
 
               <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />
 
-              <div aria-hidden className="h-9 w-px bg-border shrink-0" />
+              <div aria-hidden className={cn("h-9 w-px bg-border shrink-0", compact && "hidden")} />
               {!editing && <SubmitButton compact={compact} />}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="shrink-0 gap-2" aria-label="Account Menu">
+                  <Button variant="ghost" size="sm" className="w-9 shrink-0 gap-2 px-0" aria-label="Account Menu">
                     <UserCircle2 className="w-5 h-5" />
                   </Button>
                 </DropdownMenuTrigger>
