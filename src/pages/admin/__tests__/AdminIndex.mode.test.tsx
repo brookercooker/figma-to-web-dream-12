@@ -22,7 +22,7 @@ describe("Site Manager mode cues", () => {
     const view = render(app());
     const input = screen.getByLabelText("Held Chat Text"); fireEvent.change(input, { target: { value: "Keep this request" } });
     expect(screen.getByRole("radio", { name: "Chat Mode" })).toHaveAttribute("aria-checked", "true");
-    expect(document.querySelector("[data-mode-switch]")?.previousElementSibling).toContainElement(screen.getByRole("heading", { level: 1 }));
+    expect(document.querySelector("[data-mode-switch]")?.previousElementSibling).toContainElement(screen.getByRole("button", { name: "Account Menu" }));
     expect(document.querySelector("[data-manual-outline]")).toBeNull();
     const submit = screen.getByRole("button", { name: "Submit for Review" });
     expect(document.querySelector("header")).toContainElement(submit);
