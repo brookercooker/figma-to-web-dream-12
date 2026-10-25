@@ -1088,41 +1088,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   );
 
   const existingCard = page ? (
-    <div key="current-page-section">
-      {addRow(currentFirst ? 0 : blocks.length, "Add a section above")}
-      <div className="overflow-hidden rounded-lg border bg-background">
-        <div className="flex items-center gap-2 border-b bg-muted px-3 py-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.14em]">Current Page</span>
-          <span className="text-xs text-muted-foreground">Built in code — shown here so you can add around it</span>
-          {codedPages[previewSrc(page.path)] && (
-            <Button size="sm" className="ml-auto gap-2" disabled={importing} onClick={() => setImporting(true)}>
-              <Pencil className="w-4 h-4" /> {importing ? "Breaking into sections…" : "Make Editable"}
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className={codedPages[previewSrc(page.path)] ? "" : "ml-auto"}
-            onClick={() => setCurrentFirst((v) => !v)}
-          >
-            {currentFirst ? <ArrowDown className="w-4 h-4" /> : <ArrowUp className="w-4 h-4" />}
-          </Button>
-        </div>
-        {canIframe(page.path) ? (
-          <iframe
-            key={`${page.id}-${page.updated_at}-inline`}
-            src={previewSrc(page.path)}
-            title={`${page.name} current content`}
-            className="h-[46vh] w-full bg-background pointer-events-none"
-            tabIndex={-1}
-          />
-        ) : (
-          <div data-editor-content className="h-[46vh] overflow-y-auto">
-            <InlinePagePreview name={page.name} blocks={savedBlocks} />
-          </div>
-        )}
-      </div>
-      {addRow(blocks.length, "Add a section below")}
+    <div>
+      <InlineEditSurface edits={inlineEdits} objectEdits={objectEdits} editing sections={false} onChange={changeScope} onSelect={setInlineSel} apiRef={inlineApi}>
+        <PageRoute path={previewSrc(page.path)}>{(() => { const C = codedPages[previewSrc(page.path)]; return C ? <Suspense fallback={null}><C /></Suspense> : <LivePreviewPage path={previewSrc(page.path)} />; })()}</PageRoute>
+      </InlineEditSurface>
     </div>
   ) : null;
 
@@ -1413,7 +1382,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                       )}
 
                       {b.type === "code" ? (
-                        <PageCodeSection path={b.path} chunk={b.chunk} fingerprint={b.fingerprint} edits={b.inlineEdits} objectEdits={objectEdits} editing={!b.locked}
+                        <PageCodeSection path={b.path} chunk={b.chunk} fingerprint={b.fingerprint} edits={b.inlineEdits} objectEdits={objectEdits} editing
                           onSelect={(sel) => { setActiveId(b.id); setInlineSel(sel); }} apiRef={b.id === activeId ? inlineApi : undefined} onReport={setInlineReports}
                           onChange={(scope, next) => { if (scope === "page") update(b.id, { inlineEdits: next }); else changeScope(scope, next); }} />
                       ) : b.type === "object" ? (
