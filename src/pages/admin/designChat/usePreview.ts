@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EMBED_FN, SUPABASE_KEY, type RelayState } from "./helper";
 import { withPath } from "./logic";
-import { setManifestBase, resetSiteManifestCache } from "../siteManifest";
+import { setManifestBase, resetSiteManifestCache, isSafePublicFrameUrl } from "../siteManifest";
 import { previewExcluded, previewStage, type PreviewStage } from "./previewProgress";
 import { syncManifestPages } from "../manifestPageSync";
 
@@ -105,6 +105,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.embed_url) throw new Error(data.error || "Couldn't load the preview.");
+      if (!isSafePublicFrameUrl(data.embed_url)) throw new Error("Couldn't load the preview.");
       if (!alive.current) return;
       setManifestBase(data.embed_url);
       const id = ++seq.current;

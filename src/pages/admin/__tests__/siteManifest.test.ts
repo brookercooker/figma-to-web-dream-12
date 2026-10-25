@@ -4,6 +4,7 @@ import {
   parseSiteManifest, resetSiteManifestCache, siteManifestUrl, type SiteManifest,
   setManifestBase, setDraftRetryDelay, draftManifestReachable,
   manifestHasPage, requestFrameManifest, startSiteManifestBridge, MANIFEST_CHANGED, setManifestMessageDelay,
+  isSafePublicFrameUrl,
 } from "../siteManifest";
 import { imageNeedles, videoNeedles } from "../assetUsages";
 
@@ -83,6 +84,7 @@ describe("public frame manifest messages", () => {
     expect(requestFrameManifest(frame)).toBe(false); expect(post).not.toHaveBeenCalled();
   });
   it.each(["", "/manage/preview", "http://draft.example/", "https://", window.location.origin + "/manage/preview"])("does not create a receiver for missing, relative, non-HTTPS or same-origin target %s", (url) => {
+    expect(isSafePublicFrameUrl(url)).toBe(false);
     setManifestBase(url);
     const stop = startSiteManifestBridge();
     try { expect(document.querySelector("iframe[data-manifest-receiver]")).toBeNull(); } finally { stop(); }
@@ -92,6 +94,10 @@ describe("public frame manifest messages", () => {
     vi.spyOn(window, "self", "get").mockReturnValue({} as Window & typeof globalThis);
     const stop = startSiteManifestBridge();
     try { expect(document.querySelector("iframe[data-manifest-receiver]")).toBeNull(); } finally { stop(); }
+  });
+  it("allows only an absolute cross-origin HTTPS preview URL", () => {
+    expect(isSafePublicFrameUrl("https://draft.example/")).toBe(true);
+    expect(isSafePublicFrameUrl(undefined)).toBe(false);
   });
   it("caps the receiver at one per page load, including errors, address changes and real-frame handoff", async () => {
     setManifestBase("https://draft.example/?__lovable_token=test-token");

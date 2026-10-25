@@ -78,12 +78,15 @@ export function requestFrameManifest(frame: HTMLIFrameElement): boolean {
   return true;
 }
 function requestObserved() { if (observedFrame) requestFrameManifest(observedFrame); }
-function receiverTargetAllowed(): boolean {
-  if (!draftBase || window.self !== window.top) return false;
+export function isSafePublicFrameUrl(target: unknown): target is string {
+  if (typeof target !== "string" || !target) return false;
   try {
-    const url = new URL(draftBase);
+    const url = new URL(target);
     return url.protocol === "https:" && url.origin !== window.location.origin;
   } catch { return false; }
+}
+function receiverTargetAllowed(): boolean {
+  return window.self === window.top && isSafePublicFrameUrl(draftBase);
 }
 function reconcileReceiver() {
   if (!bridgeUsers) return;
