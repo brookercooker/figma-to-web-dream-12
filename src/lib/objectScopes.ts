@@ -9,6 +9,7 @@ const modules = import.meta.glob([
   "/src/components/objects/*.tsx",
   "/src/components/GoogleReviews.tsx",
   "/src/components/TeamPreview.tsx",
+  "/src/components/Header.tsx",
 ]);
 
 let loaded: Map<unknown, string> | null = null;
@@ -20,7 +21,9 @@ export function loadObjectComponents(): Promise<Map<unknown, string>> {
   loading ??= (async () => {
     const map = new Map<unknown, string>();
     await Promise.all(Object.entries(modules).map(async ([file, load]) => {
-      const name = file.split("/").pop()!.replace(/\.tsx$/, "");
+      const filename = file.split("/").pop();
+      if (!filename) return;
+      const name = filename.replace(/\.tsx$/, "");
       if (!(name in objectRegistry)) return;
       try {
         const mod = (await load()) as { default?: unknown };

@@ -17,10 +17,11 @@ const lazyEntry = (
  *
  * IMPORTANT: this map is the ONLY component surface exposed through the Objects
  * tool and the /objects/<slug> route. Low-level components (ProductCard,
- * Header, cards, etc.) and utilities are intentionally excluded — they must
+ * cards, etc.) and utilities are intentionally excluded — they must
  * never appear in the Objects list.
  */
 export const objectRegistry: Record<string, RegistryEntry> = {
+  Header:               lazyEntry(() => import("@/components/Header"), 1280, 200),
   AboutUs:              lazyEntry(() => import("./AboutUs")),
   BrandRepresentation:  lazyEntry(() => import("./BrandRepresentation")),
   Categories:           lazyEntry(() => import("./Categories")),

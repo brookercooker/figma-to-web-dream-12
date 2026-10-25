@@ -28,6 +28,7 @@ import { matchesLabelFilter } from "./labelPath";
 import PageMiniPreview from "./PageMiniPreview";
 import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, hasWideBlocks } from "@/components/PageBlocks";
 
+import SharedObjectNotice from "./SharedObjectNotice";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import InsertGap, { type InsertType } from "./InsertGap";
@@ -212,7 +213,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [quick, setQuick] = useState(false);
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
   const inlineApi = useRef<InlineEditController | null>(null);
+  const headerApi = useRef<InlineEditController | null>(null);
   const [inlineReports, setInlineReports] = useState<InlineReports>({});
+  const [headerReports, setHeaderReports] = useState<InlineReports>({});
   const [resetKey, setResetKey] = useState(0);
   // Embedded pages not in the coded list: what loading their code found, and a counter that re-runs the load.
   const [liveStatus, setLiveStatus] = useState<LiveStatus | null>(null);
@@ -235,7 +238,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     });
   }, []);
   const changeScope = (scope: InlineScope, next: InlineEdits) => {
-    next = inlineApi.current?.prepare(scope, next) ?? next;
+    next = (scope === "Header" ? headerApi : inlineApi).current?.prepare(scope, next) ?? next;
     if (scope === "page") return changeInline(next);
     setObjectEdits((cur) => ({ ...cur, [scope]: next }));
     const id = objectRows.current[scope];
@@ -820,6 +823,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                         Part of the shared object <span className="font-medium text-foreground">{inlineSel.scope}</span>. Changes apply everywhere it's used.
                       </p>
                     )}
+                    {inlineSel?.scope === "Header" && <>
+                      <SharedObjectNotice componentKey="Header" />
+                      <Button variant="outline" size="sm" onClick={async () => { const id = objectRows.current.Header; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, inlineSel.key); } else navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(inlineSel.key)}`); }}>Open in Object Editor</Button>
+                    </>}
                     <InlineStylePanel
                       sel={inlineSel}
                       edits={inlineSel ? scopeEdits(inlineSel.scope) : inlineEdits}
@@ -831,10 +838,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                       }}
                     />
                     <InlineDestinationPanel selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
-                    <InlineEditSafetyPanel reports={inlineReports} selection={inlineSel} editsFor={scopeEdits}
+                    <InlineEditSafetyPanel reports={{ ...inlineReports, ...Object.fromEntries(Object.entries(headerReports).filter(([scope]) => scope !== "page")) }} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
-                      record={() => { const maps = inlineApi.current?.record(); if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
-                      resetAll={() => { changeInline({}); for (const scope of Object.keys(inlineReports)) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
+                      record={() => { const maps = { ...inlineApi.current?.record(), ...Object.fromEntries(Object.entries(headerApi.current?.record() ?? {}).filter(([scope]) => scope !== "page")) }; if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
+                      resetAll={() => { changeInline({}); for (const scope of new Set([...Object.keys(inlineReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
     </>
   );
   const blockTools = (b: Block, i: number) => (
@@ -1205,6 +1212,12 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                 <div className={quick && !embedded ? "grid grid-cols-[1fr_260px]" : embedded ? "h-full" : ""}>
                 <div className={`${h70} overflow-y-auto bg-background`}>
                   {quickAddBar}
+                  <SharedObjectNotice componentKey="Header" />
+                  <InlineEditSurface apiRef={headerApi} onReport={setHeaderReports} edits={{}} objectEdits={objectEdits} editing={quick} sections={false}
+                    onChange={changeScope} onSelect={setInlineSel}
+                    selectedKey={inlineSel?.scope === "Header" ? `Header|${inlineSel.key}` : null}>
+                    <Header />
+                  </InlineEditSurface>
                   {(() => {
                     const C = codedPages[previewSrc(page.path)];
                     if (!C && liveStatus === "unreachable") return (

@@ -90,7 +90,7 @@ const AppShell = () => {
     <>
       <ScrollToTop />
       {!isAdmin && <SandboxBanner />}
-      {!isAdmin && !isObjectRoute && !isLandingRoute && <Header />}
+      {!isAdmin && !isObjectRoute && !isLandingRoute && <InlineEditsLayer path={location.pathname} objectsOnly><Header /></InlineEditsLayer>}
       {!isAdmin && isLandingRoute && <LandingHeader />}
       <main id="main-content">
         <InlineEditsLayer path={location.pathname}>
