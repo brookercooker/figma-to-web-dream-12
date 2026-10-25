@@ -6,7 +6,7 @@ import { useDesignChat, type Device } from "./DesignChatContext";
 
 /**
  * The buttons in the Site Manager's top bar that belong to the design chat: while the Preview tab is open, the size buttons
- * and Full screen; always, a link to the published site. Submit for review lives beside the account menu (SubmitButton).
+ * and Full screen; always, a link to the published site. Submit for review stays in the top bar (SubmitButton).
  */
 export default function PreviewTools({ showViewControls, tight = false }: { showViewControls: boolean; tight?: boolean }) {
   const { state, device, setDevice, inFull, toggleFull } = useDesignChat();
@@ -47,7 +47,7 @@ export function SubmitButton({ compact = false }: { compact?: boolean }) {
   const submit = async () => { await postToHelper("/publish"); refreshSoon(); };
   const label = reviewOn === false ? "Publish" : "Submit for Review";
   return (
-    <Button type="button" variant="brand" size="sm" className={compact ? "w-9 shrink-0 px-0" : "shrink-0"} aria-label={label} title={label} disabled={submitDisabled} onClick={submit}>
+    <Button type="button" variant="review" size="sm" className={compact ? "w-9 shrink-0 px-0" : "shrink-0"} aria-label={label} title={label} disabled={submitDisabled} onClick={submit}>
       <Send className="h-4 w-4" aria-hidden />
       {!compact && label}
     </Button>

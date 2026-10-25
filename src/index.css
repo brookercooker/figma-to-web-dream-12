@@ -57,6 +57,9 @@
     --nova-glow: 38 50% 80%;
     --nova-garnet: 3 44% 36%;
     --nova-manual: 3 44% 36%;
+    --nova-review: 159.0566 71.6216% 29.0196%;
+    --nova-review-hover: 160.2198 75.2066% 23.7255%;
+    --nova-review-foreground: 0 0% 100%;
   }
 
   .dark {

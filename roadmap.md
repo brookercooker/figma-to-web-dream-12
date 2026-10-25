@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Make Submit for Review emerald and move Account from the top bar to the stable logo-free left-panel header, without touching editor code.
 - [x] Replace competing conversion/block modes with one persistent in-place surface showing original first, then append-only additions; retain exact discard and audit report. Contact add/discard and original visibility verified signed-in; original DOM remains mounted in regression tests.
 - [x] Preserve original React sections before additions, cancel embedded unmount writes and restore opening snapshots on discard; add editable test/custom landing mappings and plain-page starters. Contact add/discard verified signed-in with unchanged saved row; suspect old damage: Homepage, About, Team and Test Page (not restored automatically).
 - [x] Add relay-driven monotonic preview stages, elapsed time, retained/dimmed preview and confirmed-load completion notifications; 510 tests pass, desktop/narrow fixture checks pass, polling unchanged.
