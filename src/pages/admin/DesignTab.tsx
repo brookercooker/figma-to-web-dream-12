@@ -2,14 +2,13 @@ import { useEditorSlot } from "./designChat/EditorSlot";
 import { notifyContentEdited } from "./designChat/contentSync";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { codedPages, pageChunks, chunkName } from "./codedPages";
+import { codedPages } from "./codedPages";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
 import EmbeddedBox from "./designChat/EmbeddedBox";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
@@ -27,8 +26,7 @@ import { matchesLabelFilter } from "./labelPath";
 import PageMiniPreview from "./PageMiniPreview";
 import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, type CodeBlock, hasWideBlocks } from "@/components/PageBlocks";
 
-import PageCodeSection, { PageRoute } from "@/components/PageCodeSection";
-import { fingerprintOf } from "@/lib/inlineEditCore";
+import { PageRoute } from "@/components/PageCodeSection";
 import SharedObjectNotice from "./SharedObjectNotice";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -41,76 +39,13 @@ import { hasVisibleEdits, withoutPath } from "@/lib/inlineEditCore";
 import type { InlineEditController, InlineReports } from "@/components/InlineEditSurface";
 import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
-import LivePreviewPage, { type LiveStatus } from "./designChat/LivePreviewPage";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
 
-/**
- * Shows the real site header / footer around the editable page content so the
- * page is designed in context. Not interactive and not part of the blocks.
- */
-function ChromePreview({ label, children }: { label: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(true);
-  return (
-    <div className="bg-background">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-1.5 px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground"
-      >
-        {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-        {label}
-      </button>
-      {open && (
-        <div className="pointer-events-none select-none [&_header]:!static [&_header]:!z-auto">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/**
- * Paths that a real page component answers. Anything else is a prototype page
- * stored in memory, which an iframe cannot see (each frame reseeds its own
- * data), so those preview inline instead of through an iframe.
- */
-const CODED_PATHS = new Set([
-  "/home", "/locations", "/full-vendor-list", "/new-and-now", "/outdoor-oasis",
-  "/team", "/inspiration-gallery", "/lighting-tips", "/about", "/contact",
-  "/contact-us-trade-account", "/shipping-policy", "/return-policy",
-  "/privacy-policy", "/terms-conditions", "/objects-flyer", "/coming-soon",
-  "/brands", "/catalog", "/ceiling-lighting", "/wall-lighting", "/lamps",
-  "/outdoor", "/fans", "/architectural", "/home-decor", "/room",
-]);
-
 export const previewSrc = (path: string) => (path === "/" ? "/home" : path);
-export const canIframe = (path: string) => CODED_PATHS.has(previewSrc(path));
-
-/** Renders a prototype page the way visitors see it, without an iframe. */
+export const canIframe = (_path: string) => false;
 export function InlinePagePreview({ name, blocks }: { name: string; blocks: Block[] }) {
-  return (
-    <div className="bg-background">
-      <div className="pointer-events-none select-none [&_header]:!static [&_header]:!z-auto">
-        <Header />
-      </div>
-      <div className={hasWideBlocks(blocks) ? "" : "mx-auto max-w-3xl px-6 py-10"}>
-        {blocks.length ? (
-          <PageBlocks blocks={blocks} />
-        ) : (
-          <>
-            <h1 className="font-serif text-3xl">{name}</h1>
-            <p className="mt-3 text-sm text-muted-foreground">
-              This page has no content yet. Add a section to design it.
-            </p>
-          </>
-        )}
-      </div>
-      <div className="pointer-events-none select-none">
-        <Footer />
-      </div>
-    </div>
-  );
+  return <div><Header /><h1 className="font-serif text-3xl">{name}</h1><PageBlocks blocks={blocks} /><Footer /></div>;
 }
 
 const SIZES: TextBlock["size"][] = ["sm", "md", "lg", "xl"];
@@ -135,51 +70,8 @@ function ToolButton({
   );
 }
 
-/** Renders a coded page off-screen, splits it into sections and converts each one. */
-function PageImportProbe({ path, onDone }: { path: string; onDone: (parts: CodeBlock[]) => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    let cancelled = false;
-    const start = Date.now();
-    const tick = async () => {
-      if (cancelled) return;
-      const root = ref.current;
-      const loading = !root || !root.children.length || root.querySelector(".animate-pulse") ||
-        [...root.querySelectorAll("img")].some((i) => !i.complete);
-      if (loading && Date.now() - start < 6000) { setTimeout(tick, 150); return; }
-      await new Promise((r) => setTimeout(r, 250));
-      if (cancelled || !root) return;
-      const { sectionsFromDom } = await import("./importCodedObject");
-      const chunks = pageChunks(root);
-      // Probe conversion support, but preserve React instead of replacing it with a lossy approximation.
-      const parts: CodeBlock[] = (chunks.length ? chunks : [root]).map((el, i) => {
-        let convertible = false;
-        try { convertible = sectionsFromDom(el).length > 0; } catch { /* preserve unsupported code */ }
-        const pathParts: number[] = [];
-        let n: Element | null = el;
-        while (n && n !== root && n.parentElement) { pathParts.unshift([...n.parentElement.children].indexOf(n)); n = n.parentElement; }
-        return { id: newId(), type: "code", path, chunk: pathParts.join("."), name: chunkName(el, `Section ${i + 1}`), align: "left", locked: !convertible, fingerprint: fingerprintOf(el) };
-      });
-      onDone(parts);
-    };
-    setTimeout(tick, 300);
-    return () => { cancelled = true; };
-  }, [path]); // eslint-disable-line react-hooks/exhaustive-deps
-  const C = codedPages[path];
-  return createPortal(
-    <div ref={ref} className="import-probe bg-background" style={{ position: "fixed", left: -20000, top: 0, width: 1280, pointerEvents: "none" }}>
-      <PageRoute path={path}><Suspense fallback={<div className="animate-pulse h-10" />}>{C ? <C /> : <LivePreviewPage path={path} />}</Suspense></PageRoute>
-    </div>,
-    document.body,
-  );
-}
-
 export default function DesignTab({ embedded = false, pageId }: { embedded?: boolean; pageId?: string } = {}) {
   const blockCanvasRef = useRef<HTMLDivElement>(null);
-  const blockLinkGuard = useEditorLinkGuard(blockCanvasRef, true, (e) => {
-    const block = (e.target as Element).closest<HTMLElement>("[data-page-block]");
-    if (block?.dataset.pageBlock) setActiveId(block.dataset.pageBlock);
-  }, true);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   // Embedded in the Site Manager's edit mode, the page comes from the working page, not the address.
@@ -210,13 +102,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [dragId, setDragId] = useState<string>("");
   const [dropAt, setDropAt] = useState<{ id: string; before: boolean } | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [showLive, setShowLive] = useState(true);
-  // Pages built in code have no editable blocks yet: show them as one locked section.
-  const [hasExisting, setHasExisting] = useState(false);
-  const [currentFirst, setCurrentFirst] = useState(true);
   const [objectAt, setObjectAt] = useState<number | null>(null);
-  const [importing, setImporting] = useState(false);
-  const queuedAddition = useRef<Block | null>(null);
   const discarded = useRef(false);
   const opening = useRef<PageRow | null>(null);
   const originalObjects = useRef<Record<string, InlineEdits>>({});
@@ -224,7 +110,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const persistedObjects = useRef(new Set<string>());
   const [closed, setClosed] = useState(false);
   // In-place editing of a coded page: type over text, click pictures to swap.
-  const [quick, setQuick] = useState(false);
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
   const inlineApi = useRef<InlineEditController | null>(null);
   const headerApi = useRef<InlineEditController | null>(null);
@@ -232,8 +117,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [headerReports, setHeaderReports] = useState<InlineReports>({});
   const [resetKey, setResetKey] = useState(0);
   // Embedded pages not in the coded list: what loading their code found, and a counter that re-runs the load.
-  const [liveStatus, setLiveStatus] = useState<LiveStatus | null>(null);
-  const [liveReload, setLiveReload] = useState(0);
   const [inlineSel, setInlineSel] = useState<InlineSelection | null>(null);
   const [foldedChunks, setFoldedChunks] = useState<Set<string>>(new Set());
   // Edits on shared objects, keyed by object; saved on the object so every page shows them.
@@ -255,8 +138,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const changeScope = (scope: InlineScope, next: InlineEdits) => {
     next = (scope === "Header" ? headerApi : inlineApi).current?.prepare(scope, next) ?? next;
     if (scope === "page") {
-      const active = blocks.find((b) => b.id === activeId);
-      if (active?.type === "code") { update(active.id, { inlineEdits: next }); return; }
       return changeInline(next);
     }
     setObjectEdits((cur) => ({ ...cur, [scope]: next }));
@@ -268,10 +149,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id).then(({ error }: any) => { if (!error) notifyContentEdited(); });
     }, 800);
   };
-  const scopeEdits = (scope: InlineScope) => {
-    const active = blocks.find((b) => b.id === activeId);
-    return scope === "page" ? (active?.type === "code" ? active.inlineEdits ?? {} : inlineEdits) : objectEdits[scope] ?? {};
-  };
+  const scopeEdits = (scope: InlineScope) => scope === "page" ? inlineEdits : objectEdits[scope] ?? {};
   /** Reorder sections among siblings, using order styles on the page's own edits. */
   const reorderChunks = (from: InlineChunk, to: InlineChunk, after: boolean, all: InlineChunk[]) => {
     const sibs = all.filter((c) => c.parent === from.parent);
@@ -319,17 +197,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   useEffect(() => { load(); }, []);
 
   const page = useMemo(() => pages.find((p) => p.id === selectedId) ?? null, [pages, selectedId]);
-  // Entering Edit on a coded page converts it into editable sections automatically.
-  const autoTried = useRef(new Set<string>());
-  useEffect(() => {
-    if (!showLive && hasExisting && !importing && page && codedPages[previewSrc(page.path)] && !autoTried.current.has(page.id)) {
-      autoTried.current.add(page.id);
-      setImporting(true);
-    }
-  }, [showLive, hasExisting, importing, page]);
-  // What the page shows once saved — re-read from the row so saving refreshes it.
-  const savedBlocks = useMemo(() => parseBlocks(page?.content), [page?.content]);
-
   useEffect(() => {
     // Wait for the page to load so a "mode=edit" link isn't used up early.
     if (!page) return;
@@ -342,34 +209,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     setBlocks(parsed);
     setActiveId("");
     setDirty(false);
-    // Pages open in Preview unless the link asks for Edit (e.g. returning from the object editor).
-    const qs = new URLSearchParams(window.location.search);
-    // Embedded, the page always opens ready to edit.
-    const wantEdit = embedded || qs.get("mode") === "edit";
-    const inPlace = !parsed.length && !!page && (embedded || !!codedPages[previewSrc(page.path)]);
-    // Coded pages are edited in place, so they stay on the page view.
-    setShowLive(!wantEdit || inPlace);
-    if (!embedded && qs.has("mode")) {
-      // Only the first page opened from that link starts in Edit.
-      qs.delete("mode");
-      window.history.replaceState(window.history.state, "", `${window.location.pathname}?${qs}`);
-    }
-    // Only pages that really exist in code get the locked "Current page" section.
-    // Newly created pages start empty, with the site header and footer around them.
-    setHasExisting(!parsed.length && !!page && (embedded || canIframe(page.path)));
-    setCurrentFirst(true);
-    setQuick(wantEdit && inPlace);
     setInlineSel(null);
     setFoldedChunks(new Set());
     setInlineEdits(page?.inline_edits ?? {});
-    setLiveStatus(null);
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-
-  useEffect(() => {
-    if (!page || parseBlocks(page.content).length || codedPages[previewSrc(page.path)]) return;
-    if (["/brands", "/ceiling", "/ceiling-lighting", "/fans", "/lamps", "/outdoor", "/room", "/wall", "/wall-lighting", "/draft", "/manage"].includes(page.path) || page.path.startsWith("/landing/")) onLiveStatus("missing");
-  }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [sortBy, setSortBy] = useState<"name" | "recent" | "label">("name");
   const filtered = useMemo(() => {
@@ -426,29 +270,22 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   };
 
   const addPickedBlock = (block: Block, at: number) => {
-    if (discarded.current || importing) return;
-    if (hasExisting && page) {
-      queuedAddition.current = block;
-      setImporting(true);
-      return;
-    }
-    const next = insertPickedBlock(blocks, block, at);
+    if (discarded.current) return;
+    const next = insertPickedBlock(blocks, block, blocks.length);
     if (page) pendingSave.current = { pageId: page.id, snapshot: next };
     setBlocks(next);
     scrollToNew.current = block.id;
     setActiveId(block.id);
-    setShowLive(false);
-    setQuick(false);
     setDirty(true);
   };
 
   useEffect(() => {
-    if (!scrollToNew.current || showLive) return;
+    if (!scrollToNew.current) return;
     const el = blockCanvasRef.current?.querySelector<HTMLElement>(`[data-page-block="${scrollToNew.current}"]`);
     if (!el) return;
     el.scrollIntoView({ block: "center", behavior: "smooth" });
     scrollToNew.current = null;
-  }, [blocks, showLive]);
+  }, [blocks]);
 
   const addBlock = (type: Block["type"], at?: number) => {
     const position = pageInsertPosition(blocks, activeId, at);
@@ -471,15 +308,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     const i = blocks.findIndex((b) => b.id === id);
     if (i < 0) return;
     const j = i + dir;
-    // At the ends, step past the locked "Current page" section instead of doing nothing.
-    if (j < 0 || j >= blocks.length) {
-      if (!hasExisting) return;
-      if (j < 0 && currentFirst) setCurrentFirst(false);
-      else if (j >= blocks.length && !currentFirst) setCurrentFirst(true);
-      else return;
-      setDirty(true);
-      return;
-    }
+    if (j < 0 || j >= blocks.length) return;
     setBlocks((prev) => {
       const copy = [...prev];
       [copy[i], copy[j]] = [copy[j], copy[i]];
@@ -594,22 +423,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     setDirty(true);
   };
 
-  /** A page with no code and no blocks opens in the block editor with a heading and an empty text block, held unsaved. */
-  const onLiveStatus = (status: LiveStatus) => {
-    setLiveStatus(status);
-    if (status !== "missing" || !page || parseBlocks(page.content).length) return;
-    const textId = newId();
-    setBlocks([
-      { id: newId(), type: "heading", text: page.name, align: "left", size: "xl" },
-      { id: textId, type: "text", text: "", align: "left", size: "md" },
-    ]);
-    setActiveId(textId);
-    setHasExisting(false);
-    setShowLive(false);
-    setQuick(false);
-    setDirty(true);
-  };
-
   const save = async () => {
     if (!page) return;
     setSaving(true);
@@ -634,7 +447,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
 
   // Auto-save: quietly store changes shortly after the user stops editing.
   useEffect(() => {
-    if (!dirty || !page || discarded.current || importing) return;
+    if (!dirty || !page || discarded.current) return;
     const pageId = page.id;
     const snapshot = blocks;
     pendingSave.current = { pageId, snapshot };
@@ -683,7 +496,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   /** Embedded: write everything held in memory. False (after a message) if any write failed; failed parts stay held. */
   const saveAllRef = useRef<() => Promise<boolean>>(async () => true);
   saveAllRef.current = async () => {
-    if (discarded.current || importing) return false;
+    if (discarded.current) return false;
     let wrote = false;
     let failed: string | null = null;
     const p = pendingSave.current;
@@ -723,7 +536,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     return true;
   };
   const hasChangesRef = useRef<() => boolean>(() => false);
-  hasChangesRef.current = () => !discarded.current && (importing || dirty || tweaksPending || !!pendingSave.current || !!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
+  hasChangesRef.current = () => !discarded.current && (dirty || tweaksPending || !!pendingSave.current || !!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
   useEffect(() => {
     if (!embedded) return;
     registerSave(() => saveAllRef.current());
@@ -732,7 +545,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       window.clearTimeout(inlineTimer.current);
       Object.values(objectTimers.current).forEach(window.clearTimeout);
       pendingSave.current = null; pendingInline.current = null; pendingObjects.current = {};
-      queuedAddition.current = null;
       const baseline = opening.current;
       const writes: Promise<any>[] = [];
       if (baseline && persistedPage.current) writes.push((supabase as any).from("pages").update({ content: baseline.content, inline_edits: baseline.inline_edits, updated_at: baseline.updated_at }).eq("id", baseline.id));
@@ -747,7 +559,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         setBlocks(parseBlocks(baseline.content)); setInlineEdits(baseline.inline_edits ?? {});
       }
       setObjectEdits(structuredClone(originalObjects.current));
-      setTweaksPending(false); setDirty(false); setImporting(false); setActiveId("");
+      setTweaksPending(false); setDirty(false); setActiveId("");
       setInlineSel(null); setFoldedChunks(new Set()); setResetKey((k) => k + 1); setClosed(true);
       if (writes.length) notifyContentEdited();
     });
@@ -786,71 +598,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     return () => io.disconnect();
   });
 
-  const addRow = (at: number, label: string) => (
-    <div className="my-3 flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2">
-      <span className="mr-1 text-xs text-muted-foreground">{label}</span>
-      <Button variant="outline" size="sm" className="gap-2" onClick={() => insertAt("object", at)}>
-        <Boxes className="w-4 h-4" /> Object
-      </Button>
-      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("image", at)}>
-        <ImageIcon className="w-4 h-4" /> Image
-      </Button>
-      <Button variant="outline" size="sm" className="gap-2" onClick={() => addBlock("video", at)}>
-        <Film className="w-4 h-4" /> Video
-      </Button>
-    </div>
-  );
-
-  const finishImport = (parts: CodeBlock[]) => {
-    if (!page || discarded.current) return;
-    const originals: CodeBlock[] = parts.length ? parts : [{ id: newId(), type: "code", path: previewSrc(page.path), chunk: "", name: page.name, align: "left", locked: true }];
-    const made = originals.map((b) => ({ ...b, inlineEdits: structuredClone(inlineEdits) }));
-    const addition = queuedAddition.current;
-    queuedAddition.current = null;
-    const combined = [...made, ...blocks, ...(addition ? [addition] : [])];
-    setBlocks(combined);
-    pendingSave.current = { pageId: page.id, snapshot: combined };
-    pendingInline.current = { pageId: page.id, next: {} };
-    setInlineEdits({});
-    setHasExisting(false); setShowLive(false); setQuick(false); setImporting(false); setDirty(true);
-    if (addition) { setActiveId(addition.id); scrollToNew.current = addition.id; }
-  };
-
-  const modeAndDevice = page ? (
-    <>
-              <div className="inline-flex rounded-md border overflow-hidden mr-1">
-                <button
-                  type="button"
-                  onClick={() => { setShowLive(true); setQuick(false); }}
-                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors ${showLive && !quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-                >
-                  <Eye className="w-3.5 h-3.5" /> Preview
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setListOpen(false); if (hasExisting && codedPages[previewSrc(page.path)]) { setShowLive(true); setQuick(true); } else { setShowLive(false); setQuick(false); } }}
-                  className={`px-3 py-1.5 text-xs inline-flex items-center gap-1.5 transition-colors border-l ${!showLive || quick ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-                >
-                  <Pencil className="w-3.5 h-3.5" /> Edit
-                </button>
-              </div>
-              <div className="inline-flex rounded-md border overflow-hidden mr-1" role="group" aria-label="Screen Size">
-                {([["desktop", Monitor, "Desktop"], ["tablet", Tablet, "Tablet"], ["phone", Smartphone, "Phone"]] as const).map(([d, Icon, label]) => (
-                  <button
-                    key={d}
-                    type="button"
-                    title={label}
-                    aria-label={label}
-                    aria-pressed={device === d}
-                    onClick={() => setDevice(d)}
-                    className={`px-2.5 py-1.5 transition-colors ${device === d ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </button>
-                ))}
-              </div>
-    </>
-  ) : null;
   const addButtons = (
     <>
               <Button variant="outline" size="sm" className="gap-2" title="Add an Object" onClick={() => insertAt("object", pageInsertPosition(blocks, activeId))}>
@@ -994,514 +741,54 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                             </>
                           )}
                           <span className="mx-1 h-5 w-px bg-border" />
-                          {(i > 0 || (hasExisting && currentFirst)) && (
+                          {i > 0 && (
                             <ToolButton title="Move Up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
                           )}
-                          {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
+                          {i < blocks.length - 1 && (
                             <ToolButton title="Move Down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
                           )}
                           <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
     </>
   );
 
-  // Embedded: the editing options are drawn in the Site Manager's left column instead of around the canvas.
-  const notEditable = !embedded && !!page && hasExisting && !codedPages[previewSrc(page.path)];
-  const blockLabel = (b: Block) =>
-    b.type === "code" ? b.name : b.type === "object" ? `Object: ${b.name ?? "Saved object"}`
-    : b.type === "image" ? "Image"
-    : b.type === "video" ? "Video"
-    : `${b.type === "heading" ? "Heading" : "Text"}: ${(b as TextBlock).text}`;
-  const slotTools = !embedded ? null : (
-    <div className="flex flex-col gap-5 p-3 text-sm">
-      {!page ? (
-        <p className="text-xs text-muted-foreground">Opening the page…</p>
-      ) : notEditable ? (
-        <p className="rounded-md border bg-muted/40 p-3 text-xs text-muted-foreground">This page can't be edited here.</p>
-      ) : quick && showLive ? (
-        <>
-          {hasVisibleEdits(inlineEdits) && (
-            <Button variant="outline" size="sm" className="self-start" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo All Changes</Button>
-          )}
-          <div>{stylePanel}</div>
-        </>
-      ) : (
-        <>
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Add a Section</p>
-            <div className="flex flex-wrap gap-2">{addButtons}</div>
-          </div>
-          {page.id && (
-            <div className="space-y-1">
-              <div role="radiogroup" aria-label="Page Status" className="inline-flex rounded-md border p-0.5">
-                {(["draft", "ready"] as const).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    role="radio"
-                    aria-checked={page.build_status === s}
-                    onClick={() => setBuildStatus(s)}
-                    className={`rounded px-3 py-1 text-xs ${page.build_status === s ? "bg-muted font-medium" : "text-muted-foreground"}`}
-                  >
-                    {s === "draft" ? "Draft" : "Ready"}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">Only Ready pages are published.</p>
-            </div>
-          )}
-          <div>{stylePanel}</div>
-          {!!blocks.length && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Sections</p>
-              <ol className="divide-y rounded-md border">
-                {blocks.map((b, i) => (
-                  <li key={b.id} className={`flex items-center gap-1 px-2 py-1.5 ${b.id === activeId ? "bg-muted" : ""}`}>
-                    <button type="button" className="min-w-0 flex-1 truncate text-left text-xs" title={blockLabel(b)}
-                      onClick={() => { setActiveId(b.id); setShowLive(false); document.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>
-                      {blockLabel(b)}
-                    </button>
-                    {(i > 0 || (hasExisting && currentFirst)) && (
-                      <ToolButton title="Move Up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
-                    )}
-                    {(i < blocks.length - 1 || (hasExisting && !currentFirst)) && (
-                      <ToolButton title="Move Down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
-                    )}
-                    <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-          {(() => {
-            const i = blocks.findIndex((b) => b.id === activeId);
-            if (i < 0 || showLive) return null;
-            return (
-              <div className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Selected Section</p>
-                <div className="flex flex-wrap items-center gap-1 rounded-md border p-2">{blockTools(blocks[i], i)}</div>
-              </div>
-            );
-          })()}
-        </>
-      )}
-    </div>
-  );
-
-  const existingCard = page ? (
-    <div>
-      <InlineEditSurface edits={inlineEdits} objectEdits={objectEdits} editing sections={false} onChange={changeScope} onSelect={setInlineSel} apiRef={inlineApi}>
-        <PageRoute path={previewSrc(page.path)}>{(() => { const C = codedPages[previewSrc(page.path)]; return C ? <Suspense fallback={null}><C /></Suspense> : <LivePreviewPage path={previewSrc(page.path)} />; })()}</PageRoute>
-      </InlineEditSurface>
-    </div>
-  ) : null;
-
+  const blockLabel = (b: Block) => b.type === "object" ? `Object: ${b.name ?? "Saved Object"}` : b.type === "code" ? b.name : b.type === "text" || b.type === "heading" ? b.text : b.type === "image" ? "Image" : "Video";
+  const tools = <div className="space-y-4 p-3">
+    {stylePanel}
+    <p className="text-xs font-medium">Sections</p>
+    <ol className="divide-y border rounded-md">
+      <li className="px-2 py-2 text-xs">{page?.name}</li>
+      {blocks.map((b,i) => <li key={b.id} className="flex items-center gap-1 px-2 py-2">
+        <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); blockCanvasRef.current?.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>{blockLabel(b)}</Button>
+        {i > 0 && <ToolButton title="Move Up" onClick={() => move(b.id,-1)}><ArrowUp className="h-4 w-4" /></ToolButton>}
+        {i < blocks.length-1 && <ToolButton title="Move Down" onClick={() => move(b.id,1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
+        <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="h-4 w-4" /></ToolButton>
+      </li>)}
+    </ol>
+    {(() => { const i=blocks.findIndex(b=>b.id===activeId); return i < 0 ? null : <div className="flex flex-wrap gap-1">{blockTools(blocks[i],i)}</div>; })()}
+  </div>;
 
   if (closed) return null;
-  return (
-    <div className={embedded ? "h-full min-h-0 min-w-0" : `grid grid-cols-1 gap-6 ${listOpen ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[auto_1fr]"}`}>
-      {/* Page list (not when embedded in the Site Manager's edit mode) */}
-      {embedded ? null : !listOpen ? (
-        <aside className="lg:sticky lg:top-4 lg:self-start">
-          <Button variant="outline" size="icon" title="Show Pages" onClick={() => setListOpen(true)}>
-            <PanelLeftOpen className="w-4 h-4" />
-          </Button>
-        </aside>
-      ) : (
-      <aside className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Button className="flex-1 gap-2" onClick={() => setCreateOpen(true)}>
-            <Plus className="w-4 h-4" /> New Page
-          </Button>
-          <Button variant="outline" size="icon" title="Hide Pages" onClick={() => setListOpen(false)}>
-            <PanelLeftClose className="w-4 h-4" />
-          </Button>
-        </div>
-        {(<>
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search pages or labels" />
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>Sort By</span>
-          <div className="inline-flex rounded-md border p-0.5">
-            {([["name", "Name"], ["recent", "Recently edited"], ["label", "Label"]] as const).map(([k, l]) => (
-              <button key={k} type="button" onClick={() => { setSortBy(k); if (k !== "label") setTagFilters([]); }}
-                className={`rounded px-2 py-1 ${sortBy === k ? "bg-muted text-foreground font-medium" : "hover:text-foreground"}`}>
-                {l}
-              </button>
-            ))}
-          </div>
-        </div>
-        {sortBy === "label" && (
-        <div className="rounded-lg border">
-          {true && (
-            <div className="py-2">
-              <TagsPanel
-                bare
-                scope="static"
-                usageCounts={usageCounts}
-                activeFilters={tagFilters}
-                onToggleFilter={(t) => setTagFilters((cur) => (cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t]))}
-                onClearFilters={() => setTagFilters([])}
-                selectedCount={0}
-                selectedIds={[]}
-                onApplyTag={applyTag}
-                itemLabel="pages"
-                filteredCount={filtered.length}
-              />
-            </div>
-          )}
-        </div>
-        )}
-        <div className="border rounded-lg divide-y max-h-[65vh] overflow-y-auto">
-          {filtered.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => select(p.id)}
-              className={`group relative w-full text-left px-3 py-2 transition-colors ${
-                p.id === selectedId ? "bg-muted" : "hover:bg-muted/60"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-              <PageMiniPreview name={p.name} path={p.path} content={p.content} />
-              <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium truncate">{p.name}</div>
-              <div className="text-xs text-muted-foreground font-mono truncate">{p.path}</div>
-              {!!(p.tags ?? []).length && (
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {(p.tags ?? []).map((t) => (
-                    <span key={t} className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              )}
-              </div>
-              <span role="button" tabIndex={0} title="Delete Page"
-                onClick={(e) => { e.stopPropagation(); setDeleting(p); }}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setDeleting(p); } }}
-                className="shrink-0 rounded p-1 text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive focus:opacity-100">
-                <Trash2 className="w-4 h-4" />
-              </span>
-              </div>
-            </button>
-          ))}
-          {!filtered.length && <p className="p-3 text-sm text-muted-foreground">No pages found.</p>}
-        </div>
-        </>)}
-      </aside>
-      )}
-      <ConfirmDialog
-        open={!!deleting}
-        onOpenChange={(o) => !o && setDeleting(null)}
-        title="Delete this page?"
-        description={<>"{deleting?.name}" ({deleting?.path}) will be removed. This can't be undone.</>}
-        confirmLabel="Delete page"
-        onConfirm={() => deleting && deletePage(deleting)}
-      />
-
-      {/* Editor */}
-      <section className={embedded ? "h-full min-h-0 min-w-0" : "min-w-0"}>
-        {!page ? (
-          <div className="border rounded-lg p-12 text-center text-muted-foreground">
-            Pick a page on the left to design it, or create a new one.
-          </div>
-        ) : (
-          <EmbeddedBox chat={embedded ? chat : null}>
-            {!embedded && (
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-              <div className="mr-auto">
-                <h2 className="text-lg font-medium">{page.name}</h2>
-                <a
-                  href={page.path}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-muted-foreground font-mono inline-flex items-center gap-1 hover:text-foreground"
-                >
-                  {page.path} <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-              {modeAndDevice}
-              <span ref={toolbarRef} className="inline-flex" />
-              {addButtons}
-            </div>
-            )}
-
-            {showLive && hasExisting && (embedded || codedPages[previewSrc(page.path)]) && (quick || device === "desktop") ? (
-              <div className={frame} style={deviceStyle}>
-                {quick && !embedded && (
-                  <div className="flex items-center justify-between gap-3 border-b bg-muted/40 px-4 py-2">
-                    <p className="text-xs text-muted-foreground">
-                      Click any wording to type over it, or select wording or a picture to change its style on the right. Changes save on their own.
-                    </p>
-                    {hasVisibleEdits(inlineEdits) && (
-                      <Button variant="ghost" size="sm" onClick={() => { changeInline({}); setResetKey((k) => k + 1); }}>Undo All Changes</Button>
-                    )}
-                  </div>
-                )}
-                <div className={quick && !embedded ? "grid grid-cols-[1fr_260px]" : embedded ? "h-full" : ""}>
-                <div className={`${h70} overflow-y-auto bg-background`}>
-                  {quickAddBar}
-                  {importing && <p role="status" className="px-4 py-3 text-sm text-muted-foreground">Converting this page…</p>}
-                  <SharedObjectNotice componentKey="Header" />
-                  <InlineEditSurface apiRef={headerApi} onReport={setHeaderReports} edits={{}} objectEdits={objectEdits} editing={quick} sections={false}
-                    onChange={changeScope} onSelect={setInlineSel}
-                    selectedKey={inlineSel?.scope === "Header" ? `Header|${inlineSel.key}` : null}>
-                    <Header />
-                  </InlineEditSurface>
-                  {(() => {
-                    const C = codedPages[previewSrc(page.path)];
-                    if (!C && ["/brands", "/ceiling", "/ceiling-lighting", "/fans", "/lamps", "/outdoor", "/room", "/wall", "/wall-lighting", "/draft", "/manage"].includes(page.path) || !C && page.path.startsWith("/landing/")) {
-                      return <div><Button variant="outline" onClick={() => onLiveStatus("missing")}>Start Editing</Button></div>;
-                    }
-                    if (!C && liveStatus === "unreachable") return (
-                      <div role="alert" className="mx-auto max-w-md px-6 py-24 text-center">
-                        <p className="font-serif text-2xl text-foreground">Couldn't load this page's design</p>
-                        <p className="mt-3 text-sm text-muted-foreground">If it keeps happening, tell a developer; the page's code may not be in the draft yet.</p>
-                        <Button className="mt-6" variant="outline" onClick={() => { setLiveStatus(null); setLiveReload((n) => n + 1); }}>Retry</Button>
-                      </div>
-                    );
-                    return (
-                      <InlineEditSurface
-                        key={`${page.id}-${quick}-${resetKey}`}
-                        apiRef={inlineApi}
-                        onReport={setInlineReports}
-                        edits={inlineEdits}
-                        objectEdits={objectEdits}
-                        editing={quick}
-                        navigate={(href) => { if (!/^\/(?!\/)/.test(href)) return false; navigate(href); return true; }}
-                        onChange={changeScope}
-                        onSelect={setInlineSel}
-                        selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null}
-                        collapsed={foldedChunks}
-                        onToggleCollapse={(k) => setFoldedChunks((cur) => { const n = new Set(cur); if (n.has(k)) n.delete(k); else n.add(k); return n; })}
-                        onReorder={reorderChunks}
-                        onOpenObject={async (k, section) => { const id = objectRows.current[k]; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, section); return; } navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`); }}
-                      >
-                        <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}>{C ? <PageRoute path={previewSrc(page.path)}><C /></PageRoute> : <LivePreviewPage path={previewSrc(page.path)} onStatus={onLiveStatus} reloadKey={liveReload} />}</Suspense>
-                      </InlineEditSurface>
-                    );
-                  })()}
-                </div>
-                {quick && !embedded && (
-                  <aside className={`${h70} overflow-y-auto border-l bg-background p-4`}>
-                    {stylePanel}
-                  </aside>
-                )}
-                </div>
-              </div>
-            ) : showLive ? (
-              <div className={frame}>
-                {savedBlocks.length || !canIframe(page.path) ? (
-                  device === "desktop" ? (
-                    <div className={`${h70} overflow-y-auto bg-background`}>
-                      <InlinePagePreview name={page.name} blocks={savedBlocks} />
-                    </div>
-                  ) : (
-                    <div className="bg-muted/40 py-4">
-                      <DeviceFrame title={`${page.name} preview`} className={`block ${h70} border bg-background shadow-sm`} style={deviceStyle}>
-                        <InlinePagePreview name={page.name} blocks={savedBlocks} />
-                      </DeviceFrame>
-                    </div>
-                  )
-                ) : (
-                  <iframe
-                    key={`${page.id}-${page.updated_at}`}
-                    src={previewSrc(page.path)}
-                    title={`${page.name} preview`}
-                    className={`w-full ${h70} bg-background`}
-                    style={deviceStyle}
-                  />
-                )}
-              </div>
-            ) : (
-            <>
-            {quickAddBar}
-            <div ref={blockCanvasRef} {...blockLinkGuard} className={embedded ? "bg-background" : "rounded-lg border bg-background overflow-hidden"} style={deviceStyle}>
-              {!hasExisting && (
-                <InlineEditSurface apiRef={headerApi} edits={{}} objectEdits={objectEdits} editing sections={false} onChange={changeScope} onSelect={setInlineSel} onReport={setHeaderReports}>
-                  <Header />
-                </InlineEditSurface>
-              )}
-
-              {importing && (
-                <div role="status" className="flex items-center justify-center gap-2 py-24 text-sm text-muted-foreground">
-                  <span className="h-3 w-3 rounded-full border-2 border-muted-foreground/40 border-t-foreground animate-spin" aria-hidden />
-                  Converting this page so it can be edited…
-                </div>
-              )}
-              <div hidden={importing} className={hasWideBlocks(blocks) ? "min-h-[50vh] py-4" : "p-6 sm:p-10 min-h-[50vh]"}>
-              {!blocks.length && !hasExisting && (
-                <p className="text-sm text-muted-foreground text-center py-16">
-                  This page is empty. Add a heading, some text, or an image to begin.
-                </p>
-              )}
-
-              <div className={hasWideBlocks(blocks) ? "px-8" : "max-w-3xl mx-auto"}>
-                {hasExisting && currentFirst && existingCard}
-                {blocks.map((b, i) => {
-                  const active = b.id === activeId;
-                  return (
-                    <div
-                      key={b.id}
-                      onClick={() => setActiveId(b.id)}
-                      data-page-block={b.id}
-                      className={`group relative rounded-lg px-3 transition-colors cursor-text ${
-                        active ? "ring-2 ring-primary/40 bg-muted/30" : "hover:bg-muted/20"
-                      } ${dragId === b.id ? "opacity-50" : ""} ${
-                        dropAt?.id === b.id
-                          ? dropAt.before
-                            ? "border-t-2 border-primary"
-                            : "border-b-2 border-primary"
-                          : ""
-                      }`}
-                    >
-                      {!dragId && <InsertGap edge="top" onAdd={(t) => insertAt(t, i)} />}
-                      {!dragId && i === blocks.length - 1 && <InsertGap edge="bottom" onAdd={(t) => insertAt(t, i + 1)} />}
-
-                      <button
-                        type="button"
-                        title="Drag to Move"
-                        aria-label="Drag to Move"
-                        onMouseDown={(e) => startDrag(e, b.id)}
-                        className={`absolute -left-7 top-2 z-20 cursor-grab rounded p-1 text-muted-foreground transition-opacity hover:bg-muted active:cursor-grabbing ${
-                          active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-                        }`}
-                      >
-                        <GripVertical className="h-4 w-4" />
-                      </button>
-                      {active && !embedded && (
-                        <div
-                          title="Drag to Move"
-                          onMouseDown={(e) => {
-                            const t = e.target as HTMLElement;
-                            if (t.closest("input,textarea,select,[contenteditable=true]")) return;
-                            startDrag(e, b.id);
-                          }}
-                          className="sticky top-16 z-10 -mx-3 mb-2 flex flex-wrap items-center gap-1 border-b bg-background/95 px-3 py-2 backdrop-blur cursor-grab active:cursor-grabbing"
-                        >
-                          {blockTools(b, i)}
-                        </div>
-                      )}
-
-                      {b.type === "code" ? (
-                        <PageCodeSection path={b.path} chunk={b.chunk} fingerprint={b.fingerprint} edits={b.inlineEdits} objectEdits={objectEdits} editing
-                          onSelect={(sel) => { setActiveId(b.id); setInlineSel(sel); }} apiRef={b.id === activeId ? inlineApi : undefined} onReport={setInlineReports}
-                          onChange={(scope, next) => { if (scope === "page") update(b.id, { inlineEdits: next }); else changeScope(scope, next); }} />
-                      ) : b.type === "object" ? (
-                        <div className="py-2">
-                          {!active && (
-                            <div title="Drag to Move" onMouseDown={(e) => startDrag(e, b.id)} className="flex w-full cursor-grab items-center gap-1 rounded hover:bg-muted/40 active:cursor-grabbing">
-                            <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-<button
-                              type="button"
-                              title={collapsed[b.id] ? "Expand Object" : "Collapse Object"}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
-                              }}
-                              className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
-                            >
-                              {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              <span>Object: {b.name ?? "Saved Object"}</span>
-                            </button>
-                            </div>
-                          )}
-                          {!collapsed[b.id] && (
-                            <InlineEditSurface edits={inlineEdits} objectEdits={objectEdits} editing sections={false} onSelect={setInlineSel} onChange={changeScope} apiRef={inlineApi} onReport={setInlineReports}>
-                              <BlockView block={b} />
-                            </InlineEditSurface>
-                          )}
-                        </div>
-                      ) : b.type === "image" || b.type === "video" ? (
-                        <div className="py-2">
-                          {!active && (
-                            <div title="Drag to Move" onMouseDown={(e) => startDrag(e, b.id)} className="flex w-full cursor-grab items-center gap-1 rounded hover:bg-muted/40 active:cursor-grabbing">
-                            <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/60" />
-<button
-                              type="button"
-                              title={collapsed[b.id] ? "Expand" : "Collapse"}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setCollapsed((c) => ({ ...c, [b.id]: !c[b.id] }));
-                              }}
-                              className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
-                            >
-                              {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              <span>{b.type === "video" ? "Video" : "Image"}</span>
-                            </button>
-                            </div>
-                          )}
-                          {!collapsed[b.id] && (
-                            <>
-                              {b.url ? (
-                                <BlockView block={b} />
-                              ) : (
-                                <button
-                                  onClick={() => (b.type === "video" ? setVideoFor(b.id) : setPickerFor(b.id))}
-                                  className="w-full border border-dashed rounded-lg py-12 text-sm text-muted-foreground hover:bg-muted/40"
-                                >
-                                  {b.type === "video" ? "Choose a Video" : "Choose an Image"}
-                                </button>
-                              )}
-                              {active && (
-                                <div className="grid sm:grid-cols-2 gap-2 mt-2">
-                                  {b.type === "image" && (
-                                    <Input value={b.alt} placeholder="Describe the image" onChange={(e) => update(b.id, { alt: e.target.value } as Partial<Block>)} />
-                                  )}
-                                  <Input value={b.caption ?? ""} placeholder="Caption (optional)" onChange={(e) => update(b.id, { caption: e.target.value } as Partial<Block>)} />
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      ) : active ? (
-                        <Textarea
-                          value={(b as TextBlock).text}
-                          autoFocus
-                          rows={b.type === "heading" ? 2 : 4}
-                          onChange={(e) => update(b.id, { text: e.target.value } as Partial<Block>)}
-                          className="my-3 resize-y"
-                        />
-                      ) : (
-                        <BlockView block={b} />
-                      )}
-                      {i === blocks.length - 1 && <div className="h-2" />}
-                    </div>
-                  );
-                })}
-                {hasExisting && !currentFirst && existingCard}
-              </div>
-              </div>
-
-              {!hasExisting && (
-                <ChromePreview label="Site Footer">
-                  <Footer />
-                </ChromePreview>
-              )}
-            </div>
-            </>
-            )}
-          </EmbeddedBox>
-        )}
-      </section>
-
-      {page && importing && (
-        <PageImportProbe path={previewSrc(page.path)} onDone={finishImport} />
-      )}
-      {page && toolbarHidden && (
-        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2 flex items-center gap-2 rounded-full border bg-background/95 px-3 py-2 shadow-lg backdrop-blur animate-in fade-in slide-in-from-bottom-2">
-          <span className="px-1 text-xs text-muted-foreground">Add</span>
-          <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={() => insertAt("object", pageInsertPosition(blocks, activeId))}>
-            <Boxes className="w-4 h-4" /> Object
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={() => addBlock("image")}>
-            <ImageIcon className="w-4 h-4" /> Image
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2 rounded-full" onClick={() => addBlock("video")}>
-            <Film className="w-4 h-4" /> Video
-          </Button>
-        </div>
-      )}
-
-      {embedded && slot && createPortal(slotTools, slot)}
+  const C = page ? codedPages[previewSrc(page.path)] : undefined;
+  return <div className={embedded ? "h-full min-h-0" : "grid gap-4 lg:grid-cols-[240px_1fr]"}>
+    {!embedded && <aside><Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search pages" />{filtered.map(p=><Button key={p.id} variant="ghost" className="w-full justify-start" onClick={()=>select(p.id)}>{p.name}</Button>)}{tools}</aside>}
+    {page && <EmbeddedBox chat={embedded ? chat : null}>
+      <div ref={blockCanvasRef} className="h-full overflow-y-auto bg-background" style={deviceStyle}>
+        {embedded ? quickAddBar : <div className="flex gap-2">{addButtons}</div>}
+        <SharedObjectNotice componentKey="Header" />
+        <InlineEditSurface edits={{}} objectEdits={objectEdits} editing sections={false} apiRef={headerApi} onReport={setHeaderReports} onChange={changeScope} onSelect={setInlineSel}><Header /></InlineEditSurface>
+        <InlineEditSurface key={page.id} edits={inlineEdits} objectEdits={objectEdits} editing sections={false} apiRef={inlineApi} onReport={setInlineReports}
+          onChange={changeScope} onSelect={sel=> { setInlineSel(sel); setActiveId(sel?.el.closest<HTMLElement>("[data-page-block]")?.dataset.pageBlock ?? ""); }}
+          selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null}>
+          {C ? <PageRoute path={previewSrc(page.path)}><Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense></PageRoute> :
+            <section className="mx-auto max-w-3xl px-6 py-10"><h1 className="font-serif text-3xl">{page.name}</h1><p className="min-h-6" aria-label="Page Text"> </p></section>}
+          {blocks.map((b,i)=><section key={b.id} data-page-block={b.id} className="relative">
+            <BlockView block={b} />
+          </section>)}
+        </InlineEditSurface>
+        <div className="pointer-events-none"><Footer /></div>
+      </div>
+    </EmbeddedBox>}
+    {embedded && slot && createPortal(tools,slot)}
       <CreatePageDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
