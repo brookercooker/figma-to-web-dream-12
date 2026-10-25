@@ -803,7 +803,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
           onReorder={reorderChunks} onOpenObject={openInlineObject} />}
-        <InlineEditSurface key={page.id} edits={inlineEdits} objectEdits={objectEdits} editing apiRef={inlineApi} onReport={setInlineReports}
+        <InlineEditSurface key={page.id} edits={framed ? {} : inlineEdits} objectEdits={objectEdits} editing={!framed} apiRef={framed ? undefined : inlineApi} onReport={framed ? undefined : setInlineReports}
           collapsed={foldedChunks} onToggleCollapse={k=>setFoldedChunks(cur=>{ const next=new Set(cur); if(next.has(k)) next.delete(k); else next.add(k); return next; })}
           onReorder={reorderChunks}
           onOpenObject={openInlineObject}
