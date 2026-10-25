@@ -64,6 +64,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       const data = event.data;
       if (data.type === "edit-ready") {
         if (ready.current) return;
+        destination.current = frame.current?.contentWindow ?? null;
         clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); return;
       }
       if (!ready.current) return;
