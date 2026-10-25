@@ -250,7 +250,7 @@ export default function InlineEditSurface({
       el.spellcheck = true;
     });
     root.querySelectorAll("img").forEach((img) => {
-      if (!protectedChrome(img, objectsRef.current)) img.dataset.inlineImage = "1";
+      if (!img.closest("form,[data-inline-skip]") && !protectedChrome(img, objectsRef.current)) img.dataset.inlineImage = "1";
     });
     root.querySelectorAll<HTMLElement>("div,span,hr,i").forEach((el) => {
       if (el.dataset.inlineDivider || protectedChrome(el, objectsRef.current)) return;
@@ -394,6 +394,7 @@ export default function InlineEditSurface({
   const onClick = async (e: React.MouseEvent) => {
     if (!editing) return;
     const t = e.target as HTMLElement;
+    if (t.closest("form,svg,video,iframe,[data-inline-skip]")) return;
     if (t.closest("a,button")) e.preventDefault();
     const root = ref.current;
     if (!root || barAt(e.clientX, e.clientY)) return;

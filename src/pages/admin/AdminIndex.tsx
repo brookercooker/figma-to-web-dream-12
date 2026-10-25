@@ -100,7 +100,7 @@ function AdminShell() {
     if (ok && had) toast.success("Changes saved.");
   };
   const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const doDiscard = () => { discardAll(); stopEditing(); toast("Changes discarded."); };
+  const doDiscard = async () => { try { await discardAll(); stopEditing(); toast("Changes discarded."); } catch { /* Keep editing if restoration failed. */ } };
   const discardEditing = () => { if (!hasChanges()) doDiscard(); else setConfirmDiscard(true); };
   const location = useLocation();
   const navigate = useNavigate();

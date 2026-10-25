@@ -61,7 +61,7 @@ export function ModeSwitchProvider({ children }: { children: ReactNode }) {
         destructive={false} confirmLabel={pending === "chat" ? "Save And Switch" : "Continue Editing"}
         cancelLabel={pending === "chat" ? "Keep Editing" : "Cancel"} busy={saving}
         secondaryLabel={pending === "chat" ? "Discard And Switch" : undefined}
-        onSecondary={() => { discardAll(); stopEditing(); complete(true); }}
+        onSecondary={() => { void Promise.resolve(discardAll()).then(() => { stopEditing(); complete(true); }).catch(() => setError("Your original page couldn't be restored. You are still in Manual Edit Mode.")); }}
         onConfirm={() => {
           if (pending === "chat") void saveAndSwitch();
           else void Promise.resolve(openRef.current?.()).then(() => complete(true)).catch(() => { toast.error("Couldn't open this page for editing. Try again."); complete(false); });

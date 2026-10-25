@@ -12,24 +12,24 @@ type EditorSlotValue = {
   registerSave: (fn: SaveFn | null) => void;
   /** Saves whatever the embedded editor holds. True when there was nothing to save or everything saved. */
   saveAll: () => Promise<boolean>;
-  registerDiscard: (fn: (() => void) | null) => void;
+  registerDiscard: (fn: (() => void | Promise<void>) | null) => void;
   /** Drops whatever the embedded editor holds without saving. */
-  discardAll: () => void;
+  discardAll: () => Promise<void>;
   registerHasChanges: (fn: (() => boolean) | null) => void;
   /** True when the embedded editor holds unsaved changes. */
   hasChanges: () => boolean;
 };
 
-const Ctx = createContext<EditorSlotValue>({ slot: null, setSlot: () => {}, registerSave: () => {}, saveAll: async () => true, registerDiscard: () => {}, discardAll: () => {}, registerHasChanges: () => {}, hasChanges: () => false });
+const Ctx = createContext<EditorSlotValue>({ slot: null, setSlot: () => {}, registerSave: () => {}, saveAll: async () => true, registerDiscard: () => {}, discardAll: async () => {}, registerHasChanges: () => {}, hasChanges: () => false });
 
 export function EditorSlotProvider({ children }: { children: ReactNode }) {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const saveRef = useRef<SaveFn | null>(null);
   const registerSave = useCallback((fn: SaveFn | null) => { saveRef.current = fn; }, []);
   const saveAll = useCallback(async () => (saveRef.current ? saveRef.current() : true), []);
-  const discardRef = useRef<(() => void) | null>(null);
-  const registerDiscard = useCallback((fn: (() => void) | null) => { discardRef.current = fn; }, []);
-  const discardAll = useCallback(() => { discardRef.current?.(); }, []);
+  const discardRef = useRef<(() => void | Promise<void>) | null>(null);
+  const registerDiscard = useCallback((fn: (() => void | Promise<void>) | null) => { discardRef.current = fn; }, []);
+  const discardAll = useCallback(async () => { await discardRef.current?.(); }, []);
   const hasChangesRef = useRef<(() => boolean) | null>(null);
   const registerHasChanges = useCallback((fn: (() => boolean) | null) => { hasChangesRef.current = fn; }, []);
   const hasChanges = useCallback(() => (hasChangesRef.current ? hasChangesRef.current() : false), []);
