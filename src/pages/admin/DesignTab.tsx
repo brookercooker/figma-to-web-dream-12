@@ -87,6 +87,13 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
 
   const [pages, setPages] = useState<PageRow[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [sectionRevision, setSectionRevision] = useState(0);
+  // Batch a held section change with exactly one explicit public-frame reload.
+  const changeBlocks = (next: Block[] | ((current: Block[]) => Block[])) => {
+    setBlocks(next);
+    setSectionRevision((revision) => revision + 1);
+    setDirty(true);
+  };
   const [activeId, setActiveId] = useState<string>("");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -280,18 +287,16 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   };
 
   const update = (id: string, patch: Partial<Block>) => {
-    setBlocks((prev) => prev.map((b) => (b.id === id ? ({ ...b, ...patch } as Block) : b)));
-    setDirty(true);
+    changeBlocks((prev) => prev.map((b) => (b.id === id ? ({ ...b, ...patch } as Block) : b)));
   };
 
   const addPickedBlock = (block: Block, at: number) => {
     if (discarded.current) return;
     const next = insertPickedBlock(blocks, block, blocks.length);
     if (page) pendingSave.current = { pageId: page.id, snapshot: next };
-    setBlocks(next);
+    changeBlocks(next);
     scrollToNew.current = block.id;
     setActiveId(block.id);
-    setDirty(true);
   };
 
   useEffect(() => {
@@ -324,7 +329,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     if (i < 0) return;
     const j = i + dir;
     if (j < 0 || j >= blocks.length) return;
-    setBlocks((prev) => {
+    changeBlocks((prev) => {
       const copy = [...prev];
       [copy[i], copy[j]] = [copy[j], copy[i]];
       return copy;
@@ -419,7 +424,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   /** Drag a block to a new position in the page. */
   const moveTo = (id: string, targetId: string, before: boolean) => {
     if (id === targetId) return;
-    setBlocks((prev) => {
+    changeBlocks((prev) => {
       const from = prev.findIndex((b) => b.id === id);
       if (from < 0) return prev;
       const copy = [...prev];
@@ -434,8 +439,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   };
 
   const remove = (id: string) => {
-    setBlocks((prev) => prev.filter((b) => b.id !== id));
-    setDirty(true);
+    changeBlocks((prev) => prev.filter((b) => b.id !== id));
   };
 
   const save = async () => {
@@ -799,6 +803,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         {!framed && <><SharedObjectNotice componentKey="Header" />
         <InlineEditSurface edits={{}} objectEdits={objectEdits} editing sections={false} apiRef={headerApi} onReport={setHeaderReports} onChange={changeScope} onSelect={setInlineSel}><Header /></InlineEditSurface></>}
         {framed && <FramedPageEditor key={`public-${page.id}`} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
+          sectionRevision={sectionRevision}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
