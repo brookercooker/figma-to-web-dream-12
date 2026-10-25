@@ -1,12 +1,12 @@
 import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Check, Undo2, ArrowLeft, Code, Loader2 } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Check, Undo2, ArrowLeft, Code, Loader2, Wrench } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import SiteManagerLogo from "./SiteManagerLogo";
 import ChatPanel from "./designChat/ChatPanel";
@@ -34,7 +34,6 @@ const TABS: { key: TabKey; label: string; Icon: typeof FileText }[] = [
   { key: "objects", label: "Objects", Icon: Box },
   { key: "images",  label: "Images",  Icon: ImageIcon },
   { key: "videos",  label: "Videos",  Icon: VideoLucide },
-  { key: "pages",   label: "Pages",   Icon: FileText },
 ];
 
 function TabSkeleton() {
@@ -51,10 +50,9 @@ function TabSkeleton() {
 }
 
 /**
- * The Site Manager: the design chat column always on the left (topped by the logo and Submit for review; it can be collapsed
- * to a thin rail, which moves Submit for review into the top bar),
- * and next to it the tabs along the top (the preview of the site, then Pages, Objects, Images and Videos, each its own screen),
- * with the account menu at the right end of the top bar. Choosing a page in the Pages tab points the chat at it. The chat and the
+ * The Site Manager: the design chat column always on the left, topped by the logo and collapsible to a thin rail.
+ * The top bar starts with Tools (Pages and Capture), then Preview, Objects, Images and Videos,
+ * with Submit for Review and the account menu at the right. Choosing a page in Pages points the chat at it. The chat and the
  * preview are kept alive while another tab is open, so nothing restarts when someone switches.
  */
 export default function AdminIndex() {
@@ -154,7 +152,8 @@ function AdminShell() {
   useLayoutEffect(() => {
     if (!needsMeasure.current) return;
     const nav = navRef.current;
-    if (nav && nav.scrollWidth - nav.clientWidth > 1 && squeeze < 3) setSqueeze(squeeze + 1);
+    const row = rowRef.current;
+    if (((nav && nav.scrollWidth - nav.clientWidth > 1) || (row && row.scrollWidth - row.clientWidth > 1)) && squeeze < 3) setSqueeze(squeeze + 1);
     else needsMeasure.current = false;
   });
   useLayoutEffect(() => { remeasure(); }, [tab, isAdmin, editing]);
@@ -192,11 +191,30 @@ function AdminShell() {
     <>
       <div className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</div>
       <div className="flex h-screen flex-col overflow-hidden bg-background lg:flex-row">
-        {/* Right: the top bar (tabs, preview tools, Capture, account menu) and whichever tab is open. */}
+        {/* Right: the top bar and whichever tab is open. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <header className="z-30 w-full shrink-0 border-b bg-background">
-            <div ref={rowRef} className="flex w-full items-center gap-3 px-4 py-2.5">
+            <div ref={rowRef} className="flex w-full items-center gap-1 px-2 py-2.5 sm:gap-3 sm:px-4">
               <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager Sections">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant={tab === "pages" ? "default" : "ghost"} size="sm"
+                      className={cn("shrink-0 border", tab === "pages" ? "border-primary shadow-sm" : "border-transparent text-muted-foreground", compact && "w-9 px-0")}
+                      aria-label="Tools" title="Tools" aria-current={tab === "pages" ? "page" : undefined}>
+                      <Wrench className="h-4 w-4" aria-hidden />
+                      {!compact && <span>Tools</span>}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => navigate("/manage/pages")} aria-current={tab === "pages" ? "page" : undefined}
+                      className={tab === "pages" ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground" : undefined}>
+                      <FileText className="mr-2 h-4 w-4" aria-hidden />Pages
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/manage/capture")}>
+                      <Camera className="mr-2 h-4 w-4" aria-hidden />Capture
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {TABS.map(({ key, label, Icon }) => {
                   const active = tab === key;
                   const className = `inline-flex items-center gap-2 whitespace-nowrap ${compact ? "px-2.5" : "px-3"} py-2 rounded-md text-sm font-medium transition-colors border ${
@@ -212,7 +230,7 @@ function AdminShell() {
                       onOpenFull={() => navigate(`/manage/${key}`)} />
                   );
                   return (
-                    <button
+                    <Button variant="ghost" size="sm"
                       key={key}
                       onClick={() => navigate(`/manage/${key}`)}
                       title={label}
@@ -222,7 +240,7 @@ function AdminShell() {
                     >
                       <Icon className="w-4 h-4" />
                       {showLabel && <span>{label}</span>}
-                    </button>
+                    </Button>
                   );
                 })}
               </nav>
@@ -230,13 +248,7 @@ function AdminShell() {
               <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />
 
               <div aria-hidden className="h-9 w-px bg-border shrink-0" />
-              {chatCollapsed && !editing && <SubmitButton />}
-              <Button asChild variant="outline" size="sm" className={`h-9 shrink-0 gap-2 ${compact ? "w-9 px-0" : ""}`}>
-                <Link to="/manage/capture" aria-label="Capture" title="Capture">
-                  <Camera className="w-4 h-4" />
-                  {!compact && <span>Capture</span>}
-                </Link>
-              </Button>
+              {!editing && <SubmitButton compact={compact} />}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="shrink-0 gap-2" aria-label="Account Menu">
@@ -310,7 +322,7 @@ function AdminShell() {
           </div>
         </div>
 
-        {/* Left: the chat column, on every tab, with its own header (logo, Submit for review, collapse); the account menu sits at the right end of the top bar.
+        {/* Left: the chat column, on every tab, with its own header (logo and collapse).
             Collapsed, it shrinks to a thin rail with an expand button; the chat stays mounted (hidden) so typed text and attachments survive. */}
         <aside
           className={cn(
@@ -331,7 +343,6 @@ function AdminShell() {
               <SiteManagerLogo />
             </h1>
             <div className="flex-1" />
-            {!editing && <SubmitButton />}
             {!manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded={true} onClick={() => setChatCollapsed(true)}>
               <PanelLeftClose className="h-4 w-4" />
             </Button>}
