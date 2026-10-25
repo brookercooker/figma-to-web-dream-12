@@ -192,7 +192,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
     highStage.current = Math.max(highStage.current ?? 1, candidate) as PreviewStage;
     updateStart.current ??= start ?? state?.job?.stepStartedAt ?? Date.now();
   } else if (previewExcluded(state)) { highStage.current = null; updateStart.current = null; }
-  const progressStage = previewExcluded(state) ? null : candidate ? highStage.current : highStage.current;
+  const progressStage = previewExcluded(state) ? null : highStage.current;
   useEffect(() => {
     if (!progressStage) return;
     setClock(Date.now());

@@ -26,6 +26,8 @@ export function previewStage(state: RelayState | null, waiting: boolean, buildDe
   if (buildDetected) return 4;
   if (state?.previewChecking) return 3;
   const step = state?.job?.lastStep ?? state?.job?.status;
+  if (["building", "build", "previewChecking"].includes(step ?? "")) return 3;
+  if (["reload", "reloading", "preview-updating"].includes(step ?? "")) return 4;
   if (state?.job && (state.busy || step === "queued" || step === "sending")) {
     if (step === "queued" || step === "sending") return 1;
     return 2;
