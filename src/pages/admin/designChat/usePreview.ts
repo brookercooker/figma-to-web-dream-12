@@ -55,7 +55,6 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   const reloadTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const followTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const updatingTimer = useRef<ReturnType<typeof setTimeout>>();
-  const clearOnSwap = useRef(false);
   const lastVersion = useRef<number | null>(null);
   const lastBuiltAt = useRef<number | null>(null);
   /** When the last reload was started, so the page can ask the helper for news more often for a while. */
@@ -89,7 +88,6 @@ export function usePreview(state: RelayState | null, path: string | null = null,
       updateStart.current = null;
       setCompletedAt(Date.now());
     }
-    if (clearOnSwap.current) { clearOnSwap.current = false; hideUpdating(); }
   }, [hideUpdating]);
 
   const loadPreview = useCallback(async () => {
@@ -180,7 +178,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   }, [version, embedEnabled, reloadSoon]);
   useEffect(() => {
     if (state === null) return;
-    if (builtAt && builtAt !== lastBuiltAt.current && lastBuiltAt.current !== null) buildSeen(updating);
+    if (builtAt && builtAt !== lastBuiltAt.current && (lastBuiltAt.current !== null || !!state?.previewChecking)) buildSeen(updating);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     lastBuiltAt.current = builtAt ?? 0;
   }, [builtAt, state === null]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -194,7 +192,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
     highStage.current = Math.max(highStage.current ?? 1, candidate) as PreviewStage;
     updateStart.current ??= start ?? state?.job?.stepStartedAt ?? Date.now();
   } else if (previewExcluded(state)) { highStage.current = null; updateStart.current = null; }
-  const progressStage = candidate ? highStage.current : null;
+  const progressStage = previewExcluded(state) ? null : candidate ? highStage.current : highStage.current;
   useEffect(() => {
     if (!progressStage) return;
     setClock(Date.now());
