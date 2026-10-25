@@ -61,7 +61,7 @@ export default function LibraryFilterBar({ colorOf = (p) => colorFor(p), labels,
               const c = colorOf(path), on = label === path;
               return <Button key={path} variant="outline" size="sm" title={path} aria-label={leafOf(path)} aria-pressed={on} data-picker-own-enter="" onClick={() => setLabel(on ? "" : path)}
                 className="h-7 min-w-0 justify-start gap-1 rounded-full px-2 text-xs hover:opacity-80"
-                style={on ? { background: c.swatch, borderColor: c.swatch, color: "var(--nova-cream, white)" } : { background: c.bg, borderColor: c.border, color: c.text }}>
+                style={on ? { background: c.swatch, borderColor: c.swatch, color: "hsl(var(--primary-foreground))" } : { background: c.bg, borderColor: c.border, color: c.text }}>
                 <span className="truncate">{leafOf(path)}</span><span aria-hidden className="ml-auto shrink-0">{labelCounts[path] ?? 0}</span>
               </Button>;
             })}

@@ -22,7 +22,7 @@ export default function LibraryCard({ item, labels, note, selected, added = fals
           {thumbnail ?? (item.thumb ? <img src={item.thumb} alt="" loading="lazy" className={`absolute inset-0 h-full w-full ${item.kind === "image" ? "object-contain object-center" : "object-cover"}`} />
             : <span className="absolute inset-0 grid h-full w-full place-items-center"><FallbackIcon className="h-8 w-8 text-muted-foreground" /></span>)}
         </span>
-        {item.kind === "video" && (
+        {item.kind === "video" && !added && (
           <span className="absolute left-2 top-2 rounded bg-background/85 p-1"><Film className="h-3.5 w-3.5" aria-hidden="true" /></span>
         )}
         {labels.length > 0 && (
