@@ -34,7 +34,9 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const selectionVersion = useRef(0);
   const destination = useRef<Window | null>(null);
   const post = (type: string, payload: Record<string, unknown> = {}) => {
-    if (origin) (destination.current ?? frame.current?.contentWindow)?.postMessage({ source: "nova-manager", type, ...payload }, origin);
+    const current = frame.current?.contentWindow ?? destination.current;
+    destination.current = current;
+    if (origin) current?.postMessage({ source: "nova-manager", type, ...payload }, origin);
   };
   const state = () => ({ edits: latest.current.edits, objectEdits: latest.current.objectEdits, collapsed: [...latest.current.collapsed], selectedKey: latest.current.selectedKey });
   const query: EditQuery = (op, scope, key, props) => {
