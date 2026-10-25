@@ -78,11 +78,11 @@ describe("library picker", () => {
     const group = screen.getByRole("group", { name: "Filter by Label" });
     expect(group.querySelectorAll("[data-label-chips] button")).toHaveLength(8);
     fireEvent.click(screen.getByRole("button", { name: "More Labels" }));
-    expect(screen.getAllByRole("option")).toHaveLength(212);
+    expect(within(screen.getByRole("listbox")).getAllByRole("option")).toHaveLength(212);
     expect(screen.getByRole("option", { name: "Rooms/Lobby, 1 items" })).toHaveTextContent("1");
     expect(screen.getByRole("option", { name: "Folder/Label 204, 0 items" })).toHaveTextContent("0");
     fireEvent.change(screen.getByRole("combobox", { name: "Search Labels" }), { target: { value: "Rooms/Lobby" } });
-    await waitFor(() => expect(screen.getAllByRole("option")).toHaveLength(1));
+    await waitFor(() => expect(within(screen.getByRole("listbox")).getAllByRole("option")).toHaveLength(1));
     fireEvent.click(screen.getByRole("option", { name: "Rooms/Lobby, 1 items" }));
     await waitFor(() => expect(cards()).toHaveLength(1));
     expect(within(group).getByRole("button", { name: "Lobby" })).toHaveAttribute("aria-pressed", "true");
@@ -94,7 +94,7 @@ describe("library picker", () => {
     setup(); await screen.findByText("60 of 70 shown");
     fireEvent.click(screen.getByRole("button", { name: "More Labels" }));
     fireEvent.change(screen.getByRole("combobox", { name: "Search Labels" }), { target: { value: "Label 204" } });
-    await waitFor(() => expect(screen.getAllByRole("option")).toHaveLength(1));
+    await waitFor(() => expect(within(screen.getByRole("listbox")).getAllByRole("option")).toHaveLength(1));
     fireEvent.keyDown(screen.getByRole("combobox", { name: "Search Labels" }), { key: "ArrowDown" });
     fireEvent.keyDown(screen.getByRole("combobox", { name: "Search Labels" }), { key: "Enter" });
     await waitFor(() => expect(screen.getByRole("button", { name: "Label 204" })).toHaveAttribute("aria-pressed", "true"));
