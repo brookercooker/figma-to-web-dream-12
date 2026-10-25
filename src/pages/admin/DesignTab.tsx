@@ -776,7 +776,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         {embedded ? quickAddBar : <div className="flex gap-2">{addButtons}</div>}
         <SharedObjectNotice componentKey="Header" />
         <InlineEditSurface edits={{}} objectEdits={objectEdits} editing sections={false} apiRef={headerApi} onReport={setHeaderReports} onChange={changeScope} onSelect={setInlineSel}><Header /></InlineEditSurface>
-        <InlineEditSurface key={page.id} edits={inlineEdits} objectEdits={objectEdits} editing sections={false} apiRef={inlineApi} onReport={setInlineReports}
+        <InlineEditSurface key={page.id} edits={inlineEdits} objectEdits={objectEdits} editing apiRef={inlineApi} onReport={setInlineReports}
+          collapsed={foldedChunks} onToggleCollapse={k=>setFoldedChunks(cur=>{ const next=new Set(cur); if(next.has(k)) next.delete(k); else next.add(k); return next; })}
+          onReorder={reorderChunks}
+          onOpenObject={async (key, section)=>{ const id=objectRows.current[key]; if (!id) return; if(embedded) { if(await saveAll()) chat?.openObject(id,section); } else navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`); }}
           onChange={changeScope} onSelect={sel=> { setInlineSel(sel); setActiveId(sel?.el.closest<HTMLElement>("[data-page-block]")?.dataset.pageBlock ?? ""); }}
           selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null}>
           {C ? <PageRoute path={previewSrc(page.path)}><Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense></PageRoute> :

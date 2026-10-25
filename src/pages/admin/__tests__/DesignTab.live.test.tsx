@@ -63,42 +63,39 @@ const open = () => render(<MemoryRouter initialEntries={["/manage/design?page=pa
 const contentWrites = () => mocks.writes.mock.calls.filter(([v]) => v && "content" in v);
 
 describe("Edit Manually on a page without code", () => {
-  it("opens the block editor with the page name and an empty text block ready to type", async () => {
+  it("opens an empty original in the same surface without creating saved sections", async () => {
     const { container } = open();
-    await waitFor(() => expect(container.querySelectorAll("[data-page-block]")).toHaveLength(2));
+    await screen.findByRole("heading", { name: "Brand New" });
+    expect(container.querySelectorAll("[data-page-block]")).toHaveLength(0);
     expect(screen.getByText("Brand New")).toBeInTheDocument();
-    const box = screen.getByRole("textbox");
-    expect(box).toHaveValue("");
-    expect(box).toHaveFocus();
+    expect(screen.getByLabelText("Page Text")).toBeInTheDocument();
     expect(screen.queryByText(/Content coming soon/)).toBeNull();
-    expect(mocks.hasChanges?.()).toBe(true);
+    expect(mocks.hasChanges?.()).toBe(false);
   });
   it("Discard Changes writes nothing", async () => {
     const r = open();
-    await waitFor(() => expect(r.container.querySelectorAll("[data-page-block]")).toHaveLength(2));
+    await screen.findByRole("heading", { name: "Brand New" });
     await act(async () => { await mocks.discard?.(); });
     expect(mocks.hasChanges?.()).toBe(false);
     r.unmount();
     expect(contentWrites()).toHaveLength(0);
   });
-  it("Finish Editing saves the starter blocks", async () => {
+  it("Finish Editing with no changes writes nothing", async () => {
     const r = open();
-    await waitFor(() => expect(r.container.querySelectorAll("[data-page-block]")).toHaveLength(2));
+    await screen.findByRole("heading", { name: "Brand New" });
     await act(async () => { expect(await mocks.save?.()).toBe(true); });
-    const [[saved]] = contentWrites() as any;
-    expect(saved.content.map((b: any) => [b.type, b.text])).toEqual([["heading", "Brand New"], ["text", ""]]);
+    expect(contentWrites()).toHaveLength(0);
   });
 });
 
-describe("when the page's code can't be loaded", () => {
-  it("shows Retry, writes nothing, and Retry loads again", async () => {
+describe("unregistered pages", () => {
+  it("opens editable empty content without depending on a remote manifest", async () => {
     mocks.status = "unreachable";
     open();
-    expect(await screen.findByText("Couldn't load this page's design")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Brand New" })).toBeInTheDocument();
     expect(mocks.writes).not.toHaveBeenCalled();
     expect(mocks.hasChanges?.()).toBe(false);
-    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
-    await waitFor(() => expect(mocks.reloadKeys).toContain(1));
+    expect(mocks.reloadKeys).toHaveLength(0);
     expect(mocks.writes).not.toHaveBeenCalled();
   });
 });
@@ -107,7 +104,7 @@ describe("unchanged pages", () => {
   it("a page with code still opens in place", async () => {
     mocks.status = "found";
     open();
-    expect(await screen.findByRole("heading", { name: "Live coded page" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Brand New" })).toBeInTheDocument();
     expect(screen.getAllByTestId("in-place")).toHaveLength(2);
     expect(screen.getByRole("note")).toHaveTextContent("This edit changes the header on every page");
     expect(mocks.hasChanges?.()).toBe(false);

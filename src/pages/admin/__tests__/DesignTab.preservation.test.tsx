@@ -44,6 +44,19 @@ describe("coded page section preservation", () => {
     expect(content.map((b: any) => b.type)).toEqual(["object"]);
     expect(content[0].objectId).toBe("stats");
   });
+  it("keeps the same original DOM node and surface mounted when a section is appended", async () => {
+    const r = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
+    const original = await screen.findByRole("heading", { name: "Original Contact" });
+    const surface = original.closest("[data-inline-root]");
+    fireEvent.click(screen.getByRole("button", { name: "Object" }));
+    fireEvent.click(screen.getByText("Pick Stats"));
+    await screen.findByText("Added Stats");
+    expect(screen.getByRole("heading", { name: "Original Contact" })).toBe(original);
+    expect(original.closest("[data-inline-root]")).toBe(surface);
+    expect(original.compareDocumentPosition(screen.getByText("Added Stats")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(r.container.querySelector("iframe")).toBeNull();
+    await act(async () => { await mocks.discard(); });
+  });
   it("discards without an unmount write and removes the whole editing surface", async () => {
     const r = await add();
     await act(async () => { await mocks.discard(); });
