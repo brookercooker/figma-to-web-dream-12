@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
-const mocks = vi.hoisted(() => ({ save: null as any, discard: null as any, writes: vi.fn(), original: { content: null, inline_edits: {} } }));
+const mocks = vi.hoisted(() => ({ save: null as any, discard: null as any, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} } }));
 vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: null, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: vi.fn() }) }));
 vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => null }));
 vi.mock("../designChat/contentSync", () => ({ notifyContentEdited: vi.fn() }));
@@ -24,7 +24,7 @@ vi.mock("../VideoPickerDialog", () => ({ default: () => null }));
 vi.mock("../CreatePageDialog", () => ({ default: () => null }));
 vi.mock("../TagsPanel", () => ({ default: () => null }));
 vi.mock("../PageMiniPreview", () => ({ default: () => null }));
-beforeEach(() => { mocks.writes.mockClear(); vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
+beforeEach(() => { mocks.writes.mockClear(); mocks.original.content = null; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
 afterEach(cleanup);
 async function add() {
   const r = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
@@ -35,6 +35,18 @@ async function add() {
   return r;
 }
 describe("coded page section preservation", () => {
+  it("shows the original above previously saved sections without changing the row", async () => {
+    mocks.original.content = [{ id: "old", type: "object", objectId: "stats", name: "Old Addition", align: "left" }];
+    const before = JSON.stringify(mocks.original);
+    const r = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
+    const original = await screen.findByRole("heading", { name: "Original Contact" });
+    const added = screen.getByText("Added Stats");
+    expect(original.compareDocumentPosition(added) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await act(async () => { await mocks.discard(); });
+    r.unmount();
+    expect(JSON.stringify(mocks.original)).toBe(before);
+    expect(mocks.writes).not.toHaveBeenCalled();
+  });
   it("retains unsupported originals before the addition and saves them atomically", async () => {
     await add();
     expect(screen.getAllByText("Original Contact").length).toBeGreaterThan(0);

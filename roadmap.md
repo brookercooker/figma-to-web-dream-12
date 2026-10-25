@@ -1,5 +1,5 @@
 # Roadmap — coded object import fidelity
-- [ ] Replace competing conversion/block modes with one persistent in-place surface showing original first, then append-only additions; retain exact discard and audit report.
+- [x] Replace competing conversion/block modes with one persistent in-place surface showing original first, then append-only additions; retain exact discard and audit report. Contact add/discard and original visibility verified signed-in; original DOM remains mounted in regression tests.
 - [x] Preserve original React sections before additions, cancel embedded unmount writes and restore opening snapshots on discard; add editable test/custom landing mappings and plain-page starters. Contact add/discard verified signed-in with unchanged saved row; suspect old damage: Homepage, About, Team and Test Page (not restored automatically).
 - [x] Add relay-driven monotonic preview stages, elapsed time, retained/dimmed preview and confirmed-load completion notifications; 510 tests pass, desktop/narrow fixture checks pass, polling unchanged.
 - [ ] Disable visitor clicks while retaining scrolling in hosted cross-origin previews: requires a public-site message bridge; no such bridge currently exists, and iframe click interception also blocks scrolling. Real hosted build-cycle validation remains unavailable.
