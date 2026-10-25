@@ -48,10 +48,11 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   useEffect(() => {
     if (!origin || !target) { setStatus("failed"); return; }
     ready.current = false; exited.current = false; setStatus("loading");
+    const contentWindow = frame.current?.contentWindow;
     const timeout = setTimeout(() => setStatus("failed"), 15000);
     const exit = () => {
       if (exited.current) return;
-      post("edit-exit"); exited.current = true; ready.current = false;
+      contentWindow?.postMessage({ source: "nova-manager", type: "edit-exit" }, origin); exited.current = true; ready.current = false;
       selectionVersion.current++;
       queries.current.forEach(({ resolve, timer }) => { clearTimeout(timer); resolve(null); });
       queries.current.clear();

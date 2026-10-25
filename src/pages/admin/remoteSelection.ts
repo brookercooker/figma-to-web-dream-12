@@ -49,7 +49,10 @@ export function remoteSelection(snapshot: SelectionSnapshot, query?: EditQuery):
     if (typeof value === "string") el.setAttribute(key, value);
   }
   snapshots.set(el, snapshot);
-  el.getBoundingClientRect = () => DOMRect.fromRect(snapshot.rect ?? {});
+  el.getBoundingClientRect = () => {
+    const { x = 0, y = 0, width = 0, height = 0 } = snapshot.rect ?? {};
+    return { x, y, width, height, top: y, left: x, right: x + width, bottom: y + height, toJSON: () => ({ x, y, width, height }) };
+  };
   el.scrollIntoView = () => { void query?.("scrollTo", snapshot.scope, snapshot.key); };
   let link: InlineSelection["link"];
   const info = snapshot.link ?? ((snapshot.tag.toLowerCase() === "a" || snapshot.tag.toLowerCase() === "button" || snapshot.attrs?.href) ? { key: snapshot.key, scope: snapshot.scope, tag: snapshot.tag, attrs: snapshot.attrs } : undefined);
