@@ -226,7 +226,7 @@ function AdminShell() {
                   // On the Preview, Objects, Images and Videos pick an item for the chat; on a management tab, or while editing by hand, they navigate.
                   if (!editing && tab === "preview" && (key === "objects" || key === "images" || key === "videos")) return (
                     <LibraryPicker key={key} kind={key} label={label} Icon={Icon} active={active} showLabel={showLabel} className={className}
-                      onPick={(ref) => { designChat.refs.addReference(ref); setChatCollapsed(false); }}
+                      addedRefs={designChat.refs.references} onPick={(ref) => { designChat.refs.addReference(ref); setChatCollapsed(false); }}
                       onOpenFull={() => navigate(`/manage/${key}`)} />
                   );
                   return (
