@@ -18,7 +18,7 @@ export function previewExcluded(state: RelayState | null): boolean {
   if (["failed", "error", "cancelled", "canceled", "approval", "plan", "plan-only", "reviewing", "publishing"].includes(status ?? "")) return true;
   if (state.publish?.status === "reviewing" || state.approval?.kind === "plan") return true;
   const latest = state.history.at(-1);
-  return !!(latest?.role === "error" && job && latest.ts !== undefined && latest.ts >= job.startedAt);
+  return !!(latest?.role === "error" && job && (latest.ts !== undefined ? latest.ts >= job.startedAt : !state.busy));
 }
 /** Relay facts only: absence of busy does not mean a build has been served. */
 export function previewStage(state: RelayState | null, waiting: boolean, buildDetected: boolean): PreviewStage | null {
