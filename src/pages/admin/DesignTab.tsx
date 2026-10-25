@@ -26,8 +26,10 @@ import ObjectPickerDialog from "./ObjectPickerDialog";
 import TagsPanel from "./TagsPanel";
 import { matchesLabelFilter } from "./labelPath";
 import PageMiniPreview from "./PageMiniPreview";
-import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, hasWideBlocks } from "@/components/PageBlocks";
+import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, type CodeBlock, hasWideBlocks } from "@/components/PageBlocks";
 
+import PageCodeSection from "@/components/PageCodeSection";
+import { fingerprintOf } from "@/lib/inlineEditCore";
 import SharedObjectNotice from "./SharedObjectNotice";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -135,7 +137,7 @@ function ToolButton({
 }
 
 /** Renders a coded page off-screen, splits it into sections and converts each one. */
-function PageImportProbe({ path, onDone }: { path: string; onDone: (parts: { name: string; sections: Section[] }[]) => void }) {
+function PageImportProbe({ path, onDone }: { path: string; onDone: (parts: CodeBlock[]) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let cancelled = false;
@@ -150,15 +152,22 @@ function PageImportProbe({ path, onDone }: { path: string; onDone: (parts: { nam
       if (cancelled || !root) return;
       const { sectionsFromDom } = await import("./importCodedObject");
       const chunks = pageChunks(root);
-      const parts = chunks
-        .map((el, i) => ({ name: chunkName(el, `Section ${i + 1}`), sections: sectionsFromDom(el) }))
-        .filter((p) => p.sections.length);
+      // Probe conversion support, but preserve React instead of replacing it with a lossy approximation.
+      const parts: CodeBlock[] = (chunks.length ? chunks : [root]).map((el, i) => {
+        let convertible = false;
+        try { convertible = sectionsFromDom(el).length > 0; } catch { /* preserve unsupported code */ }
+        const pathParts: number[] = [];
+        let n: Element | null = el;
+        while (n && n !== root && n.parentElement) { pathParts.unshift([...n.parentElement.children].indexOf(n)); n = n.parentElement; }
+        return { id: newId(), type: "code", path, chunk: pathParts.join("."), name: chunkName(el, `Section ${i + 1}`), align: "left", locked: !convertible, fingerprint: fingerprintOf(el) };
+      });
       onDone(parts);
     };
     setTimeout(tick, 300);
     return () => { cancelled = true; };
   }, [path]); // eslint-disable-line react-hooks/exhaustive-deps
   const C = codedPages[path];
+  if (!C) return null;
   return createPortal(
     <div ref={ref} className="import-probe bg-background" style={{ position: "fixed", left: -20000, top: 0, width: 1280, pointerEvents: "none" }}>
       <Suspense fallback={<div className="animate-pulse h-10" />}><C /></Suspense>
@@ -209,6 +218,13 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [currentFirst, setCurrentFirst] = useState(true);
   const [objectAt, setObjectAt] = useState<number | null>(null);
   const [importing, setImporting] = useState(false);
+  const queuedAddition = useRef<Block | null>(null);
+  const discarded = useRef(false);
+  const opening = useRef<PageRow | null>(null);
+  const originalObjects = useRef<Record<string, InlineEdits>>({});
+  const persistedPage = useRef(false);
+  const persistedObjects = useRef(new Set<string>());
+  const [closed, setClosed] = useState(false);
   // In-place editing of a coded page: type over text, click pictures to swap.
   const [quick, setQuick] = useState(false);
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
@@ -234,6 +250,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         objectRows.current[r.component_key] = r.id;
         if (r.inline_edits) edits[r.component_key] = r.inline_edits;
       });
+      originalObjects.current = structuredClone(edits);
       setObjectEdits(edits);
     });
   }, []);
@@ -312,6 +329,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     // Wait for the page to load so a "mode=edit" link isn't used up early.
     if (!page) return;
     const parsed = parseBlocks(page?.content);
+    opening.current = structuredClone(page);
+    discarded.current = false;
+    setClosed(false);
+    persistedPage.current = false;
+    persistedObjects.current.clear();
     setBlocks(parsed);
     setActiveId("");
     setDirty(false);
@@ -394,10 +416,17 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   };
 
   const addPickedBlock = (block: Block, at: number) => {
+    if (discarded.current || importing) return;
+    if (hasExisting && page && codedPages[previewSrc(page.path)]) {
+      queuedAddition.current = block;
+      setImporting(true);
+      return;
+    }
     setBlocks((prev) => insertPickedBlock(prev, block, at));
     scrollToNew.current = block.id;
     setActiveId(block.id);
     setShowLive(false);
+    setQuick(false);
     setDirty(true);
   };
 
@@ -593,7 +622,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
 
   // Auto-save: quietly store changes shortly after the user stops editing.
   useEffect(() => {
-    if (!dirty || !page) return;
+    if (!dirty || !page || discarded.current || importing) return;
     const pageId = page.id;
     const snapshot = blocks;
     pendingSave.current = { pageId, snapshot };
@@ -617,6 +646,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   // On unmount or page change, save any pending changes right away (a safety net; embedded, Save changes normally saves first).
   useEffect(() => {
     return () => {
+      if (embedded || discarded.current) {
+        pendingSave.current = null; pendingInline.current = null; pendingObjects.current = {};
+        return;
+      }
       const p = pendingSave.current;
       const inl = pendingInline.current;
       const objs = pendingObjects.current;
@@ -638,6 +671,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   /** Embedded: write everything held in memory. False (after a message) if any write failed; failed parts stay held. */
   const saveAllRef = useRef<() => Promise<boolean>>(async () => true);
   saveAllRef.current = async () => {
+    if (discarded.current || importing) return false;
     let wrote = false;
     let failed: string | null = null;
     const p = pendingSave.current;
@@ -646,6 +680,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       if (error) failed = error.message ?? "Could not save the page";
       else {
         wrote = true;
+        persistedPage.current = true;
         if (pendingSave.current === p) pendingSave.current = null;
         setPages((cur) => cur.map((x) => (x.id === p.pageId ? { ...x, content: p.snapshot, updated_at: new Date().toISOString() } as any : x)));
         setBlocks((cur) => { if (cur === p.snapshot) setDirty(false); return cur; });
@@ -658,6 +693,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       if (error) failed = failed ?? (error.message ?? "Could not save your changes");
       else {
         wrote = true;
+        persistedPage.current = true;
         if (pendingInline.current === inl) pendingInline.current = null;
         setPages((cur) => cur.map((x) => (x.id === inl.pageId ? { ...x, inline_edits: inl.next, updated_at } : x)));
       }
@@ -667,7 +703,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       if (!id) { delete pendingObjects.current[scope]; continue; }
       const { error } = await (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id);
       if (error) failed = failed ?? (error.message ?? "Could not save the shared section");
-      else { wrote = true; if (pendingObjects.current[scope] === next) delete pendingObjects.current[scope]; }
+      else { wrote = true; persistedObjects.current.add(scope); if (pendingObjects.current[scope] === next) delete pendingObjects.current[scope]; }
     }
     setTweaksPending(!!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
     if (wrote) notifyContentEdited();
@@ -679,12 +715,29 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   useEffect(() => {
     if (!embedded) return;
     registerSave(() => saveAllRef.current());
-    registerDiscard(() => {
-      pendingSave.current = null;
-      pendingInline.current = null;
-      pendingObjects.current = {};
-      setTweaksPending(false);
-      setDirty(false);
+    registerDiscard(async () => {
+      discarded.current = true;
+      window.clearTimeout(inlineTimer.current);
+      Object.values(objectTimers.current).forEach(window.clearTimeout);
+      pendingSave.current = null; pendingInline.current = null; pendingObjects.current = {};
+      queuedAddition.current = null;
+      const baseline = opening.current;
+      const writes: Promise<any>[] = [];
+      if (baseline && persistedPage.current) writes.push((supabase as any).from("pages").update({ content: baseline.content, inline_edits: baseline.inline_edits, updated_at: baseline.updated_at }).eq("id", baseline.id));
+      for (const scope of persistedObjects.current) {
+        const id = objectRows.current[scope];
+        if (id) writes.push((supabase as any).from("object_registry").update({ inline_edits: originalObjects.current[scope] ?? {} }).eq("id", id));
+      }
+      const results = await Promise.all(writes);
+      if (results.some((r) => r.error)) { discarded.current = false; toast.error("Couldn't restore your original page. Try discarding again."); throw new Error("Discard failed"); }
+      if (baseline) {
+        setPages((cur) => cur.map((p) => p.id === baseline.id ? baseline : p));
+        setBlocks(parseBlocks(baseline.content)); setInlineEdits(baseline.inline_edits ?? {});
+      }
+      setObjectEdits(structuredClone(originalObjects.current));
+      setTweaksPending(false); setDirty(false); setImporting(false); setActiveId("");
+      setInlineSel(null); setFoldedChunks(new Set()); setResetKey((k) => k + 1); setClosed(true);
+      if (writes.length) notifyContentEdited();
     });
     registerHasChanges(() => hasChangesRef.current());
     return () => { registerSave(null); registerDiscard(null); registerHasChanges(null); };
@@ -736,28 +789,19 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     </div>
   );
 
-  const finishImport = async (parts: { name: string; sections: Section[] }[]) => {
-    if (!page) return;
-    const made: ObjectBlock[] = [];
-    for (const part of parts) {
-      const { data } = await (supabase as any).from("object_registry").insert({
-        name: `${page.name} · ${part.name}`,
-        status: "Draft",
-        component_key: null,
-        description: `Converted from the ${page.name} page.`,
-        intended_pages: [page.path],
-        labels: [],
-        content: part.sections,
-      }).select("*").single();
-      if (data) made.push({ id: newId(), type: "object", objectId: data.id, name: data.name, align: "left", wide: true });
-    }
-    setImporting(false);
-    if (!made.length) { toast.error("Couldn't break this page into sections."); return; }
-    setBlocks((prev) => (currentFirst ? [...made, ...prev] : [...prev, ...made]));
-    setHasExisting(false);
-    setShowLive(false);
-    setDirty(true);
-    toast.success(`${page.name} is now ${made.length} editable sections.`);
+  const finishImport = (parts: CodeBlock[]) => {
+    if (!page || discarded.current) return;
+    const originals: CodeBlock[] = parts.length ? parts : [{ id: newId(), type: "code", path: previewSrc(page.path), chunk: "", name: page.name, align: "left", locked: true }];
+    const made = originals.map((b) => ({ ...b, inlineEdits: structuredClone(inlineEdits) }));
+    const addition = queuedAddition.current;
+    queuedAddition.current = null;
+    const combined = [...made, ...blocks, ...(addition ? [addition] : [])];
+    setBlocks(combined);
+    pendingSave.current = { pageId: page.id, snapshot: combined };
+    pendingInline.current = { pageId: page.id, next: {} };
+    setInlineEdits({});
+    setHasExisting(false); setShowLive(false); setQuick(false); setImporting(false); setDirty(true);
+    if (addition) { setActiveId(addition.id); scrollToNew.current = addition.id; }
   };
 
   const modeAndDevice = page ? (
@@ -846,7 +890,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   );
   const blockTools = (b: Block, i: number) => (
     <>
-                          {b.type === "object" ? (
+                          {b.type === "code" ? <span className="text-xs">{b.name}{b.locked ? " · Built in Code" : ""}</span> : b.type === "object" ? (
                             <>
                               <button
                                 type="button"
@@ -927,7 +971,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                               ))}
                             </>
                           )}
-                          {b.type !== "object" && (
+                          {b.type !== "object" && b.type !== "code" && (
                             <>
                               <span className="mx-1 h-5 w-px bg-border" />
                               {(["left", "center", "right"] as BlockAlign[]).map((a) => (
@@ -951,7 +995,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   // Embedded: the editing options are drawn in the Site Manager's left column instead of around the canvas.
   const notEditable = !embedded && !!page && hasExisting && !codedPages[previewSrc(page.path)];
   const blockLabel = (b: Block) =>
-    b.type === "object" ? `Object: ${b.name ?? "Saved object"}`
+    b.type === "code" ? b.name : b.type === "object" ? `Object: ${b.name ?? "Saved object"}`
     : b.type === "image" ? "Image"
     : b.type === "video" ? "Video"
     : `${b.type === "heading" ? "Heading" : "Text"}: ${(b as TextBlock).text}`;
@@ -993,6 +1037,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
               <p className="text-xs text-muted-foreground">Only Ready pages are published.</p>
             </div>
           )}
+          <div>{stylePanel}</div>
           {!!blocks.length && (
             <div className="space-y-2">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Sections</p>
@@ -1070,6 +1115,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   ) : null;
 
 
+  if (closed) return null;
   return (
     <div className={embedded ? "h-full min-h-0 min-w-0" : `grid grid-cols-1 gap-6 ${listOpen ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-[auto_1fr]"}`}>
       {/* Page list (not when embedded in the Site Manager's edit mode) */}
@@ -1212,6 +1258,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                 <div className={quick && !embedded ? "grid grid-cols-[1fr_260px]" : embedded ? "h-full" : ""}>
                 <div className={`${h70} overflow-y-auto bg-background`}>
                   {quickAddBar}
+                  {importing && <p role="status" className="px-4 py-3 text-sm text-muted-foreground">Converting this page…</p>}
                   <SharedObjectNotice componentKey="Header" />
                   <InlineEditSurface apiRef={headerApi} onReport={setHeaderReports} edits={{}} objectEdits={objectEdits} editing={quick} sections={false}
                     onChange={changeScope} onSelect={setInlineSel}
@@ -1220,6 +1267,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                   </InlineEditSurface>
                   {(() => {
                     const C = codedPages[previewSrc(page.path)];
+                    if (!C && ["/brands", "/ceiling", "/ceiling-lighting", "/fans", "/lamps", "/outdoor", "/room", "/wall", "/wall-lighting", "/draft", "/manage"].includes(page.path) || !C && page.path.startsWith("/landing/")) {
+                      return <div><Button variant="outline" onClick={() => onLiveStatus("missing")}>Start Editing</Button></div>;
+                    }
                     if (!C && liveStatus === "unreachable") return (
                       <div role="alert" className="mx-auto max-w-md px-6 py-24 text-center">
                         <p className="font-serif text-2xl text-foreground">Couldn't load this page's design</p>
@@ -1244,7 +1294,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                         onReorder={reorderChunks}
                         onOpenObject={async (k, section) => { const id = objectRows.current[k]; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, section); return; } navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`); }}
                       >
-                        <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}>{C ? <C /> : <LivePreviewPage path={previewSrc(page.path)} onStatus={onLiveStatus} reloadKey={liveReload} />}</Suspense>
+                        <Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}>{C ? <PageCodeSection path={previewSrc(page.path)} chunk="" editing={quick} edits={inlineEdits} objectEdits={objectEdits} onChange={changeScope} onSelect={setInlineSel} apiRef={inlineApi} onReport={setInlineReports} /> : <LivePreviewPage path={previewSrc(page.path)} onStatus={onLiveStatus} reloadKey={liveReload} />}</Suspense>
                       </InlineEditSurface>
                     );
                   })()}
@@ -1350,7 +1400,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                         </div>
                       )}
 
-                      {b.type === "object" ? (
+                      {b.type === "code" ? (
+                        <PageCodeSection path={b.path} chunk={b.chunk} fingerprint={b.fingerprint} edits={b.inlineEdits} objectEdits={objectEdits} editing={!b.locked}
+                          onSelect={(sel) => { setActiveId(b.id); setInlineSel(sel); }} apiRef={b.id === activeId ? inlineApi : undefined} onReport={setInlineReports}
+                          onChange={(scope, next) => { if (scope === "page") update(b.id, { inlineEdits: next }); else changeScope(scope, next); }} />
+                      ) : b.type === "object" ? (
                         <div className="py-2">
                           {!active && (
                             <div title="Drag to Move" onMouseDown={(e) => startDrag(e, b.id)} className="flex w-full cursor-grab items-center gap-1 rounded hover:bg-muted/40 active:cursor-grabbing">
@@ -1370,9 +1424,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                             </div>
                           )}
                           {!collapsed[b.id] && (
-                            <div data-editor-content className="pointer-events-none">
+                            <InlineEditSurface edits={inlineEdits} objectEdits={objectEdits} editing sections={false} onSelect={setInlineSel} onChange={changeScope} apiRef={inlineApi} onReport={setInlineReports}>
                               <BlockView block={b} />
-                            </div>
+                            </InlineEditSurface>
                           )}
                         </div>
                       ) : b.type === "image" || b.type === "video" ? (
