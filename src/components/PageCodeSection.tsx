@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useRef } from "react";
 import { MemoryRouter, Route, Routes, UNSAFE_LocationContext, UNSAFE_RouteContext } from "react-router-dom";
 import { codedPages } from "@/pages/admin/codedPages";
+import LivePreviewPage from "@/pages/admin/designChat/LivePreviewPage";
 import InlineEditSurface, { type InlineEditController, type InlineSelection, type InlineReports } from "./InlineEditSurface";
 import { fingerprintMatches, fingerprintOf, resolvePath, type InlineEdits, type Fingerprint } from "@/lib/inlineEditCore";
 
@@ -38,12 +39,11 @@ export default function PageCodeSection({ path, chunk, fingerprint, edits = {}, 
     observer.observe(host, { childList: true, subtree: true });
     return () => observer.disconnect();
   }, [chunk, fingerprint]);
-  if (!C) return <p role="status" className="py-8 text-sm text-muted-foreground">This section's original code is unavailable.</p>;
   return <div ref={ref}>
     <PageRoute path={path}>
           <InlineEditSurface edits={edits} objectEdits={objectEdits} editing={editing} sections={false}
             onChange={onChange} onSelect={onSelect} onReport={onReport} apiRef={apiRef}>
-            <Suspense fallback={<div className="h-40 animate-pulse bg-muted" />}><C /></Suspense>
+            <Suspense fallback={<div className="h-40 animate-pulse bg-muted" />}>{C ? <C /> : <LivePreviewPage path={path} />}</Suspense>
           </InlineEditSurface>
     </PageRoute>
   </div>;

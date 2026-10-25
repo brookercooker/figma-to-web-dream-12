@@ -20,7 +20,6 @@
 - The top bar starts with Tools (Pages and Capture), then Preview/Objects/Images/Videos; a single brand-variant Submit for Review sits beside Account and remains hidden during manual editing, with squeeze-aware labels to keep the workflow usable at narrow widths.
 - Site Manager mode derives only from DesignChat editing; the pinned Chat Mode / Manual Edit Mode ToggleGroup is the sole mode-switch control (compact icons when collapsed), with identical primary selected styles and no preview chip, manual banner or secondary switch prompts; Manual Edit Mode opens the last viewed editable preview page before falling back to the working page or chooser, so stale chat selection cannot redirect manual entry; ModeSwitchProvider guards entry and chat sends through existing EditorSlot callbacks, pageSelection normalizes chosen page rows, and the stationary manual outline stays outside the untouched canvas with chat mounted hidden and busy Claude status in the editing tools.
 
-## Capitalisation
 ## Manual Editing Regression Checklist
 - For Contact, About, Team, Locations, Full Vendor List, Inspiration Gallery, Homepage, Test Page, Race Test Page, Draft and a custom landing page: open editable; append a section without losing originals; discard and verify saved content and inline edits are byte-identical; verify plain Chat Mode has no editing tools. Unknown/retired routes open unsaved starter blocks rather than an iframe.
 
