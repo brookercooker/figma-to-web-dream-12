@@ -4,6 +4,8 @@
  */
 
 import ObjectBlockView from "@/components/ObjectBlockView";
+import PageCodeSection from "@/components/PageCodeSection";
+import type { Fingerprint, InlineEdits } from "@/lib/inlineEditCore";
 
 export type BlockAlign = "left" | "center" | "right";
 
@@ -48,7 +50,18 @@ export interface VideoBlock {
   width: 50 | 75 | 100;
 }
 
-export type Block = TextBlock | ImageBlock | ObjectBlock | VideoBlock;
+export interface CodeBlock {
+  id: string;
+  type: "code";
+  path: string;
+  chunk: string;
+  name: string;
+  align: BlockAlign;
+  locked: boolean;
+  fingerprint?: Fingerprint;
+  inlineEdits?: InlineEdits;
+}
+export type Block = TextBlock | ImageBlock | ObjectBlock | VideoBlock | CodeBlock;
 
 /** YouTube / Vimeo links play through their own player; everything else is a file. */
 export function embedSrc(url: string): string | null {
@@ -62,7 +75,7 @@ export function embedSrc(url: string): string | null {
 export const newId = () =>
   globalThis.crypto?.randomUUID?.() ?? `b-${Math.random().toString(36).slice(2)}`;
 
-export const hasWideBlocks = (blocks: Block[]) => blocks.some((b) => b.type === "object" && b.wide);
+export const hasWideBlocks = (blocks: Block[]) => blocks.some((b) => b.type === "code" || (b.type === "object" && b.wide));
 
 export function parseBlocks(value: unknown): Block[] {
   if (Array.isArray(value)) return value as Block[];
@@ -110,6 +123,7 @@ const widthClass: Record<ImageBlock["width"], string> = {
 };
 
 export function BlockView({ block }: { block: Block }) {
+  if (block.type === "code") return <PageCodeSection path={block.path} chunk={block.chunk} fingerprint={block.fingerprint} edits={block.inlineEdits} />;
   if (block.type === "object") {
     return <ObjectBlockView objectId={block.objectId} name={block.name} flush={block.wide} />;
   }
@@ -187,7 +201,7 @@ export function BlockView({ block }: { block: Block }) {
 export default function PageBlocks({ blocks }: { blocks: Block[] }) {
   if (!blocks.length) return null;
   return (
-    <div className={blocks.some((b) => b.type === "object" && b.wide) ? "" : "max-w-3xl"}>
+    <div className={hasWideBlocks(blocks) ? "" : "max-w-3xl"}>
       {blocks.map((b) => (
         <BlockView key={b.id} block={b} />
       ))}
