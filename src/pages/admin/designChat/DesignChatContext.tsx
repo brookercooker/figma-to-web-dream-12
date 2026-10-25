@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { RelayState } from "./helper";
+import { useLocation } from "react-router-dom";
+import { usePreviewNotifications } from "./usePreviewNotifications";
 import { useHelperState } from "./useHelperState";
 import { usePreview } from "./usePreview";
 import { usePreviewPage, type PreviewPage } from "./usePreviewPage";
@@ -109,6 +111,8 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const [work, dispatch] = useReducer(workingReducer, { workingPage: null, editing: false });
   const editing = work.editing;
   const mode = editing ? "manual" : "chat";
+  const location = useLocation();
+  usePreviewNotifications(preview.completedAt, location.pathname, editing);
 
   useEffect(() => {
     const sync = () => setFull(Boolean(document.fullscreenElement));

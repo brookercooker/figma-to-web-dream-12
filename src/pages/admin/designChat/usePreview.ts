@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { EMBED_FN, SUPABASE_KEY, type RelayState } from "./helper";
 import { withPath } from "./logic";
 import { setManifestBase, resetSiteManifestCache } from "../siteManifest";
+import { previewExcluded, previewStage, type PreviewStage } from "./previewProgress";
 import { syncManifestPages } from "../manifestPageSync";
 
 /**
@@ -29,6 +30,14 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   const [shownId, setShownId] = useState(0);
   const [loaded, setLoaded] = useState(false); // the first copy is on screen
   const [updating, setUpdating] = useState(false);
+  const [completedAt, setCompletedAt] = useState(0);
+  const [buildDetected, setBuildDetected] = useState(false);
+  const buildFrame = useRef<number | null>(null);
+  const stateRef = useRef(state); stateRef.current = state;
+  const [clock, setClock] = useState(Date.now());
+  const updateStart = useRef<number | null>(null);
+  const highStage = useRef<PreviewStage | null>(null);
+  const jobStart = useRef<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const seq = useRef(0);
@@ -60,7 +69,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   }, []);
 
   /** A copy has loaded (or timed out): it becomes the one shown, unless a newer one is already on screen. */
-  const finish = useCallback((id: number) => {
+  const finish = useCallback((id: number, confirmed = true) => {
     clearTimeout(swapTimers.current[id]);
     delete swapTimers.current[id];
     if (!alive.current) return;
@@ -72,6 +81,14 @@ export function usePreview(state: RelayState | null, path: string | null = null,
     void syncManifestPages();
     setError(null);
     setFrames((fs) => fs.filter((f) => f.id >= id)); // older copies go; newer ones still loading stay
+    if (confirmed && buildFrame.current !== null && id >= buildFrame.current && !previewExcluded(stateRef.current)) {
+      buildFrame.current = null;
+      setBuildDetected(false);
+      hideUpdating();
+      highStage.current = null;
+      updateStart.current = null;
+      setCompletedAt(Date.now());
+    }
     if (clearOnSwap.current) { clearOnSwap.current = false; hideUpdating(); }
   }, [hideUpdating]);
 
@@ -92,7 +109,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
       setManifestBase(data.embed_url);
       const id = ++seq.current;
       setFrames((fs) => [...fs, { id, url: withPath(data.embed_url, remembered.current ?? pathRef.current) }]);
-      swapTimers.current[id] = setTimeout(() => finish(id), SWAP_TIMEOUT_MS);
+      swapTimers.current[id] = setTimeout(() => finish(id, false), SWAP_TIMEOUT_MS);
       const wait = Math.max(30_000, new Date(data.expires_at).getTime() - Date.now() - REFRESH_MARGIN_MS);
       expiry.current = setTimeout(loadPreview, wait);
     } catch (e) {
@@ -118,10 +135,12 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   const buildSeen = useCallback((showing: boolean) => {
     resetSiteManifestCache();
     void syncManifestPages();
+    buildFrame.current = seq.current + 1;
+    setBuildDetected(true);
     loadPreview();
     followTimers.current.forEach(clearTimeout);
     followTimers.current = AFTER_BUILD_MS.map((ms) => setTimeout(() => {
-      if (ms === CLEAR_AT_MS) clearOnSwap.current = true;
+      // Completion is acknowledged by the confirmed build frame load, not a timer.
       loadPreview();
     }, ms));
     if (showing) showUpdating(CLEAR_AT_MS + 8000);
@@ -166,5 +185,26 @@ export function usePreview(state: RelayState | null, path: string | null = null,
     lastBuiltAt.current = builtAt ?? 0;
   }, [builtAt, state === null]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { frames, shownId, loaded, updating, error, finish, lastReloadAt, rememberPath };
+  const candidate = previewStage(state, updating, buildDetected);
+  const start = state?.job?.startedAt;
+  if (start && start !== jobStart.current) {
+    jobStart.current = start; highStage.current = null; updateStart.current = start;
+  }
+  if (candidate) {
+    highStage.current = Math.max(highStage.current ?? 1, candidate) as PreviewStage;
+    updateStart.current ??= start ?? state?.job?.stepStartedAt ?? Date.now();
+  } else if (previewExcluded(state)) { highStage.current = null; updateStart.current = null; }
+  const progressStage = candidate ? highStage.current : null;
+  useEffect(() => {
+    if (!progressStage) return;
+    setClock(Date.now());
+    const timer = setInterval(() => setClock(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [progressStage]);
+  useEffect(() => {
+    if (!previewExcluded(state)) return;
+    buildFrame.current = null; setBuildDetected(false); hideUpdating();
+  }, [state, hideUpdating]);
+  return { frames, shownId, loaded, updating, error, finish, lastReloadAt, rememberPath,
+    progressStage, elapsedMs: Math.max(0, clock - (updateStart.current ?? clock)), completedAt };
 }

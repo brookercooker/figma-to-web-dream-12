@@ -25,3 +25,5 @@
 - Leave sentences, help text, hints, empty states, errors, toasts, placeholders, counters and progress messages in sentence case; never change data, stored values, text sent to the helper, routes, keys, enum values or comments.
 - Preview Back/Forward use the pure previewHistory module fed by reported preview locations; Back/Forward are disabled while editing so editor guards and unsaved starter blocks are never bypassed.
 - All relay state consumers share mounted-only useHelperState polling with visibility throttling and capped exponential failure back-off, so hidden tabs and outages do not exhaust relay reads.
+
+- Preview progress derives from relay job/checking/build signals with monotonic per-job stages and original elapsed time; retain the old frame and notify only when a detected build frame actually loads, never from a timeout, plan, failure, review or manual editing; helper polling remains unchanged.
