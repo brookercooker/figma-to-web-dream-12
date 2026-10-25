@@ -62,11 +62,22 @@ describe("top bar library buttons", () => {
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/videos");
     expect(m.add).not.toHaveBeenCalled();
   });
-  it("Preview and Pages still navigate", () => {
+  it("Preview and Tools Pages still navigate", async () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Preview" }));
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/preview");
-    fireEvent.click(screen.getByRole("button", { name: "Pages" }));
+    fireEvent.keyDown(screen.getByRole("button", { name: "Tools" }), { key: "ArrowDown" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Pages" }));
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/pages");
+    expect(screen.getByRole("button", { name: "Tools" })).toHaveAttribute("aria-current", "page");
+  });
+  it.each([false, true])("Tools Capture preserves its destination while editing=%s", async (editing) => {
+    m.editing = editing;
+    open();
+    expect(screen.queryByRole("button", { name: "Pages" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Capture" })).toBeNull();
+    fireEvent.keyDown(screen.getByRole("button", { name: "Tools" }), { key: "ArrowDown" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Capture" }));
+    expect(screen.getByTestId("where")).toHaveTextContent("/manage/capture");
   });
 });

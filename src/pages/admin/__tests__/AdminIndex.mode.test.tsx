@@ -24,6 +24,9 @@ describe("Site Manager mode cues", () => {
     expect(screen.getByRole("radio", { name: "Chat Mode" })).toHaveAttribute("aria-checked", "true");
     expect(document.querySelector("[data-mode-switch]")?.previousElementSibling).toContainElement(screen.getByRole("heading", { level: 1 }));
     expect(document.querySelector("[data-manual-outline]")).toBeNull();
+    const submit = screen.getByRole("button", { name: "Submit for Review" });
+    expect(document.querySelector("header")).toContainElement(submit);
+    expect(screen.getAllByRole("button", { name: "Submit for Review" })).toHaveLength(1);
     m.manual = true; view.rerender(app());
     const canvas = await screen.findByTestId("canvas");
     expect(canvas.parentElement?.parentElement?.tagName).toBe("MAIN");
@@ -34,6 +37,7 @@ describe("Site Manager mode cues", () => {
     expect(overlay).toHaveClass("pointer-events-none", "absolute");
     expect(overlay).not.toContainElement(canvas);
     expect(screen.getByText("Editing Homepage")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Submit for Review" })).toBeNull();
     expect(screen.getByRole("radio", { name: "Manual Edit Mode" })).toHaveAttribute("aria-checked", "true");
     expect(document.querySelector("[data-manual-chat-bar]")).toBeNull();
     expect(screen.queryByText("Chat Mode: Claude Makes the Changes")).toBeNull();
