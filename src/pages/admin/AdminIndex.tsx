@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Check, Undo2, ArrowLeft, Code, Loader2, Wrench } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
-import SiteManagerLogo from "./SiteManagerLogo";
 import ChatPanel from "./designChat/ChatPanel";
 import PreviewTools, { SubmitButton } from "./designChat/PreviewTools";
 import { DesignChatProvider, useDesignChat } from "./designChat/DesignChatContext";
@@ -50,9 +49,9 @@ function TabSkeleton() {
 }
 
 /**
- * The Site Manager: the design chat column always on the left, topped by the logo and collapsible to a thin rail.
+ * The Site Manager: the design chat column always on the left, topped by the account menu and collapsible to a thin rail.
  * The top bar starts with Tools (Pages and Capture), then Preview, Objects, Images and Videos,
- * with Submit for Review and the account menu at the right. Choosing a page in Pages points the chat at it. The chat and the
+ * with Submit for Review at the right. Choosing a page in Pages points the chat at it. The chat and the
  * preview are kept alive while another tab is open, so nothing restarts when someone switches.
  */
 export default function AdminIndex() {
@@ -249,33 +248,7 @@ function AdminShell() {
 
               <div aria-hidden className={cn("h-9 w-px bg-border shrink-0", compact && "hidden")} />
               {!editing && <SubmitButton compact={compact} />}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="w-9 shrink-0 gap-2 px-0" aria-label="Account Menu">
-                    <UserCircle2 className="w-5 h-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuItem onClick={() => navigate("/admin/users")}>
-                        <Shield className="w-4 h-4 mr-2" /> Admin
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/manage/developer")}>
-                        <Code className="w-4 h-4 mr-2" /> Developer Review
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
-                  <DropdownMenuItem onClick={() => setPwOpen(true)}>
-                    <KeyRound className="w-4 h-4 mr-2" /> Change Password
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => supabase.auth.signOut()}>
-                    <LogOut className="w-4 h-4 mr-2" /> Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+
             </div>
           </header>
 
@@ -322,7 +295,7 @@ function AdminShell() {
           </div>
         </div>
 
-        {/* Left: the chat column, on every tab, with its own header (logo and collapse).
+        {/* Left: the chat column, on every tab, with its own header (account and collapse).
             Collapsed, it shrinks to a thin rail with an expand button; the chat stays mounted (hidden) so typed text and attachments survive. */}
         <aside
           className={cn(
@@ -338,10 +311,34 @@ function AdminShell() {
               </Button>
             </div>
           )}
-          <div className={cn("flex shrink-0 items-center gap-2 border-b bg-background px-3 py-2.5", chatCollapsed && !manual && "hidden")}>
-            <h1 className="whitespace-nowrap">
-              <SiteManagerLogo />
-            </h1>
+          <div data-chat-header className={cn("flex h-14 shrink-0 items-center gap-2 border-b bg-background px-3", chatCollapsed && !manual && "hidden")}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-9 shrink-0 gap-2 px-0" aria-label="Account Menu">
+                    <UserCircle2 className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate("/admin/users")}>
+                        <Shield className="w-4 h-4 mr-2" /> Admin
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/manage/developer")}>
+                        <Code className="w-4 h-4 mr-2" /> Developer Review
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem onClick={() => setPwOpen(true)}>
+                    <KeyRound className="w-4 h-4 mr-2" /> Change Password
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => supabase.auth.signOut()}>
+                    <LogOut className="w-4 h-4 mr-2" /> Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             <div className="flex-1" />
             {!manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded={true} onClick={() => setChatCollapsed(true)}>
               <PanelLeftClose className="h-4 w-4" />

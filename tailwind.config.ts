@@ -61,6 +61,11 @@ export default {
         glow: "hsl(var(--nova-glow))",
         garnet: "hsl(var(--nova-garnet))",
         manual: "hsl(var(--nova-manual))",
+        review: {
+          DEFAULT: "hsl(var(--nova-review))",
+          hover: "hsl(var(--nova-review-hover))",
+          foreground: "hsl(var(--nova-review-foreground))",
+        },
         nova: {
           cream: "hsl(var(--nova-cream))",
           ink: "hsl(var(--nova-ink))",
