@@ -4,7 +4,7 @@
 // "which pages use this object?" and "which pages refer to this image or video?" without reading any of the public site's
 // code, so it keeps working when the two are separate projects.
 //
-// Read the current draft embed origin (including its query token) first, then VITE_PUBLIC_SITE_URL or the same site.
+// Prefer a manifest sent by the trusted public preview; HTTP is the last fallback.
 
 export interface SiteManifestPage {
   path: string;
@@ -82,7 +82,7 @@ function reconcileReceiver() {
   const real = Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview]")).find((frame) => {
     const origin = originOf(frame.src); return origin && trustedOrigin(origin);
   });
-  if (real) { receiver?.remove(); receiver = null; }
+  if (real || !draftBase) { receiver?.remove(); receiver = null; }
   else if (draftBase) {
     if (!receiver) {
       receiver = document.createElement("iframe");
