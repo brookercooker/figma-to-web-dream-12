@@ -39,7 +39,7 @@ export default function LibraryFilterBar({ colorOf = (p) => colorFor(p), labels,
             <Popover open={more} onOpenChange={setMore}>
               <PopoverTrigger asChild><Button variant="outline" size="sm" className="h-7 gap-1 text-xs" data-picker-own-enter="">More Labels<ChevronDown className="h-3 w-3" aria-hidden /></Button></PopoverTrigger>
               <PopoverContent align="start" className="w-80 max-w-[85vw] p-0" data-picker-own-enter="">
-                <Command>
+                <Command label="Search Labels">
                   <CommandInput aria-label="Search Labels" placeholder="Search labels…" />
                   <CommandList aria-label="Labels">
                     <CommandEmpty>No labels match.</CommandEmpty>
