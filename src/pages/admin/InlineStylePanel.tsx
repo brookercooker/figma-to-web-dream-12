@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, icons } from "lucide-react";
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { LINK_ICONS, readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
+import { remoteSnapshot, selectionComputedStyle } from "./remoteSelection";
 
 const COLOURS = [
   ["Ink", "ink"], ["Stone", "stone"], ["Garnet", "garnet"], ["Tan", "brass"], ["White", "cream"],
@@ -31,6 +32,7 @@ export default function InlineStylePanel({
   useEffect(() => {
     range.current = null; span.current = null; setHighlighted(false);
     if (!sel || sel.kind !== "text") return;
+    if (remoteSnapshot(sel.el)) return; // Live Selection/Range belongs to the public frame.
     const onSel = () => {
       const s = window.getSelection();
       if (!s || !s.rangeCount) return;
@@ -51,7 +53,7 @@ export default function InlineStylePanel({
     );
   }
   const style = readStyle(edits, sel.key);
-  const computed = getComputedStyle(sel.el);
+  const computed = selectionComputedStyle(sel.el);
   const set = (prop: string, value: string) => {
     const next = { ...style };
     if (value) next[prop] = value; else delete next[prop];
@@ -88,7 +90,7 @@ export default function InlineStylePanel({
 
   if (sel.kind === "divider" && sel.side) {
     const side = sel.side;
-    const cs = getComputedStyle(sel.el);
+    const cs = selectionComputedStyle(sel.el);
     const col = style[`border-${side}-color`];
     const hidden = style[`border-${side}-style`] === "none";
     return (
