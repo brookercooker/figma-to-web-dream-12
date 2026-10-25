@@ -3,16 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
-const mocks = vi.hoisted(() => ({ remote: false, save: null as any, discard: null as any, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} } }));
+const mocks = vi.hoisted(() => ({ remote: true, path: "/draft", save: null as any, discard: null as any, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
 vi.mock("../siteManifest", async (importOriginal) => ({ ...await importOriginal<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.reject(new Error("fixture")), manifestHasPage: () => mocks.remote, draftEmbedUrl: () => "https://public.example.com/?embed=fixture" }));
 vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: null, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: vi.fn() }) }));
 vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => null }));
 vi.mock("../designChat/contentSync", () => ({ notifyContentEdited: vi.fn() }));
-vi.mock("../codedPages", () => ({ codedPages: { "/contact": () => <div><section><h1>Original Contact</h1><form><input aria-label="Original Form" /></form></section><section><p>Original Details</p></section></div> },
-  pageChunks: (root: HTMLElement) => [...root.querySelectorAll("section")], chunkName: (el: HTMLElement) => el.textContent }));
-vi.mock("../importCodedObject", () => ({ sectionsFromDom: () => [] }));
 vi.mock("@/prototype/client", () => ({ supabase: { from: (table: string) => {
-  const data = table === "pages" ? [{ id: "contact", path: mocks.remote ? "/draft" : "/contact", name: "Contact", updated_at: "original-date", ...mocks.original }] : [];
+  const data = table === "pages" ? [{ id: "contact", path: mocks.path, name: "Contact", updated_at: "original-date", ...mocks.original }] : [];
   const q: any = { select: () => q, is: () => q, order: () => Promise.resolve({ data }), update: (patch: any) => { mocks.writes(table, patch); return { eq: () => Promise.resolve({ error: null }) }; }, then: (cb: any) => Promise.resolve({ data }).then(cb) }; return q;
 } } }));
 vi.mock("@/components/Header", () => ({ default: () => null }));
@@ -25,7 +22,7 @@ vi.mock("../VideoPickerDialog", () => ({ default: ({ open, onPick }: any) => ope
 vi.mock("../CreatePageDialog", () => ({ default: () => null }));
 vi.mock("../TagsPanel", () => ({ default: () => null }));
 vi.mock("../PageMiniPreview", () => ({ default: () => null }));
-beforeEach(() => { mocks.remote = false; mocks.writes.mockClear(); mocks.original.content = null; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
+beforeEach(() => { mocks.remote = true; mocks.path = "/draft"; mocks.writes.mockClear(); mocks.original.content = null; mocks.original.inline_edits = {}; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
 afterEach(cleanup);
 async function add() {
   const r = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
