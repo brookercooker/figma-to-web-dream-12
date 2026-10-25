@@ -143,6 +143,11 @@ describe("manifest-only public page save/discard integration", () => {
       { id: "second", type: "video", url: "/second.mp4", align: "left", width: 100 },
     ];
     const s = await openRemote(false);
+    const stubReloadedFrame = () => {
+      const current = s.container.querySelector("iframe")?.contentWindow;
+      if (!current) throw new Error("Missing reloaded frame window");
+      vi.spyOn(current, "postMessage").mockImplementation(() => {});
+    };
     const order = () => [...s.container.querySelectorAll<HTMLElement>("[data-page-block]")].map(el => el.dataset.pageBlock);
     expect(order()).toEqual(["first", "second"]);
     const list = s.container.querySelector("ol");
@@ -151,16 +156,19 @@ describe("manifest-only public page save/discard integration", () => {
     if (!down) throw new Error("Missing reorder control");
     fireEvent.click(down);
     await waitFor(() => expect(order()).toEqual(["second", "first"]));
+    stubReloadedFrame();
     expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Contact", "Video", "Image"]);
     const imageRow = [...list.querySelectorAll("li")].find(el => el.textContent === "Image");
     const imageButton = imageRow?.querySelector("button");
     if (!imageButton) throw new Error("Missing image section control");
     fireEvent.click(imageButton);
     fireEvent.click(screen.getByRole("button", { name: "Width 50%" }));
+    stubReloadedFrame();
     expect(s.container.querySelector('[data-page-block="first"] figure')?.className).toContain("w-1/2");
     const deletes = list.querySelectorAll('[aria-label="Delete Block"]');
     fireEvent.click(deletes[0]);
     await waitFor(() => expect(order()).toEqual(["first"]));
+    stubReloadedFrame();
     expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Contact", "Image"]);
     s.unmount();
   });
