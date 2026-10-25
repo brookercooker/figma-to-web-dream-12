@@ -3,16 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
-const mocks = vi.hoisted(() => ({ remote: false, save: null as any, discard: null as any, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} } }));
+const mocks = vi.hoisted(() => ({ remote: true, path: "/draft", save: null as any, discard: null as any, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
 vi.mock("../siteManifest", async (importOriginal) => ({ ...await importOriginal<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.reject(new Error("fixture")), manifestHasPage: () => mocks.remote, draftEmbedUrl: () => "https://public.example.com/?embed=fixture" }));
 vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: null, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: vi.fn() }) }));
 vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => null }));
 vi.mock("../designChat/contentSync", () => ({ notifyContentEdited: vi.fn() }));
-vi.mock("../codedPages", () => ({ codedPages: { "/contact": () => <div><section><h1>Original Contact</h1><form><input aria-label="Original Form" /></form></section><section><p>Original Details</p></section></div> },
-  pageChunks: (root: HTMLElement) => [...root.querySelectorAll("section")], chunkName: (el: HTMLElement) => el.textContent }));
-vi.mock("../importCodedObject", () => ({ sectionsFromDom: () => [] }));
 vi.mock("@/prototype/client", () => ({ supabase: { from: (table: string) => {
-  const data = table === "pages" ? [{ id: "contact", path: mocks.remote ? "/draft" : "/contact", name: "Contact", updated_at: "original-date", ...mocks.original }] : [];
+  const data = table === "pages" ? [{ id: "contact", path: mocks.path, name: "Contact", updated_at: "original-date", ...mocks.original }] : [];
   const q: any = { select: () => q, is: () => q, order: () => Promise.resolve({ data }), update: (patch: any) => { mocks.writes(table, patch); return { eq: () => Promise.resolve({ error: null }) }; }, then: (cb: any) => Promise.resolve({ data }).then(cb) }; return q;
 } } }));
 vi.mock("@/components/Header", () => ({ default: () => null }));
@@ -25,66 +22,9 @@ vi.mock("../VideoPickerDialog", () => ({ default: ({ open, onPick }: any) => ope
 vi.mock("../CreatePageDialog", () => ({ default: () => null }));
 vi.mock("../TagsPanel", () => ({ default: () => null }));
 vi.mock("../PageMiniPreview", () => ({ default: () => null }));
-beforeEach(() => { mocks.remote = false; mocks.writes.mockClear(); mocks.original.content = null; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
+beforeEach(() => { mocks.remote = true; mocks.path = "/draft"; mocks.writes.mockClear(); mocks.original.content = null; mocks.original.inline_edits = {}; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
 afterEach(cleanup);
-async function add() {
-  const r = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
-  await screen.findByText("Original Contact");
-  fireEvent.click(screen.getByRole("button", { name: "Object" }));
-  fireEvent.click(screen.getByText("Pick Stats"));
-  await waitFor(() => expect(r.container.querySelectorAll("[data-page-block]")).toHaveLength(1));
-  return r;
-}
-describe("coded page section preservation", () => {
-  it("shows the original above previously saved sections without changing the row", async () => {
-    mocks.original.content = [{ id: "old", type: "object", objectId: "stats", name: "Old Addition", align: "left" }];
-    const before = JSON.stringify(mocks.original);
-    const r = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
-    const original = await screen.findByRole("heading", { name: "Original Contact" });
-    const added = await screen.findByText("Added Stats");
-    expect(original.compareDocumentPosition(added) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    await act(async () => { await mocks.discard(); });
-    r.unmount();
-    expect(JSON.stringify(mocks.original)).toBe(before);
-    expect(mocks.writes).not.toHaveBeenCalled();
-  });
-  it("retains unsupported originals before the addition and saves them atomically", async () => {
-    await add();
-    expect(screen.getAllByText("Original Contact").length).toBeGreaterThan(0);
-    expect(mocks.writes).not.toHaveBeenCalled();
-    await act(async () => { expect(await mocks.save()).toBe(true); });
-    const content = mocks.writes.mock.calls.find(([, patch]) => patch.content)?.[1].content;
-    expect(content.map((b: any) => b.type)).toEqual(["object"]);
-    expect(content[0].objectId).toBe("stats");
-  });
-  it("keeps the same original DOM node and surface mounted when a section is appended", async () => {
-    const r = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
-    const original = await screen.findByRole("heading", { name: "Original Contact" });
-    const surface = original.closest("[data-inline-root]");
-    fireEvent.click(screen.getByRole("button", { name: "Object" }));
-    fireEvent.click(screen.getByText("Pick Stats"));
-    await screen.findByText("Added Stats");
-    expect(screen.getByRole("heading", { name: "Original Contact" })).toBe(original);
-    expect(original.closest("[data-inline-root]")).toBe(surface);
-    expect(original.compareDocumentPosition(screen.getByText("Added Stats")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(r.container.querySelector("iframe")).toBeNull();
-    await act(async () => { await mocks.discard(); });
-  });
-  it("discards without an unmount write and removes the whole editing surface", async () => {
-    const r = await add();
-    await act(async () => { await mocks.discard(); });
-    expect(r.container.children).toHaveLength(0);
-    r.unmount();
-    expect(mocks.writes).not.toHaveBeenCalled();
-  });
-  it("restores the opening row even after an explicit intermediate save", async () => {
-    await add();
-    await act(async () => { await mocks.save(); await mocks.discard(); });
-    expect(mocks.writes.mock.calls.at(-1)).toEqual(["pages", { content: null, inline_edits: {}, updated_at: "original-date" }]);
-  });
-});
-
-describe("manifest-only public page save/discard integration", () => {
+describe("public page save/discard integration", () => {
   async function openRemote(embedded = true) {
     mocks.remote = true;
     const view = render(<MemoryRouter initialEntries={["/manage/design?page=contact"]}><DesignTab embedded={embedded} pageId="contact" /></MemoryRouter>);
@@ -97,6 +37,36 @@ describe("manifest-only public page save/discard integration", () => {
     send("edit-ready");
     return { ...view, frame, post, send };
   }
+  it.each(["/", "/contact", "/about", "/team", "/locations", "/full-vendor-list", "/inspiration-gallery", "/test-page", "/race-test-page", "/landing/test", "/draft"])("opens %s through the public editor without local markup", async (path) => {
+    mocks.path = path;
+    const s = await openRemote();
+    expect(new URL(s.frame.src).pathname).toBe(path);
+    expect(s.container.querySelectorAll("iframe")).toHaveLength(1);
+    expect(s.container.querySelector("[data-empty-editable]")).toBeNull();
+    expect(mocks.writes).not.toHaveBeenCalled();
+    await act(async () => { await mocks.discard(); });
+    expect(s.container.children).toHaveLength(0);
+  });
+  it("passes existing positional edits unchanged on init and saves only the held map", async () => {
+    const original = { "0.0.3": "Saved words", "style:0.1": '{"font-size":"24px"}' };
+    mocks.original.inline_edits = original;
+    const s = await openRemote();
+    expect(s.post).toHaveBeenCalledWith(expect.objectContaining({ type: "edit-init", edits: original }), "https://public.example.com");
+    const next = { ...original, "0.0.3": "Held words" };
+    s.send("edit-change", { scope: "page", next });
+    expect(mocks.writes).not.toHaveBeenCalled();
+    await act(async () => { await mocks.save(); });
+    expect(mocks.writes).toHaveBeenCalledWith("pages", expect.objectContaining({ inline_edits: next }));
+    await act(async () => { await mocks.discard(); });
+    expect(mocks.writes.mock.calls.at(-1)?.[1].inline_edits).toEqual(original);
+  });
+  it("does not substitute an empty local page when the manifest is unavailable", async () => {
+    mocks.remote = false;
+    const s = await openRemote();
+    expect(s.container.querySelector("[data-empty-editable]")).toBeNull();
+    expect(s.container.querySelectorAll("iframe")).toHaveLength(1);
+    await act(async () => { await mocks.discard(); });
+  });
   it("holds public text changes in changeScope until Finish Editing and discards exactly", async () => {
     const s = await openRemote();
     s.send("edit-change", { scope: "page", next: { "0": "Changed Example Header", "fp:0": '{"v":1,"tag":"h1","t":"abc"}' } });

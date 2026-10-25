@@ -1,8 +1,7 @@
 import { useEditorSlot } from "./designChat/EditorSlot";
 import { notifyContentEdited } from "./designChat/contentSync";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { codedPages } from "./codedPages";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
@@ -23,10 +22,8 @@ import VideoPickerDialog from "./VideoPickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
 import TagsPanel from "./TagsPanel";
 import { matchesLabelFilter } from "./labelPath";
-import PageMiniPreview from "./PageMiniPreview";
 import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, type CodeBlock, hasWideBlocks } from "@/components/PageBlocks";
 
-import { PageRoute } from "@/components/PageCodeSection";
 import SharedObjectNotice from "./SharedObjectNotice";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -46,7 +43,6 @@ import { remoteSnapshot } from "./remoteSelection";
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
 
 export const previewSrc = (path: string) => (path === "/" ? "/home" : path);
-export const canIframe = (_path: string) => false;
 export function InlinePagePreview({ name, blocks }: { name: string; blocks: Block[] }) {
   return <div><Header /><h1 className="font-serif text-3xl">{name}</h1><PageBlocks blocks={blocks} /><Footer /></div>;
 }
@@ -125,8 +121,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const headerApi = useRef<InlineEditController | null>(null);
   const framedApi = useRef<FramedEditorController | null>(null);
   const [manifestVersion, setManifestVersion] = useState(0);
+  const [manifestLoaded, setManifestLoaded] = useState(false);
   useEffect(() => {
-    const update = () => setManifestVersion((n) => n + 1);
+    const update = () => { setManifestLoaded(true); setManifestVersion((n) => n + 1); };
     window.addEventListener(MANIFEST_CHANGED, update);
     void loadSiteManifest().then(update).catch(() => {});
     return () => window.removeEventListener(MANIFEST_CHANGED, update);
@@ -793,8 +790,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     else navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`);
   };
   if (closed) return null;
-  const C = page ? codedPages[previewSrc(page.path)] : undefined;
-  const framed = !!page && !C && manifestHasPage(page.path);
+  // An unread manifest is not evidence of an empty page: fail closed to the public editor.
+  const framed = !!page && (!manifestLoaded || manifestHasPage(page.path));
   return (<div className={embedded ? "h-full min-h-0" : "grid gap-4 lg:grid-cols-[240px_1fr]"}>
     {!embedded && <aside><Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search pages" />{filtered.map(p=><Button key={p.id} variant="ghost" className="w-full justify-start" onClick={()=>select(p.id)}>{p.name}</Button>)}{tools}</aside>}
     {page && <EmbeddedBox chat={embedded ? chat : null}>
@@ -814,7 +811,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
           onOpenObject={openInlineObject}
           onChange={changeScope} onSelect={sel=> { setInlineSel(sel); setActiveId(sel?.el.closest<HTMLElement>("[data-page-block]")?.dataset.pageBlock ?? ""); }}
           selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null}>
-          {C ? <PageRoute path={previewSrc(page.path)}><Suspense fallback={<div className="h-64 animate-pulse bg-muted" />}><C /></Suspense></PageRoute> : !framed &&
+          {!framed &&
             <section className="mx-auto max-w-3xl px-6 py-10"><h1 className="font-serif text-3xl">{page.name}</h1><p data-empty-editable className="min-h-6" aria-label="Page Text"> </p></section>}
           {blocks.map((b,i)=><section key={b.id} data-page-block={b.id} className="relative">
             <BlockView block={b} />

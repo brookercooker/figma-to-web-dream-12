@@ -41,6 +41,18 @@ describe("public edit-frame guards", () => {
     expect(container.querySelectorAll("iframe")).toHaveLength(1);
     expect(container.querySelector("iframe")).toBe(frame);
   });
+  it("times out visibly and reloads only on explicit Retry", () => {
+    vi.useFakeTimers();
+    const s = setup();
+    act(() => vi.advanceTimersByTime(15000));
+    expect(screen.getByRole("status")).toHaveTextContent("Couldn't reach the public page");
+    expect(s.container.querySelector("iframe")).toBe(s.frame);
+    act(() => vi.advanceTimersByTime(60000));
+    expect(s.container.querySelector("iframe")).toBe(s.frame);
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(s.container.querySelector("iframe")).not.toBe(s.frame);
+    expect(s.container.querySelectorAll("iframe")).toHaveLength(1);
+  });
 });
 describe("edit-frame protocol", () => {
   it("ignores wrong origins and sources, then initializes and synchronizes", () => {
