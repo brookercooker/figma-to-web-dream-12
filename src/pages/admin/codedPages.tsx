@@ -1,7 +1,7 @@
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
 import { customLandingPages } from "@/pages/landing/customLandingPages";
 
-/** Page components that can be broken into editable blocks, keyed by path. */
+/** Legacy local-route, saved code-block and thumbnail compatibility only; never used to open the page editor. */
 const SimplePages = () => import("@/pages/SimplePage.tsx");
 export const codedPages: Record<string, LazyExoticComponent<ComponentType>> = {
   "/home": lazy(() => import("@/pages/Index.tsx")),
@@ -27,4 +27,3 @@ export const codedPages: Record<string, LazyExoticComponent<ComponentType>> = {
   ...Object.fromEntries(customLandingPages.map(({ slug, component }) => [`/landing/${slug}`, component])),
 };
 
-export { pageChunks, chunkName } from "@/lib/pageChunks";

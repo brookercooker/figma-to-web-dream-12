@@ -1,6 +1,6 @@
 import { useEditorSlot } from "./designChat/EditorSlot";
 import { notifyContentEdited } from "./designChat/contentSync";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
@@ -22,7 +22,6 @@ import VideoPickerDialog from "./VideoPickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
 import TagsPanel from "./TagsPanel";
 import { matchesLabelFilter } from "./labelPath";
-import PageMiniPreview from "./PageMiniPreview";
 import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, type CodeBlock, hasWideBlocks } from "@/components/PageBlocks";
 
 import SharedObjectNotice from "./SharedObjectNotice";
@@ -44,7 +43,6 @@ import { remoteSnapshot } from "./remoteSelection";
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
 
 export const previewSrc = (path: string) => (path === "/" ? "/home" : path);
-export const canIframe = (_path: string) => false;
 export function InlinePagePreview({ name, blocks }: { name: string; blocks: Block[] }) {
   return <div><Header /><h1 className="font-serif text-3xl">{name}</h1><PageBlocks blocks={blocks} /><Footer /></div>;
 }
@@ -123,8 +121,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const headerApi = useRef<InlineEditController | null>(null);
   const framedApi = useRef<FramedEditorController | null>(null);
   const [manifestVersion, setManifestVersion] = useState(0);
+  const [manifestLoaded, setManifestLoaded] = useState(false);
   useEffect(() => {
-    const update = () => setManifestVersion((n) => n + 1);
+    const update = () => { setManifestLoaded(true); setManifestVersion((n) => n + 1); };
     window.addEventListener(MANIFEST_CHANGED, update);
     void loadSiteManifest().then(update).catch(() => {});
     return () => window.removeEventListener(MANIFEST_CHANGED, update);
@@ -791,7 +790,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     else navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`);
   };
   if (closed) return null;
-  const framed = !!page && manifestHasPage(page.path);
+  // An unread manifest is not evidence of an empty page: fail closed to the public editor.
+  const framed = !!page && (!manifestLoaded || manifestHasPage(page.path));
   return (<div className={embedded ? "h-full min-h-0" : "grid gap-4 lg:grid-cols-[240px_1fr]"}>
     {!embedded && <aside><Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search pages" />{filtered.map(p=><Button key={p.id} variant="ghost" className="w-full justify-start" onClick={()=>select(p.id)}>{p.name}</Button>)}{tools}</aside>}
     {page && <EmbeddedBox chat={embedded ? chat : null}>

@@ -5242,7 +5242,7 @@ function CodedImportProbe({
         return;
       }
       if (split && obj) {
-        const { pageChunks, chunkName } = await import("./codedPages");
+        const { pageChunks, chunkName } = await import("@/lib/pageChunks");
         let parts = pageChunks(obj).filter((el) => el !== obj && el.getBoundingClientRect().height > 0);
         if (!parts.length) parts = [obj];
         const target = focus != null ? elementAtPath(obj, focus) : null;
