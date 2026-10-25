@@ -1,5 +1,6 @@
 # Roadmap — coded object import fidelity
-- [ ] Add relay-driven preview stages, elapsed time, retained preview and completion notifications; preserve polling and review/manual exclusions.
+- [x] Add relay-driven monotonic preview stages, elapsed time, retained/dimmed preview and confirmed-load completion notifications; 510 tests pass, desktop/narrow fixture checks pass, polling unchanged.
+- [ ] Disable visitor clicks while retaining scrolling in hosted cross-origin previews: requires a public-site message bridge; no such bridge currently exists, and iframe click interception also blocks scrolling. Real hosted build-cycle validation remains unavailable.
 - [x] Register/expose Header and edit it with shared scopes, visible manual canvas, destination/conversion safeguards and warning; 495 tests pass; signed-in save/read-back verified on /about and /team, temporary edit reset.
 - [ ] Public-site Header parity: user must add Header registry/fiber mapping and objects-only header replay in the separate public project; intentionally not edited here.
 - [x] Move library picking into a right-side sheet, mark attached refs, and bound large label filters; 491 tests pass; signed-in picking, dedupe, dismissal and desktop/narrow light/dark panels verified without saving content.
