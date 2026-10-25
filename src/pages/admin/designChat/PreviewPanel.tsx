@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,13 @@ const WIDTH: Record<Device, string> = { mobile: "390px", tablet: "820px", deskto
 export default function PreviewPanel() {
   const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing, editing, previewNav } = useDesignChat();
   const location = useLocation();
+  const [updated, setUpdated] = useState(false);
+  useEffect(() => {
+    if (!preview.completedAt) return;
+    setUpdated(true);
+    const timer = setTimeout(() => setUpdated(false), 4000);
+    return () => clearTimeout(timer);
+  }, [preview.completedAt]);
   const pending = !editing && !!preview.progressStage;
   const visible = location.pathname.split("/")[2] === "preview" && !editing;
 
@@ -68,6 +75,7 @@ export default function PreviewPanel() {
           </div>
         )}
         {!preview.loaded && preview.error && <div role="alert" className="absolute inset-0 grid place-items-center bg-background p-6 text-center text-sm text-muted-foreground">{preview.error}</div>}
+        {updated && visible && !pending && <div role="status" className="pointer-events-none absolute right-3 top-3 z-30 rounded-full border bg-background px-3 py-1.5 text-xs shadow-sm">Your Preview Is Updated</div>}
         {pending && preview.progressStage && <PreviewProgress stage={preview.progressStage} elapsedMs={preview.elapsedMs} />}
 
         {inFull && !drawing.capturing && (
