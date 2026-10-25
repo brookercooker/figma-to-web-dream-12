@@ -769,7 +769,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
 
   if (closed) return null;
   const C = page ? codedPages[previewSrc(page.path)] : undefined;
-  return <div className={embedded ? "h-full min-h-0" : "grid gap-4 lg:grid-cols-[240px_1fr]"}>
+  return (<div className={embedded ? "h-full min-h-0" : "grid gap-4 lg:grid-cols-[240px_1fr]"}>
     {!embedded && <aside><Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search pages" />{filtered.map(p=><Button key={p.id} variant="ghost" className="w-full justify-start" onClick={()=>select(p.id)}>{p.name}</Button>)}{tools}</aside>}
     {page && <EmbeddedBox chat={embedded ? chat : null}>
       <div ref={blockCanvasRef} className="h-full overflow-y-auto bg-background" style={deviceStyle}>
