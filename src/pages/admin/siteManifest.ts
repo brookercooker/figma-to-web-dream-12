@@ -50,7 +50,7 @@ function originOf(url: string | null | undefined): string | null {
   if (!url) return null;
   try { const parsed = new URL(url); return /^https?:$/.test(parsed.protocol) ? parsed.origin : null; } catch { return null; }
 }
-function publicOrigin() { return originOf((import.meta as any).env?.VITE_PUBLIC_SITE_URL); }
+function publicOrigin() { return originOf(import.meta.env.VITE_PUBLIC_SITE_URL); }
 function trustedOrigin(origin: string) { return origin === originOf(draftBase) || origin === publicOrigin(); }
 function receiveManifest(event: MessageEvent) {
   const data = event.data;
