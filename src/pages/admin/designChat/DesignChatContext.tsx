@@ -1,3 +1,4 @@
+import { notePreviewReady, postPreviewNavigate, type PreviewNavigate } from "./previewNavigate";
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { RelayState } from "./helper";
 import { useLocation } from "react-router-dom";
@@ -18,6 +19,8 @@ import { emptyHistory, visit, step, canBack, canForward, type PreviewHistory } f
  * (one of the tabs) and the buttons in the top bar all see the same thing, and nothing restarts when someone switches tabs.
  */
 
+/** How long Back/Forward/page choice waits for the preview to report the new page before reloading it once. */
+export const NAV_FALLBACK_MS = 3000;
 export type Device = "mobile" | "tablet" | "desktop";
 
 /** A page the person picked in the Pages tab for the chat to work on. */
@@ -142,11 +145,22 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   }, [editing]);
 
   const workingPage = work.workingPage;
+  // Back/Forward/page choice move the mounted preview in place; a src change happens only as a single fallback.
+  const pendingNav = useRef<{ expect: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const shownPath = useRef<string | null>(null);
+  const navigatePreview = useCallback((nav: PreviewNavigate, expect: string, fallback: () => void) => {
+    if (nav.action === "to" && shownPath.current === expect) return; // already showing it (e.g. entering or leaving Manual Edit Mode)
+    if (pendingNav.current) { clearTimeout(pendingNav.current.timer); pendingNav.current = null; }
+    if (!postPreviewNavigate(nav)) { fallback(); return; }
+    const timer = setTimeout(() => { if (pendingNav.current?.timer === timer) { pendingNav.current = null; fallback(); } }, NAV_FALLBACK_MS);
+    pendingNav.current = { expect, timer };
+  }, []);
+  useEffect(() => () => { if (pendingNav.current) clearTimeout(pendingNav.current.timer); }, []);
   const selectPage = useCallback((page: WorkingPage) => {
     dispatch({ type: "select", page });
-    setPreviewPath(page.path);
+    navigatePreview({ action: "to", path: page.path }, page.path, () => { setPreviewPath(page.path); setNavNonce((n) => n + 1); });
     setObjectOpen(null);
-  }, []);
+  }, [navigatePreview]);
   const clearWorkingPage = useCallback(() => { dispatch({ type: "clear" }); setObjectOpen(null); }, []);
   const startEditing = useCallback(() => dispatch({ type: "start" }), []);
   const stopEditing = useCallback(() => { dispatch({ type: "stop" }); setObjectOpen(null); }, []);
@@ -158,6 +172,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const rememberPath = preview.rememberPath;
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
+      if (notePreviewReady(event)) return;
       const d = event.data;
       if (!d || typeof d !== "object" || d.source !== "nova-site" || d.type !== "location") return;
       if (typeof d.path !== "string" || !d.path.startsWith("/") || d.path.length > 300) return;
@@ -168,6 +183,9 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       const notFound = d.notFound === true;
       setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search && Boolean(cur.notFound) === notFound ? cur : { path: d.path, search, ...(notFound ? { notFound: true } : {}) }));
       rememberPath(d.path + search);
+      shownPath.current = d.path;
+      const pending = pendingNav.current;
+      if (pending && (pending.expect === d.path + search || pending.expect === d.path)) { clearTimeout(pending.timer); pendingNav.current = null; }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
@@ -184,9 +202,9 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     const r = step(historyRef.current, by);
     if (!r.address) return;
     setHistory(r.history);
-    setPreviewPath(r.address);
-    setNavNonce((n) => n + 1);
-  }, [editing]);
+    const address = r.address;
+    navigatePreview({ action: by < 0 ? "back" : "forward" }, address, () => { setPreviewPath(address); setNavNonce((n) => n + 1); });
+  }, [editing, navigatePreview]);
   const previewNav = useMemo(() => ({
     canBack: !editing && canBack(history), canForward: !editing && canForward(history),
     back: () => go(-1), forward: () => go(1),
