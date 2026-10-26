@@ -5,6 +5,7 @@ import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon,
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { LINK_ICONS, readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
 import { remoteSnapshot, selectionComputedStyle } from "./remoteSelection";
+import { SIDES, commonValue, isMixed, setAllSides, setBorderPart, sideValues, type BorderPart, type Side } from "./borderEdit";
 
 const COLOURS = [
   ["Ink", "ink"], ["Stone", "stone"], ["Garnet", "garnet"], ["Tan", "brass"], ["White", "cream"],
@@ -89,35 +90,13 @@ export default function InlineStylePanel({
   );
 
   if (sel.kind === "divider" && sel.side) {
-    const side = sel.side;
-    const cs = selectionComputedStyle(sel.el);
-    const col = style[`border-${side}-color`];
-    const hidden = style[`border-${side}-style`] === "none";
-    return (
-      <div>
-        <ToolHeader icon={Minus} title="Line" menu={[
-          { label: "Reset", icon: RotateCcw, onSelect: reset },
-          { label: hidden ? "Show line" : "Hide line", icon: hidden ? Eye : EyeOff, onSelect: () => set(`border-${side}-style`, hidden ? "" : "none") },
-        ]} />
-        <ToolGroup title="Line" icon={Minus} defaultOpen>
-          <ToolField label="Thickness (px)">
-            <Input type="number" min={1} max={12} placeholder={num(cs.getPropertyValue(`border-${side}-width`)) || "1"}
-              value={num(style[`border-${side}-width`])} onChange={(e) => set(`border-${side}-width`, px(e.target.value))} />
-          </ToolField>
-          <ToolField label="Style">
-            <ToolSegment className="flex w-full">
-              {([["Solid", "solid"], ["Dashed", "dashed"], ["Dotted", "dotted"]] as const).map(([l, v]) => (
-                <Button key={v} size="sm" variant={(style[`border-${side}-style`] ?? cs.getPropertyValue(`border-${side}-style`)) === v ? "default" : "ghost"}
-                  className="flex-1" onClick={() => set(`border-${side}-style`, v)}>{l}</Button>
-              ))}
-            </ToolSegment>
-          </ToolField>
-        </ToolGroup>
-        <ToolGroup title="Colour" icon={Palette} defaultOpen>
-          {swatches(col, (v) => set(`border-${side}-color`, col === v ? "" : v))}
-        </ToolGroup>
-      </div>
-    );
+    return <BorderControls key={sel.key} style={style} computed={selectionComputedStyle(sel.el)} side={sel.side}
+      swatches={swatches} reset={reset}
+      write={(next) => {
+        const out = { ...edits };
+        if (Object.keys(next).length) out[styleKey(sel.key)] = JSON.stringify(next); else delete out[styleKey(sel.key)];
+        onChange(out);
+      }} />;
   }
 
   if (sel.kind === "divider") {
@@ -378,6 +357,59 @@ export default function InlineStylePanel({
           )}
         </ToolGroup>
       )}
+    </div>
+  );
+}
+
+const BORDER_STYLES = [["None", "none"], ["Solid", "solid"], ["Dashed", "dashed"], ["Dotted", "dotted"]] as const;
+
+/** Whole-border controls: All sides by default, optional Individual sides. */
+function BorderControls({ style, computed, side, swatches, reset, write }: {
+  style: Record<string, string>; computed: CSSStyleDeclaration; side: Side;
+  swatches: (cur: string | undefined, pick: (v: string) => void) => JSX.Element;
+  reset: () => void; write: (next: Record<string, string>) => void;
+}) {
+  const [mode, setMode] = useState<"all" | "individual">("all");
+  const [active, setActive] = useState<Side>(side);
+  const read = (p: string) => computed.getPropertyValue(p);
+  const mixed = isMixed(style, read);
+  const value = (part: BorderPart) => mode === "all" ? commonValue(sideValues(style, read, part)) : sideValues(style, read, part)[active];
+  const change = (part: BorderPart, v: string) =>
+    write(mode === "all" ? setAllSides(style, read, part, v) : setBorderPart(style, part, v, [active]));
+  const width = value("width"), bstyle = value("style"), colour = value("color");
+  return (
+    <div>
+      <ToolHeader icon={SquareDashed} title="Border" menu={[{ label: "Reset Element", icon: RotateCcw, onSelect: reset }]} />
+      <ToolGroup title="Border" icon={SquareDashed} defaultOpen>
+        <ToolSegment className="flex w-full">
+          {([["All Sides", "all"], ["Individual Sides", "individual"]] as const).map(([l, v]) => (
+            <Button key={v} size="sm" aria-pressed={mode === v} variant={mode === v ? "default" : "ghost"} className="flex-1" onClick={() => setMode(v)}>{l}</Button>
+          ))}
+        </ToolSegment>
+        {mode === "all" && mixed && <ToolNote>Mixed: the sides currently differ. Any change here applies to all four sides.</ToolNote>}
+        {mode === "individual" && (
+          <ToolSegment className="flex w-full">
+            {SIDES.map((s) => (
+              <Button key={s} size="sm" aria-pressed={active === s} variant={active === s ? "default" : "ghost"} className="flex-1" onClick={() => setActive(s)}>{s[0].toUpperCase() + s.slice(1)}</Button>
+            ))}
+          </ToolSegment>
+        )}
+        <ToolField label="Width (px)">
+          <Input type="number" min={0} max={24} aria-label="Border Width" placeholder={width === null ? "Mixed" : num(width) || "0"}
+            value={num(mode === "all" ? (width !== null ? style["border-top-width"] : "") : style[`border-${active}-width`])}
+            onChange={(e) => change("width", px(e.target.value))} />
+        </ToolField>
+        <ToolField label={bstyle === null ? "Style (Mixed)" : "Style"}>
+          <ToolSegment className="flex w-full">
+            {BORDER_STYLES.map(([l, v]) => (
+              <Button key={v} size="sm" variant={bstyle === v ? "default" : "ghost"} className="flex-1" onClick={() => change("style", v)}>{l}</Button>
+            ))}
+          </ToolSegment>
+        </ToolField>
+      </ToolGroup>
+      <ToolGroup title={colour === null ? "Colour (Mixed)" : "Colour"} icon={Palette} defaultOpen>
+        {swatches(colour ?? undefined, (v) => change("color", v))}
+      </ToolGroup>
     </div>
   );
 }
