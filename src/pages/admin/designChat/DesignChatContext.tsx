@@ -147,7 +147,9 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const workingPage = work.workingPage;
   // Back/Forward/page choice move the mounted preview in place; a src change happens only as a single fallback.
   const pendingNav = useRef<{ expect: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const shownPath = useRef<string | null>(null);
   const navigatePreview = useCallback((nav: PreviewNavigate, expect: string, fallback: () => void) => {
+    if (nav.action === "to" && shownPath.current === expect) return; // already showing it (e.g. entering or leaving Manual Edit Mode)
     if (pendingNav.current) { clearTimeout(pendingNav.current.timer); pendingNav.current = null; }
     if (!postPreviewNavigate(nav)) { fallback(); return; }
     const timer = setTimeout(() => { if (pendingNav.current?.timer === timer) { pendingNav.current = null; fallback(); } }, NAV_FALLBACK_MS);
@@ -181,6 +183,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       const notFound = d.notFound === true;
       setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search && Boolean(cur.notFound) === notFound ? cur : { path: d.path, search, ...(notFound ? { notFound: true } : {}) }));
       rememberPath(d.path + search);
+      shownPath.current = d.path;
       const pending = pendingNav.current;
       if (pending && (pending.expect === d.path + search || pending.expect === d.path)) { clearTimeout(pending.timer); pendingNav.current = null; }
     };
