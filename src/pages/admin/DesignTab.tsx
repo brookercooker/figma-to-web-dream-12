@@ -1,4 +1,4 @@
-import { useEditorSlot } from "./designChat/EditorSlot";
+import { useEditorSlot, type AddKind } from "./designChat/EditorSlot";
 import { notifyContentEdited } from "./designChat/contentSync";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -822,7 +822,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
           {blocks.map((b,i)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
             // Held sections are selected, never played or opened: media ignores the pointer and clicks only select.
             className={`relative ${embedded ? "cursor-pointer [&_iframe]:pointer-events-none [&_video]:pointer-events-none" : ""} ${embedded && activeId === b.id ? "outline outline-2 -outline-offset-2 outline-primary" : ""}`}
-            onClickCapture={embedded ? (e) => { if ((e.target as HTMLElement).closest("[contenteditable=true],input,textarea,select")) return; e.preventDefault(); setActiveId(b.id); setInlineSel(null); } : undefined}>
+            onClickCapture={embedded && framed ? (e) => { if ((e.target as HTMLElement).closest("[contenteditable=true],input,textarea,select")) return; e.preventDefault(); setActiveId(b.id); setInlineSel(null); } : undefined}>
             <BlockView block={b} />
           </section>)}
         </InlineEditSurface>
