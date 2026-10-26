@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, icons } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, Film, TextCursorInput, icons } from "lucide-react";
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { LINK_ICONS, readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
 import { remoteSnapshot, selectionComputedStyle } from "./remoteSelection";
@@ -193,6 +193,60 @@ export default function InlineStylePanel({
     );
   }
 
+  if (sel.kind === "video") {
+    const snap = remoteSnapshot(sel.el);
+    const attr = (k: string) => snap?.attrs?.[k] ?? sel.el.getAttribute(k) ?? "";
+    const ml = style["margin-left"], mr = style["margin-right"];
+    const align = ml === "auto" && mr === "auto" ? "center" : ml === "auto" ? "right" : mr === "auto" ? "left" : "";
+    const setAlign = (a: string) => {
+      const next = { ...style };
+      delete next["margin-left"]; delete next["margin-right"];
+      if (a === "center") { next["margin-left"] = "auto"; next["margin-right"] = "auto"; }
+      if (a === "right") next["margin-left"] = "auto";
+      if (a === "left") next["margin-right"] = "auto";
+      if (a) next.display = "block"; else delete next.display;
+      const out = { ...edits };
+      if (Object.keys(next).length) out[styleKey(sel.key)] = JSON.stringify(next); else delete out[styleKey(sel.key)];
+      onChange(out);
+    };
+    return (
+      <div>
+        <ToolHeader icon={Film} title="Video" subtitle={attr("title") || undefined} menu={[{ label: "Reset Video Size", icon: RotateCcw, onSelect: reset }]} />
+        <ToolGroup title="Size" icon={Maximize2} defaultOpen>
+          <ToolGrid>
+            <ToolField label="Width (px)">
+              <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().width))}
+                value={num(style.width)} onChange={(e) => set("width", px(e.target.value))} />
+            </ToolField>
+            <ToolField label="Height (px)">
+              <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().height))}
+                value={num(style.height)} onChange={(e) => set("height", px(e.target.value))} />
+            </ToolField>
+          </ToolGrid>
+          <ToolField label="Alignment">
+            <ToolSegment>
+              {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Icon]) => (
+                <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a}`} aria-label={`Align ${a}`} onClick={() => setAlign(align === a ? "" : a)}><Icon className="w-4 h-4" /></Button>
+              ))}
+            </ToolSegment>
+          </ToolField>
+        </ToolGroup>
+        <ToolGroup title="Corners" icon={SquareDashed}>
+          <ToolField label="Rounded Corners (px)">
+            <Input type="number" min={0} placeholder={num(computed.borderRadius) || "0"}
+              value={num(style["border-radius"])} onChange={(e) => set("border-radius", px(e.target.value))} />
+          </ToolField>
+        </ToolGroup>
+        <ToolGroup title="Details" icon={Film}>
+          {([["Title", "title"], ["Poster", "poster"], ["Source", "src"]] as const).map(([label, k]) => (
+            <ToolField key={k} label={label}><Input readOnly value={attr(k)} placeholder="None" aria-label={`Video ${label}`} /></ToolField>
+          ))}
+          <ToolNote>Changing the title, poster or video itself on a built page isn't available yet. To use a different video, add one from Videos in the top bar.</ToolNote>
+        </ToolGroup>
+      </div>
+    );
+  }
+
   /** Apply to highlighted words if any, otherwise to the whole text. */
   const apply = (prop: string, value: string) => {
     const r = range.current;
@@ -227,6 +281,12 @@ export default function InlineStylePanel({
   const fontName = (FONTS.find(([, v]) => v === style["font-family"])?.[0] ?? "Default").split(" · ")[0];
   const sizeNow = num(style["font-size"]) || num(computed.fontSize);
   const textPreview = (sel.el.textContent ?? "").trim().replace(/\s+/g, " ");
+  const tagName = sel.el.tagName.toLowerCase();
+  // A plain button label (no icon or other parts inside) can be retyped here; it saves as the element's wording.
+  const labelEditable = (tagName === "button" || tagName === "a" || sel.el.getAttribute("role") === "button") && sel.el.children.length === 0;
+  const labelNow = edits[sel.key] !== undefined ? (() => { const d = document.createElement("div"); d.innerHTML = edits[sel.key]; return d.textContent ?? ""; })() : textPreview;
+  const setLabel = (v: string) => onChange({ ...edits, [sel.key]: v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") });
+  const placeholderNow = remoteSnapshot(sel.el)?.attrs?.placeholder ?? sel.el.getAttribute("placeholder");
   return (
     <div>
       <ToolHeader icon={Type} title="Text" subtitle={textPreview.length > 40 ? `${textPreview.slice(0, 40)}…` : textPreview || undefined}
@@ -242,6 +302,15 @@ export default function InlineStylePanel({
           </ToolNote>
         </div>
       ) : null}
+      {(labelEditable || typeof placeholderNow === "string") && (
+        <ToolGroup title="Wording" icon={TextCursorInput} defaultOpen>
+          {labelEditable && <ToolField label="Button Label"><Input aria-label="Button Label" value={labelNow} onChange={(e) => setLabel(e.target.value)} /></ToolField>}
+          {typeof placeholderNow === "string" && <>
+            <ToolField label="Placeholder"><Input aria-label="Placeholder" readOnly value={placeholderNow} /></ToolField>
+            <ToolNote>Changing a field's placeholder isn't available yet.</ToolNote>
+          </>}
+        </ToolGroup>
+      )}
       <ToolGroup title="Text" icon={Type} defaultOpen summary={`${fontName} · ${sizeNow}px`}>
         <div className="flex flex-wrap gap-2">
           <ToolSegment onMouseDown={(e) => e.preventDefault()}>
