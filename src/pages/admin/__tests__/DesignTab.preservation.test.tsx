@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
-const mocks = vi.hoisted(() => ({ remote: true, path: "/draft", save: null as any, discard: null as any, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
+const mocks = vi.hoisted(() => ({ remote: true, path: "/draft", save: null as any, discard: null as any, add: null as any, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
 vi.mock("../siteManifest", async (importOriginal) => ({ ...await importOriginal<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.reject(new Error("fixture")), manifestHasPage: () => mocks.remote, draftEmbedUrl: () => "https://public.example.com/?embed=fixture" }));
-vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: null, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: vi.fn() }) }));
+vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: null, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: vi.fn(), registerAdd: (cb: any) => mocks.add = cb }) }));
 vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => null }));
 vi.mock("../designChat/contentSync", () => ({ notifyContentEdited: vi.fn() }));
 vi.mock("@/prototype/client", () => ({ supabase: { from: (table: string) => {
@@ -71,6 +71,10 @@ describe("public page save/discard integration", () => {
     const s = await openRemote();
     s.send("edit-change", { scope: "page", next: { "0": "Changed Example Header", "fp:0": '{"v":1,"tag":"h1","t":"abc"}' } });
     expect(mocks.writes).not.toHaveBeenCalled();
+    // Clicking a held section selects it; its media ignores the pointer so it never plays or opens.
+    fireEvent.click(section as HTMLElement);
+    expect((section as HTMLElement).dataset.active).toBe("true");
+    expect((section as HTMLElement).className).toContain("[&_video]:pointer-events-none");
     await act(async () => { expect(await mocks.save()).toBe(true); });
     expect(mocks.writes).toHaveBeenCalledWith("pages", expect.objectContaining({ inline_edits: { "0": "Changed Example Header", "fp:0": '{"v":1,"tag":"h1","t":"abc"}' } }));
     await act(async () => { await mocks.discard(); });
@@ -80,7 +84,7 @@ describe("public page save/discard integration", () => {
   });
   it("appends picker sections beneath the original frame, reloads once and discards without writes", async () => {
     const s = await openRemote();
-    fireEvent.click(screen.getByRole("button", { name: "Object" }));
+    act(() => mocks.add("objects"));
     fireEvent.click(screen.getByText("Pick Stats"));
     const added = await screen.findByText("Added Stats");
     const frame = s.container.querySelector("iframe");
@@ -95,13 +99,17 @@ describe("public page save/discard integration", () => {
   });
   it.each([ ["Image", "Pick Image", "image"], ["Video", "Pick Video", "video"] ])("holds an added %s locally until Finish", async (label, pick, type) => {
     const s = await openRemote();
-    fireEvent.click(screen.getByRole("button", { name: label }));
+    act(() => mocks.add(label === "Image" ? "images" : "videos"));
     fireEvent.click(screen.getByRole("button", { name: pick }));
     const section = s.container.querySelector("[data-page-block]");
     expect(section).not.toBeNull();
     const frame = s.container.querySelector("iframe");
     expect(frame?.compareDocumentPosition(section as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(mocks.writes).not.toHaveBeenCalled();
+    // Clicking a held section selects it; its media ignores the pointer so it never plays or opens.
+    fireEvent.click(section as HTMLElement);
+    expect((section as HTMLElement).dataset.active).toBe("true");
+    expect((section as HTMLElement).className).toContain("[&_video]:pointer-events-none");
     await act(async () => { expect(await mocks.save()).toBe(true); });
     expect(mocks.writes.mock.calls.find(([, patch]) => patch.content)?.[1].content[0].type).toBe(type);
     await act(async () => { await mocks.discard(); });
