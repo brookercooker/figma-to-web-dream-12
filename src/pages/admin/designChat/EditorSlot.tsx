@@ -18,9 +18,14 @@ type EditorSlotValue = {
   registerHasChanges: (fn: (() => boolean) | null) => void;
   /** True when the embedded editor holds unsaved changes. */
   hasChanges: () => boolean;
+  /** The embedded editor's "add a library item beneath the original" handler, used by the top bar in Manual Edit Mode. */
+  registerAdd: (fn: ((kind: AddKind) => void) | null) => void;
+  /** True when an embedded editor took the request (its picker opened). */
+  requestAdd: (kind: AddKind) => boolean;
 };
+export type AddKind = "objects" | "images" | "videos";
 
-const Ctx = createContext<EditorSlotValue>({ slot: null, setSlot: () => {}, registerSave: () => {}, saveAll: async () => true, registerDiscard: () => {}, discardAll: async () => {}, registerHasChanges: () => {}, hasChanges: () => false });
+const Ctx = createContext<EditorSlotValue>({ slot: null, setSlot: () => {}, registerSave: () => {}, saveAll: async () => true, registerDiscard: () => {}, discardAll: async () => {}, registerHasChanges: () => {}, hasChanges: () => false, registerAdd: () => {}, requestAdd: () => false });
 
 export function EditorSlotProvider({ children }: { children: ReactNode }) {
   const [slot, setSlot] = useState<HTMLElement | null>(null);
@@ -33,9 +38,12 @@ export function EditorSlotProvider({ children }: { children: ReactNode }) {
   const hasChangesRef = useRef<(() => boolean) | null>(null);
   const registerHasChanges = useCallback((fn: (() => boolean) | null) => { hasChangesRef.current = fn; }, []);
   const hasChanges = useCallback(() => (hasChangesRef.current ? hasChangesRef.current() : false), []);
+  const addRef = useRef<((kind: AddKind) => void) | null>(null);
+  const registerAdd = useCallback((fn: ((kind: AddKind) => void) | null) => { addRef.current = fn; }, []);
+  const requestAdd = useCallback((kind: AddKind) => { if (!addRef.current) return false; addRef.current(kind); return true; }, []);
   const value = useMemo(
-    () => ({ slot, setSlot, registerSave, saveAll, registerDiscard, discardAll, registerHasChanges, hasChanges }),
-    [slot, registerSave, saveAll, registerDiscard, discardAll, registerHasChanges, hasChanges],
+    () => ({ slot, setSlot, registerSave, saveAll, registerDiscard, discardAll, registerHasChanges, hasChanges, registerAdd, requestAdd }),
+    [slot, registerSave, saveAll, registerDiscard, discardAll, registerHasChanges, hasChanges, registerAdd, requestAdd],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
