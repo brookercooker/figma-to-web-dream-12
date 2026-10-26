@@ -69,4 +69,12 @@ describe("Site Manager mode cues", () => {
     m.busy = true; m.manual = false; view.rerender(app());
     expect(screen.queryByText("Claude Is Still Working on a Change")).toBeNull();
   });
+  it.each([false, true])("gives the top bar and the chat header one shared fixed height (manual: %s)", (manual) => {
+    m.manual = manual; render(app());
+    for (const el of [document.querySelector("[data-top-bar]"), document.querySelector("[data-chat-header]")]) {
+      expect(el?.className).toContain("h-14");
+      expect(el?.className).toContain("border-b");
+      expect(el?.className).not.toMatch(/\bpy-/);
+    }
+  });
 });

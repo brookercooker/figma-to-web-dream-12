@@ -45,7 +45,10 @@ async function run() {
   }
 }
 
+/** Fired on every successful content save or restore, so the Chat Mode preview can be sent the current edits. */
+export const CONTENT_SAVED = "nova:content-saved";
 export function notifyContentEdited() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(CONTENT_SAVED));
   busyTries = 0;
   downTries = 0;
   schedule(DEBOUNCE_MS);

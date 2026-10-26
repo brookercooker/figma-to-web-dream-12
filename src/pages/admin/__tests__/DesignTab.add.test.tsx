@@ -5,6 +5,7 @@ import DesignTab from "../DesignTab";
 
 const mocks = vi.hoisted(() => ({
   hasChanges: null as null | (() => boolean),
+  add: null as null | ((kind: "objects" | "images" | "videos") => void),
   writes: vi.fn(),
   slot: {
     slot: null,
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     saveAll: vi.fn(),
     registerDiscard: vi.fn(),
     registerHasChanges: (callback: null | (() => boolean)) => { mocks.hasChanges = callback; },
+    registerAdd: (callback: null | ((kind: "objects" | "images" | "videos") => void)) => { mocks.add = callback; },
   },
 }));
 vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => mocks.slot }));
@@ -70,21 +72,22 @@ async function openEditor(embedded = true) {
 }
 
 describe("page editor quick add", () => {
-  it("offers the three quick-add controls when embedded", async () => {
+  it("has no Add to This Page row when embedded; the top bar adds through registerAdd", async () => {
     await openEditor();
-    const toolbar = screen.getByRole("toolbar", { name: "Add to This Page" });
-    expect(within(toolbar).getAllByRole("button")).toHaveLength(3);
-    for (const name of ["Object", "Image", "Video"]) expect(within(toolbar).getByRole("button", { name })).toBeEnabled();
-  });
-  it("does not show the embedded bar in the standalone editor", async () => {
-    await openEditor(false);
     expect(screen.queryByRole("toolbar", { name: "Add to This Page" })).toBeNull();
+    expect(screen.queryByText("Add to this page:")).toBeNull();
+    expect(mocks.add).toBeTypeOf("function");
+  });
+  it("does not register a top-bar add handler in the standalone editor", async () => {
+    mocks.add = null;
+    await openEditor(false);
+    expect(mocks.add).toBeNull();
   });
   it.each(["Image", "Video"])("keeps blocks and dirty tracking unchanged when cancelling %s", async (kind) => {
     const { container } = await openEditor();
     const ids = () => [...container.querySelectorAll<HTMLElement>("[data-page-block]")].map((el) => el.dataset.pageBlock);
     const before = ids();
-    fireEvent.click(within(screen.getByRole("toolbar")).getByRole("button", { name: kind }));
+    act(() => mocks.add?.(kind === "Image" ? "images" : "videos"));
     expect(ids()).toEqual(before);
     expect(mocks.hasChanges?.()).toBe(false);
     fireEvent.click(screen.getByRole("button", { name: `Cancel ${kind.toLowerCase()}` }));
@@ -98,7 +101,7 @@ describe("page editor quick add", () => {
     const first = container.querySelector<HTMLElement>('[data-page-block="first"]');
     if (!first) throw new Error("Missing initial block");
     fireEvent.click(first);
-    fireEvent.click(within(screen.getByRole("toolbar")).getByRole("button", { name: kind }));
+    act(() => mocks.add?.(kind === "Image" ? "images" : "videos"));
     fireEvent.click(screen.getByRole("button", { name: `Pick ${kind.toLowerCase()}` }));
     const blocks = container.querySelectorAll<HTMLElement>("[data-page-block]");
     expect(blocks).toHaveLength(3);

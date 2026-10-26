@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import { Button } from "@/components/ui/button";
-import type { InlineChunk, InlineEdits, InlineSelection } from "@/components/InlineEditSurface";
+import type { InlineChunk, InlineEdits, InlineReports, InlineSelection } from "@/components/InlineEditSurface";
 import { editFrameUrl, editMap, trustedEditMessage } from "./framedPageProtocol";
 import { remoteSelection, validSnapshot, type EditQuery, type SelectionSnapshot } from "./remoteSelection";
 
@@ -19,6 +19,8 @@ export interface FramedPageEditorProps {
   onToggle: (key: string) => void;
   onReorder: (from: InlineChunk, to: InlineChunk, after: boolean, all: InlineChunk[]) => void;
   onOpenObject: (key: string, section: string) => void;
+  /** What the public frame reports after each replay; {} until it reports, so stale or local numbers never show. */
+  onReport?: (reports: InlineReports) => void;
 }
 export default function FramedPageEditor(props: FramedPageEditorProps) {
   const target = editFrameUrl(props.base, props.path);
@@ -52,6 +54,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   useLayoutEffect(() => {
     if (!origin || !target) { setStatus("failed"); return; }
     ready.current = false; exited.current = false; setStatus("loading");
+    latest.current.onReport?.({});
     destination.current = frame.current?.contentWindow ?? null;
     const timeout = setTimeout(() => setStatus("failed"), 15000);
     const exit = () => {
@@ -103,6 +106,8 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         const from = typeof data.from === "string" ? all.find((c: InlineChunk | null) => c?.key === data.from) : chunk(data.from);
         const to = typeof data.to === "string" ? all.find((c: InlineChunk | null) => c?.key === data.to) : chunk(data.to);
         if (from && to && from.parent === to.parent && all.every(Boolean) && from.key !== to.key) latest.current.onReorder(from, to, data.after === true, all);
+      } else if (data.type === "edit-applied") {
+        const reports = replayReports(data.reports); if (reports) latest.current.onReport?.(reports);
       } else if (data.type === "edit-height" && Number.isFinite(data.height)) {
         setHeight(Math.max(320, Math.min(30000, data.height)));
       }
@@ -118,4 +123,17 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     </div>}
     {target && <iframe key={`${target}|${attempt}|${props.sectionRevision ?? 0}`} ref={frame} src={target} title="Public Page Editor" data-site-preview="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : "block"}`} height={height} onError={() => setStatus("failed")} />}
   </div>;
+}
+const strings = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === "string");
+/** Accepts only a well-formed { [scope]: ReplayReport } from the frame; anything else is ignored. */
+export function replayReports(value: unknown): InlineReports | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const out: InlineReports = {};
+  for (const [scope, r] of Object.entries(value as Record<string, any>)) {
+    if (!scope || !r || typeof r !== "object" || !strings(r.applied) || !strings(r.unchecked) || !Array.isArray(r.orphaned) || !Array.isArray(r.rejected)) return null;
+    if (!r.orphaned.every((o: any) => o && typeof o.path === "string" && strings(o.kinds) && typeof o.reason === "string")) return null;
+    if (!r.rejected.every((o: any) => o && typeof o.key === "string" && typeof o.reason === "string")) return null;
+    out[scope] = { applied: [...r.applied], unchecked: [...r.unchecked], orphaned: r.orphaned.map((o: any) => ({ path: o.path, kinds: [...o.kinds], reason: o.reason })), rejected: r.rejected.map((o: any) => ({ key: o.key, reason: o.reason })) };
+  }
+  return out;
 }

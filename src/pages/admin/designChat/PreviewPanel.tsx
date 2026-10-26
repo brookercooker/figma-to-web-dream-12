@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useDesignChat, type Device } from "./DesignChatContext";
 import PreviewProgress from "./PreviewProgress";
 import DrawLayer from "./DrawLayer";
+import { usePreviewEdits } from "./previewEdits";
 
 const WIDTH: Record<Device, string> = { mobile: "390px", tablet: "820px", desktop: "100%" };
 
@@ -17,6 +18,8 @@ export default function PreviewPanel() {
   const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing, editing, previewNav } = useDesignChat();
   const location = useLocation();
   const [updated, setUpdated] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  usePreviewEdits(sectionRef);
   useEffect(() => {
     if (!preview.completedAt) return;
     setUpdated(true);
@@ -32,7 +35,7 @@ export default function PreviewPanel() {
   }, [drawing.setAvailable, visible, pending]);
 
   return (
-    <section className="h-full min-h-0" aria-label="Preview">
+    <section ref={sectionRef} className="h-full min-h-0" aria-label="Preview">
       <div ref={boxRef} className={cn("relative h-full min-h-0 bg-muted flex justify-center", coverFull && "fixed inset-0 z-50 bg-background")}>
 
 
