@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { TopDropContent } from "./designChat/TopDropPanel";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/prototype/client";
@@ -86,7 +87,7 @@ export default function VideoPickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <TopDropContent className="gap-4 p-6 overflow-y-auto">
         <DialogHeader><DialogTitle>Choose a Video</DialogTitle></DialogHeader>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -167,7 +168,7 @@ export default function VideoPickerDialog({
             <p className="col-span-full text-sm text-muted-foreground py-6 text-center">No videos found.</p>
           )}
         </div>
-      </DialogContent>
+      </TopDropContent>
     </Dialog>
   );
 }

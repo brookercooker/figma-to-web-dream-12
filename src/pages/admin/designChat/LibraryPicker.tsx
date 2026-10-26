@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { Box, ExternalLink, Film, Image as ImageIcon, Loader2, Search, X } from "lucide-react";
-import * as SheetPrimitive from "@radix-ui/react-dialog";
-import { Sheet, SheetClose, SheetDescription, SheetOverlay, SheetPortal, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { TopDropContent } from "./TopDropPanel";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { imageMatches, loadLibraryImages } from "../ImagePickerDialog";
@@ -173,9 +173,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
           {showLabel && <span>{label}</span>}
         </Button>
       </SheetTrigger>
-      <SheetPortal>
-      <SheetOverlay className="bg-background/10" />
-      <SheetPrimitive.Content className="fixed inset-y-0 right-0 z-50 flex h-dvh w-[480px] max-w-[90vw] flex-col gap-0 border-l bg-background p-0 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right motion-reduce:animate-none"
+      <TopDropContent hideClose
         onKeyDown={(e) => handleEnter(e.nativeEvent)}
         onCloseAutoFocus={(e) => { if (picked.current) { e.preventDefault(); picked.current = false; } }}>
         <div className="shrink-0 space-y-3 border-b p-4">
@@ -235,8 +233,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
             <Button data-picker-own-enter="" onClick={finish} disabled={selected.length === 0}>Done</Button>
           </div>
         </div>
-      </SheetPrimitive.Content>
-      </SheetPortal>
+      </TopDropContent>
     </Sheet>
   );
 }

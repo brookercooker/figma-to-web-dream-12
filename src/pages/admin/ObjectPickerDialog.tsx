@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { TopDropContent } from "./designChat/TopDropPanel";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/prototype/client";
 
@@ -45,7 +46,7 @@ export default function ObjectPickerDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[88vh] flex flex-col overflow-hidden">
+      <TopDropContent className="gap-4 p-6 overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add an Object</DialogTitle>
         </DialogHeader>
@@ -76,7 +77,7 @@ export default function ObjectPickerDialog({
           ))}
           {!filtered.length && <p className="p-3 text-sm text-muted-foreground">No objects found.</p>}
         </div>
-      </DialogContent>
+      </TopDropContent>
     </Dialog>
   );
 }
