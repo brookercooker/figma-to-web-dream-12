@@ -75,7 +75,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [params, setParams] = useSearchParams();
   // Embedded in the Site Manager's edit mode, the page comes from the working page, not the address.
   const selectedId = embedded ? pageId ?? "" : params.get("page") ?? "";
-  const { slot, registerSave, saveAll, registerDiscard, registerHasChanges } = useEditorSlot();
+  const { slot, registerSave, saveAll, registerDiscard, registerHasChanges, registerAdd } = useEditorSlot();
   // Embedded, nothing auto-saves: changes are held here until the Site Manager's Save changes saves them all.
   const pendingInline = useRef<{ pageId: string; next: InlineEdits } | null>(null);
   const pendingObjects = useRef<Record<string, InlineEdits>>({});
@@ -629,12 +629,17 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     </>
   );
 
-  const quickAddBar = embedded ? (
-    <div role="toolbar" aria-label="Add to This Page" className="sticky top-0 z-30 flex flex-wrap items-center gap-2 border-b bg-background/95 px-3 py-2 backdrop-blur">
-      <span className="text-xs text-muted-foreground">Add to this page:</span>
-      {addButtons}
-    </div>
-  ) : null;
+  // Manual Edit Mode: the top bar's Objects / Images / Videos open these pickers; choices go beneath the original.
+  const addFromTopBar = useRef<(kind: AddKind) => void>(() => {});
+  addFromTopBar.current = (kind) => {
+    if (kind === "objects") insertAt("object", pageInsertPosition(blocks, activeId));
+    else addBlock(kind === "images" ? "image" : "video");
+  };
+  useEffect(() => {
+    if (!embedded) return;
+    registerAdd((kind) => addFromTopBar.current(kind));
+    return () => registerAdd(null);
+  }, [embedded, registerAdd]);
 
   const stylePanel = (
     <>
@@ -797,7 +802,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     {!embedded && <aside><Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search pages" />{filtered.map(p=><Button key={p.id} variant="ghost" className="w-full justify-start" onClick={()=>select(p.id)}>{p.name}</Button>)}{tools}</aside>}
     {page && <EmbeddedBox chat={embedded ? chat : null}>
       <div ref={blockCanvasRef} className="h-full overflow-y-auto bg-background" style={deviceStyle}>
-        {embedded ? quickAddBar : <div className="flex gap-2">{addButtons}</div>}
+        {!embedded && <div className="flex gap-2">{addButtons}</div>}
         {!framed && <><SharedObjectNotice componentKey="Header" />
         <InlineEditSurface edits={{}} objectEdits={objectEdits} editing sections={false} apiRef={headerApi} onReport={setHeaderReports} onChange={changeScope} onSelect={setInlineSel}><Header /></InlineEditSurface></>}
         {framed && <FramedPageEditor key={`public-${page.id}`} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
@@ -814,7 +819,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
           selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null}>
           {!framed &&
             <section className="mx-auto max-w-3xl px-6 py-10"><h1 className="font-serif text-3xl">{page.name}</h1><p data-empty-editable className="min-h-6" aria-label="Page Text"> </p></section>}
-          {blocks.map((b,i)=><section key={b.id} data-page-block={b.id} className="relative">
+          {blocks.map((b,i)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
+            // Held sections are selected, never played or opened: media ignores the pointer and clicks only select.
+            className={`relative ${embedded ? "cursor-pointer [&_iframe]:pointer-events-none [&_video]:pointer-events-none" : ""} ${embedded && activeId === b.id ? "outline outline-2 -outline-offset-2 outline-primary" : ""}`}
+            onClickCapture={embedded ? (e) => { if ((e.target as HTMLElement).closest("[contenteditable=true],input,textarea,select")) return; e.preventDefault(); setActiveId(b.id); setInlineSel(null); } : undefined}>
             <BlockView block={b} />
           </section>)}
         </InlineEditSurface>
