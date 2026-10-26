@@ -658,7 +658,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                       }}
                     />
                     <InlineDestinationPanel selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
-                    <InlineEditSafetyPanel reports={{ ...inlineReports, ...Object.fromEntries(Object.entries(headerReports).filter(([scope]) => scope !== "page")) }} selection={inlineSel} editsFor={scopeEdits}
+                    {/* Framed pages replay in the public frame; local reports would be stale, so show none until the frame reports. */}
+                    <InlineEditSafetyPanel reports={page && (!manifestLoaded || manifestHasPage(page.path)) ? {} : { ...inlineReports, ...Object.fromEntries(Object.entries(headerReports).filter(([scope]) => scope !== "page")) }} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
                       record={() => { const maps = { ...inlineApi.current?.record(), ...Object.fromEntries(Object.entries(headerApi.current?.record() ?? {}).filter(([scope]) => scope !== "page")) }; if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
                       resetAll={() => { changeInline({}); for (const scope of new Set([...Object.keys(inlineReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
