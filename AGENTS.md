@@ -38,4 +38,4 @@
 - Framed-page safety counts come only from the frame's validated `edit-applied` reports (cleared on every frame load) and Record Fingerprints uses `edit-query op:"record"`; never show local or stale counts for framed pages.
 - The top bar and the left-panel header share HEADER_HEIGHT_CLASS (designChat/layout.ts) with border-b on the same element, so their bottom borders always align.
 - Placeholder, video src/poster/title edits need a new attribute edit kind in the verbatim-shared inlineEditCore; until both projects add it, the panel shows those values read-only rather than writing keys the public replay would reject.
-- Preview Back/Forward and page choices post `preview-navigate` to the ready, exact-origin preview frame (keyed frames stay mounted); a single src-change fallback runs only when the frame is not ready or reports no location within NAV_FALLBACK_MS — keeps navigation instant without reload loops.
+- Preview Back/Forward/page choice post `preview-navigate` to the ready exact-origin preview frame; one src-change fallback if not ready or no location within NAV_FALLBACK_MS — instant, no reload loops.
