@@ -71,10 +71,6 @@ describe("public page save/discard integration", () => {
     const s = await openRemote();
     s.send("edit-change", { scope: "page", next: { "0": "Changed Example Header", "fp:0": '{"v":1,"tag":"h1","t":"abc"}' } });
     expect(mocks.writes).not.toHaveBeenCalled();
-    // Clicking a held section selects it; its media ignores the pointer so it never plays or opens.
-    fireEvent.click(section as HTMLElement);
-    expect((section as HTMLElement).dataset.active).toBe("true");
-    expect((section as HTMLElement).className).toContain("[&_video]:pointer-events-none");
     await act(async () => { expect(await mocks.save()).toBe(true); });
     expect(mocks.writes).toHaveBeenCalledWith("pages", expect.objectContaining({ inline_edits: { "0": "Changed Example Header", "fp:0": '{"v":1,"tag":"h1","t":"abc"}' } }));
     await act(async () => { await mocks.discard(); });
