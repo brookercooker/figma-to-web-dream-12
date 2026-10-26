@@ -638,7 +638,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     else addBlock(kind === "images" ? "image" : "video");
   };
   useEffect(() => {
-    if (!embedded) return;
+    if (!embedded || !registerAdd) return;
     registerAdd((kind) => addFromTopBar.current(kind));
     return () => registerAdd(null);
   }, [embedded, registerAdd]);
