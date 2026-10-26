@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { ModeSwitchProvider } from "./designChat/ModeSwitchContext";
 import ModeToggle from "./designChat/ModeToggle";
 import HeaderActions from "./designChat/HeaderActions";
+import { HEADER_HEIGHT_CLASS } from "./designChat/layout";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -79,7 +80,7 @@ function AdminShell() {
     if (manual) editingHeaderRef.current?.focus();
     else requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Describe a Change"]')?.focus());
   }, [mode, manual]);
-  const { setSlot, saveAll, discardAll, hasChanges } = useEditorSlot();
+  const { setSlot, saveAll, discardAll, hasChanges, requestAdd } = useEditorSlot();
   // Saves the editor's held changes, then leaves edit mode; on a failed save it stays in edit mode.
   const [finishing, setFinishing] = useState(false);
   const finishingRef = useRef(false);
@@ -193,8 +194,8 @@ function AdminShell() {
       <div className="flex h-screen flex-col overflow-hidden bg-background lg:flex-row">
         {/* Right: the top bar and whichever tab is open. */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <header className="z-30 w-full shrink-0 border-b bg-background">
-            <div ref={rowRef} className="flex w-full items-center gap-1 px-2 py-2.5 sm:gap-3 sm:px-4">
+          <header data-top-bar className={cn("z-30 w-full shrink-0 border-b bg-background", HEADER_HEIGHT_CLASS)}>
+            <div ref={rowRef} className="flex h-full w-full items-center gap-1 px-2 sm:gap-3 sm:px-4">
               <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager Sections">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -229,10 +230,12 @@ function AdminShell() {
                       addedRefs={designChat.refs.references} onPick={(ref) => { designChat.refs.addReference(ref); setChatCollapsed(false); }}
                       onOpenFull={() => navigate(`/manage/${key}`)} />
                   );
+                  // In Manual Edit Mode they open the editor's picker and add the choice beneath the original, staying in the editor.
+                  const addInEditor = manual && tab === "preview" && !objectOpen && (key === "objects" || key === "images" || key === "videos");
                   return (
                     <Button variant="ghost" size="sm"
                       key={key}
-                      onClick={() => navigate(`/manage/${key}`)}
+                      onClick={() => { if (addInEditor && requestAdd(key)) return; navigate(`/manage/${key}`); }}
                       title={label}
                       aria-label={label}
                       aria-current={active ? "page" : undefined}
@@ -312,7 +315,7 @@ function AdminShell() {
               </Button>
             </div>
           )}
-          <div data-chat-header className={cn("flex h-14 shrink-0 items-center gap-2 border-b bg-background px-3", chatCollapsed && !manual && "hidden")}>
+          <div data-chat-header className={cn("flex shrink-0", HEADER_HEIGHT_CLASS, " items-center gap-2 border-b bg-background px-3", chatCollapsed && !manual && "hidden")}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="w-9 shrink-0 gap-2 px-0" aria-label="Account Menu">
