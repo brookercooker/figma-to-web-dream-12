@@ -24,7 +24,7 @@ export function previewSender(event: MessageEvent, root: ParentNode | null): Pre
 export async function loadPreviewEdits(path: string): Promise<{ edits: InlineEdits; objectEdits: Record<string, InlineEdits> }> {
   const db = supabase as any;
   const [pages, objects] = await Promise.all([
-    db.from("pages").select("path,inline_edits").in("path", homeAliases(path)).is("deleted_at", null),
+    db.from("pages").select("path,inline_edits").in("path", homeAliases(path)),
     db.from("object_registry").select("component_key,inline_edits"),
   ]);
   const row = (pages.data ?? []).find((p: any) => p.path === "/") ?? (pages.data ?? [])[0];

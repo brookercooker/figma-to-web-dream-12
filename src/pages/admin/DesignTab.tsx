@@ -37,6 +37,7 @@ import type { InlineEditController, InlineReports } from "@/components/InlineEdi
 import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
+import { editMap } from "./framedPageProtocol";
 import { draftEmbedUrl, loadSiteManifest, MANIFEST_CHANGED, manifestHasPage } from "./siteManifest";
 import { remoteSnapshot } from "./remoteSelection";
 
@@ -130,6 +131,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   }, []);
   const [inlineReports, setInlineReports] = useState<InlineReports>({});
   const [headerReports, setHeaderReports] = useState<InlineReports>({});
+  const [framedReports, setFramedReports] = useState<InlineReports>({});
   const [resetKey, setResetKey] = useState(0);
   // Embedded pages not in the coded list: what loading their code found, and a counter that re-runs the load.
   const [inlineSel, setInlineSel] = useState<InlineSelection | null>(null);
@@ -664,9 +666,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     />
                     <InlineDestinationPanel selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
                     {/* Framed pages replay in the public frame; local reports would be stale, so show none until the frame reports. */}
-                    <InlineEditSafetyPanel reports={page && (!manifestLoaded || manifestHasPage(page.path)) ? {} : { ...inlineReports, ...Object.fromEntries(Object.entries(headerReports).filter(([scope]) => scope !== "page")) }} selection={inlineSel} editsFor={scopeEdits}
+                    <InlineEditSafetyPanel reports={page && (!manifestLoaded || manifestHasPage(page.path)) ? framedReports : { ...inlineReports, ...Object.fromEntries(Object.entries(headerReports).filter(([scope]) => scope !== "page")) }} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
-                      record={() => { const maps = { ...inlineApi.current?.record(), ...Object.fromEntries(Object.entries(headerApi.current?.record() ?? {}).filter(([scope]) => scope !== "page")) }; if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
+                      record={async () => { const framedNow = !!page && (!manifestLoaded || manifestHasPage(page.path)); const maps = framedNow ? await recordFramed() : { ...inlineApi.current?.record(), ...Object.fromEntries(Object.entries(headerApi.current?.record() ?? {}).filter(([scope]) => scope !== "page")) }; if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
                       resetAll={() => { changeInline({}); for (const scope of new Set([...Object.keys(inlineReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
     </>
   );
@@ -790,6 +792,13 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     {(() => { const i=blocks.findIndex(b=>b.id===activeId); return i < 0 ? null : <div className="flex flex-wrap gap-1">{blockTools(blocks[i],i)}</div>; })()}
   </div>;
 
+  /** Framed pages: the public frame records fingerprints (withFingerprints per scope); invalid maps are dropped. */
+  const recordFramed = async (): Promise<Record<string, InlineEdits>> => {
+    const result = await framedApi.current?.query("record", "page", "");
+    const out: Record<string, InlineEdits> = {};
+    if (result && typeof result === "object") for (const [scope, map] of Object.entries(result as Record<string, unknown>)) { const ok = editMap(map); if (ok) out[scope] = ok; }
+    return out;
+  };
   const openInlineObject = async (key: string, section: string) => {
     const id = objectRows.current[key]; if (!id) return;
     if (embedded) { if (await saveAll()) chat?.openObject(id, section); }
@@ -810,7 +819,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
-          onReorder={reorderChunks} onOpenObject={openInlineObject} />}
+          onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} />}
         <InlineEditSurface key={page.id} edits={framed ? {} : inlineEdits} objectEdits={objectEdits} editing={!framed} apiRef={framed ? undefined : inlineApi} onReport={framed ? undefined : setInlineReports}
           collapsed={foldedChunks} onToggleCollapse={k=>setFoldedChunks(cur=>{ const next=new Set(cur); if(next.has(k)) next.delete(k); else next.add(k); return next; })}
           onReorder={reorderChunks}
