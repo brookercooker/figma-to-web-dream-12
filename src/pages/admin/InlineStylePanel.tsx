@@ -89,35 +89,13 @@ export default function InlineStylePanel({
   );
 
   if (sel.kind === "divider" && sel.side) {
-    const side = sel.side;
-    const cs = selectionComputedStyle(sel.el);
-    const col = style[`border-${side}-color`];
-    const hidden = style[`border-${side}-style`] === "none";
-    return (
-      <div>
-        <ToolHeader icon={Minus} title="Line" menu={[
-          { label: "Reset", icon: RotateCcw, onSelect: reset },
-          { label: hidden ? "Show line" : "Hide line", icon: hidden ? Eye : EyeOff, onSelect: () => set(`border-${side}-style`, hidden ? "" : "none") },
-        ]} />
-        <ToolGroup title="Line" icon={Minus} defaultOpen>
-          <ToolField label="Thickness (px)">
-            <Input type="number" min={1} max={12} placeholder={num(cs.getPropertyValue(`border-${side}-width`)) || "1"}
-              value={num(style[`border-${side}-width`])} onChange={(e) => set(`border-${side}-width`, px(e.target.value))} />
-          </ToolField>
-          <ToolField label="Style">
-            <ToolSegment className="flex w-full">
-              {([["Solid", "solid"], ["Dashed", "dashed"], ["Dotted", "dotted"]] as const).map(([l, v]) => (
-                <Button key={v} size="sm" variant={(style[`border-${side}-style`] ?? cs.getPropertyValue(`border-${side}-style`)) === v ? "default" : "ghost"}
-                  className="flex-1" onClick={() => set(`border-${side}-style`, v)}>{l}</Button>
-              ))}
-            </ToolSegment>
-          </ToolField>
-        </ToolGroup>
-        <ToolGroup title="Colour" icon={Palette} defaultOpen>
-          {swatches(col, (v) => set(`border-${side}-color`, col === v ? "" : v))}
-        </ToolGroup>
-      </div>
-    );
+    return <BorderControls key={sel.key} style={style} computed={selectionComputedStyle(sel.el)} side={sel.side}
+      swatches={swatches} reset={reset}
+      write={(next) => {
+        const out = { ...edits };
+        if (Object.keys(next).length) out[styleKey(sel.key)] = JSON.stringify(next); else delete out[styleKey(sel.key)];
+        onChange(out);
+      }} />;
   }
 
   if (sel.kind === "divider") {
