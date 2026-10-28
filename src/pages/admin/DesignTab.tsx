@@ -662,7 +662,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     />
                     <InlineDestinationPanel selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
                     {/* Framed pages replay in the public frame; local reports would be stale, so show none until the frame reports. */}
-PLACEHOLDER
+                    <InlineEditSafetyPanel reports={framed ? framedReports : {}} selection={inlineSel} editsFor={scopeEdits}
+                      discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
+                      record={async () => { if (!framed) return; const maps = await recordFramed(); if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
+                      resetAll={() => { changeInline({}); for (const scope of new Set([...Object.keys(framedReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
     </>
   );
   const blockTools = (b: Block, i: number) => (
