@@ -123,6 +123,8 @@ const widthClass: Record<ImageBlock["width"], string> = {
 };
 
 export function BlockView({ block }: { block: Block }) {
+  // Raw content may reach legacy consumers without parseBlocks.
+  if ((block as { type: string }).type === "page") return null;
   if (block.type === "code") return <PageCodeSection path={block.path} chunk={block.chunk} fingerprint={block.fingerprint} edits={block.inlineEdits} />;
   if (block.type === "object") {
     return <ObjectBlockView objectId={block.objectId} name={block.name} flush={block.wide} />;

@@ -421,7 +421,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   };
 
   const remove = (id: string) => {
-    changeBlocks((prev) => prev.filter((b) => b.id !== id));
+    if (id === "page-content") return;
+    changeBlocks((prev) => { const next = prev.filter(b => b.id !== id); return isPageContent(next[0]) ? next.slice(1) : next; });
   };
 
   const save = async () => {
