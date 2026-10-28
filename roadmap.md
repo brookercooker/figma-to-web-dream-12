@@ -66,3 +66,5 @@
 - [ ] Editable placeholders and video title/poster/source on built pages: needs a new attribute edit kind in the shared core on both projects
 - [x] One Manual Edit surface: every page (including database-only and brand-new) opens in the public frame at full pane width; local page surface, starter, header/footer copies removed
 - [x] Held sections drawn inside the public frame (plan step 4): waits on the public-site brief (Manager side done; public site in progress)
+- [ ] Allow manual editing with waiting requests; persist busy content sync and retry from existing relay status
+- [ ] Order components around Page Content with capability-gated marker and validated frame moves; cover readers and tests
