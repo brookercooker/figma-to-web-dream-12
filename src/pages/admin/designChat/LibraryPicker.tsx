@@ -83,6 +83,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   onPick: (ref: ChatReference) => void; onOpenFull: () => void; addedRefs?: ChatReference[];
 }) {
   const [open, setOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [term, setTerm] = useState("");
   const [labelF, setLabelF] = useState("");
@@ -167,13 +168,13 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" type="button" title={label} aria-label={label} aria-current={active ? "page" : undefined}
-          aria-haspopup="dialog" aria-expanded={open} className={className}>
+        <Button ref={trigger} variant="ghost" type="button" title={label} aria-label={label} aria-current={active ? "page" : undefined}
+          aria-haspopup="dialog" aria-expanded={open} aria-pressed={open} className={cnPicker(className)}>
           <Icon className="w-4 h-4" />
           {showLabel && <span>{label}</span>}
         </Button>
       </SheetTrigger>
-      <TopDropContent hideClose
+      <TopDropContent hideClose anchorRef={trigger}
         onKeyDown={(e) => handleEnter(e.nativeEvent)}
         onCloseAutoFocus={(e) => { if (picked.current) { e.preventDefault(); picked.current = false; } }}>
         <div className="shrink-0 space-y-3 border-b p-4">
