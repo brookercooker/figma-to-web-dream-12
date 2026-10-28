@@ -39,7 +39,7 @@ import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
 import { isPageContent, movePageBlock, orderedPageContent, parsePageContent, type PageContentItem } from "./pageContentOrder";
 type Block = PageContentItem;
-import { editMap } from "./framedPageProtocol";
+import { editMap, stripHeldObjects, type HeldObjectData } from "./framedPageProtocol";
 import { draftEmbedUrl } from "./siteManifest";
 import { usePageEditorSurface } from "./usePageEditorSurface";
 import { remoteSnapshot } from "./remoteSelection";
@@ -131,16 +131,21 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   // Edits on shared objects, keyed by object; saved on the object so every page shows them.
   const [objectEdits, setObjectEdits] = useState<Record<string, InlineEdits>>({});
   const objectRows = useRef<Record<string, string>>({});
+  const [heldObjects, setHeldObjects] = useState<Record<string, HeldObjectData>>();
   const objectTimers = useRef<Record<string, number>>({});
   useEffect(() => {
-    (supabase as any).from("object_registry").select("id,component_key,inline_edits").then(({ data }: any) => {
+    (supabase as any).from("object_registry").select("id,status,name,component_key,content,inline_edits").then(({ data, error }: any) => {
+      if (error) return;
+      const snapshots: Record<string, HeldObjectData> = {};
       const edits: Record<string, InlineEdits> = {};
       (data ?? []).forEach((r: any) => {
+        snapshots[r.id] = { status: r.status, name: r.name, component_key: r.component_key ?? null, content: r.content };
         if (!r.component_key) return;
         objectRows.current[r.component_key] = r.id;
         if (r.inline_edits) edits[r.component_key] = r.inline_edits;
       });
       originalObjects.current = structuredClone(edits);
+      setHeldObjects(snapshots);
       setObjectEdits(edits);
     });
   }, []);
@@ -431,7 +436,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     try {
       const { error } = await (supabase as any)
         .from("pages")
-        .update({ content: blocks })
+        .update({ content: stripHeldObjects(blocks) })
         .eq("id", page.id);
       if (error) throw error;
       pendingSave.current = null;
@@ -458,7 +463,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       setSaving(true);
       const { error } = await (supabase as any)
         .from("pages")
-        .update({ content: snapshot })
+        .update({ content: stripHeldObjects(snapshot) })
         .eq("id", pageId);
       setSaving(false);
       if (error) { toast.error(error.message ?? "Could not save the page"); return; }
@@ -484,7 +489,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       pendingInline.current = null;
       pendingObjects.current = {};
       const writes: Promise<any>[] = [];
-      if (p) writes.push((supabase as any).from("pages").update({ content: p.snapshot }).eq("id", p.pageId));
+      if (p) writes.push((supabase as any).from("pages").update({ content: stripHeldObjects(p.snapshot) }).eq("id", p.pageId));
       if (inl) writes.push((supabase as any).from("pages").update({ inline_edits: inl.next, updated_at: new Date().toISOString() }).eq("id", inl.pageId));
       Object.entries(objs).forEach(([scope, next]) => {
         const id = objectRows.current[scope];
@@ -503,7 +508,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     let failed: string | null = null;
     const p = pendingSave.current;
     if (p) {
-      const { error } = await (supabase as any).from("pages").update({ content: p.snapshot }).eq("id", p.pageId);
+      const { error } = await (supabase as any).from("pages").update({ content: stripHeldObjects(p.snapshot) }).eq("id", p.pageId);
       if (error) failed = error.message ?? "Could not save the page";
       else {
         wrote = true;
@@ -795,7 +800,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       <div ref={blockCanvasRef} className={`relative isolate h-full w-full ${heldInFrame && !deviceStyle ? "overflow-hidden" : "overflow-y-auto"} bg-background`} style={deviceStyle}>
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
         <FramedPageEditor key={`public-${page.id}`} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
-          sectionRevision={sectionRevision} heldBlocks={blocks} activeBlockId={activeId || null}
+          sectionRevision={sectionRevision} heldBlocks={blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
           onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { changeBlocks(prev => movePageBlock(prev, id, toIndex)); setActiveId(id); setInlineSel(null); }} fill={!deviceStyle}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}

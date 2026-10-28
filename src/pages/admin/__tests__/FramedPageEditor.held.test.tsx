@@ -1,7 +1,7 @@
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import FramedPageEditor, { type FramedPageEditorProps } from "../FramedPageEditor";
-import { clampEditSize, heldBlocksPayload } from "../framedPageProtocol";
+import { clampEditSize, heldBlocksPayload, stripHeldObjects } from "../framedPageProtocol";
 
 afterEach(() => cleanup());
 const blocks = [{ id: "a", type: "text", html: "A" }, { id: "b", type: "text", html: "B" }];
@@ -19,6 +19,22 @@ function setup(patch: Partial<FramedPageEditorProps> = {}) {
   return { ...view, props, frame, send, sent, receive };
 }
 describe("held blocks payload", () => {
+  it("includes any object status and deleted references without mutating saved blocks", () => {
+    const refs = [{ id: "draft", type: "object", objectId: "o" }, { id: "deleted", type: "object", objectId: "gone" }];
+    const object = { status: "Draft", name: "About Us", component_key: null, content: [{ id: "s", type: "text", html: "About" }] };
+    expect(heldBlocksPayload(refs, false, { o: object })).toEqual([{ ...refs[0], object }, { ...refs[1], object: null }]);
+    expect(stripHeldObjects(heldBlocksPayload(refs, false, { o: object }) ?? [])).toEqual(refs);
+    expect(refs[0]).not.toHaveProperty("object");
+    expect(heldBlocksPayload(refs, false, { o: { ...object, status: "Ready" } })?.[0]).toMatchObject({ object: { status: "Ready" } });
+  });
+  it("omits only oversized object snapshots while preserving other snapshots and blocks", () => {
+    const refs = [{ id: "big", type: "object", objectId: "big" }, { id: "small", type: "object", objectId: "small" }];
+    const object = { status: "Draft", name: "About Us", component_key: null, content: [] };
+    const payload = heldBlocksPayload(refs, true, { big: { ...object, content: "x".repeat(500_000) }, small: object });
+    expect(payload?.[1]).toEqual(refs[0]);
+    expect(payload?.[2]).toEqual({ ...refs[1], object });
+    expect(new Blob([JSON.stringify(payload)]).size).toBeLessThanOrEqual(500_000);
+  });
   it("passes ordered blocks and caps count and size", () => {
     expect(heldBlocksPayload(blocks)).toEqual(blocks);
     expect(heldBlocksPayload(Array.from({ length: 51 }, (_, i) => ({ id: String(i) })))).toBeNull();
@@ -27,6 +43,16 @@ describe("held blocks payload", () => {
   it("clamps edit-size", () => { expect(clampEditSize(10)).toBe(400); expect(clampEditSize(99999)).toBe(20000); expect(clampEditSize(1500)).toBe(1500); });
 });
 describe("held blocks handshake", () => {
+  it("sends object data on init and update when the registry finishes loading", () => {
+    const refs = [{ id: "a", type: "object", objectId: "o" }];
+    const object = { status: "Draft", name: "About Us", component_key: "AboutUs", content: [] };
+    const s = setup({ heldBlocks: refs, heldObjects: { o: object } });
+    s.receive("edit-ready", { capabilities: { heldBlocks: true, blockMove: true } });
+    expect(s.sent("edit-init")[0].heldBlocks[1]).toEqual({ ...refs[0], object });
+    s.rerender(<FramedPageEditor {...s.props} heldObjects={{}} />);
+    expect(s.sent("edit-update").at(-1).heldBlocks[1]).toEqual({ ...refs[0], object: null });
+    expect(refs[0]).not.toHaveProperty("object");
+  });
   it("synthesizes the first marker on init and every update without changing stored blocks", () => {
     const marker = { id: "page-content", type: "page" };
     const s = setup();
