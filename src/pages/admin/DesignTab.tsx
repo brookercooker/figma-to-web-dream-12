@@ -38,7 +38,8 @@ import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
 import { editMap } from "./framedPageProtocol";
-import { draftEmbedUrl, loadSiteManifest, MANIFEST_CHANGED, manifestHasPage } from "./siteManifest";
+import { draftEmbedUrl } from "./siteManifest";
+import { usePageEditorSurface } from "./usePageEditorSurface";
 import { remoteSnapshot } from "./remoteSelection";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
@@ -121,14 +122,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const inlineApi = useRef<InlineEditController | null>(null);
   const headerApi = useRef<InlineEditController | null>(null);
   const framedApi = useRef<FramedEditorController | null>(null);
-  const [manifestVersion, setManifestVersion] = useState(0);
-  const [manifestLoaded, setManifestLoaded] = useState(false);
-  useEffect(() => {
-    const update = () => { setManifestLoaded(true); setManifestVersion((n) => n + 1); };
-    window.addEventListener(MANIFEST_CHANGED, update);
-    void loadSiteManifest().then(update).catch(() => {});
-    return () => window.removeEventListener(MANIFEST_CHANGED, update);
-  }, []);
   const [inlineReports, setInlineReports] = useState<InlineReports>({});
   const [headerReports, setHeaderReports] = useState<InlineReports>({});
   const [framedReports, setFramedReports] = useState<InlineReports>({});
@@ -218,6 +211,8 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   useEffect(() => { load(); }, []);
 
   const page = useMemo(() => pages.find((p) => p.id === selectedId) ?? null, [pages, selectedId]);
+  const surface = usePageEditorSurface(page);
+  const framed = surface === "framed";
   useEffect(() => {
     // Wait for the page to load so a "mode=edit" link isn't used up early.
     if (!page) return;
@@ -666,9 +661,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     />
                     <InlineDestinationPanel selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
                     {/* Framed pages replay in the public frame; local reports would be stale, so show none until the frame reports. */}
-                    <InlineEditSafetyPanel reports={page && (!manifestLoaded || manifestHasPage(page.path)) ? framedReports : { ...inlineReports, ...Object.fromEntries(Object.entries(headerReports).filter(([scope]) => scope !== "page")) }} selection={inlineSel} editsFor={scopeEdits}
+                    <InlineEditSafetyPanel reports={framed ? framedReports : surface === "loading" ? {} : { ...inlineReports, ...Object.fromEntries(Object.entries(headerReports).filter(([scope]) => scope !== "page")) }} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
-                      record={async () => { const framedNow = !!page && (!manifestLoaded || manifestHasPage(page.path)); const maps = framedNow ? await recordFramed() : { ...inlineApi.current?.record(), ...Object.fromEntries(Object.entries(headerApi.current?.record() ?? {}).filter(([scope]) => scope !== "page")) }; if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
+                      record={async () => { if (surface === "loading") return; const maps = framed ? await recordFramed() : { ...inlineApi.current?.record(), ...Object.fromEntries(Object.entries(headerApi.current?.record() ?? {}).filter(([scope]) => scope !== "page")) }; if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
                       resetAll={() => { changeInline({}); for (const scope of new Set([...Object.keys(inlineReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
     </>
   );
@@ -805,11 +800,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     else navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(section)}`);
   };
   if (closed) return null;
-  // An unread manifest is not evidence of an empty page: fail closed to the public editor.
-  const framed = !!page && (!manifestLoaded || manifestHasPage(page.path));
   return (<div className={embedded ? "h-full min-h-0" : "grid gap-4 lg:grid-cols-[240px_1fr]"}>
     {!embedded && <aside><Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search pages" />{filtered.map(p=><Button key={p.id} variant="ghost" className="w-full justify-start" onClick={()=>select(p.id)}>{p.name}</Button>)}{tools}</aside>}
-    {page && <EmbeddedBox chat={embedded ? chat : null}>
+    {surface === "loading" && selectedId && <div role="status" className="flex items-center justify-center bg-muted p-6 text-sm text-muted-foreground">Loading the page editor…</div>}
+    {page && surface !== "loading" && <EmbeddedBox chat={embedded ? chat : null}>
       <div ref={blockCanvasRef} className="h-full overflow-y-auto bg-background" style={deviceStyle}>
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
         {!framed && <><SharedObjectNotice componentKey="Header" />

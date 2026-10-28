@@ -77,7 +77,6 @@ export function usePreview(state: RelayState | null, path: string | null = null,
     shown.current = id;
     setShownId(id);
     setLoaded(true);
-    resetSiteManifestCache();
     void syncManifestPages();
     setError(null);
     setFrames((fs) => fs.filter((f) => f.id >= id)); // older copies go; newer ones still loading stay
