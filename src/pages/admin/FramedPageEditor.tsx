@@ -132,7 +132,8 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       } else if (data.type === "edit-applied") {
         const reports = replayReports(data.reports); if (reports) latest.current.onReport?.(reports);
       } else if (data.type === "edit-block-select" && typeof data.id === "string") {
-        if (capableRef.current && (latest.current.heldBlocks ?? []).some((b) => (b as { id?: unknown })?.id === data.id)) latest.current.onBlockSelect?.(data.id);
+        // Origin, window and id are the safety checks; the capability only governs what we send.
+        if ((latest.current.heldBlocks ?? []).some((b) => (b as { id?: unknown })?.id === data.id)) latest.current.onBlockSelect?.(data.id);
       } else if (data.type === "edit-size" && typeof data.height === "number" && Number.isFinite(data.height)) {
         setHeight(clampEditSize(data.height)); setSized(true);
       } else if (data.type === "edit-height" && Number.isFinite(data.height)) {
