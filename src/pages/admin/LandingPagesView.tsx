@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
-  Copy, ExternalLink, Search, Archive, ArchiveRestore, Trash2, MoreHorizontal, Plus, Pencil, Files, RefreshCw, Type,
+  Copy, ExternalLink, Search, Archive, ArchiveRestore, Trash2, MoreHorizontal, Plus, Pencil, Files, RefreshCw, Type, MessageSquare,
 } from "lucide-react";
 import { RenameDialog } from "./RenameDialog";
 import { renameLanding } from "./renameHelpers";
@@ -504,13 +504,14 @@ export default function LandingPagesView() {
                 <th className="px-3 py-2 text-center">Copy</th>
                 <th className="px-3 py-2 text-left">Labels</th>
                 <th className="px-3 py-2 text-left">Last Mod</th>
+                <th className="px-2 py-2 text-center"><span className="sr-only">Ask Claude</span></th>
                 <th className="px-2 py-2 text-center"><span className="sr-only">Open</span></th>
                 <th className="px-2 py-2 text-center"><span className="sr-only">More</span></th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan={10} className="px-3 py-10 text-center text-muted-foreground">
+                <tr><td colSpan={11} className="px-3 py-10 text-center text-muted-foreground">
                   {timeRange === "hour" ? "No landing pages modified in the last hour."
                   : timeRange === "day" ? "No landing pages modified in the last 24 hours."
                   : timeRange === "week" ? "No landing pages modified in the last 7 days."
@@ -604,6 +605,20 @@ export default function LandingPagesView() {
                     </td>
                     <td className="px-2 py-3 text-xs text-muted-foreground whitespace-nowrap leading-tight" title={fmtDateTimeFull(r.updated_at)}>
                       {fmtDateTime(r.updated_at) || "—"}
+                    </td>
+                    <td className="px-1 py-3 text-center">
+                      {designChat && (() => {
+                        const chosen = designChat.workingPage?.path === (r.path.startsWith("/") ? r.path : `/${r.path}`);
+                        return (
+                          <button onClick={() => choosePage(r)}
+                            aria-label={`Ask Claude To Change It: ${r.name}`}
+                            aria-pressed={chosen}
+                            title="Ask Claude To Change It"
+                            className={`p-1.5 rounded border inline-flex ${chosen ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted"}`}>
+                            <MessageSquare className="w-4 h-4" />
+                          </button>
+                        );
+                      })()}
                     </td>
                     <td className="px-1 py-3 text-center">
                       <button className="p-1.5 rounded border hover:bg-muted inline-flex"
