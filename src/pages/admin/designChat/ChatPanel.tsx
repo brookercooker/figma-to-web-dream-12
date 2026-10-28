@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import ApprovalCard from "./ApprovalCard";
+import ReviewProblems from "./ReviewProblems";
 import { DEFAULT_UPLOADS, postToHelper } from "./helper";
 import { useDesignChat } from "./DesignChatContext";
 import { fmtDur, fmtSize, isWorking, problemsModel, visibleText, workHint, workLabel } from "./logic";
@@ -119,7 +120,6 @@ export default function ChatPanel() {
     refreshSoon();
   };
 
-  const fixIds = async (ids: string[]) => { await postToHelper("/fix", { findingIds: ids }); refreshSoon(); };
 
   const job = state?.job;
   const hintForWork = job && state ? workHint(job, state, now) : "";
@@ -174,28 +174,7 @@ export default function ChatPanel() {
 
         {state?.approval && <ApprovalCard approval={state.approval} onAnswered={refreshSoon} />}
 
-        {problems && (
-          <div className="self-stretch rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2">
-            <h3 className="text-sm font-semibold text-destructive">{problems.title}</h3>
-            <p className="text-xs">{problems.sub}</p>
-            {problems.items.map((f) => (
-              <div key={f.id} className="rounded-md border bg-background p-2 text-xs space-y-1">
-                <div>{f.issue}</div>
-                {f.request && <div className="text-muted-foreground">From your request: {f.request}</div>}
-                {f.fix && !/developer/i.test(f.fix) && <div className="text-muted-foreground">Suggested fix: {f.fix}</div>}
-                <Button type="button" size="sm" variant="outline" onClick={(ev) => { (ev.currentTarget as HTMLButtonElement).disabled = true; fixIds([f.id]); }}>
-                  Fix this for me
-                </Button>
-              </div>
-            ))}
-            {problems.items.length > 1 && (
-              <Button type="button" size="sm" onClick={(ev) => { (ev.currentTarget as HTMLButtonElement).disabled = true; fixIds(problems.items.map((f) => f.id)); }}>
-                Fix All {problems.items.length} for me
-              </Button>
-            )}
-            {problems.devNote && <p className="text-xs">{problems.devNote}</p>}
-          </div>
-        )}
+        <ReviewProblems />
       </div>
 
       <form

@@ -70,6 +70,11 @@ export type DesignChat = {
   /** Open the working page in the editor. Does nothing without a working page that has an id. */
   startEditing: () => void;
   stopEditing: () => void;
+  /** The left column shows the changes waiting for review instead of the chat (the chat stays mounted). */
+  reviewOpen: boolean;
+  setReviewOpen: (open: boolean) => void;
+  /** Move the preview to an address without changing the working page. */
+  showPreviewPath: (path: string) => void;
   /** An object opened from the page editor, shown in its place while editing. */
   objectOpen: { id: string; section?: string } | null;
   openObject: (id: string, section?: string) => void;
@@ -161,6 +166,11 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     navigatePreview({ action: "to", path: page.path }, page.path, () => { setPreviewPath(page.path); setNavNonce((n) => n + 1); });
     setObjectOpen(null);
   }, [navigatePreview]);
+  const showPreviewPath = useCallback((path: string) => {
+    navigatePreview({ action: "to", path }, path, () => { setPreviewPath(path); setNavNonce((n) => n + 1); });
+  }, [navigatePreview]);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  useEffect(() => { if (editing) setReviewOpen(false); }, [editing]);
   const clearWorkingPage = useCallback(() => { dispatch({ type: "clear" }); setObjectOpen(null); }, []);
   const startEditing = useCallback(() => dispatch({ type: "start" }), []);
   const stopEditing = useCallback(() => { dispatch({ type: "stop" }); setObjectOpen(null); }, []);
@@ -217,8 +227,8 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     mode,
     state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
-    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, refs, previewNav,
-  }), [mode, refs, previewNav, objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
+    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, refs, previewNav, reviewOpen, setReviewOpen, showPreviewPath,
+  }), [reviewOpen, showPreviewPath, mode, refs, previewNav, objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
   return <Ctx.Provider value={value}><ManifestReceiverFrame />{children}</Ctx.Provider>;
 }

@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { ModeSwitchProvider } from "./designChat/ModeSwitchContext";
 import ModeToggle from "./designChat/ModeToggle";
 import HeaderActions from "./designChat/HeaderActions";
+import ReviewChangesView from "./designChat/ReviewChangesView";
 import { HEADER_HEIGHT_CLASS } from "./designChat/layout";
 import { rememberTopDropAnchor } from "./designChat/TopDropPanel";
 
@@ -118,6 +119,7 @@ function AdminShell() {
   const [chatCollapsed, setChatCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem("siteManager:chatCollapsed") === "true"; } catch { return false; }
   });
+  const reviewShown = designChat.reviewOpen && !manual && !chatCollapsed;
   useEffect(() => {
     try { localStorage.setItem("siteManager:chatCollapsed", String(chatCollapsed)); } catch { /* no storage: ignore */ }
   }, [chatCollapsed]);
@@ -350,7 +352,8 @@ function AdminShell() {
               <PanelLeftClose className="h-4 w-4" />
             </Button>}
           </div>
-          <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />
+          {!reviewShown && <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />}
+          {reviewShown && <ReviewChangesView onShowPreview={() => { if (tab !== "preview") navigate("/manage/preview"); }} />}
           {manual && workingPage && (
             <div className="flex min-h-0 flex-1 flex-col">
               <div className="flex items-center justify-between px-3 pt-2">
@@ -373,7 +376,7 @@ function AdminShell() {
               <div ref={setSlot} aria-label="Page Editing Options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
             </div>
           )}
-          <div hidden={manual || chatCollapsed} className={cn("min-h-0 flex-1", (manual || chatCollapsed) && "hidden")} aria-hidden={manual || chatCollapsed}>
+          <div hidden={manual || chatCollapsed || reviewShown} className={cn("min-h-0 flex-1", (manual || chatCollapsed || reviewShown) && "hidden")} aria-hidden={manual || chatCollapsed || reviewShown}>
             <ChatPanel />
           </div>
         </aside>

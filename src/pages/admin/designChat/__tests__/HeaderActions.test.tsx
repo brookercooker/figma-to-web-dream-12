@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import HeaderActions from "../HeaderActions";
-const m = vi.hoisted(() => ({ state: null as any, editing: false, post: vi.fn(), refresh: vi.fn(), copy: vi.fn() }));
-vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({ state: m.state, editing: m.editing, refreshSoon: m.refresh, previewLocation: { path: "/draft" }, workingPage: null }) }));
+const m = vi.hoisted(() => ({ state: null as any, editing: false, reviewOpen: false, setReviewOpen: vi.fn(), post: vi.fn(), refresh: vi.fn(), copy: vi.fn() }));
+vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({ state: m.state, editing: m.editing, refreshSoon: m.refresh, previewLocation: { path: "/draft" }, workingPage: null, reviewOpen: m.reviewOpen, setReviewOpen: m.setReviewOpen }) }));
 vi.mock("../helper", () => ({ postToHelper: m.post }));
 beforeEach(() => {
   vi.clearAllMocks(); m.editing = false;
@@ -12,32 +12,22 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 describe("Left-header actions", () => {
-  it("uses the existing pending count and exactly the existing submission action", async () => {
+  it("toggles the review view from the count button", () => {
     const view = render(<HeaderActions />);
     fireEvent.click(screen.getByRole("button", { name: "Review Status: 2 Waiting" }));
-    fireEvent.click(screen.getByRole("button", { name: "Submit for Review" }));
-    await waitFor(() => expect(m.post).toHaveBeenCalledExactlyOnceWith("/publish"));
-    expect(m.refresh).toHaveBeenCalledOnce();
-    m.state.publish.open = 3; view.rerender(<HeaderActions />);
-    expect(screen.getByRole("button", { name: "Review Status: 3 Waiting" })).toBeInTheDocument();
-  });
-  it("has no undo when no changes are pending", () => {
-    m.state.publish.open = 0; render(<HeaderActions />);
-    expect(screen.getByRole("button", { name: "Undo Last Change" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Review Status" })).toBeInTheDocument();
-  });
-  it("opens an honest confirmation without calling an invented undo endpoint", () => {
-    render(<HeaderActions />);
-    fireEvent.click(screen.getByRole("button", { name: "Undo Last Change" }));
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Undo Change" })).toBeDisabled();
-    expect(m.post).not.toHaveBeenCalled();
-  });
-  it("never substitutes whole-session discard for single-change undo or submits held manual edits", () => {
-    m.editing = true; render(<HeaderActions />);
-    expect(screen.getByRole("button", { name: "Undo Last Change" })).toBeDisabled();
+    expect(m.setReviewOpen).toHaveBeenLastCalledWith(true);
+    m.reviewOpen = true; view.rerender(<HeaderActions />);
     fireEvent.click(screen.getByRole("button", { name: "Review Status: 2 Waiting" }));
-    expect(screen.queryByRole("button", { name: "Submit for Review" })).toBeNull();
+    expect(m.setReviewOpen).toHaveBeenLastCalledWith(false);
+    m.reviewOpen = false;
+  });
+  it("is disabled during Manual Edit Mode", () => {
+    m.editing = true; render(<HeaderActions />);
+    expect(screen.getByRole("button", { name: "Review Status: 2 Waiting" })).toBeDisabled();
+  });
+  it("has no undo button", () => {
+    render(<HeaderActions />);
+    expect(screen.queryByRole("button", { name: /undo/i })).toBeNull();
   });
   it("copies the current page and last recorded action for a problem report", async () => {
     render(<HeaderActions />);

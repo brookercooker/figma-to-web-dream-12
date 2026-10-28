@@ -1,10 +1,10 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const m = vi.hoisted(() => ({ manual: false, busy: false, mounts: 0 }));
+const m = vi.hoisted(() => ({ manual: false, busy: false, mounts: 0, reviewOpen: false }));
 vi.mock("../designChat/DesignChatContext", () => ({ DesignChatProvider: ({ children }: any) => children,
   useDesignChat: () => ({ mode: m.manual ? "manual" : "chat", editing: m.manual, workingPage: { id: "home", name: "Homepage", path: "/" },
-    state: { busy: m.busy, publish: { open: 0 } }, stopEditing: vi.fn(), clearWorkingPage: vi.fn(), objectOpen: null, closeObject: vi.fn(), refs: { addReference: vi.fn() } }) }));
+    state: { busy: m.busy, publish: { open: 0 } }, stopEditing: vi.fn(), clearWorkingPage: vi.fn(), objectOpen: null, closeObject: vi.fn(), refs: { addReference: vi.fn() }, reviewOpen: m.reviewOpen, setReviewOpen: vi.fn(), showPreviewPath: vi.fn() }) }));
 vi.mock("../designChat/ChatPanel", async () => {
   const { useEffect, useState } = await import("react");
   return { default: () => { const [text, setText] = useState(""); useEffect(() => { m.mounts++; }, []); return <section aria-label="Design Chat"><input aria-label="Held Chat Text" value={text} onChange={(e) => setText(e.target.value)} /></section>; } };
@@ -14,10 +14,21 @@ vi.mock("@/prototype/client", () => ({ supabase: { auth: { getUser: async () => 
 vi.mock("../DesignChatTab", () => ({ default: () => <div data-testid="preview">Preview</div> }));
 vi.mock("../DesignTab", () => ({ default: () => <div data-testid="canvas">Unchanged Canvas</div> }));
 import AdminIndex from "../AdminIndex";
-beforeEach(() => { m.manual = false; m.busy = false; m.mounts = 0; localStorage.clear(); (globalThis as any).ResizeObserver = class { observe() {} disconnect() {} }; });
+beforeEach(() => { m.manual = false; m.busy = false; m.mounts = 0; m.reviewOpen = false; localStorage.clear(); (globalThis as any).ResizeObserver = class { observe() {} disconnect() {} }; });
 afterEach(cleanup);
 const app = () => <MemoryRouter initialEntries={["/manage/preview"]}><AdminIndex /></MemoryRouter>;
 describe("Site Manager mode cues", () => {
+  it("swaps the chat for the review view without unmounting it", () => {
+    const view = render(app());
+    fireEvent.change(screen.getByLabelText("Held Chat Text"), { target: { value: "Draft text" } });
+    m.reviewOpen = true; view.rerender(app());
+    expect(screen.getByRole("region", { name: "Changes Waiting for Review" })).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "Chat Mode" })).toBeNull();
+    expect(screen.getByLabelText("Held Chat Text", { selector: "input" }).closest("[hidden]")).not.toBeNull();
+    m.reviewOpen = false; view.rerender(app());
+    expect(screen.getByLabelText("Held Chat Text")).toHaveValue("Draft text");
+    expect(m.mounts).toBe(1);
+  });
   it("shows manual-only cues without wrapping the canvas and keeps chat mounted", async () => {
     const view = render(app());
     const input = screen.getByLabelText("Held Chat Text"); fireEvent.change(input, { target: { value: "Keep this request" } });

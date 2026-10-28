@@ -61,6 +61,14 @@ export type Job = { kind?: string; status: string; startedAt: number; lastStep?:
 
 export type UploadRules = { maxFiles: number; maxBytes: number; accept: string };
 
+export type DraftRequest = {
+  id: string; request: string; source?: string; at?: number | string; sha?: string;
+  files?: string[]; siteFiles?: string[]; platformFiles?: string[]; setupFiles?: string[];
+  notes?: string; decision?: unknown;
+  /** Sent by redeployed relays only. */
+  page?: { name: string; path: string } | null;
+};
+
 export type RelayState = {
   busy: boolean;
   job: Job | null;
@@ -71,7 +79,8 @@ export type RelayState = {
   drawing?: boolean;
   history: Entry[];
   publish?: { ok?: boolean; open: number; status?: string; willReview?: boolean };
-  draft?: { review?: { state?: string; locked?: boolean; findings?: Finding[]; headline?: string; summary?: string; retry?: boolean } };
+  /** requests: the changes in the draft awaiting review (newer relays only). */
+  draft?: { requests?: DraftRequest[]; review?: { state?: string; locked?: boolean; findings?: Finding[]; headline?: string; summary?: string; retry?: boolean } };
   review?: { enabled?: boolean; mode?: string };
   liveUrl?: string | null;
   embedEnabled?: boolean;
