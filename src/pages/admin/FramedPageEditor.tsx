@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import { Button } from "@/components/ui/button";
 import type { InlineChunk, InlineEdits, InlineReports, InlineSelection } from "@/components/InlineEditSurface";
-import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, trustedEditMessage } from "./framedPageProtocol";
+import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, trustedEditMessage, type HeldObjectData } from "./framedPageProtocol";
 import { remoteSelection, validSnapshot, type EditQuery, type SelectionSnapshot } from "./remoteSelection";
 
 export interface FramedEditorController { exit: () => void; query: EditQuery }
@@ -23,6 +23,7 @@ export interface FramedPageEditorProps {
   onReport?: (reports: InlineReports) => void;
   /** Held blocks (complete ordered list); drawn inside frames that announce capabilities.heldBlocks. */
   heldBlocks?: readonly unknown[];
+  heldObjects?: Record<string, HeldObjectData>;
   activeBlockId?: string | null;
   onBlockSelect?: (id: string) => void;
   onBlockMove?: (id: string, toIndex: number) => void;
@@ -46,7 +47,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   // Section changes reload only frames that cannot draw held blocks themselves.
   const [frameRevision, setFrameRevision] = useState(props.sectionRevision ?? 0);
   useEffect(() => { if (!heldCapable) setFrameRevision(props.sectionRevision ?? 0); }, [props.sectionRevision, heldCapable]);
-  const heldPayload = heldBlocksPayload(props.heldBlocks ?? [], moveCapable);
+  const heldPayload = heldBlocksPayload(props.heldBlocks ?? [], moveCapable, props.heldObjects);
   const heldInFrame = heldCapable && heldPayload !== null;
   const capableRef = useRef(false);
   const ready = useRef(false);
@@ -64,7 +65,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     const base = { edits: latest.current.edits, objectEdits: latest.current.objectEdits, collapsed: [...latest.current.collapsed], selectedKey: latest.current.selectedKey };
     if (!capableRef.current) return base;
     // Too large: send an empty list so the frame draws nothing while the local list shows them.
-    return { ...base, heldBlocks: heldBlocksPayload(latest.current.heldBlocks ?? [], moveCapableRef.current) ?? [], activeBlockId: latest.current.activeBlockId || null };
+    return { ...base, heldBlocks: heldBlocksPayload(latest.current.heldBlocks ?? [], moveCapableRef.current, latest.current.heldObjects) ?? [], activeBlockId: latest.current.activeBlockId || null };
   };
   const query: EditQuery = (op, scope, key, props) => {
     if (!ready.current || exited.current) return Promise.resolve(null);
@@ -154,7 +155,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     window.addEventListener("message", receive);
     return () => { clearTimeout(timeout); exit(); window.removeEventListener("message", receive); if (props.apiRef) props.apiRef.current = null; };
   }, [target, attempt, frameRevision]); // Only section actions on frames without heldBlocks reload; everything else travels through edit-update.
-  useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.activeBlockId, heldCapable, moveCapable]);
+  useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.heldObjects, props.activeBlockId, heldCapable, moveCapable]);
   useEffect(() => { latest.current.onHeldInFrame?.(heldInFrame); }, [heldInFrame]);
   useEffect(() => { setSized(false); }, [target, attempt, frameRevision]);
   // Capable frames fill the canvas so their own scroll is the only one; edit-size still wins once received.
