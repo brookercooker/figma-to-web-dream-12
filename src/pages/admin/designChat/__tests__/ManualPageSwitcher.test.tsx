@@ -68,7 +68,7 @@ describe("manual page navigation", () => {
   it("uses arrows and Enter to choose and Escape to close", async () => {
     await open(); fireEvent.click(screen.getByRole("button", { name: "Editing Contact" }));
     const input = await screen.findByRole("combobox");
-    fireEvent.keyDown(input, { key: "ArrowDown" }); fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.keyDown(input, { key: "End" }); fireEvent.keyDown(input, { key: "ArrowUp" }); fireEvent.keyDown(input, { key: "ArrowUp" }); fireEvent.keyDown(input, { key: "Enter" });
     await waitFor(() => expect(m.select).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: /Editing/ }));
     fireEvent.keyDown(await screen.findByRole("combobox"), { key: "Escape" });
