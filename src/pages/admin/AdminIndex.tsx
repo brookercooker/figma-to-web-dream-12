@@ -352,7 +352,7 @@ function AdminShell() {
               <PanelLeftClose className="h-4 w-4" />
             </Button>}
           </div>
-          <div className={reviewShown ? "hidden" : "contents"}><ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} /></div>
+          {!reviewShown && <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />}
           {reviewShown && <ReviewChangesView onShowPreview={() => { if (tab !== "preview") navigate("/manage/preview"); }} />}
           {manual && workingPage && (
             <div className="flex min-h-0 flex-1 flex-col">
