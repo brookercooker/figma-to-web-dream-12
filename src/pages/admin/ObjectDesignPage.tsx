@@ -5248,12 +5248,5 @@ function CodedImportProbe({
   );
 }
 
-type HeaderAction = {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  onClick: () => void;
-  disabled?: boolean;
-  selected?: boolean;
-};
 
 /** Block header buttons that fold into a "…" menu when the header is too narrow. */

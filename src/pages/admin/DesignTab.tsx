@@ -524,16 +524,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   }, [hasUnsaved]);
 
 
-  const toolbarRef = useRef<HTMLDivElement | null>(null);
-  const [toolbarHidden, setToolbarHidden] = useState(false);
-  useEffect(() => {
-    const el = toolbarRef.current;
-    if (!el) { setToolbarHidden(false); return; }
-    const io = new IntersectionObserver(([e]) => setToolbarHidden(!e.isIntersecting && e.boundingClientRect.top < 0), { rootMargin: "-64px 0px 0px 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  });
-
   const addButtons = (
     <>
               <Button variant="outline" size="sm" className="gap-2" title="Add an Object" onClick={() => insertAt("object", pageInsertPosition(blocks, activeId))}>
