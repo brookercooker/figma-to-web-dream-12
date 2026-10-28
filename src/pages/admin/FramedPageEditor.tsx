@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import type { InlineChunk, InlineEdits, InlineReports, InlineSelection } from "@/components/InlineEditSurface";
 import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, trustedEditMessage, type HeldObjectData } from "./framedPageProtocol";
 import { remoteSelection, validSnapshot, type EditQuery, type SelectionSnapshot } from "./remoteSelection";
+import { manualNavigationPath } from "./designChat/manualPageNavigation";
 
 export interface FramedEditorController { exit: () => void; query: EditQuery }
 export interface FramedPageEditorProps {
@@ -27,6 +28,7 @@ export interface FramedPageEditorProps {
   activeBlockId?: string | null;
   onBlockSelect?: (id: string) => void;
   onBlockMove?: (id: string, toIndex: number) => void;
+  onNavigate?: (path: string) => void;
   /** True while this frame draws the held blocks itself, so the caller hides its local list. */
   onHeldInFrame?: (inFrame: boolean) => void;
   /** Fill the editing area (one scroll inside the frame) when the frame draws held sections. */
@@ -137,6 +139,9 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         if (from && to && from.parent === to.parent && all.every(Boolean) && from.key !== to.key) latest.current.onReorder(from, to, data.after === true, all);
       } else if (data.type === "edit-applied") {
         const reports = replayReports(data.reports); if (reports) latest.current.onReport?.(reports);
+      } else if (data.type === "edit-navigate") {
+        const path = manualNavigationPath(data.path);
+        if (path !== null) latest.current.onNavigate?.(path);
       } else if (data.type === "edit-block-select" && typeof data.id === "string") {
         // Origin, window and id are the safety checks; the capability only governs what we send.
         if ((latest.current.heldBlocks ?? []).some((b) => (b as { id?: unknown; type?: unknown })?.id === data.id && (b as { type?: unknown }).type !== "page")) latest.current.onBlockSelect?.(data.id);

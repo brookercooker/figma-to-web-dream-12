@@ -68,7 +68,7 @@ function ToolButton({
   );
 }
 
-export default function DesignTab({ embedded = false, pageId }: { embedded?: boolean; pageId?: string } = {}) {
+export default function DesignTab({ embedded = false, pageId, onNavigate }: { embedded?: boolean; pageId?: string; onNavigate?: (path: string) => void } = {}) {
   const blockCanvasRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -723,7 +723,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
-          onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} />
+          onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} onNavigate={onNavigate} />
         {/* Held sections: full pane width, selected (never played or opened) until saved into the public page. */}
         {!heldInFrame && <div data-held-sections className="w-full">
           {blocks.filter((b): b is RenderBlock => !isPageContent(b)).map((b)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
