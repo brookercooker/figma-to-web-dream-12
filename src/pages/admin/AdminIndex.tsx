@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState }
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -56,7 +57,7 @@ function TabSkeleton() {
 
 /**
  * The Site Manager: the design chat column always on the left, topped by the account menu and collapsible to a thin rail.
- * The top bar starts with Tools (Pages and Capture), then Preview, Objects, Images and Videos,
+ * Tools (Pages and Capture) lives in the left header; the top bar starts with Preview, Objects, Images and Videos,
  * with Submit for Review at the right. Choosing a page in Pages points the chat at it. The chat and the
  * preview are kept alive while another tab is open, so nothing restarts when someone switches.
  */
@@ -203,25 +204,6 @@ function AdminShell() {
           <header data-top-bar className={cn("z-30 w-full shrink-0 border-b bg-background", HEADER_HEIGHT_CLASS)}>
             <div ref={rowRef} className="flex h-full w-full items-center gap-1 px-2 sm:gap-3 sm:px-4">
               <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager Sections">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant={tab === "pages" ? "default" : "ghost"} size="sm"
-                      className={cn("shrink-0 border", tab === "pages" ? "border-primary shadow-sm" : "border-transparent text-muted-foreground", compact && "w-8 px-0")}
-                      aria-label="Tools" title="Tools" aria-current={tab === "pages" ? "page" : undefined}>
-                      <Wrench className="h-4 w-4" aria-hidden />
-                      {!compact && <span>Tools</span>}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem onClick={() => navigate("/manage/pages")} aria-current={tab === "pages" ? "page" : undefined}
-                      className={tab === "pages" ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground" : undefined}>
-                      <FileText className="mr-2 h-4 w-4" aria-hidden />Pages
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/manage/capture")}>
-                      <Camera className="mr-2 h-4 w-4" aria-hidden />Capture
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
                 {TABS.map(({ key, label, Icon }) => {
                   const active = tab === key;
                   const className = `inline-flex shrink-0 items-center gap-2 whitespace-nowrap ${compact ? (active && squeeze < 3 ? "px-2.5" : "w-8 px-0") : "px-3"} py-2 rounded-md text-sm font-medium transition-colors border ${
@@ -314,14 +296,7 @@ function AdminShell() {
           )}
           aria-label={manual ? "Manual Mode" : "Chat"}
         >
-          {chatCollapsed && !manual && (
-            <div className="flex shrink-0 justify-start p-1.5 lg:justify-center">
-              <Button type="button" variant="ghost" size="icon" className="h-9 w-9" aria-label="Expand Chat" title="Expand Chat" aria-expanded={false} onClick={() => setChatCollapsed(false)}>
-                <PanelLeftOpen className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          <div data-chat-header className={cn("flex shrink-0", HEADER_HEIGHT_CLASS, " items-center gap-2 border-b bg-background px-3", chatCollapsed && !manual && "hidden")}>
+          <div data-chat-header className={cn("flex shrink-0", HEADER_HEIGHT_CLASS, " items-center gap-2 border-b bg-background px-3", chatCollapsed && !manual && "h-auto flex-wrap px-1.5 py-2 lg:flex-col lg:flex-nowrap")}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="w-9 shrink-0 gap-2 px-0" aria-label="Account Menu">
@@ -349,10 +324,29 @@ function AdminShell() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            <TooltipProvider delayDuration={200}>
+              <DropdownMenu>
+                <Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild>
+                  <Button variant={tab === "pages" ? "secondary" : "ghost"} size="icon" className="h-8 w-8 shrink-0"
+                    aria-label="Tools" aria-pressed={tab === "pages"} aria-current={tab === "pages" ? "page" : undefined}>
+                    <Wrench className="h-4 w-4" aria-hidden />
+                  </Button>
+                </DropdownMenuTrigger></TooltipTrigger><TooltipContent>Tools</TooltipContent></Tooltip>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => navigate("/manage/pages")} aria-current={tab === "pages" ? "page" : undefined}
+                    className={tab === "pages" ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground" : undefined}>
+                    <FileText className="mr-2 h-4 w-4" aria-hidden />Pages
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/manage/capture")}>
+                    <Camera className="mr-2 h-4 w-4" aria-hidden />Capture
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TooltipProvider>
             <HeaderActions />
-            <div className="flex-1" />
-            {!manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded={true} onClick={() => setChatCollapsed(true)}>
-              <PanelLeftClose className="h-4 w-4" />
+            <div className={cn("flex-1", chatCollapsed && !manual && "hidden")} />
+            {!manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={chatCollapsed ? "Expand Chat" : "Collapse Chat"} title={chatCollapsed ? "Expand Chat" : "Collapse Chat"} aria-expanded={!chatCollapsed} onClick={() => setChatCollapsed(!chatCollapsed)}>
+              {chatCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </Button>}
           </div>
           {!reviewShown && <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />}

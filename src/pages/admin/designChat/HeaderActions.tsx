@@ -18,7 +18,7 @@ export default function HeaderActions() {
     } catch { toast.error("The summary couldn't be copied. Try again."); }
   };
   return <TooltipProvider delayDuration={200}>
-    <div className="flex shrink-0 items-center gap-1">
+    <div className="flex max-w-full shrink-0 flex-wrap items-center justify-center gap-1">
       <Tooltip><TooltipTrigger asChild>
         <span tabIndex={editing ? 0 : undefined}>
           <Button variant={reviewOpen ? "secondary" : "ghost"} size="icon" className="relative h-8 w-8 shrink-0" aria-label={`Review Status${count ? `: ${count} Waiting` : ""}`} aria-pressed={reviewOpen} disabled={editing} onClick={() => setReviewOpen(!reviewOpen)}>

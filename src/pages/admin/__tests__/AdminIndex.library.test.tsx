@@ -70,6 +70,7 @@ describe("top bar library buttons", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: "Pages" }));
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/pages");
     expect(screen.getByRole("button", { name: "Tools" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Tools" })).toHaveAttribute("aria-pressed", "true");
   });
   it.each([false, true])("Tools Capture preserves its destination while editing=%s", async (editing) => {
     m.editing = editing;
@@ -79,5 +80,19 @@ describe("top bar library buttons", () => {
     fireEvent.keyDown(screen.getByRole("button", { name: "Tools" }), { key: "ArrowDown" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Capture" }));
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/capture");
+  });
+  it.each([false, true])("keeps Tools keyboard access in the left header when collapsed=%s", async (collapsed) => {
+    localStorage.setItem("siteManager:chatCollapsed", String(collapsed));
+    open();
+    const tools = screen.getByRole("button", { name: "Tools" });
+    expect(tools).toBeVisible();
+    expect(tools).toHaveAttribute("aria-pressed", "false");
+    expect(document.querySelector("[data-chat-header]")).toContainElement(tools);
+    expect(document.querySelector("[data-top-bar]")).not.toContainElement(tools);
+    fireEvent.keyDown(tools, { key: "ArrowDown" });
+    expect(await screen.findByRole("menuitem", { name: "Pages" })).toBeVisible();
+    fireEvent.keyDown(screen.getByRole("menuitem", { name: "Pages" }), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("menuitem", { name: "Pages" })).toBeNull());
+    await waitFor(() => expect(tools).toHaveFocus());
   });
 });
