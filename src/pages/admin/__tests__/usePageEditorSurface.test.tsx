@@ -2,38 +2,41 @@ import { act, cleanup, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EDITOR_DECISION_TIMEOUT_MS, usePageEditorSurface } from "../usePageEditorSurface";
 
-const mocks = vi.hoisted(() => ({ load: vi.fn(), release: vi.fn() }));
-vi.mock("../siteManifest", () => ({
-  loadSiteManifest: () => mocks.load(),
-  codePagePaths: (manifest: { pages: { path: string }[] }) => new Set(manifest.pages.map(page => page.path)),
-  retainEditingManifestPaths: () => mocks.release,
-}));
-afterEach(() => { cleanup(); vi.useRealTimers(); mocks.load.mockReset(); mocks.release.mockReset(); });
+const mocks = vi.hoisted(() => ({ base: null as string | null }));
+vi.mock("../siteManifest", () => ({ draftEmbedUrl: () => mocks.base }));
+afterEach(() => { cleanup(); vi.useRealTimers(); mocks.base = null; });
 
-describe("page editor decision lifetime", () => {
-  it("ends one stalled attempt at the bound and ignores a late non-manifest result", async () => {
+describe("page editor opening", () => {
+  it("opens the frame at once when the draft address is known", () => {
+    mocks.base = "https://draft.example/";
+    const editor = renderHook(() => usePageEditorSurface({ id: "experiment", path: "/draft/experiment" }));
+    expect(editor.result.current).toBe("framed");
+  });
+  it("waits for the address, then opens the frame and stays latched", () => {
     vi.useFakeTimers();
-    let deliver: ((value: { pages: never[] }) => void) | undefined;
-    mocks.load.mockImplementation(() => new Promise(resolve => { deliver = resolve; }));
     const editor = renderHook(() => usePageEditorSurface({ id: "experiment", path: "/draft/experiment" }));
     expect(editor.result.current).toBe("loading");
-    act(() => { vi.advanceTimersByTime(EDITOR_DECISION_TIMEOUT_MS - 1); });
-    expect(editor.result.current).toBe("loading");
-    act(() => { vi.advanceTimersByTime(1); });
+    mocks.base = "https://draft.example/";
+    act(() => { vi.advanceTimersByTime(250); });
     expect(editor.result.current).toBe("framed");
-    await act(async () => { deliver?.({ pages: [] }); });
+    mocks.base = null;
+    act(() => { vi.advanceTimersByTime(EDITOR_DECISION_TIMEOUT_MS); });
     expect(editor.result.current).toBe("framed");
-    expect(mocks.load).toHaveBeenCalledTimes(1);
   });
-  it("does not apply a previous page's delayed decision to the newly opened page", async () => {
-    let old: ((value: { pages: { path: string }[] }) => void) | undefined;
-    mocks.load.mockImplementationOnce(() => new Promise(resolve => { old = resolve; })).mockResolvedValue({ pages: [] });
-    const editor = renderHook(({ id, path }) => usePageEditorSurface({ id, path }), { initialProps: { id: "old", path: "/team" } });
-    editor.rerender({ id: "new", path: "/flicker-test" });
-    await act(async () => {});
-    expect(editor.result.current).toBe("local");
-    await act(async () => { old?.({ pages: [{ path: "/team" }] }); });
-    expect(editor.result.current).toBe("local");
-    expect(mocks.release).toHaveBeenCalledTimes(1);
+  it("opens the frame (with its Retry) at the bound when no address arrives", () => {
+    vi.useFakeTimers();
+    const editor = renderHook(() => usePageEditorSurface({ id: "new", path: "/brand-new" }));
+    act(() => { vi.advanceTimersByTime(EDITOR_DECISION_TIMEOUT_MS - 300); });
+    expect(editor.result.current).toBe("loading");
+    act(() => { vi.advanceTimersByTime(400); });
+    expect(editor.result.current).toBe("framed");
+  });
+  it("a newly opened page starts its own opening", () => {
+    vi.useFakeTimers();
+    mocks.base = "https://draft.example/";
+    const editor = renderHook(({ id }) => usePageEditorSurface({ id, path: "/" + id }), { initialProps: { id: "old" } });
+    mocks.base = null;
+    editor.rerender({ id: "new" });
+    expect(editor.result.current).toBe("loading");
   });
 });

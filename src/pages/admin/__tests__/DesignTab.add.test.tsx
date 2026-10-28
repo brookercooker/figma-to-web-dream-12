@@ -33,7 +33,8 @@ vi.mock("@/prototype/client", () => ({ supabase: {
     return query;
   },
 } }));
-vi.mock("../siteManifest", async (original) => ({ ...await original<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.resolve({ pages: [] }), manifestHasPage: () => false }));
+vi.mock("../siteManifest", async (original) => ({ ...await original<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.resolve({ pages: [] }), draftEmbedUrl: () => "https://draft.example/" }));
+vi.mock("../FramedPageEditor", () => ({ default: () => <div data-testid="public-frame" /> }));
 vi.mock("@/components/Header", () => ({ default: () => null }));
 vi.mock("@/components/Footer", () => ({ default: () => null }));
 vi.mock("../CreatePageDialog", () => ({ default: () => null }));
