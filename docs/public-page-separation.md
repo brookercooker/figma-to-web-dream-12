@@ -2,7 +2,7 @@
 
 ## Outcome
 
-DesignTab (embedded and standalone) opens every manifest page in FramedPageEditor, including Homepage, Contact, About, Team, Locations, Full Vendor List, Inspiration Gallery, Test Page, Race Test Page and custom landing pages. It no longer imports codedPages or PageRoute. When the manifest has not loaded, it fails closed to the public editor rather than inventing an empty original. Authoritatively non-manifest database pages retain their existing local block editor.
+DesignTab (embedded and standalone) opens every manifest page in FramedPageEditor, including Homepage, Contact, About, Team, Locations, Full Vendor List, Inspiration Gallery, Test Page, Race Test Page and custom landing pages. It no longer imports codedPages or PageRoute. When the manifest has not loaded, it fails closed to the public editor rather than inventing an empty original. Database-only and brand-new pages also open in FramedPageEditor; the local page surface was removed.
 
 All existing inline_edits keys are sent unchanged through edit-init/update. The manager remains the only database writer. Held sections remain local, original first; save/discard persistence and explicit section revisions are unchanged.
 

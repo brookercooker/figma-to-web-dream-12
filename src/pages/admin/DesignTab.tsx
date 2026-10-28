@@ -28,12 +28,12 @@ import SharedObjectNotice from "./SharedObjectNotice";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import InsertGap, { type InsertType } from "./InsertGap";
-import InlineEditSurface, { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
+import { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
 import InlineStylePanel from "./InlineStylePanel";
 import InlineEditSafetyPanel from "./InlineEditSafetyPanel";
 import InlineDestinationPanel from "./InlineDestinationPanel";
 import { hasVisibleEdits, withoutPath } from "@/lib/inlineEditCore";
-import type { InlineEditController, InlineReports } from "@/components/InlineEditSurface";
+import type { InlineReports } from "@/components/InlineEditSurface";
 import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
@@ -119,11 +119,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [closed, setClosed] = useState(false);
   // In-place editing of a coded page: type over text, click pictures to swap.
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
-  const inlineApi = useRef<InlineEditController | null>(null);
-  const headerApi = useRef<InlineEditController | null>(null);
   const framedApi = useRef<FramedEditorController | null>(null);
-  const [inlineReports, setInlineReports] = useState<InlineReports>({});
-  const [headerReports, setHeaderReports] = useState<InlineReports>({});
   const [framedReports, setFramedReports] = useState<InlineReports>({});
   const [resetKey, setResetKey] = useState(0);
   // Embedded pages not in the coded list: what loading their code found, and a counter that re-runs the load.
@@ -147,7 +143,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   }, []);
   const changeScope = (scope: InlineScope, next: InlineEdits, remote = false) => {
     remote = remote || !!(inlineSel && remoteSnapshot(inlineSel.el));
-    if (!remote) next = (scope === "Header" ? headerApi : inlineApi).current?.prepare(scope, next) ?? next;
     const snapshot = inlineSel && remoteSnapshot(inlineSel.el);
     if (snapshot && scope === snapshot.scope && snapshot.fingerprint && Object.keys(next).some(k => { const parsed = k.includes(":") ? k.slice(k.indexOf(":") + 1) : k; return parsed === snapshot.key && !k.startsWith("fp:"); })) next = { ...next, [`fp:${snapshot.key}`]: JSON.stringify(snapshot.fingerprint) };
     if (snapshot?.link?.fingerprint && scope === snapshot.link.scope && next[`link:${snapshot.link.key}`]) next = { ...next, [`fp:${snapshot.link.key}`]: JSON.stringify(snapshot.link.fingerprint) };
@@ -184,7 +179,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const pickImage = () => new Promise<string | null>((resolve) => setImgAsk(() => resolve));
   const inlineTimer = useRef<number>();
   const changeInline = (next: InlineEdits, remote = false) => {
-    if (!remote) next = inlineApi.current?.prepare("page", next) ?? next;
     setInlineEdits(next);
     const id = selectedId;
     if (embedded) { pendingInline.current = { pageId: id, next }; setTweaksPending(true); return; }
@@ -662,10 +656,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     />
                     <InlineDestinationPanel selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
                     {/* Framed pages replay in the public frame; local reports would be stale, so show none until the frame reports. */}
-                    <InlineEditSafetyPanel reports={framed ? framedReports : surface === "loading" ? {} : { ...inlineReports, ...Object.fromEntries(Object.entries(headerReports).filter(([scope]) => scope !== "page")) }} selection={inlineSel} editsFor={scopeEdits}
+                    <InlineEditSafetyPanel reports={framed ? framedReports : {}} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
-                      record={async () => { if (surface === "loading") return; const maps = framed ? await recordFramed() : { ...inlineApi.current?.record(), ...Object.fromEntries(Object.entries(headerApi.current?.record() ?? {}).filter(([scope]) => scope !== "page")) }; if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
-                      resetAll={() => { changeInline({}); for (const scope of new Set([...Object.keys(inlineReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
+                      record={async () => { if (!framed) return; const maps = await recordFramed(); if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
+                      resetAll={() => { changeInline({}); for (const scope of new Set([...Object.keys(framedReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
     </>
   );
   const blockTools = (b: Block, i: number) => (
@@ -805,32 +799,22 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     {!embedded && <aside><Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search pages" />{filtered.map(p=><Button key={p.id} variant="ghost" className="w-full justify-start" onClick={()=>select(p.id)}>{p.name}</Button>)}{tools}</aside>}
     {surface === "loading" && selectedId && <div role="status" className="flex items-center justify-center bg-muted p-6 text-sm text-muted-foreground">Loading the page editor…</div>}
     {page && surface !== "loading" && <EmbeddedBox chat={embedded ? chat : null}>
-      <div ref={blockCanvasRef} className="relative isolate h-full overflow-y-auto bg-background" style={deviceStyle}>
+      <div ref={blockCanvasRef} className="relative isolate h-full w-full overflow-y-auto bg-background" style={deviceStyle}>
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
-        {!framed && <><SharedObjectNotice componentKey="Header" />
-        <InlineEditSurface edits={{}} objectEdits={objectEdits} editing sections={false} apiRef={headerApi} onReport={setHeaderReports} onChange={changeScope} onSelect={setInlineSel}><Header /></InlineEditSurface></>}
-        {framed && <FramedPageEditor key={`public-${page.id}`} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
+        <FramedPageEditor key={`public-${page.id}`} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
           sectionRevision={sectionRevision}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
-          onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} />}
-        <InlineEditSurface key={page.id} edits={framed ? {} : inlineEdits} objectEdits={objectEdits} editing={!framed} apiRef={framed ? undefined : inlineApi} onReport={framed ? undefined : setInlineReports}
-          collapsed={foldedChunks} onToggleCollapse={k=>setFoldedChunks(cur=>{ const next=new Set(cur); if(next.has(k)) next.delete(k); else next.add(k); return next; })}
-          onReorder={reorderChunks}
-          onOpenObject={openInlineObject}
-          onChange={changeScope} onSelect={sel=> { setInlineSel(sel); setActiveId(sel?.el.closest<HTMLElement>("[data-page-block]")?.dataset.pageBlock ?? ""); }}
-          selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null}>
-          {!framed &&
-            <section className="mx-auto max-w-3xl px-6 py-10"><h1 className="font-serif text-3xl">{page.name}</h1><p data-empty-editable className="min-h-6" aria-label="Page Text"> </p></section>}
-          {blocks.map((b,i)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
-            // Held sections are selected, never played or opened: media ignores the pointer and clicks only select.
+          onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} />
+        {/* Held sections: full pane width, selected (never played or opened) until saved into the public page. */}
+        <div data-held-sections className="w-full">
+          {blocks.map((b)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
             className={`relative ${embedded ? "cursor-pointer [&_iframe]:pointer-events-none [&_video]:pointer-events-none" : ""} ${embedded && activeId === b.id ? "outline outline-2 -outline-offset-2 outline-primary" : ""}`}
-            onClickCapture={embedded && framed ? (e) => { if ((e.target as HTMLElement).closest("[contenteditable=true],input,textarea,select")) return; e.preventDefault(); setActiveId(b.id); setInlineSel(null); } : undefined}>
+            onClickCapture={embedded ? (e) => { if ((e.target as HTMLElement).closest("[contenteditable=true],input,textarea,select")) return; e.preventDefault(); setActiveId(b.id); setInlineSel(null); } : undefined}>
             <BlockView block={b} />
           </section>)}
-        </InlineEditSurface>
-        {!framed && <div className="pointer-events-none"><Footer /></div>}
+        </div>
       </div>
     </EmbeddedBox>}
     {embedded && slot && createPortal(tools,slot)}
