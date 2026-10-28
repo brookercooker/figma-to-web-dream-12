@@ -26,5 +26,5 @@ export function usePageEditorSurface(page: { id: string; path: string } | null):
     );
     return () => { settled = true; clearTimeout(timeout); release(); };
   }, [id]); // A path or manifest change applies only on the next page opening.
-  return choice?.id === id ? choice.surface : "loading";
+  return choice && choice.id === id ? choice.surface : "loading";
 }
