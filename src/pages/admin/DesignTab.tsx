@@ -376,6 +376,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       offX = lastX - r.left; offY = lastY - r.top;
       ghost = src.cloneNode(true) as HTMLElement;
       ghost.removeAttribute("data-page-block");
+      ghost.setAttribute("data-editor-drag-ghost", "");
       Object.assign(ghost.style, {
         position: "fixed", left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`,
         maxHeight: "320px", overflow: "hidden", opacity: "0.6", pointerEvents: "none", zIndex: "1000",
@@ -804,7 +805,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     {!embedded && <aside><Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search pages" />{filtered.map(p=><Button key={p.id} variant="ghost" className="w-full justify-start" onClick={()=>select(p.id)}>{p.name}</Button>)}{tools}</aside>}
     {surface === "loading" && selectedId && <div role="status" className="flex items-center justify-center bg-muted p-6 text-sm text-muted-foreground">Loading the page editor…</div>}
     {page && surface !== "loading" && <EmbeddedBox chat={embedded ? chat : null}>
-      <div ref={blockCanvasRef} className="h-full overflow-y-auto bg-background" style={deviceStyle}>
+      <div ref={blockCanvasRef} className="relative isolate h-full overflow-y-auto bg-background" style={deviceStyle}>
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
         {!framed && <><SharedObjectNotice componentKey="Header" />
         <InlineEditSurface edits={{}} objectEdits={objectEdits} editing sections={false} apiRef={headerApi} onReport={setHeaderReports} onChange={changeScope} onSelect={setInlineSel}><Header /></InlineEditSurface></>}

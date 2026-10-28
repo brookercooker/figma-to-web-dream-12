@@ -79,6 +79,7 @@ function makeGhost(el: HTMLElement, x: number, y: number) {
     boxShadow: "0 12px 32px hsl(var(--foreground) / 0.18)", background: "hsl(var(--background))",
   });
   g.removeAttribute("data-inline-dragging");
+  g.setAttribute("data-editor-drag-ghost", "");
   document.body.appendChild(g);
   return { move: (mx: number, my: number) => { g.style.left = `${mx - dx}px`; g.style.top = `${my - dy}px`; }, remove: () => g.remove() };
 }
@@ -545,7 +546,7 @@ export default function InlineEditSurface({
   const linkGuard = useEditorLinkGuard(ref, editing, onClick);
 
   return (
-    <div ref={outer} className="relative">
+    <div ref={outer} className="relative isolate">
     <div
       ref={ref}
       data-inline-root
