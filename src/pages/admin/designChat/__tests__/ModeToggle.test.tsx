@@ -6,7 +6,7 @@ import ModeToggle from "../ModeToggle";
 import { ModeSwitchProvider } from "../ModeSwitchContext";
 import { registerPreviewPage } from "../usePreviewPage";
 
-const m = vi.hoisted(() => ({ chat: null as any, preview: {} as any, dirty: false, busy: false, open: 0, initial: "chat", page: { id: "home", name: "Homepage", path: "/" } as any, save: vi.fn(), discard: vi.fn(), select: vi.fn(), start: vi.fn(), stop: vi.fn() }));
+const m = vi.hoisted(() => ({ chat: null as any, preview: {} as any, dirty: false, busy: false, open: 0, status: "", initial: "chat", page: { id: "home", name: "Homepage", path: "/" } as any, save: vi.fn(), discard: vi.fn(), select: vi.fn(), start: vi.fn(), stop: vi.fn() }));
 vi.mock("../DesignChatContext", () => ({ useDesignChat: () => m.chat }));
 vi.mock("../EditorSlot", () => ({ useEditorSlot: () => ({ hasChanges: () => m.dirty, saveAll: m.save, discardAll: m.discard }) }));
 vi.mock("../pageSelection", () => ({ workingPageFrom: (page: any) => page, loadModePages: async () => [{ id: "chosen", name: "About", path: "/about" }] }));
@@ -14,11 +14,11 @@ vi.mock("../usePreviewPage", () => ({ registerPreviewPage: vi.fn() }));
 function Harness({ collapsed = false }: { collapsed?: boolean }) {
   const [mode, setMode] = useState(m.initial);
   const [page, setPage] = useState(m.page);
-  m.chat = { ...m.preview, mode, editing: mode === "manual", workingPage: page, state: { busy: m.busy, publish: { open: m.open } },
+  m.chat = { ...m.preview, mode, editing: mode === "manual", workingPage: page, state: { busy: m.busy, publish: { open: m.open, status: m.status } },
     selectPage: (next: any) => { m.select(next); setPage(next); }, startEditing: () => { m.start(); setMode("manual"); }, stopEditing: () => { m.stop(); setMode("chat"); } };
   return <ModeSwitchProvider><ModeToggle collapsed={collapsed} onChat={() => {}} /></ModeSwitchProvider>;
 }
-beforeEach(() => { vi.clearAllMocks(); m.preview = {}; m.initial = "chat"; m.page = { id: "home", name: "Homepage", path: "/" }; m.dirty = false; m.busy = false; m.open = 0; m.save.mockResolvedValue(true); });
+beforeEach(() => { vi.clearAllMocks(); m.preview = {}; m.initial = "chat"; m.page = { id: "home", name: "Homepage", path: "/" }; m.dirty = false; m.busy = false; m.open = 0; m.status = ""; m.save.mockResolvedValue(true); });
 afterEach(cleanup);
 const open = (collapsed = false) => render(<MemoryRouter><Harness collapsed={collapsed} /></MemoryRouter>);
 const chat = () => screen.getByRole("radio", { name: "Chat Mode", hidden: true });
@@ -127,8 +127,8 @@ describe("segmented mode switch", () => {
     await screen.findByRole("alert"); expect(manual()).toHaveAttribute("aria-checked", "true"); expect(m.stop).not.toHaveBeenCalled();
   });
   it.each(["busy", "review"])("confirms Claude %s before changing the highlight", async (kind) => {
-    m.busy = kind === "busy"; m.open = kind === "review" ? 1 : 0; open(); fireEvent.click(manual());
+    m.busy = kind === "busy"; m.open = kind === "review" ? 1 : 0; m.status = kind === "review" ? "reviewing" : ""; open(); fireEvent.click(manual());
     expect(screen.getByRole("alertdialog")).toBeVisible(); expect(chat()).toHaveAttribute("aria-checked", "true");
-    fireEvent.click(screen.getByText("Continue Editing")); await waitFor(() => expect(manual()).toHaveAttribute("aria-checked", "true"));
+    fireEvent.click(screen.getByText(kind === "busy" ? "Continue Editing" : "Keep Editing")); await waitFor(() => expect(manual()).toHaveAttribute("aria-checked", "true"));
   });
 });
