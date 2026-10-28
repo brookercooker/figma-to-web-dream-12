@@ -72,7 +72,6 @@ function AdminShell() {
   const designChat = useDesignChat();
   const { workingPage, editing, mode, stopEditing, clearWorkingPage, objectOpen, closeObject } = designChat;
   const manual = mode === "manual";
-  const reviewShown = designChat.reviewOpen && !manual && !(chatCollapsed);
   const editingHeaderRef = useRef<HTMLDivElement>(null);
   const previousMode = useRef(mode);
   const [announcement, setAnnouncement] = useState("");
@@ -120,6 +119,7 @@ function AdminShell() {
   const [chatCollapsed, setChatCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem("siteManager:chatCollapsed") === "true"; } catch { return false; }
   });
+  const reviewShown = designChat.reviewOpen && !manual && !chatCollapsed;
   useEffect(() => {
     try { localStorage.setItem("siteManager:chatCollapsed", String(chatCollapsed)); } catch { /* no storage: ignore */ }
   }, [chatCollapsed]);
@@ -352,7 +352,7 @@ function AdminShell() {
               <PanelLeftClose className="h-4 w-4" />
             </Button>}
           </div>
-          <div className={cn(reviewShown && "hidden")}><ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} /></div>
+          <div className={reviewShown ? "hidden" : "contents"}><ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} /></div>
           {reviewShown && <ReviewChangesView onShowPreview={() => { if (tab !== "preview") navigate("/manage/preview"); }} />}
           {manual && workingPage && (
             <div className="flex min-h-0 flex-1 flex-col">
