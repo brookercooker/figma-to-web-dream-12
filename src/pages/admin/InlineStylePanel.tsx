@@ -172,6 +172,28 @@ export default function InlineStylePanel({
     );
   }
 
+  if (sel.kind === "input") {
+    const pKey = `placeholder:${sel.key}`;
+    const label = (remoteSnapshot(sel.el)?.attrs?.label ?? "").trim();
+    const original = remoteSnapshot(sel.el)?.attrs?.placeholder ?? sel.el.getAttribute("placeholder") ?? "";
+    const value = edits[pKey] ?? original;
+    const setPlaceholder = (v: string) => {
+      const next = { ...edits };
+      if (v) next[pKey] = v.slice(0, 300); else delete next[pKey];
+      onChange(next);
+    };
+    return (
+      <div>
+        <ToolHeader icon={TextCursorInput} title={label ? `Form Field: ${label}` : "Form Field"} />
+        <ToolGroup title="Wording" icon={TextCursorInput} defaultOpen>
+          <ToolField label="Placeholder Text">
+            <Input aria-label="Placeholder Text" maxLength={300} value={value} onChange={(e) => setPlaceholder(e.target.value)} />
+          </ToolField>
+          <ToolNote>The grey hint shown inside the empty box. Clear it to go back to the original hint.</ToolNote>
+        </ToolGroup>
+      </div>
+    );
+  }
   if (sel.kind === "video") {
     const snap = remoteSnapshot(sel.el);
     const attr = (k: string) => snap?.attrs?.[k] ?? sel.el.getAttribute(k) ?? "";

@@ -28,7 +28,7 @@ export type InlineReports = Record<string, ReplayReport>;
 /** "page" or the registry key of a shared object. */
 export type InlineScope = string;
 /** `side` is set when the line is an edge (border) of a larger element. */
-export interface InlineSelection { key: string; kind: "text" | "image" | "video" | "divider" | "locked"; el: HTMLElement; scope: InlineScope; side?: "top" | "bottom" | "left" | "right"; link?: { key: string; el: HTMLElement; scope: InlineScope } }
+export interface InlineSelection { key: string; kind: "text" | "image" | "video" | "divider" | "locked" | "input"; el: HTMLElement; scope: InlineScope; side?: "top" | "bottom" | "left" | "right"; link?: { key: string; el: HTMLElement; scope: InlineScope } }
 /** Icons offered for buttons and links (lucide names). */
 export const LINK_ICONS = ["ArrowRight", "ArrowUpRight", "ChevronRight", "ExternalLink", "Plus", "MapPin", "Phone", "Mail", "Calendar", "ShoppingBag", "Heart", "Download", "Play", "Search", "Star", "Sparkles", "Lightbulb", "Lamp"] as const;
 export const styleKey = (key: string) => `style:${key}`;
