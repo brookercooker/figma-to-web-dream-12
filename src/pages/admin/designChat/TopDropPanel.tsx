@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, useState, type ComponentPropsWithoutRef, type ElementRef, type RefObject } from "react";
+import { forwardRef, useCallback, useEffect, useRef, useState, type ComponentPropsWithoutRef, type ElementRef, type RefObject } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,13 @@ export const TopDropContent = forwardRef<ElementRef<typeof DialogPrimitive.Conte
     const opener = useRef<HTMLElement | null>(null);
     const [anchor, setAnchor] = useState<HTMLElement | null>(null);
     const [placement, setPlacement] = useState<ReturnType<typeof topDropPlacement> | null>(null);
+    const contentRef = useCallback((node: HTMLDivElement | null) => {
+      if (typeof ref === "function") ref(node); else if (ref) ref.current = node;
+      if (!node) { setAnchor(null); setPlacement(null); return; }
+      const active = document.activeElement;
+      opener.current = anchorRef?.current ?? requestedAnchor ?? (active instanceof HTMLElement && active !== document.body ? active : null);
+      requestedAnchor = null; setAnchor(opener.current);
+    }, [ref, anchorRef]);
     useEffect(() => {
       if (!anchor) return;
       const area = anchor.closest<HTMLElement>("[data-picker-area]");
@@ -37,13 +44,11 @@ export const TopDropContent = forwardRef<ElementRef<typeof DialogPrimitive.Conte
     return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/10 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0" />
-      <DialogPrimitive.Content ref={ref} data-top-drop-panel="" className={cn(TOP_DROP_PANEL_CLASS, className)} style={{ top: HEADER_HEIGHT_PX, ...style, ...(placement ? { top: placement.top, left: placement.left, width: placement.width, transformOrigin: `${placement.origin}px 0` } : {}) }}
+      <DialogPrimitive.Content ref={contentRef} data-top-drop-panel="" className={cn(TOP_DROP_PANEL_CLASS, className)} style={{ top: HEADER_HEIGHT_PX, ...style, ...(placement ? { top: placement.top, left: placement.left, width: placement.width, transformOrigin: `${placement.origin}px 0` } : {}) }}
         onOpenAutoFocus={event => {
-          const active = document.activeElement;
-          opener.current = anchorRef?.current ?? requestedAnchor ?? (active instanceof HTMLElement && active !== document.body ? active : null);
-          requestedAnchor = null; setAnchor(opener.current); onOpenAutoFocus?.(event);
+          onOpenAutoFocus?.(event);
         }}
-        onCloseAutoFocus={event => { onCloseAutoFocus?.(event); if (opener.current?.isConnected) { event.preventDefault(); opener.current.focus(); } setAnchor(null); setPlacement(null); }} {...props}>
+        onCloseAutoFocus={event => { onCloseAutoFocus?.(event); if (opener.current?.isConnected) { event.preventDefault(); opener.current.focus(); } }} {...props}>
         {placement && anchor && <span aria-hidden="true" data-picker-connector="" className="pointer-events-none absolute top-0 h-1 bg-primary" style={{ left: placement.connectorLeft, width: placement.connectorWidth }} />}
         {children}
         {!hideClose && (
