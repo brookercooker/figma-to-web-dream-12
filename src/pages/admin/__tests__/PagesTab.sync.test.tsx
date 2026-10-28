@@ -17,7 +17,6 @@ vi.mock("../LandingPagesView", () => ({ default: () => null }));
 vi.mock("../LinkAuditView", () => ({ default: () => null }));
 vi.mock("../PagePreviewDialog", () => ({ default: () => null }));
 vi.mock("../WorkStatusPopover", () => ({ default: () => null }));
-vi.mock("../pagePolicy", () => ({ pageAccess: () => "tweak" }));
 
 beforeEach(() => { cleanup(); state.rows = []; state.load.mockClear(); state.choose.mockClear(); state.start.mockClear(); });
 describe("Pages list synchronization", () => {
