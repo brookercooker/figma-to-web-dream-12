@@ -19,11 +19,13 @@ export const TOP_DROP_PANEL_CLASS =
 export const TopDropContent = forwardRef<ElementRef<typeof DialogPrimitive.Content>, ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { hideClose?: boolean; anchorRef?: RefObject<HTMLElement> }>(
   ({ className, style, children, hideClose, anchorRef, onOpenAutoFocus, onCloseAutoFocus, ...props }, ref) => {
     const opener = useRef<HTMLElement | null>(null);
+    const captured = useRef(false);
     const [anchor, setAnchor] = useState<HTMLElement | null>(null);
     const [placement, setPlacement] = useState<ReturnType<typeof topDropPlacement> | null>(null);
     const contentRef = useCallback((node: HTMLDivElement | null) => {
       if (typeof ref === "function") ref(node); else if (ref) ref.current = node;
-      if (!node) return;
+      if (!node || captured.current) return;
+      captured.current = true;
       const active = document.activeElement;
       opener.current = anchorRef?.current ?? requestedAnchor ?? (active instanceof HTMLElement && active !== document.body ? active : null);
       requestedAnchor = null; setAnchor(opener.current);
@@ -32,7 +34,7 @@ export const TopDropContent = forwardRef<ElementRef<typeof DialogPrimitive.Conte
       if (!anchor) return;
       const area = anchor.closest<HTMLElement>("[data-picker-area]");
       const toolbar = area?.querySelector<HTMLElement>("[data-top-bar]") ?? document.querySelector<HTMLElement>("[data-top-bar]");
-      const measure = () => setPlacement(topDropPlacement(anchor.getBoundingClientRect(), area?.getBoundingClientRect() ?? { left: 0, right: window.innerWidth, width: window.innerWidth, bottom: 0 }, window.innerWidth, toolbar?.getBoundingClientRect().bottom ?? anchor.getBoundingClientRect().bottom));
+      const measure = () => setPlacement(topDropPlacement(anchor.getBoundingClientRect(), area?.getBoundingClientRect() ?? { left: 0, right: window.innerWidth, width: window.innerWidth, bottom: 0 }, window.innerWidth, toolbar?.getBoundingClientRect().bottom ?? HEADER_HEIGHT_PX));
       const pressed = anchor.getAttribute("aria-pressed");
       anchor.setAttribute("aria-pressed", "true"); anchor.setAttribute("data-picker-open", "true");
       measure();
@@ -48,7 +50,7 @@ export const TopDropContent = forwardRef<ElementRef<typeof DialogPrimitive.Conte
         onOpenAutoFocus={event => {
           onOpenAutoFocus?.(event);
         }}
-        onCloseAutoFocus={event => { onCloseAutoFocus?.(event); if (opener.current?.isConnected) { event.preventDefault(); opener.current.focus(); } setAnchor(null); }} {...props}>
+        onCloseAutoFocus={event => { onCloseAutoFocus?.(event); if (opener.current?.isConnected) { event.preventDefault(); opener.current.focus(); } captured.current = false; setAnchor(null); }} {...props}>
         {placement && anchor && <span aria-hidden="true" data-picker-connector="" className="pointer-events-none absolute top-0 h-1 bg-primary" style={{ left: placement.connectorLeft, width: placement.connectorWidth }} />}
         {children}
         {!hideClose && (
