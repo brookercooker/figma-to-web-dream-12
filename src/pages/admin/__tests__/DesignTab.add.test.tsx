@@ -33,7 +33,7 @@ vi.mock("@/prototype/client", () => ({ supabase: {
     return query;
   },
 } }));
-vi.mock("../siteManifest", async (original) => ({ ...await original<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.resolve({}), manifestHasPage: () => false }));
+vi.mock("../siteManifest", async (original) => ({ ...await original<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.resolve({ pages: [] }), manifestHasPage: () => false }));
 vi.mock("@/components/Header", () => ({ default: () => null }));
 vi.mock("@/components/Footer", () => ({ default: () => null }));
 vi.mock("../CreatePageDialog", () => ({ default: () => null }));

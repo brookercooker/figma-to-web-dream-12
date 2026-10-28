@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
+import { MANIFEST_CHANGED, resetSiteManifestCache, setManifestBase } from "../siteManifest";
 
 const mocks = vi.hoisted(() => ({
   status: "missing" as "found" | "missing" | "unreachable",
@@ -12,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   save: null as null | (() => Promise<boolean>),
   discard: null as null | (() => void),
   hasChanges: null as null | (() => boolean),
+  manifest: vi.fn<() => Promise<{ pages: { path: string }[] }>>(),
+  frameRenders: vi.fn(),
 }));
 vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({
   slot: null, saveAll: vi.fn(),
@@ -40,7 +43,8 @@ vi.mock("@/prototype/client", () => ({ supabase: {
     return query;
   },
 } }));
-vi.mock("../siteManifest", async (original) => ({ ...await original<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.resolve({}), manifestHasPage: () => false }));
+vi.mock("../siteManifest", async (original) => ({ ...await original<typeof import("../siteManifest")>(), loadSiteManifest: () => mocks.manifest() }));
+vi.mock("../FramedPageEditor", () => ({ default: () => { mocks.frameRenders(); return <div data-testid="public-frame" />; } }));
 vi.mock("@/components/Header", () => ({ default: () => null }));
 vi.mock("@/components/Footer", () => ({ default: () => null }));
 vi.mock("../CreatePageDialog", () => ({ default: () => null }));
@@ -55,6 +59,8 @@ beforeEach(() => {
   cleanup();
   mocks.status = "missing"; mocks.content = null; mocks.path = "/brand-new"; mocks.reloadKeys = [];
   mocks.writes.mockClear();
+  mocks.manifest.mockReset().mockResolvedValue({ pages: [] });
+  mocks.frameRenders.mockClear();
   vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
   HTMLElement.prototype.scrollIntoView = vi.fn();
 });
@@ -63,6 +69,41 @@ const open = () => render(<MemoryRouter initialEntries={["/manage/design?page=pa
 const contentWrites = () => mocks.writes.mock.calls.filter(([v]) => v && "content" in v);
 
 describe("Edit Manually on a page without code", () => {
+  it.each(["/draft/experiment", "/flicker-test"])("never mounts the public surface for DB-only %s, even after late manifest, resets and events", async (path) => {
+    mocks.path = path;
+    let deliver: ((manifest: { pages: { path: string }[] }) => void) | undefined;
+    mocks.manifest.mockImplementationOnce(() => new Promise(resolve => { deliver = resolve; }));
+    const view = open();
+    await waitFor(() => expect(mocks.manifest).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("status")).toHaveTextContent("Loading the page editor…");
+    expect(screen.queryByLabelText("Page Text")).toBeNull();
+    expect(mocks.frameRenders).not.toHaveBeenCalled();
+    await act(async () => { deliver?.({ pages: [{ path: "/home" }] }); });
+    const local = await screen.findByLabelText("Page Text");
+    act(() => {
+      mocks.manifest.mockResolvedValue({ pages: [{ path }] });
+      window.dispatchEvent(new Event(MANIFEST_CHANGED));
+      resetSiteManifestCache();
+      setManifestBase("https://changed.example/");
+      window.dispatchEvent(new Event(MANIFEST_CHANGED));
+    });
+    view.rerender(<MemoryRouter><DesignTab embedded pageId="page" /></MemoryRouter>);
+    expect(screen.getByLabelText("Page Text")).toBe(local);
+    expect(mocks.manifest).toHaveBeenCalledTimes(1);
+    expect(mocks.frameRenders).not.toHaveBeenCalled();
+    view.unmount();
+    // A new edit session is allowed to use a newly published manifest.
+    open();
+    expect(await screen.findByTestId("public-frame")).toBeInTheDocument();
+  });
+  it("fails closed once on an unreadable manifest and never substitutes a local starter", async () => {
+    mocks.manifest.mockRejectedValue(new Error("offline"));
+    open();
+    await screen.findByTestId("public-frame");
+    act(() => { resetSiteManifestCache(); window.dispatchEvent(new Event(MANIFEST_CHANGED)); });
+    expect(screen.queryByLabelText("Page Text")).toBeNull();
+    expect(mocks.manifest).toHaveBeenCalledTimes(1);
+  });
   it("opens an empty original in the same surface without creating saved sections", async () => {
     const { container } = open();
     await screen.findByRole("heading", { name: "Brand New" });

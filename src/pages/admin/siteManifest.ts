@@ -92,6 +92,7 @@ function receiverTargetAllowed(): boolean {
 function reconcileReceiver() {
   if (!bridgeUsers) return;
   const real = Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview]")).find((frame) => {
+    if (frame.hasAttribute("data-site-editor") || new URL(frame.src, window.location.href).searchParams.has("nova-edit")) return false;
     const origin = originOf(frame.src); return origin && trustedOrigin(origin);
   });
   if (real || !receiverTargetAllowed()) { receiver?.remove(); receiver = null; }
