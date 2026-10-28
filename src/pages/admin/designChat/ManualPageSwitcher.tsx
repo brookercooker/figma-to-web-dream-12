@@ -64,6 +64,7 @@ export default function ManualPageSwitcher({ navigation }: { navigation: Navigat
   const [query, setQuery] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
   const previousId = useRef(workingPage?.id);
+  const choosing = useRef(false);
   useEffect(() => {
     if (previousId.current === workingPage?.id) return;
     previousId.current = workingPage?.id;
@@ -73,23 +74,23 @@ export default function ManualPageSwitcher({ navigation }: { navigation: Navigat
   const { pages, disabled, loading, failed, pending } = navigation;
   const index = pages.findIndex(page => page.id === workingPage?.id);
   const filtered = filterManualPages(pages, query);
-  const choose = (page: ManualPage) => { setOpen(false); navigation.requestPage(page); };
+  const choose = (page: ManualPage) => { choosing.current = page.id !== workingPage?.id; setOpen(false); navigation.requestPage(page); };
   return <>
     <div className="flex min-w-0 items-center gap-1">
       <h2 ref={heading} tabIndex={-1} aria-label={`Editing ${workingPage?.name ?? "Page"}`} className="min-w-0 flex-1 outline-none">
-        <Popover open={open} onOpenChange={value => { setOpen(value); if (value) setQuery(""); }}>
+        <Popover open={open} onOpenChange={value => { setOpen(value); if (value) { choosing.current = false; setQuery(""); } }}>
           <PopoverTrigger asChild>
             <Button variant="ghost" disabled={disabled} className="h-auto w-full justify-between gap-1 px-1 py-1 text-left text-lg font-semibold" title={`Editing ${workingPage?.name}`}>
               <span className="min-w-0 truncate">Editing {workingPage?.name}</span><ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-80 max-w-[calc(100vw-24px)] p-0" onCloseAutoFocus={event => { if (previousId.current !== workingPage?.id) event.preventDefault(); }}>
+          <PopoverContent align="start" className="w-80 max-w-[calc(100vw-24px)] p-0" onCloseAutoFocus={event => { if (choosing.current) event.preventDefault(); }}>
             <Command shouldFilter={false}>
               <CommandInput aria-label="Search Pages" placeholder="Search pages…" value={query} onValueChange={setQuery} />
               <CommandList>
                 {loading ? <p role="status" className="p-3 text-sm text-muted-foreground">Loading pages…</p> : failed ? <p role="alert" className="p-3 text-sm text-destructive">Couldn't load pages. Try again later.</p> : <>
                   <CommandEmpty>No pages match your search.</CommandEmpty>
-                  {(["static", "landing"] as const).map(type => <CommandGroup key={type} heading={type === "landing" ? "Landing Pages" : "Pages"}>
+                  {(["static", "landing"] as const).filter(type => filtered.some(page => (page.page_type === "landing") === (type === "landing"))).map(type => <CommandGroup key={type} heading={type === "landing" ? "Landing Pages" : "Pages"}>
                     {filtered.filter(page => (page.page_type === "landing") === (type === "landing")).map(page => <CommandItem key={page.id} value={page.id} onSelect={() => choose(page)}>
                       <span className="min-w-0 flex-1"><span className="block truncate">{page.name}</span><span className="block truncate text-xs text-muted-foreground">{page.path}</span></span>
                       {page.build_status !== "ready" && <Badge variant="secondary" className="ml-2">Draft</Badge>}

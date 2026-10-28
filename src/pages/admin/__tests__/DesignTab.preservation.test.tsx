@@ -9,7 +9,7 @@ vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: null,
 vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => null }));
 vi.mock("../designChat/contentSync", () => ({ notifyContentEdited: vi.fn() }));
 vi.mock("@/prototype/client", () => ({ supabase: { from: (table: string) => {
-  const data = table === "pages" ? [{ id: "contact", path: mocks.path, name: "Contact", updated_at: "original-date", ...mocks.original }] : [];
+  const data = table === "pages" ? [{ id: "contact", path: mocks.path, name: "Contact", updated_at: "original-date", ...mocks.original }, { id: "about", path: "/about", name: "About", updated_at: "about-date", content: [{ id: "about-image", type: "image", url: "/about.jpg", align: "left", width: 100 }], inline_edits: {} }] : [];
   const q: any = { select: () => q, is: () => q, order: () => Promise.resolve({ data }), update: (patch: any) => { mocks.writes(table, patch); return { eq: () => Promise.resolve({ error: null }) }; }, then: (cb: any) => Promise.resolve({ data }).then(cb) }; return q;
 } } }));
 vi.mock("@/components/Header", () => ({ default: () => null }));
@@ -25,6 +25,29 @@ vi.mock("../PageMiniPreview", () => ({ default: () => null }));
 beforeEach(() => { mocks.remote = true; mocks.path = "/draft"; mocks.writes.mockClear(); mocks.original.content = null; mocks.original.inline_edits = {}; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
 afterEach(cleanup);
 describe("public page save/discard integration", () => {
+  it("routes trusted navigation through the caller and resets Sections on a new page opening", async () => {
+    mocks.original.content = [{ id: "old-video", type: "video", url: "/old.mp4", align: "left", width: 100 }];
+    const onNavigate = vi.fn();
+    const view = render(<MemoryRouter><DesignTab key="contact" embedded pageId="contact" onNavigate={onNavigate} /></MemoryRouter>);
+    const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+    const source = frame.contentWindow;
+    if (!source) throw new Error("Missing frame");
+    vi.spyOn(source, "postMessage").mockImplementation(() => {});
+    const send = (type: string, payload = {}) => act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", type, ...payload } })));
+    send("edit-ready", { capabilities: { heldBlocks: true } });
+    send("edit-block-select", { id: "old-video" });
+    expect(view.container.querySelector('[data-section-row="old-video"]')?.getAttribute("aria-current")).toBe("true");
+    send("edit-navigate", { path: "/about" });
+    expect(onNavigate).toHaveBeenCalledWith("/about");
+    view.rerender(<MemoryRouter><DesignTab key="about" embedded pageId="about" onNavigate={onNavigate} /></MemoryRouter>);
+    const next = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+    expect(new URL(next.src).pathname).toBe("/about");
+    expect(next).not.toBe(frame);
+    expect(view.container.querySelector('[data-section-row="old-video"]')).toBeNull();
+    expect(view.container.querySelector('[data-section-row="about-image"][aria-current]')).toBeNull();
+    expect(view.container.querySelector('[data-page-block="about-image"]')).not.toBeNull();
+    expect(mocks.writes).not.toHaveBeenCalled();
+  });
   async function openRemote(embedded = true, capable = false) {
     mocks.remote = true;
     const view = render(<MemoryRouter initialEntries={["/manage/design?page=contact"]}><DesignTab embedded={embedded} pageId="contact" /></MemoryRouter>);
