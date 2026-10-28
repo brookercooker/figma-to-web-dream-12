@@ -17,3 +17,12 @@ export function editMap(value: unknown): InlineEdits | null {
   const { ok, rejected } = validateEdits(value);
   return rejected.length ? null : ok;
 }
+export const HELD_BLOCKS_MAX = 50;
+export const HELD_BLOCKS_MAX_BYTES = 500_000;
+/** Ordered held blocks for the public frame, or null when too large (caller keeps the local list). */
+export function heldBlocksPayload<T>(blocks: readonly T[]): T[] | null {
+  if (blocks.length > HELD_BLOCKS_MAX) return null;
+  try { if (new Blob([JSON.stringify(blocks)]).size > HELD_BLOCKS_MAX_BYTES) return null; } catch { return null; }
+  return [...blocks];
+}
+export const clampEditSize = (h: number) => Math.max(400, Math.min(20000, h));

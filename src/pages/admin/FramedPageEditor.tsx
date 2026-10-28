@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import { Button } from "@/components/ui/button";
 import type { InlineChunk, InlineEdits, InlineReports, InlineSelection } from "@/components/InlineEditSurface";
-import { editFrameUrl, editMap, trustedEditMessage } from "./framedPageProtocol";
+import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, trustedEditMessage } from "./framedPageProtocol";
 import { remoteSelection, validSnapshot, type EditQuery, type SelectionSnapshot } from "./remoteSelection";
 
 export interface FramedEditorController { exit: () => void; query: EditQuery }
@@ -21,6 +21,12 @@ export interface FramedPageEditorProps {
   onOpenObject: (key: string, section: string) => void;
   /** What the public frame reports after each replay; {} until it reports, so stale or local numbers never show. */
   onReport?: (reports: InlineReports) => void;
+  /** Held blocks (complete ordered list); drawn inside frames that announce capabilities.heldBlocks. */
+  heldBlocks?: readonly unknown[];
+  activeBlockId?: string | null;
+  onBlockSelect?: (id: string) => void;
+  /** True while this frame draws the held blocks itself, so the caller hides its local list. */
+  onHeldInFrame?: (inFrame: boolean) => void;
 }
 export default function FramedPageEditor(props: FramedPageEditorProps) {
   const target = editFrameUrl(props.base, props.path);
@@ -30,6 +36,13 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [attempt, setAttempt] = useState(0);
   const [height, setHeight] = useState(1200);
+  const [heldCapable, setHeldCapable] = useState(false);
+  // Section changes reload only frames that cannot draw held blocks themselves.
+  const [frameRevision, setFrameRevision] = useState(props.sectionRevision ?? 0);
+  useEffect(() => { if (!heldCapable) setFrameRevision(props.sectionRevision ?? 0); }, [props.sectionRevision, heldCapable]);
+  const heldPayload = heldBlocksPayload(props.heldBlocks ?? []);
+  const heldInFrame = heldCapable && heldPayload !== null;
+  const capableRef = useRef(false);
   const ready = useRef(false);
   const exited = useRef(false);
   const queries = useRef(new Map<string, { resolve: (value: unknown) => void; timer: ReturnType<typeof setTimeout> }>());
@@ -41,7 +54,12 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     destination.current = current;
     if (origin) current?.postMessage({ source: "nova-manager", type, ...payload }, origin);
   };
-  const state = () => ({ edits: latest.current.edits, objectEdits: latest.current.objectEdits, collapsed: [...latest.current.collapsed], selectedKey: latest.current.selectedKey });
+  const state = () => {
+    const base = { edits: latest.current.edits, objectEdits: latest.current.objectEdits, collapsed: [...latest.current.collapsed], selectedKey: latest.current.selectedKey };
+    if (!capableRef.current) return base;
+    // Too large: send an empty list so the frame draws nothing while the local list shows them.
+    return { ...base, heldBlocks: heldBlocksPayload(latest.current.heldBlocks ?? []) ?? [], activeBlockId: latest.current.activeBlockId || null };
+  };
   const query: EditQuery = (op, scope, key, props) => {
     if (!ready.current || exited.current) return Promise.resolve(null);
     const id = `edit-${++sequence.current}`;
@@ -54,6 +72,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   useLayoutEffect(() => {
     if (!origin || !target) { setStatus("failed"); return; }
     ready.current = false; exited.current = false; setStatus("loading");
+    capableRef.current = false; setHeldCapable(false);
     latest.current.onReport?.({});
     destination.current = frame.current?.contentWindow ?? null;
     const timeout = setTimeout(() => setStatus("failed"), 15000);
@@ -71,6 +90,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       if (data.type === "edit-ready") {
         if (ready.current) return;
         destination.current = frame.current?.contentWindow ?? null;
+        capableRef.current = data.capabilities?.heldBlocks === true; setHeldCapable(capableRef.current);
         clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); return;
       }
       if (!ready.current) return;
@@ -108,20 +128,25 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         if (from && to && from.parent === to.parent && all.every(Boolean) && from.key !== to.key) latest.current.onReorder(from, to, data.after === true, all);
       } else if (data.type === "edit-applied") {
         const reports = replayReports(data.reports); if (reports) latest.current.onReport?.(reports);
+      } else if (data.type === "edit-block-select" && typeof data.id === "string") {
+        if (capableRef.current && (latest.current.heldBlocks ?? []).some((b) => (b as { id?: unknown })?.id === data.id)) latest.current.onBlockSelect?.(data.id);
+      } else if (data.type === "edit-size" && typeof data.height === "number" && Number.isFinite(data.height)) {
+        setHeight(clampEditSize(data.height));
       } else if (data.type === "edit-height" && Number.isFinite(data.height)) {
         setHeight(Math.max(320, Math.min(30000, data.height)));
       }
     };
     window.addEventListener("message", receive);
     return () => { clearTimeout(timeout); exit(); window.removeEventListener("message", receive); if (props.apiRef) props.apiRef.current = null; };
-  }, [target, attempt, props.sectionRevision]); // Only explicit section actions reload; inline edits travel through latest.
-  useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey]);
+  }, [target, attempt, frameRevision]); // Only section actions on frames without heldBlocks reload; everything else travels through edit-update.
+  useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.activeBlockId, heldCapable]);
+  useEffect(() => { latest.current.onHeldInFrame?.(heldInFrame); }, [heldInFrame]);
   return <div className="relative w-full">
     {status !== "ready" && <div role="status" className="flex items-center justify-center gap-3 bg-muted p-6 text-sm text-muted-foreground">
       {status === "loading" && target ? "Loading the page editor…" : "Couldn't reach the public page"}
       {(status === "failed" || !target) && <Button variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>Retry</Button>}
     </div>}
-    {target && <iframe key={`${target}|${attempt}|${props.sectionRevision ?? 0}`} ref={frame} src={target} title="Public Page Editor" data-site-editor="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : "block"}`} height={height} onError={() => setStatus("failed")} />}
+    {target && <iframe key={`${target}|${attempt}|${frameRevision}`} ref={frame} src={target} title="Public Page Editor" data-site-editor="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : "block"}`} height={height} onError={() => setStatus("failed")} />}
   </div>;
 }
 const strings = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === "string");

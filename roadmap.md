@@ -65,4 +65,4 @@
 - [x] Framed safety panel reads the public frame's edit-applied report and record query
 - [ ] Editable placeholders and video title/poster/source on built pages: needs a new attribute edit kind in the shared core on both projects
 - [x] One Manual Edit surface: every page (including database-only and brand-new) opens in the public frame at full pane width; local page surface, starter, header/footer copies removed
-- [ ] Held sections drawn inside the public frame (plan step 4): waits on the public-site brief
+- [x] Held sections drawn inside the public frame (plan step 4): waits on the public-site brief (Manager side done; public site in progress)

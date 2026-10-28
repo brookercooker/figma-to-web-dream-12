@@ -93,6 +93,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     setDirty(true);
   };
   const [activeId, setActiveId] = useState<string>("");
+  const [heldInFrame, setHeldInFrame] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -773,7 +774,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     <ol className="divide-y border rounded-md">
       <li className="px-2 py-2 text-xs">{page?.name}</li>
       {blocks.map((b,i) => <li key={b.id} className="flex items-center gap-1 px-2 py-2">
-        <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); blockCanvasRef.current?.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>{blockLabel(b)}</Button>
+        <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); if (heldInFrame) { void framedApi.current?.query("scrollTo", "held", b.id); return; } blockCanvasRef.current?.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>{blockLabel(b)}</Button>
         {i > 0 && <ToolButton title="Move Up" onClick={() => move(b.id,-1)}><ArrowUp className="h-4 w-4" /></ToolButton>}
         {i < blocks.length-1 && <ToolButton title="Move Down" onClick={() => move(b.id,1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
         <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="h-4 w-4" /></ToolButton>
@@ -802,19 +803,20 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       <div ref={blockCanvasRef} className="relative isolate h-full w-full overflow-y-auto bg-background" style={deviceStyle}>
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
         <FramedPageEditor key={`public-${page.id}`} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
-          sectionRevision={sectionRevision}
+          sectionRevision={sectionRevision} heldBlocks={blocks} activeBlockId={activeId || null}
+          onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); }} onHeldInFrame={setHeldInFrame}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
           onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} />
         {/* Held sections: full pane width, selected (never played or opened) until saved into the public page. */}
-        <div data-held-sections className="w-full">
+        {!heldInFrame && <div data-held-sections className="w-full">
           {blocks.map((b)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
             className={`relative ${embedded ? "cursor-pointer [&_iframe]:pointer-events-none [&_video]:pointer-events-none" : ""} ${embedded && activeId === b.id ? "outline outline-2 -outline-offset-2 outline-primary" : ""}`}
             onClickCapture={embedded ? (e) => { if ((e.target as HTMLElement).closest("[contenteditable=true],input,textarea,select")) return; e.preventDefault(); setActiveId(b.id); setInlineSel(null); } : undefined}>
             <BlockView block={b} />
           </section>)}
-        </div>
+        </div>}
       </div>
     </EmbeddedBox>}
     {embedded && slot && createPortal(tools,slot)}
