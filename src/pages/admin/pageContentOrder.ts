@@ -9,7 +9,7 @@ export function parsePageContent(value: unknown): PageContentItem[] {
   if (typeof raw === "string") { try { raw = JSON.parse(raw); } catch { return []; } }
   if (!Array.isArray(raw)) return [];
   let seen = false;
-  return raw.flatMap(item => {
+  return raw.flatMap<PageContentItem>(item => {
     if (!isPageContent(item)) return parseBlocks([item]);
     if (seen) return [];
     seen = true; return [PAGE_CONTENT];

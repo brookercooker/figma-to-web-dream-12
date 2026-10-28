@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { ModeSwitchProvider } from "./designChat/ModeSwitchContext";
 import ModeToggle from "./designChat/ModeToggle";
 import HeaderActions from "./designChat/HeaderActions";
+import ContentSyncNote from "./designChat/ContentSyncNote";
 import ReviewChangesView from "./designChat/ReviewChangesView";
 import { HEADER_HEIGHT_CLASS } from "./designChat/layout";
 import { rememberTopDropAnchor } from "./designChat/TopDropPanel";
@@ -353,6 +354,7 @@ function AdminShell() {
             </Button>}
           </div>
           {!reviewShown && <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />}
+          <ContentSyncNote />
           {reviewShown && <ReviewChangesView onShowPreview={() => { if (tab !== "preview") navigate("/manage/preview"); }} />}
           {manual && workingPage && (
             <div className="flex min-h-0 flex-1 flex-col">
