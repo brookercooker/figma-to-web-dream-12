@@ -119,11 +119,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const [closed, setClosed] = useState(false);
   // In-place editing of a coded page: type over text, click pictures to swap.
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
-  const inlineApi = useRef<InlineEditController | null>(null);
-  const headerApi = useRef<InlineEditController | null>(null);
   const framedApi = useRef<FramedEditorController | null>(null);
-  const [inlineReports, setInlineReports] = useState<InlineReports>({});
-  const [headerReports, setHeaderReports] = useState<InlineReports>({});
   const [framedReports, setFramedReports] = useState<InlineReports>({});
   const [resetKey, setResetKey] = useState(0);
   // Embedded pages not in the coded list: what loading their code found, and a counter that re-runs the load.
@@ -147,7 +143,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   }, []);
   const changeScope = (scope: InlineScope, next: InlineEdits, remote = false) => {
     remote = remote || !!(inlineSel && remoteSnapshot(inlineSel.el));
-    if (!remote) next = (scope === "Header" ? headerApi : inlineApi).current?.prepare(scope, next) ?? next;
     const snapshot = inlineSel && remoteSnapshot(inlineSel.el);
     if (snapshot && scope === snapshot.scope && snapshot.fingerprint && Object.keys(next).some(k => { const parsed = k.includes(":") ? k.slice(k.indexOf(":") + 1) : k; return parsed === snapshot.key && !k.startsWith("fp:"); })) next = { ...next, [`fp:${snapshot.key}`]: JSON.stringify(snapshot.fingerprint) };
     if (snapshot?.link?.fingerprint && scope === snapshot.link.scope && next[`link:${snapshot.link.key}`]) next = { ...next, [`fp:${snapshot.link.key}`]: JSON.stringify(snapshot.link.fingerprint) };
@@ -184,7 +179,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const pickImage = () => new Promise<string | null>((resolve) => setImgAsk(() => resolve));
   const inlineTimer = useRef<number>();
   const changeInline = (next: InlineEdits, remote = false) => {
-    if (!remote) next = inlineApi.current?.prepare("page", next) ?? next;
     setInlineEdits(next);
     const id = selectedId;
     if (embedded) { pendingInline.current = { pageId: id, next }; setTweaksPending(true); return; }
