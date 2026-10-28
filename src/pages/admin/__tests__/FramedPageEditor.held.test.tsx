@@ -80,4 +80,20 @@ describe("held blocks handshake", () => {
     s.receive("edit-size", { height: 3000 });
     expect(s.frame().getAttribute("height")).toBe("3000");
   });
+  it("capable frames fill the canvas; others keep 1200 px", () => {
+    const a = setup({ fill: true });
+    expect(a.frame().getAttribute("height")).toBe("1200");
+    a.receive("edit-ready", { capabilities: { heldBlocks: true } });
+    expect(a.frame().getAttribute("height")).toBe("100%");
+    a.receive("edit-size", { height: 3000 });
+    expect(a.frame().getAttribute("height")).toBe("3000");
+    cleanup();
+    const b = setup({ fill: true });
+    b.receive("edit-ready", {});
+    expect(b.frame().getAttribute("height")).toBe("1200");
+    cleanup();
+    const c = setup({ fill: false });
+    c.receive("edit-ready", { capabilities: { heldBlocks: true } });
+    expect(c.frame().getAttribute("height")).toBe("1200");
+  });
 });

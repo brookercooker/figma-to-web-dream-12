@@ -27,6 +27,8 @@ export interface FramedPageEditorProps {
   onBlockSelect?: (id: string) => void;
   /** True while this frame draws the held blocks itself, so the caller hides its local list. */
   onHeldInFrame?: (inFrame: boolean) => void;
+  /** Fill the editing area (one scroll inside the frame) when the frame draws held sections. */
+  fill?: boolean;
 }
 export default function FramedPageEditor(props: FramedPageEditorProps) {
   const target = editFrameUrl(props.base, props.path);
@@ -37,6 +39,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const [attempt, setAttempt] = useState(0);
   const [height, setHeight] = useState(1200);
   const [heldCapable, setHeldCapable] = useState(false);
+  const [sized, setSized] = useState(false);
   // Section changes reload only frames that cannot draw held blocks themselves.
   const [frameRevision, setFrameRevision] = useState(props.sectionRevision ?? 0);
   useEffect(() => { if (!heldCapable) setFrameRevision(props.sectionRevision ?? 0); }, [props.sectionRevision, heldCapable]);
@@ -131,7 +134,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       } else if (data.type === "edit-block-select" && typeof data.id === "string") {
         if (capableRef.current && (latest.current.heldBlocks ?? []).some((b) => (b as { id?: unknown })?.id === data.id)) latest.current.onBlockSelect?.(data.id);
       } else if (data.type === "edit-size" && typeof data.height === "number" && Number.isFinite(data.height)) {
-        setHeight(clampEditSize(data.height));
+        setHeight(clampEditSize(data.height)); setSized(true);
       } else if (data.type === "edit-height" && Number.isFinite(data.height)) {
         setHeight(Math.max(320, Math.min(30000, data.height)));
       }
@@ -141,12 +144,15 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   }, [target, attempt, frameRevision]); // Only section actions on frames without heldBlocks reload; everything else travels through edit-update.
   useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.activeBlockId, heldCapable]);
   useEffect(() => { latest.current.onHeldInFrame?.(heldInFrame); }, [heldInFrame]);
-  return <div className="relative w-full">
+  useEffect(() => { setSized(false); }, [target, attempt, frameRevision]);
+  // Capable frames fill the canvas so their own scroll is the only one; edit-size still wins once received.
+  const filling = !!props.fill && heldInFrame && !sized;
+  return <div className={`relative w-full ${filling ? "h-full" : ""}`}>
     {status !== "ready" && <div role="status" className="flex items-center justify-center gap-3 bg-muted p-6 text-sm text-muted-foreground">
       {status === "loading" && target ? "Loading the page editor…" : "Couldn't reach the public page"}
       {(status === "failed" || !target) && <Button variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>Retry</Button>}
     </div>}
-    {target && <iframe key={`${target}|${attempt}|${frameRevision}`} ref={frame} src={target} title="Public Page Editor" data-site-editor="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : "block"}`} height={height} onError={() => setStatus("failed")} />}
+    {target && <iframe key={`${target}|${attempt}|${frameRevision}`} ref={frame} src={target} title="Public Page Editor" data-site-editor="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : filling ? "block h-full" : "block"}`} height={filling ? "100%" : height} onError={() => setStatus("failed")} />}
   </div>;
 }
 const strings = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === "string");

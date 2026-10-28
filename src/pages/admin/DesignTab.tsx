@@ -800,11 +800,11 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     {!embedded && <aside><Input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search pages" />{filtered.map(p=><Button key={p.id} variant="ghost" className="w-full justify-start" onClick={()=>select(p.id)}>{p.name}</Button>)}{tools}</aside>}
     {surface === "loading" && selectedId && <div role="status" className="flex items-center justify-center bg-muted p-6 text-sm text-muted-foreground">Loading the page editor…</div>}
     {page && surface !== "loading" && <EmbeddedBox chat={embedded ? chat : null}>
-      <div ref={blockCanvasRef} className="relative isolate h-full w-full overflow-y-auto bg-background" style={deviceStyle}>
+      <div ref={blockCanvasRef} className={`relative isolate h-full w-full ${heldInFrame && !deviceStyle ? "overflow-hidden" : "overflow-y-auto"} bg-background`} style={deviceStyle}>
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
         <FramedPageEditor key={`public-${page.id}`} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
           sectionRevision={sectionRevision} heldBlocks={blocks} activeBlockId={activeId || null}
-          onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); }} onHeldInFrame={setHeldInFrame}
+          onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); }} onHeldInFrame={setHeldInFrame} fill={!deviceStyle}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
