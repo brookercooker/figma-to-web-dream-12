@@ -19,6 +19,7 @@ import { ModeSwitchProvider } from "./designChat/ModeSwitchContext";
 import ModeToggle from "./designChat/ModeToggle";
 import HeaderActions from "./designChat/HeaderActions";
 import { HEADER_HEIGHT_CLASS } from "./designChat/layout";
+import { rememberTopDropAnchor } from "./designChat/TopDropPanel";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -193,7 +194,7 @@ function AdminShell() {
       <div className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</div>
       <div className="flex h-screen flex-col overflow-hidden bg-background lg:flex-row">
         {/* Right: the top bar and whichever tab is open. */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div data-picker-area className="flex min-h-0 min-w-0 flex-1 flex-col">
           <header data-top-bar className={cn("z-30 w-full shrink-0 border-b bg-background", HEADER_HEIGHT_CLASS)}>
             <div ref={rowRef} className="flex h-full w-full items-center gap-1 px-2 sm:gap-3 sm:px-4">
               <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager Sections">
@@ -235,11 +236,11 @@ function AdminShell() {
                   return (
                     <Button variant="ghost" size="sm"
                       key={key}
-                      onClick={() => { if (addInEditor && requestAdd(key)) return; navigate(`/manage/${key}`); }}
+                      onClick={(event) => { if (addInEditor) { rememberTopDropAnchor(event.currentTarget); if (requestAdd(key)) return; } navigate(`/manage/${key}`); }}
                       title={label}
                       aria-label={label}
                       aria-current={active ? "page" : undefined}
-                      className={className}
+                      className={`${className} data-[picker-open=true]:bg-accent data-[picker-open=true]:text-accent-foreground`}
                     >
                       <Icon className="w-4 h-4" />
                       {showLabel && <span>{label}</span>}
