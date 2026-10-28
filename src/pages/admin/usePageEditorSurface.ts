@@ -1,30 +1,24 @@
 import { useEffect, useState } from "react";
-import { codePagePaths, loadSiteManifest, retainEditingManifestPaths } from "./siteManifest";
+import { draftEmbedUrl } from "./siteManifest";
 
-export type PageEditorSurface = "loading" | "framed" | "local";
+/** Every page edits in the public frame; "loading" only until the draft embed address is known. */
+export type PageEditorSurface = "loading" | "framed";
 export const EDITOR_DECISION_TIMEOUT_MS = 8000;
+const POLL_MS = 200;
 
-/** One manifest snapshot per page opening; cache/build events cannot replace an active canvas. */
+/** Latched per page opening: later address/manifest/cache events never remount an open canvas. */
 export function usePageEditorSurface(page: { id: string; path: string } | null): PageEditorSurface {
-  const [choice, setChoice] = useState<{ id: string; surface: PageEditorSurface } | null>(null);
+  const [openedId, setOpenedId] = useState<string | null>(null);
   const id = page?.id;
-  const path = page?.path;
   useEffect(() => {
-    if (!id || !path) return;
-    const release = retainEditingManifestPaths();
-    let settled = false;
-    const choose = (surface: PageEditorSurface) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      setChoice({ id, surface });
-    };
-    const timeout = setTimeout(() => choose("framed"), EDITOR_DECISION_TIMEOUT_MS);
-    void loadSiteManifest().then(
-      manifest => choose(codePagePaths(manifest).has(path === "/" ? "/home" : path.replace(/\/+$/, "")) ? "framed" : "local"),
-      () => choose("framed"),
-    );
-    return () => { settled = true; clearTimeout(timeout); release(); };
-  }, [id]); // A path or manifest change applies only on the next page opening.
-  return choice && choice.id === id ? choice.surface : "loading";
+    if (!id) return;
+    if (draftEmbedUrl()) { setOpenedId(id); return; }
+    const started = Date.now();
+    // Bounded: after the limit the frame opens anyway and shows its own Retry, never a local substitute.
+    const timer = setInterval(() => {
+      if (draftEmbedUrl() || Date.now() - started >= EDITOR_DECISION_TIMEOUT_MS) { clearInterval(timer); setOpenedId(id); }
+    }, POLL_MS);
+    return () => clearInterval(timer);
+  }, [id]);
+  return id && openedId === id ? "framed" : "loading";
 }
