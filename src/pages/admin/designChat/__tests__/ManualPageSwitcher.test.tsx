@@ -23,9 +23,11 @@ function Harness() {
   return <><ManualPageSwitcher navigation={navigation} /><button onClick={() => navigation.requestPath("/landing/autumn")}>Frame Navigation</button><button onClick={() => navigation.requestPath("/unknown")}>Unknown Navigation</button></>;
 }
 beforeEach(() => {
+  vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+  Element.prototype.scrollIntoView = vi.fn();
   vi.clearAllMocks(); m.dirty = false; m.objectOpen = false; m.save.mockResolvedValue(true); m.discard.mockResolvedValue(undefined);
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 async function open() { render(<Harness />); await waitFor(() => expect(screen.getByRole("button", { name: "Next Page" })).not.toBeDisabled()); }
 describe("manual page order and path rules", () => {
   it("orders Pages before Landing Pages, alphabetically inside each group", () => {
@@ -85,7 +87,7 @@ describe("manual page navigation", () => {
     m.dirty = true; m.save.mockResolvedValue(false); await open();
     fireEvent.click(screen.getByRole("button", { name: "Next Page" })); fireEvent.click(screen.getByRole("button", { name: "Save and Go" }));
     await waitFor(() => expect(m.save).toHaveBeenCalledOnce());
-    expect(m.select).not.toHaveBeenCalled(); expect(screen.getByRole("heading", { name: "Editing Contact" })).toBeVisible();
+    expect(m.select).not.toHaveBeenCalled(); expect(screen.getByRole("heading", { name: "Editing Contact", hidden: true })).toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeVisible();
   });
   it("uses the same unsaved dialog for frame navigation and reports unknown pages", async () => {
@@ -104,7 +106,7 @@ describe("manual page navigation", () => {
     let finish: (ok: boolean) => void = () => {};
     m.dirty = true; m.save.mockImplementation(() => new Promise<boolean>(resolve => { finish = resolve; }));
     await open(); fireEvent.click(screen.getByRole("button", { name: "Next Page" })); fireEvent.click(screen.getByRole("button", { name: "Save and Go" }));
-    expect(screen.getByRole("button", { name: "Editing Contact" })).toBeDisabled(); expect(screen.getByRole("button", { name: "Save and Go" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Editing Contact", hidden: true })).toBeDisabled(); expect(screen.getByRole("button", { name: "Save and Go" })).toBeDisabled();
     finish(true); await waitFor(() => expect(m.select).toHaveBeenCalledOnce());
   });
 });

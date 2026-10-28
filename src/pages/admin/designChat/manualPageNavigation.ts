@@ -17,7 +17,7 @@ export function manualNavigationPath(value: unknown): string | null {
   if (typeof value !== "string" || value.length > 300 || !/^\/(?!\/)/.test(value) || /[\\\s?#\u0000-\u001f]/.test(value)) return null;
   let decoded: string;
   try { decoded = decodeURIComponent(value); } catch { return null; }
-  if (!/^\/(?!\/)/.test(decoded) || /[\\\s?#\u0000-\u001f]/.test(decoded) || /^\/manage(?:\/|$)/i.test(decoded)) return null;
+  if (!/^\/(?!\/)/.test(decoded) || /[\\\s?#\u0000-\u001f]/.test(decoded) || decoded.split("/").some(part => part === "." || part === "..") || /^\/manage(?:\/|$)/i.test(decoded)) return null;
   return pageKey(value);
 }
 
