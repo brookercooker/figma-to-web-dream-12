@@ -121,7 +121,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       {status === "loading" && target ? "Loading the page editor…" : "Couldn't reach the public page"}
       {(status === "failed" || !target) && <Button variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>Retry</Button>}
     </div>}
-    {target && <iframe key={`${target}|${attempt}|${props.sectionRevision ?? 0}`} ref={frame} src={target} title="Public Page Editor" data-site-preview="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : "block"}`} height={height} onError={() => setStatus("failed")} />}
+    {target && <iframe key={`${target}|${attempt}|${props.sectionRevision ?? 0}`} ref={frame} src={target} title="Public Page Editor" data-site-editor="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : "block"}`} height={height} onError={() => setStatus("failed")} />}
   </div>;
 }
 const strings = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === "string");

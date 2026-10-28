@@ -5,6 +5,7 @@ import {
   setManifestBase, setDraftRetryDelay, draftManifestReachable,
   manifestHasPage, requestFrameManifest, startSiteManifestBridge, MANIFEST_CHANGED, setManifestMessageDelay,
   isSafePublicFrameUrl,
+  retainEditingManifestPaths,
 } from "../siteManifest";
 import { imageNeedles, videoNeedles } from "../assetUsages";
 
@@ -31,6 +32,36 @@ describe("public frame manifest messages", () => {
   function deliver(origin: string, value: unknown = publicManifest) {
     window.dispatchEvent(new MessageEvent("message", { origin, data: { source: "nova-site", type: "manifest", manifest: value } }));
   }
+  it("retains known paths during editing across cache resets and base changes", async () => {
+    setManifestBase("https://draft.example/"); deliver("https://draft.example");
+    const release = retainEditingManifestPaths();
+    try {
+      resetSiteManifestCache();
+      expect(manifestHasPage("/draft")).toBe(true);
+      setManifestBase("https://new-draft.example/");
+      expect(manifestHasPage("/draft")).toBe(true);
+    } finally { release(); }
+    resetSiteManifestCache();
+    expect(manifestHasPage("/draft")).toBe(false);
+  });
+  it("keeps the TTL cache when only the preview token or path changes", async () => {
+    setManifestBase("https://draft.example/?token=old"); deliver("https://draft.example");
+    const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+    setManifestBase("https://draft.example/about?token=new");
+    expect(await loadSiteManifest()).toEqual(publicManifest);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+  it("never requests a manifest from edit frames, even with a legacy preview marker", async () => {
+    setManifestBase("https://draft.example/");
+    const frame = document.createElement("iframe"); frame.src = "https://draft.example/draft?nova-edit=1";
+    frame.dataset.sitePreview = "true"; frame.dataset.siteEditor = "true"; document.body.appendChild(frame);
+    const target = frame.contentWindow; if (!target) throw new Error("No frame window");
+    const post = vi.spyOn(target, "postMessage");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(manifest))));
+    await loadSiteManifest();
+    expect(requestFrameManifest(frame)).toBe(false);
+    expect(post).not.toHaveBeenCalled();
+  });
   it("accepts the draft origin and uses its code-only paths without HTTP", async () => {
     setManifestBase("https://draft.example/?__lovable_token=test-token");
     const changed = vi.fn(); window.addEventListener(MANIFEST_CHANGED, changed);

@@ -72,6 +72,7 @@ function listen() {
 }
 /** Requests never include the embed token and never broadcast to an unknown origin. */
 export function requestFrameManifest(frame: HTMLIFrameElement): boolean {
+  if (frame.hasAttribute("data-site-editor") || new URL(frame.src, window.location.href).searchParams.has("nova-edit")) return false;
   const origin = originOf(frame.src);
   if (!origin || !trustedOrigin(origin) || !frame.contentWindow) return false;
   frame.contentWindow.postMessage({ source: "nova-manager", type: "request-manifest" }, origin);
@@ -91,6 +92,7 @@ function receiverTargetAllowed(): boolean {
 function reconcileReceiver() {
   if (!bridgeUsers) return;
   const real = Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview]")).find((frame) => {
+    if (frame.hasAttribute("data-site-editor") || new URL(frame.src, window.location.href).searchParams.has("nova-edit")) return false;
     const origin = originOf(frame.src); return origin && trustedOrigin(origin);
   });
   if (real || !receiverTargetAllowed()) { receiver?.remove(); receiver = null; }
@@ -146,14 +148,21 @@ async function requestManifest(): Promise<SiteManifest | null> {
   });
 }
 let knownPaths = new Set<string>();
+let editingUsers = 0;
+/** Invalidating a build must not erase the last known paths underneath an active editor. */
+export function retainEditingManifestPaths(): () => void {
+  editingUsers++;
+  return () => { editingUsers--; };
+}
 export const MANIFEST_CHANGED = "nova-manifest-changed";
 export function hasDraftManifestBase() { return !!draftBase; }
 /** Preserve the embed query when composing a public edit-frame address. */
 export function draftEmbedUrl() { return draftBase; }
 export function setManifestBase(url: string) {
   if (url === draftBase) return;
+  const sameOrigin = !!url && originOf(url) === originOf(draftBase);
   draftBase = url || null;
-  resetSiteManifestCache();
+  if (!sameOrigin) resetSiteManifestCache();
   listen();
   reconcileReceiver();
 }
@@ -239,7 +248,7 @@ export function loadSiteManifest(force = false): Promise<SiteManifest> {
   return promise;
 }
 
-export function resetSiteManifestCache() { cached = null; received = null; knownPaths = new Set(); }
+export function resetSiteManifestCache() { cached = null; received = null; if (!editingUsers) knownPaths = new Set(); }
 
 export type PageRef = { path: string; type: "static" | "landing" };
 
