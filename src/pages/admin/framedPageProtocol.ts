@@ -1,5 +1,6 @@
 import { isSafePublicFrameUrl } from "./siteManifest";
 import { validateEdits, type InlineEdits } from "@/lib/inlineEditCore";
+import { PAGE_CONTENT, isPageContent } from "./pageContentOrder";
 
 export function editFrameUrl(base: string | null | undefined, path: string): string | null {
   if (window.self !== window.top || !isSafePublicFrameUrl(base) || !/^\/(?!\/)/.test(path) || /[\\\u0000-\u001f]/.test(path)) return null;
@@ -20,8 +21,10 @@ export function editMap(value: unknown): InlineEdits | null {
 export const HELD_BLOCKS_MAX = 50;
 export const HELD_BLOCKS_MAX_BYTES = 500_000;
 /** Ordered held blocks for the public frame, or null when too large (caller keeps the local list). */
-export function heldBlocksPayload<T>(blocks: readonly T[], blockMove = false): T[] | null {
-  const supported = blockMove ? [...blocks] : blocks.filter(b => (b as { type?: unknown })?.type !== "page");
+export function heldBlocksPayload<T>(blocks: readonly T[], blockMove = false): (T | typeof PAGE_CONTENT)[] | null {
+  const supported = blockMove
+    ? blocks.some(isPageContent) ? [...blocks] : [PAGE_CONTENT, ...blocks]
+    : blocks.filter(b => !isPageContent(b));
   if (supported.length > HELD_BLOCKS_MAX) return null;
   try { if (new Blob([JSON.stringify(supported)]).size > HELD_BLOCKS_MAX_BYTES) return null; } catch { return null; }
   return supported;

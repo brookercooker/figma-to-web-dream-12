@@ -27,6 +27,17 @@ describe("held blocks payload", () => {
   it("clamps edit-size", () => { expect(clampEditSize(10)).toBe(400); expect(clampEditSize(99999)).toBe(20000); expect(clampEditSize(1500)).toBe(1500); });
 });
 describe("held blocks handshake", () => {
+  it("synthesizes the first marker on init and every update without changing stored blocks", () => {
+    const marker = { id: "page-content", type: "page" };
+    const s = setup();
+    s.receive("edit-ready", { capabilities: { heldBlocks: true, blockMove: true } });
+    expect(s.sent("edit-init")[0].heldBlocks).toEqual([marker, ...blocks]);
+    const next = [...blocks, { id: "c", type: "text", html: "C" }];
+    s.rerender(<FramedPageEditor {...s.props} heldBlocks={next} sectionRevision={1} />);
+    expect(s.sent("edit-update").at(-1).heldBlocks).toEqual([marker, ...next]);
+    expect(next).toHaveLength(3);
+    expect(heldBlocksPayload([], true)).toEqual([marker]);
+  });
   it("sends the marker only with blockMove and validates moves", () => {
     const marker = { id: "page-content", type: "page" };
     const onBlockMove = vi.fn();
