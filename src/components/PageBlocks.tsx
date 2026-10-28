@@ -78,11 +78,11 @@ export const newId = () =>
 export const hasWideBlocks = (blocks: Block[]) => blocks.some((b) => b.type === "code" || (b.type === "object" && b.wide));
 
 export function parseBlocks(value: unknown): Block[] {
-  if (Array.isArray(value)) return value as Block[];
+  if (Array.isArray(value)) return value.filter(b => b?.type !== "page") as Block[];
   if (typeof value === "string" && value.trim()) {
     try {
       const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? (parsed as Block[]) : [];
+      return Array.isArray(parsed) ? parseBlocks(parsed) : [];
     } catch {
       return [];
     }
