@@ -4,6 +4,11 @@ import InlineEditSurface, { type InlineEditController } from "../InlineEditSurfa
 import { fingerprintOf } from "@/lib/inlineEditCore";
 vi.mock('@/lib/objectScopes', () => ({objectComponentsNow:()=>new Map(),findObjectRoots:()=>[],loadObjectComponents:async()=>new Map()}));
 afterEach(cleanup);
+it('contains section controls in the editor wrapper stacking context', () => {
+  const view = render(<InlineEditSurface editing edits={{}} sections={false}><section><h3>Lighting</h3></section></InlineEditSurface>);
+  const root = view.container.querySelector('[data-inline-root]');
+  expect(root?.parentElement).toHaveClass('relative', 'isolate');
+});
 it('captures a first typed override from the original and restores it without remounting', async () => {
   const change = vi.fn(), report = vi.fn(); const api = {current:null as InlineEditController|null};
   const children = <section><h3>Ceiling Lighting</h3><img src="/pendant.jpg" /></section>;

@@ -261,6 +261,10 @@
 }
 
 /* In-place page editing */
+/* Body-mounted drag previews keep their drag layer, but never cover an open prompt. */
+body:has(:is([role="dialog"], [role="alertdialog"]):not([data-state="closed"]):not([hidden])) [data-editor-drag-ghost] {
+  visibility: hidden;
+}
 .inline-edit-surface [data-inline-editable] { outline: 1px dashed transparent; outline-offset: 3px; border-radius: 2px; cursor: text; transition: outline-color .15s; }
 .inline-edit-surface [data-inline-editable]:hover { outline-color: hsl(var(--ring) / .5); }
 .inline-edit-surface [data-inline-editable]:focus { outline: 2px solid hsl(var(--ring)); }
