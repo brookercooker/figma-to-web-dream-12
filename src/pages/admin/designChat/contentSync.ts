@@ -1,55 +1,57 @@
-import { postToHelper } from "./helper";
+import { postToHelper, RELAY, type RelayState } from "./helper";
 
-/**
- * Tells the design helper that hand edits were saved, so they join the same
- * draft preview and "Submit for review" as chat changes. Debounced; never
- * throws or shows a toast, so editing is never interrupted.
- */
-const DEBOUNCE_MS = 4000;
-const BUSY_RETRY_MS = 8000;
-const BUSY_MAX = 20;
-const DOWN_RETRY_MS = 15000;
-const DOWN_MAX = 5;
-
-let timer: ReturnType<typeof setTimeout> | undefined;
-let busyTries = 0;
-let downTries = 0;
-
-function schedule(ms: number) {
-  if (timer) clearTimeout(timer);
-  timer = setTimeout(run, ms);
-}
-
-async function run() {
-  timer = undefined;
-  try {
-    const r = await postToHelper("/content/sync");
-    if (r.ok) return;
-    if (r.data?.off === true) {
-      console.debug("content sync: switched off on the helper");
-      return;
-    }
-    if (r.data?.busy === true) {
-      if (busyTries < BUSY_MAX) { busyTries++; schedule(BUSY_RETRY_MS); }
-      else console.debug("content sync: helper still busy, giving up");
-      return;
-    }
-    if (!r.data) {
-      if (downTries < DOWN_MAX) { downTries++; schedule(DOWN_RETRY_MS); }
-      else console.debug("content sync: helper not reachable, giving up");
-      return;
-    }
-    console.debug("content sync failed", r.error);
-  } catch (e) {
-    console.debug("content sync failed", e);
-  }
-}
-
-/** Fired on every successful content save or restore, so the Chat Mode preview can be sent the current edits. */
 export const CONTENT_SAVED = "nova:content-saved";
+export const CONTENT_SYNC_CHANGED = "nova:content-sync-changed";
+export const SYNC_RETRY_MS = 20_000;
+export const SYNC_RETRY_WINDOW_MS = 30 * 60_000;
+const STORAGE_KEY = `nova:content-sync-owed:${RELAY}`;
+type Owed = { version: number; deferred: boolean };
+function restore(): Owed | null {
+  try { const value = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null"); return value && typeof value.version === "number" ? value : null; } catch { return null; }
+}
+let owed = restore();
+let timer: ReturnType<typeof setTimeout> | undefined;
+let inFlight = false;
+let nextRetry = 0;
+let deadline = Date.now() + SYNC_RETRY_WINDOW_MS;
+let latestState: RelayState | null = null;
+export const contentSyncBusy = (s: RelayState | null) => !!s && (s.busy || s.publish?.status === "reviewing" || !!s.approval);
+export const contentSyncDeferred = () => !!owed?.deferred;
+function persist() {
+  try { if (owed) localStorage.setItem(STORAGE_KEY, JSON.stringify(owed)); else localStorage.removeItem(STORAGE_KEY); } catch { /* Memory retry still works when storage is unavailable. */ }
+  window.dispatchEvent(new Event(CONTENT_SYNC_CHANGED));
+}
+function schedule(ms: number) {
+  clearTimeout(timer); timer = setTimeout(() => { timer = undefined; void run(); }, ms);
+}
+async function run() {
+  if (!owed || inFlight || Date.now() > deadline) return;
+  if (owed.deferred && (!latestState || contentSyncBusy(latestState))) return;
+  const version = owed.version;
+  inFlight = true; nextRetry = Date.now() + SYNC_RETRY_MS;
+  try {
+    const result = await postToHelper("/content/sync");
+    if (result.ok) {
+      if (owed?.version === version) owed = null;
+      persist();
+    } else if (result.data?.busy === true && owed) {
+      owed.deferred = true; persist();
+    }
+    // Any unsuccessful sync remains owed, including a temporary outage.
+    // Existing status observations drive retries, never another status poller.
+  } catch { /* Retain owed sync for the next status or page load. */ }
+  finally { inFlight = false; }
+}
+/** Called with the status already read by useHelperState; no extra relay reads. */
+export function observeContentSyncState(state: RelayState | null) {
+  latestState = state;
+  if (state && owed && !timer && !inFlight && !contentSyncBusy(state) && Date.now() >= nextRetry && Date.now() <= deadline) void run();
+}
+/** Preview wording updates immediately; relay sync is coalesced and remembered across loads. */
 export function notifyContentEdited() {
-  if (typeof window !== "undefined") window.dispatchEvent(new Event(CONTENT_SAVED));
-  busyTries = 0;
-  downTries = 0;
-  schedule(DEBOUNCE_MS);
+  window.dispatchEvent(new Event(CONTENT_SAVED));
+  owed = { version: Math.max(Date.now(), (owed?.version ?? 0) + 1), deferred: owed?.deferred ?? false };
+  deadline = Date.now() + SYNC_RETRY_WINDOW_MS;
+  persist();
+  schedule(owed.deferred ? Math.max(0, nextRetry - Date.now()) : 4000);
 }

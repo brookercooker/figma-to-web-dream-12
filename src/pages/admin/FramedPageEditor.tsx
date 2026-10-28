@@ -25,6 +25,7 @@ export interface FramedPageEditorProps {
   heldBlocks?: readonly unknown[];
   activeBlockId?: string | null;
   onBlockSelect?: (id: string) => void;
+  onBlockMove?: (id: string, toIndex: number) => void;
   /** True while this frame draws the held blocks itself, so the caller hides its local list. */
   onHeldInFrame?: (inFrame: boolean) => void;
   /** Fill the editing area (one scroll inside the frame) when the frame draws held sections. */
@@ -39,11 +40,13 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const [attempt, setAttempt] = useState(0);
   const [height, setHeight] = useState(1200);
   const [heldCapable, setHeldCapable] = useState(false);
+  const [moveCapable, setMoveCapable] = useState(false);
+  const moveCapableRef = useRef(false);
   const [sized, setSized] = useState(false);
   // Section changes reload only frames that cannot draw held blocks themselves.
   const [frameRevision, setFrameRevision] = useState(props.sectionRevision ?? 0);
   useEffect(() => { if (!heldCapable) setFrameRevision(props.sectionRevision ?? 0); }, [props.sectionRevision, heldCapable]);
-  const heldPayload = heldBlocksPayload(props.heldBlocks ?? []);
+  const heldPayload = heldBlocksPayload(props.heldBlocks ?? [], moveCapable);
   const heldInFrame = heldCapable && heldPayload !== null;
   const capableRef = useRef(false);
   const ready = useRef(false);
@@ -61,7 +64,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     const base = { edits: latest.current.edits, objectEdits: latest.current.objectEdits, collapsed: [...latest.current.collapsed], selectedKey: latest.current.selectedKey };
     if (!capableRef.current) return base;
     // Too large: send an empty list so the frame draws nothing while the local list shows them.
-    return { ...base, heldBlocks: heldBlocksPayload(latest.current.heldBlocks ?? []) ?? [], activeBlockId: latest.current.activeBlockId || null };
+    return { ...base, heldBlocks: heldBlocksPayload(latest.current.heldBlocks ?? [], moveCapableRef.current) ?? [], activeBlockId: latest.current.activeBlockId || null };
   };
   const query: EditQuery = (op, scope, key, props) => {
     if (!ready.current || exited.current) return Promise.resolve(null);
@@ -76,6 +79,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     if (!origin || !target) { setStatus("failed"); return; }
     ready.current = false; exited.current = false; setStatus("loading");
     capableRef.current = false; setHeldCapable(false);
+    moveCapableRef.current = false; setMoveCapable(false);
     latest.current.onReport?.({});
     destination.current = frame.current?.contentWindow ?? null;
     const timeout = setTimeout(() => setStatus("failed"), 15000);
@@ -94,6 +98,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         if (ready.current) return;
         destination.current = frame.current?.contentWindow ?? null;
         capableRef.current = data.capabilities?.heldBlocks === true; setHeldCapable(capableRef.current);
+        moveCapableRef.current = data.capabilities?.blockMove === true; setMoveCapable(moveCapableRef.current);
         clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); return;
       }
       if (!ready.current) return;
@@ -133,7 +138,13 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         const reports = replayReports(data.reports); if (reports) latest.current.onReport?.(reports);
       } else if (data.type === "edit-block-select" && typeof data.id === "string") {
         // Origin, window and id are the safety checks; the capability only governs what we send.
-        if ((latest.current.heldBlocks ?? []).some((b) => (b as { id?: unknown })?.id === data.id)) latest.current.onBlockSelect?.(data.id);
+        if ((latest.current.heldBlocks ?? []).some((b) => (b as { id?: unknown; type?: unknown })?.id === data.id && (b as { type?: unknown }).type !== "page")) latest.current.onBlockSelect?.(data.id);
+      } else if (data.type === "edit-block-move" && moveCapableRef.current && typeof data.id === "string" && Number.isFinite(data.toIndex)) {
+        const blocks = latest.current.heldBlocks ?? [];
+        if (blocks.some(b => (b as { id?: unknown })?.id === data.id && (b as { type?: unknown }).type !== "page")) {
+          const count = blocks.length + (blocks.some(b => (b as { type?: unknown }).type === "page") ? 0 : 1);
+          latest.current.onBlockMove?.(data.id, Math.max(0, Math.min(count - 1, Math.trunc(data.toIndex))));
+        }
       } else if (data.type === "edit-size" && typeof data.height === "number" && Number.isFinite(data.height)) {
         setHeight(clampEditSize(data.height)); setSized(true);
       } else if (data.type === "edit-height" && Number.isFinite(data.height)) {
@@ -143,7 +154,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     window.addEventListener("message", receive);
     return () => { clearTimeout(timeout); exit(); window.removeEventListener("message", receive); if (props.apiRef) props.apiRef.current = null; };
   }, [target, attempt, frameRevision]); // Only section actions on frames without heldBlocks reload; everything else travels through edit-update.
-  useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.activeBlockId, heldCapable]);
+  useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.activeBlockId, heldCapable, moveCapable]);
   useEffect(() => { latest.current.onHeldInFrame?.(heldInFrame); }, [heldInFrame]);
   useEffect(() => { setSized(false); }, [target, attempt, frameRevision]);
   // Capable frames fill the canvas so their own scroll is the only one; edit-size still wins once received.

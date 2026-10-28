@@ -13,6 +13,7 @@ import { MANIFEST_CHANGED } from "../siteManifest";
 import ManifestReceiverFrame from "./ManifestReceiverFrame";
 import { useChatReferences, type ChatReferences } from "./useChatReferences";
 import { emptyHistory, visit, step, canBack, canForward, type PreviewHistory } from "./previewHistory";
+import { observeContentSyncState } from "./contentSync";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview
@@ -114,6 +115,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   });
 
   const [previewPath, setPreviewPath] = useState<string | null>(null);
+  useEffect(() => { if (!offline) observeContentSyncState(state); }, [state, offline]);
   const [navNonce, setNavNonce] = useState(0);
   const preview = usePreview(state, previewPath, navNonce);
   lastReload.current = preview.lastReloadAt;

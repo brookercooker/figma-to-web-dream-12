@@ -27,6 +27,33 @@ describe("held blocks payload", () => {
   it("clamps edit-size", () => { expect(clampEditSize(10)).toBe(400); expect(clampEditSize(99999)).toBe(20000); expect(clampEditSize(1500)).toBe(1500); });
 });
 describe("held blocks handshake", () => {
+  it("sends the marker only with blockMove and validates moves", () => {
+    const marker = { id: "page-content", type: "page" };
+    const onBlockMove = vi.fn();
+    const s = setup({ heldBlocks: [blocks[0], marker, blocks[1]], onBlockMove });
+    s.receive("edit-ready", { capabilities: { heldBlocks: true, blockMove: true } });
+    expect(s.sent("edit-init")[0].heldBlocks).toEqual([blocks[0], marker, blocks[1]]);
+    s.receive("edit-block-move", { id: "a", toIndex: 1 }, "https://evil.example");
+    s.receive("edit-block-move", { id: "a", toIndex: 1 }, "https://public.example.com", window);
+    s.receive("edit-block-move", { id: "page-content", toIndex: 0 });
+    s.receive("edit-block-move", { id: "unknown", toIndex: 0 });
+    expect(onBlockMove).not.toHaveBeenCalled();
+    s.receive("edit-block-move", { id: "b", toIndex: -100 });
+    expect(onBlockMove).toHaveBeenCalledWith("b", 0);
+    s.receive("edit-block-move", { id: "a", toIndex: 999 });
+    expect(onBlockMove).toHaveBeenLastCalledWith("a", 2);
+    const original = s.frame();
+    s.rerender(<FramedPageEditor {...s.props} path="/other" />);
+    expect(s.frame()).not.toBe(original);
+    s.receive("edit-ready", { capabilities: { heldBlocks: true } });
+    s.receive("edit-block-move", { id: "a", toIndex: 0 });
+    expect(onBlockMove).toHaveBeenCalledTimes(2);
+  });
+  it("filters the marker for older held-block frames", () => {
+    const s = setup({ heldBlocks: [blocks[0], { id: "page-content", type: "page" }, blocks[1]] });
+    s.receive("edit-ready", { capabilities: { heldBlocks: true } });
+    expect(s.sent("edit-init")[0].heldBlocks).toEqual(blocks);
+  });
   it("sends heldBlocks only to capable frames and reports in-frame drawing", () => {
     const s = setup({ activeBlockId: "b" });
     s.receive("edit-ready", { capabilities: { heldBlocks: true } });

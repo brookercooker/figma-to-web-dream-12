@@ -25,7 +25,7 @@ vi.mock("../PageMiniPreview", () => ({ default: () => null }));
 beforeEach(() => { mocks.remote = true; mocks.path = "/draft"; mocks.writes.mockClear(); mocks.original.content = null; mocks.original.inline_edits = {}; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
 afterEach(cleanup);
 describe("public page save/discard integration", () => {
-  async function openRemote(embedded = true) {
+  async function openRemote(embedded = true, capable = false) {
     mocks.remote = true;
     const view = render(<MemoryRouter initialEntries={["/manage/design?page=contact"]}><DesignTab embedded={embedded} pageId="contact" /></MemoryRouter>);
     const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
@@ -34,7 +34,7 @@ describe("public page save/discard integration", () => {
     Object.defineProperty(frame, "contentWindow", { configurable: true, get: () => frameWindow });
     const post = vi.spyOn(frameWindow, "postMessage").mockImplementation(() => {});
     const send = (type: string, payload = {}) => act(() => { window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source: frame.contentWindow, data: { source: "nova-site", type, ...payload } })); });
-    send("edit-ready");
+    send("edit-ready", capable ? { capabilities: { heldBlocks: true, blockMove: true } } : {});
     return { ...view, frame, post, send };
   }
   it.each(["/", "/contact", "/about", "/team", "/locations", "/full-vendor-list", "/inspiration-gallery", "/test-page", "/race-test-page", "/landing/test", "/draft"])("opens %s through the public editor without local markup", async (path) => {
@@ -131,7 +131,7 @@ describe("public page save/discard integration", () => {
     fireEvent.click(down);
     await waitFor(() => expect(order()).toEqual(["second", "first"]));
     stubReloadedFrame();
-    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Contact", "Video", "Image"]);
+    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Page Content", "Video", "Image"]);
     const imageRow = [...list.querySelectorAll("li")].find(el => el.textContent === "Image");
     const imageButton = imageRow?.querySelector("button");
     if (!imageButton) throw new Error("Missing image section control");
@@ -143,8 +143,21 @@ describe("public page save/discard integration", () => {
     fireEvent.click(deletes[0]);
     await waitFor(() => expect(order()).toEqual(["first"]));
     stubReloadedFrame();
-    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Contact", "Image"]);
+    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Page Content", "Image"]);
     s.unmount();
+  });
+  it("moves held components around page content without reload and restores saved order on discard", async () => {
+    mocks.original.content = [{ id: "video", type: "video", url: "/clip.mp4", align: "left", width: 100 }];
+    const s = await openRemote(true, true);
+    expect(s.container.querySelector("[data-held-sections]")).toBeNull();
+    s.send("edit-block-move", { id: "video", toIndex: 0 });
+    expect(s.container.querySelector("iframe")).toBe(s.frame);
+    expect(s.post).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", activeBlockId: "video", heldBlocks: [(mocks.original.content as any[])[0], { id: "page-content", type: "page" }] }), "https://public.example.com");
+    expect(mocks.writes).not.toHaveBeenCalled();
+    await act(async () => { await mocks.save(); });
+    expect(mocks.writes).toHaveBeenCalledWith("pages", { content: [(mocks.original.content as any[])[0], { id: "page-content", type: "page" }] });
+    await act(async () => { await mocks.discard(); });
+    expect(mocks.writes.mock.calls.at(-1)?.[1].content).toEqual(mocks.original.content);
   });
   it("opens the interactive original in standalone editing too", async () => {
     const s = await openRemote(false);

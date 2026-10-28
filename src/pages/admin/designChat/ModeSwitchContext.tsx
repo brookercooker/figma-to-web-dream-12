@@ -35,7 +35,7 @@ export function ModeSwitchProvider({ children }: { children: ReactNode }) {
     stopEditing(); return true;
   };
   const requestManual = async (open: () => void | Promise<void>) => {
-    if (state?.busy || (state?.publish?.open ?? 0) > 0 || state?.publish?.status === "reviewing" || state?.approval) {
+    if (state?.busy || state?.publish?.status === "reviewing" || state?.approval) {
       if (resolveRef.current) return false;
       openRef.current = open;
       return wait("manual");
@@ -56,9 +56,9 @@ export function ModeSwitchProvider({ children }: { children: ReactNode }) {
     <Context.Provider value={{ requestChat, requestManual }}>
       {children}
       <ConfirmDialog open={pending !== null} onOpenChange={(open) => { if (!open && !savingRef.current) complete(false); }}
-        title={pending === "chat" ? "You Have Unsaved Edits." : state?.busy ? "Claude Is Still Working on a Change" : "Claude Has a Change Waiting for Review"}
-        description={<>{pending === "chat" ? "Save them before Claude changes this page?" : "Claude's change may affect this page. Continue editing by hand, or cancel and stay in Chat Mode."}{error && <p role="alert" className="mt-2 text-destructive">{error}</p>}</>}
-        destructive={false} confirmLabel={pending === "chat" ? "Save And Switch" : "Continue Editing"}
+        title={pending === "chat" ? "You Have Unsaved Edits." : state?.busy ? "Claude Is Still Working on a Change" : "A Review Is Running"}
+        description={<>{pending === "chat" ? "Save them before Claude changes this page?" : state?.busy ? "Claude's change may affect this page. Continue editing by hand, or cancel and stay in Chat Mode." : <><p>{reviewedRequests(state?.draft?.requests, state?.publish?.open ?? 0)}</p><p className="mt-2">You can keep editing. Your edits are saved when you finish, and added to the site after this review is done.</p></>}{error && <p role="alert" className="mt-2 text-destructive">{error}</p>}</>}
+        destructive={false} confirmLabel={pending === "chat" ? "Save And Switch" : state?.busy ? "Continue Editing" : "Keep Editing"}
         cancelLabel={pending === "chat" ? "Keep Editing" : "Cancel"} busy={saving}
         secondaryLabel={pending === "chat" ? "Discard And Switch" : undefined}
         onSecondary={() => { void Promise.resolve(discardAll()).then(() => { stopEditing(); complete(true); }).catch(() => setError("Your original page couldn't be restored. You are still in Manual Edit Mode.")); }}
@@ -71,3 +71,9 @@ export function ModeSwitchProvider({ children }: { children: ReactNode }) {
 }
 
 export const useModeSwitch = () => useContext(Context);
+function reviewedRequests(requests: { request: string }[] | undefined, count: number): string {
+  const texts = (requests ?? []).map(r => r.request?.trim()).filter(Boolean);
+  if (!texts.length) return count ? `${count} waiting ${count === 1 ? "change is" : "changes are"} being reviewed.` : "The waiting changes are being reviewed.";
+  const more = Math.max(texts.length, count) - Math.min(2, texts.length);
+  return `Being reviewed: ${texts.slice(0, 2).join("; ")}${more > 0 ? `; and ${more} more` : ""}.`;
+}

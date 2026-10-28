@@ -22,7 +22,7 @@ import VideoPickerDialog from "./VideoPickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
 import TagsPanel from "./TagsPanel";
 import { matchesLabelFilter } from "./labelPath";
-import PageBlocks, { BlockView, newId, parseBlocks, type Block, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, type CodeBlock, hasWideBlocks } from "@/components/PageBlocks";
+import PageBlocks, { BlockView, newId, parseBlocks, type Block as RenderBlock, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, type CodeBlock, hasWideBlocks } from "@/components/PageBlocks";
 
 import SharedObjectNotice from "./SharedObjectNotice";
 import Header from "@/components/Header";
@@ -37,6 +37,8 @@ import type { InlineReports } from "@/components/InlineEditSurface";
 import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
+import { isPageContent, movePageBlock, orderedPageContent, parsePageContent, type PageContentItem } from "./pageContentOrder";
+type Block = PageContentItem;
 import { editMap } from "./framedPageProtocol";
 import { draftEmbedUrl } from "./siteManifest";
 import { usePageEditorSurface } from "./usePageEditorSurface";
@@ -45,7 +47,7 @@ import { remoteSnapshot } from "./remoteSelection";
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
 
 export const previewSrc = (path: string) => (path === "/" ? "/home" : path);
-export function InlinePagePreview({ name, blocks }: { name: string; blocks: Block[] }) {
+export function InlinePagePreview({ name, blocks }: { name: string; blocks: RenderBlock[] }) {
   return <div><Header /><h1 className="font-serif text-3xl">{name}</h1><PageBlocks blocks={blocks} /><Footer /></div>;
 }
 
@@ -211,7 +213,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   useEffect(() => {
     // Wait for the page to load so a "mode=edit" link isn't used up early.
     if (!page) return;
-    const parsed = parseBlocks(page?.content);
+    const parsed = parsePageContent(page?.content);
     opening.current = structuredClone(page);
     discarded.current = false;
     setClosed(false);
@@ -314,16 +316,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   };
 
   const move = (id: string, dir: -1 | 1) => {
-    const i = blocks.findIndex((b) => b.id === id);
+    const i = orderedPageContent(blocks).findIndex(b => b.id === id);
     if (i < 0) return;
-    const j = i + dir;
-    if (j < 0 || j >= blocks.length) return;
-    changeBlocks((prev) => {
-      const copy = [...prev];
-      [copy[i], copy[j]] = [copy[j], copy[i]];
-      return copy;
-    });
-    setDirty(true);
+    changeBlocks(prev => movePageBlock(prev, id, i + dir));
+    setActiveId(id); setInlineSel(null);
   };
 
   // Pointer-based dragging: see-through copy follows the pointer, the wheel keeps
@@ -414,22 +410,19 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   /** Drag a block to a new position in the page. */
   const moveTo = (id: string, targetId: string, before: boolean) => {
     if (id === targetId) return;
-    changeBlocks((prev) => {
-      const from = prev.findIndex((b) => b.id === id);
-      if (from < 0) return prev;
-      const copy = [...prev];
-      const [item] = copy.splice(from, 1);
-      let to = copy.findIndex((b) => b.id === targetId);
-      if (to < 0) return prev;
-      if (!before) to += 1;
-      copy.splice(to, 0, item);
-      return copy;
-    });
-    setDirty(true);
+    const full = orderedPageContent(blocks);
+    const from = full.findIndex(b => b.id === id);
+    let to = full.findIndex(b => b.id === targetId);
+    if (from < 0 || to < 0) return;
+    if (!before) to++;
+    if (from < to) to--;
+    changeBlocks(prev => movePageBlock(prev, id, to));
+    setActiveId(id); setInlineSel(null);
   };
 
   const remove = (id: string) => {
-    changeBlocks((prev) => prev.filter((b) => b.id !== id));
+    if (id === "page-content") return;
+    changeBlocks((prev) => { const next = prev.filter(b => b.id !== id); return isPageContent(next[0]) ? next.slice(1) : next; });
   };
 
   const save = async () => {
@@ -565,7 +558,7 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
       if (results.some((r) => r.error)) { discarded.current = false; toast.error("Couldn't restore your original page. Try discarding again."); throw new Error("Discard failed"); }
       if (baseline) {
         setPages((cur) => cur.map((p) => p.id === baseline.id ? baseline : p));
-        setBlocks(parseBlocks(baseline.content)); setInlineEdits(baseline.inline_edits ?? {});
+        setBlocks(parsePageContent(baseline.content)); setInlineEdits(baseline.inline_edits ?? {});
       }
       setObjectEdits(structuredClone(originalObjects.current));
       framedApi.current?.exit();
@@ -660,10 +653,10 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                     <InlineEditSafetyPanel reports={framed ? framedReports : {}} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
                       record={async () => { if (!framed) return; const maps = await recordFramed(); if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
-                      resetAll={() => { changeInline({}); for (const scope of new Set([...Object.keys(framedReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
+                      resetAll={() => { if (opening.current) changeBlocks(parsePageContent(opening.current.content)); changeInline({}); for (const scope of new Set([...Object.keys(framedReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
     </>
   );
-  const blockTools = (b: Block, i: number) => (
+  const blockTools = (b: RenderBlock, i: number) => (
     <>
                           {b.type === "code" ? <span className="text-xs">{b.name}{b.locked ? " · Built in Code" : ""}</span> : b.type === "object" ? (
                             <>
@@ -760,27 +753,26 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
                           {i > 0 && (
                             <ToolButton title="Move Up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
                           )}
-                          {i < blocks.length - 1 && (
+                          {i < orderedPageContent(blocks).length - 1 && (
                             <ToolButton title="Move Down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
                           )}
                           <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
     </>
   );
 
-  const blockLabel = (b: Block) => b.type === "object" ? `Object: ${b.name ?? "Saved Object"}` : b.type === "code" ? b.name : b.type === "text" || b.type === "heading" ? b.text : b.type === "image" ? "Image" : "Video";
+  const blockLabel = (b: RenderBlock) => b.type === "object" ? `Object: ${b.name ?? "Saved Object"}` : b.type === "code" ? b.name : b.type === "text" || b.type === "heading" ? b.text : b.type === "image" ? "Image" : "Video";
   const tools = <div className="space-y-4 p-3">
     {stylePanel}
     <p className="text-xs font-medium">Sections</p>
     <ol className="divide-y border rounded-md">
-      <li className="px-2 py-2 text-xs">{page?.name}</li>
-      {blocks.map((b,i) => <li key={b.id} data-section-row={b.id} aria-current={activeId === b.id || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeId === b.id ? "bg-accent" : ""}`}>
+      {orderedPageContent(blocks).map((b,i) => isPageContent(b) ? <li key={b.id} data-section-row={b.id} className="px-2 py-2 text-xs">Page Content</li> : <li key={b.id} data-section-row={b.id} aria-current={activeId === b.id || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeId === b.id ? "bg-accent" : ""}`}>
         <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); if (heldInFrame) { void framedApi.current?.query("scrollTo", "held", b.id); return; } blockCanvasRef.current?.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>{blockLabel(b)}</Button>
         {i > 0 && <ToolButton title="Move Up" onClick={() => move(b.id,-1)}><ArrowUp className="h-4 w-4" /></ToolButton>}
-        {i < blocks.length-1 && <ToolButton title="Move Down" onClick={() => move(b.id,1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
+        {i < orderedPageContent(blocks).length-1 && <ToolButton title="Move Down" onClick={() => move(b.id,1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
         <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="h-4 w-4" /></ToolButton>
       </li>)}
     </ol>
-    {(() => { const i=blocks.findIndex(b=>b.id===activeId); return i < 0 ? null : <div className="flex flex-wrap gap-1">{blockTools(blocks[i],i)}</div>; })()}
+    {(() => { const list=orderedPageContent(blocks); const i=list.findIndex(b=>b.id===activeId); const b=list[i]; return !b || isPageContent(b) ? null : <div className="flex flex-wrap gap-1">{blockTools(b,i)}</div>; })()}
   </div>;
 
   /** Framed pages: the public frame records fingerprints (withFingerprints per scope); invalid maps are dropped. */
@@ -804,14 +796,14 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
         <FramedPageEditor key={`public-${page.id}`} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
           sectionRevision={sectionRevision} heldBlocks={blocks} activeBlockId={activeId || null}
-          onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} fill={!deviceStyle}
+          onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { changeBlocks(prev => movePageBlock(prev, id, toIndex)); setActiveId(id); setInlineSel(null); }} fill={!deviceStyle}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
           onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} />
         {/* Held sections: full pane width, selected (never played or opened) until saved into the public page. */}
         {!heldInFrame && <div data-held-sections className="w-full">
-          {blocks.map((b)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
+          {blocks.filter((b): b is RenderBlock => !isPageContent(b)).map((b)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
             className={`relative ${embedded ? "cursor-pointer [&_iframe]:pointer-events-none [&_video]:pointer-events-none" : ""} ${embedded && activeId === b.id ? "outline outline-2 -outline-offset-2 outline-primary" : ""}`}
             onClickCapture={embedded ? (e) => { if ((e.target as HTMLElement).closest("[contenteditable=true],input,textarea,select")) return; e.preventDefault(); setActiveId(b.id); setInlineSel(null); } : undefined}>
             <BlockView block={b} />

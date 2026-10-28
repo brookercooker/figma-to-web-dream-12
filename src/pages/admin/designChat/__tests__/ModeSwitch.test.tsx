@@ -2,17 +2,26 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ModeSwitchProvider, useModeSwitch } from "../ModeSwitchContext";
 
-const m = vi.hoisted(() => ({ editing: true, busy: false, open: 0, dirty: true, save: vi.fn(), discard: vi.fn(), stop: vi.fn(), enter: vi.fn(), result: vi.fn() }));
-vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({ editing: m.editing, stopEditing: m.stop, state: { busy: m.busy, publish: { open: m.open } } }) }));
+const m = vi.hoisted(() => ({ editing: true, busy: false, open: 0, status: "", approval: null as unknown, dirty: true, save: vi.fn(), discard: vi.fn(), stop: vi.fn(), enter: vi.fn(), result: vi.fn() }));
+vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({ editing: m.editing, stopEditing: m.stop, state: { busy: m.busy, publish: { open: m.open, status: m.status }, approval: m.approval } }) }));
 vi.mock("../EditorSlot", () => ({ useEditorSlot: () => ({ hasChanges: () => m.dirty, saveAll: m.save, discardAll: m.discard }) }));
 function Controls() {
   const guard = useModeSwitch();
   return <><button onClick={async () => m.result(await guard?.requestChat())}>Chat Mode</button><button onClick={() => void guard?.requestManual(m.enter)}>Manual Edit Mode</button></>;
 }
 const open = () => render(<ModeSwitchProvider><Controls /></ModeSwitchProvider>);
-beforeEach(() => { vi.clearAllMocks(); m.editing = true; m.busy = false; m.open = 0; m.dirty = true; m.save.mockResolvedValue(true); });
+beforeEach(() => { vi.clearAllMocks(); m.editing = true; m.busy = false; m.open = 0; m.status = ""; m.approval = null; m.dirty = true; m.save.mockResolvedValue(true); });
 afterEach(cleanup);
 describe("mode switch safeguards", () => {
+  it("enters immediately with waiting requests", async () => {
+    m.open = 4; open(); fireEvent.click(screen.getByText("Manual Edit Mode"));
+    await waitFor(() => expect(m.enter).toHaveBeenCalledOnce());
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+  it("asks before entering with a pending approval", () => {
+    m.approval = { id: "approval" }; open(); fireEvent.click(screen.getByText("Manual Edit Mode"));
+    expect(screen.getByRole("alertdialog")).toBeVisible(); expect(m.enter).not.toHaveBeenCalled();
+  });
   it("switches immediately without unsaved edits", async () => {
     m.dirty = false; open(); fireEvent.click(screen.getByText("Chat Mode"));
     await waitFor(() => expect(m.result).toHaveBeenCalledWith(true));
@@ -43,10 +52,10 @@ describe("mode switch safeguards", () => {
     expect(screen.getByRole("alertdialog")).toBeVisible(); expect(m.stop).not.toHaveBeenCalled(); expect(m.result).not.toHaveBeenCalled();
   });
   it.each(["busy", "review"])("requires confirmation before editing with Claude %s", async (kind) => {
-    m.editing = false; m.busy = kind === "busy"; m.open = kind === "review" ? 1 : 0;
+    m.editing = false; m.busy = kind === "busy"; m.open = kind === "review" ? 1 : 0; m.status = kind === "review" ? "reviewing" : "";
     open(); fireEvent.click(screen.getByText("Manual Edit Mode")); expect(m.enter).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("Cancel")); expect(m.enter).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByText("Manual Edit Mode")); fireEvent.click(screen.getByText("Continue Editing"));
+    fireEvent.click(screen.getByText("Manual Edit Mode")); fireEvent.click(screen.getByText(kind === "busy" ? "Continue Editing" : "Keep Editing"));
     await waitFor(() => expect(m.enter).toHaveBeenCalledTimes(1));
   });
 });
