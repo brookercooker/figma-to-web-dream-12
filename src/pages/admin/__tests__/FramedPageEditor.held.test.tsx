@@ -72,6 +72,12 @@ describe("held blocks handshake", () => {
     s.receive("edit-block-select", { id: "b" });
     expect(s.props.onBlockSelect).toHaveBeenCalledWith("b");
   });
+  it("selects a held block even when the frame's ready message lacked the capability", () => {
+    const s = setup();
+    s.receive("edit-ready", {});
+    s.receive("edit-block-select", { id: "b" });
+    expect(s.props.onBlockSelect).toHaveBeenCalledWith("b");
+  });
   it("uses clamped edit-size for the frame height", () => {
     const s = setup();
     s.receive("edit-ready", { capabilities: { heldBlocks: true } });
