@@ -2,7 +2,7 @@
 import DOMPurify from "dompurify";
 
 export type InlineEdits = Record<string, string>;
-export type Kind = "html" | "style" | "img" | "icon" | "link" | "fp";
+export type Kind = "html" | "style" | "img" | "icon" | "link" | "placeholder" | "fp";
 export interface LinkEdit { href?: string; target?: "_blank"; unlinked?: true }
 export interface Fingerprint { v: 1; tag: string; t: string; s?: string }
 export interface ReplayReport {
@@ -16,7 +16,7 @@ export function parseKey(key: string): { kind: Kind; path: string } | null {
   const colon = key.indexOf(":");
   const kind = colon < 0 ? "html" : key.slice(0, colon);
   const path = colon < 0 ? key : key.slice(colon + 1);
-  return ["html", "style", "img", "icon", "link", "fp"].includes(kind) &&
+  return ["html", "style", "img", "icon", "link", "placeholder", "fp"].includes(kind) &&
     (colon < 0 || kind !== "html") && PATH.test(path) ? { kind: kind as Kind, path } : null;
 }
 // Properties written by InlineStylePanel, plus the existing surface's reorder controls.
@@ -80,6 +80,8 @@ export function validateEdits(edits: unknown): { ok: InlineEdits; rejected: Repl
             (!("href" in fields) && fields.unlinked !== true)) reason = "Link contains an unsupported destination or setting";
         }
       } catch { reason = "Link must be a JSON object"; }
+    } else if (parsed.kind === "placeholder") {
+      if (value.length > 300 || /[\u0000-\u001f\u007f]/.test(value)) reason = "Placeholder text is too long or contains unsupported characters";
     } else if (parsed.kind === "fp") {
       try { if (!isFingerprint(JSON.parse(value))) reason = "Invalid fingerprint"; }
       catch { reason = "Invalid fingerprint"; }
@@ -102,7 +104,7 @@ export function fingerprintMatches(saved: Partial<Fingerprint>, current: Fingerp
   return saved.tag === current.tag && (saved.t === undefined || saved.t === current.t) &&
     (saved.s === undefined || saved.s === current.s);
 }
-interface Original { html: string; src: string | null; srcset: string | null; style: string | null; icon: boolean; fp: Fingerprint; link: Record<string, string | null> }
+interface Original { html: string; src: string | null; srcset: string | null; style: string | null; placeholder: string | null; icon: boolean; fp: Fingerprint; link: Record<string, string | null> }
 const LINK_ATTRIBUTES = ["href", "target", "rel", "data-inline-link", "data-inline-href", "data-inline-target"];
 // Shared snapshots also let withFingerprints read originals after replay/typing.
 const originals = new WeakMap<Element, Original>();
@@ -110,7 +112,7 @@ function snapshot(el: Element): Original {
   let original = originals.get(el);
   if (!original) {
     original = { html: el.innerHTML, src: el.getAttribute("src"), srcset: el.getAttribute("srcset"),
-      style: el.getAttribute("style"), icon: !!el.querySelector("svg"), fp: fingerprintOf(el),
+      style: el.getAttribute("style"), placeholder: el.getAttribute("placeholder"), icon: !!el.querySelector("svg"), fp: fingerprintOf(el),
       link: Object.fromEntries(LINK_ATTRIBUTES.map((key) => [key, el.getAttribute(key)])) };
     originals.set(el, original);
   }
@@ -157,6 +159,7 @@ function restore(entry: Applied, kinds: Set<Kind>) {
   if ((kinds.has("html") || kinds.has("icon")) && el.innerHTML !== o.html) el.innerHTML = o.html;
   if (kinds.has("img")) { attribute(el, "src", o.src); attribute(el, "srcset", o.srcset); }
   if (kinds.has("style")) attribute(el, "style", o.style);
+  if (kinds.has("placeholder")) attribute(el, "placeholder", o.placeholder);
   if (kinds.has("link")) for (const key of LINK_ATTRIBUTES) attribute(el, key, o.link[key]);
 }
 export function createReplay() {
@@ -192,6 +195,7 @@ export function createReplay() {
         if (!el) reason = "This part of the page is no longer there.";
         else if (kinds.includes("img") && el.tagName.toLowerCase() !== "img") reason = "This part of the page is no longer a picture.";
         else if (kinds.includes("style") && !(el instanceof HTMLElement)) reason = "This part of the page can no longer use these appearance settings.";
+        else if (kinds.includes("placeholder") && !/^(input|textarea)$/i.test(el.tagName)) reason = "This part of the page is no longer a form field.";
         else if ((kinds.includes("html") || kinds.includes("icon")) && /^(img|input|br|hr|video|iframe|svg)$/i.test(el.tagName)) reason = "This part of the page is no longer the right kind of element.";
         const fpKey = `fp:${path}`;
         if (!reason && el && fpKey in edits) {
@@ -251,6 +255,8 @@ export function createReplay() {
         }
         const img = values.get("img");
         if (img !== undefined) { attribute(el, "src", img); attribute(el, "srcset", null); }
+        const placeholder = values.get("placeholder");
+        if (placeholder !== undefined) attribute(el, "placeholder", placeholder);
         const linkValue = values.get("link");
         if (linkValue !== undefined) {
           const link = JSON.parse(linkValue) as LinkEdit;

@@ -32,8 +32,9 @@ function validPath(key: unknown): key is string { return typeof key === "string"
 export function validSnapshot(value: unknown): value is SelectionSnapshot {
   if (!value || typeof value !== "object") return false;
   const s = value as SelectionSnapshot;
+  if ((s.kind as string) === "field") s.kind = "input"; // Older frames called form fields "field".
   return validPath(s.key) && typeof s.scope === "string" && !!s.scope &&
-    ["text", "image", "video", "divider", "locked"].includes(s.kind) && typeof s.tag === "string" && /^[a-z][a-z0-9-]*$/i.test(s.tag) &&
+    ["text", "image", "video", "divider", "locked", "input"].includes(s.kind) && typeof s.tag === "string" && /^[a-z][a-z0-9-]*$/i.test(s.tag) &&
     (s.text === undefined || typeof s.text === "string") && (s.html === undefined || typeof s.html === "string") &&
     (s.style === undefined || (!!s.style && typeof s.style === "object" && Object.values(s.style).every((v) => typeof v === "string"))) &&
     (!s.link || (validPath(s.link.key) && typeof s.link.scope === "string"));
@@ -44,7 +45,7 @@ export function remoteSelection(snapshot: SelectionSnapshot, query?: EditQuery):
   const el = document.createElement(snapshot.tag);
   if (snapshot.html !== undefined) el.innerHTML = clean(snapshot.html);
   else el.textContent = snapshot.text ?? "";
-  for (const key of ["href", "src", "alt", "target", "poster", "title", "placeholder", "type"]) {
+  for (const key of ["href", "src", "alt", "target", "poster", "title", "placeholder", "type", "label"]) {
     const value = snapshot.attrs?.[key];
     if (typeof value === "string") el.setAttribute(key, value);
   }
