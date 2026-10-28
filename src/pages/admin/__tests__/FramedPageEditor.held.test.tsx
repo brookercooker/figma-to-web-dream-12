@@ -43,6 +43,20 @@ describe("held blocks payload", () => {
   it("clamps edit-size", () => { expect(clampEditSize(10)).toBe(400); expect(clampEditSize(99999)).toBe(20000); expect(clampEditSize(1500)).toBe(1500); });
 });
 describe("held blocks handshake", () => {
+  it("accepts edit-navigate only from the ready exact-origin frame with an internal path", () => {
+    const onNavigate = vi.fn();
+    const s = setup({ onNavigate });
+    s.receive("edit-navigate", { path: "/contact" });
+    expect(onNavigate).not.toHaveBeenCalled();
+    s.receive("edit-ready");
+    s.receive("edit-navigate", { path: "/contact" }, "https://evil.example");
+    s.receive("edit-navigate", { path: "/contact" }, "https://public.example.com", window);
+    for (const path of ["//evil.example", "https://evil.example", "/manage", "/manage/pages", "/%6danage/pages", "/about\\x", null, 12]) s.receive("edit-navigate", { path });
+    expect(onNavigate).not.toHaveBeenCalled();
+    s.receive("edit-navigate", { path: "/contact" });
+    s.receive("edit-navigate", { path: "/landing/autumn" });
+    expect(onNavigate.mock.calls).toEqual([["/contact"], ["/landing/autumn"]]);
+  });
   it("sends object data on init and update when the registry finishes loading", () => {
     const refs = [{ id: "a", type: "object", objectId: "o" }];
     const object = { status: "Draft", name: "About Us", component_key: "AboutUs", content: [] };
