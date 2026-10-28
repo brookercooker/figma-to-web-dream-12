@@ -13,6 +13,7 @@ import { MANIFEST_CHANGED } from "../siteManifest";
 import ManifestReceiverFrame from "./ManifestReceiverFrame";
 import { useChatReferences, type ChatReferences } from "./useChatReferences";
 import { emptyHistory, visit, step, canBack, canForward, type PreviewHistory } from "./previewHistory";
+import { CONTENT_SYNC_CHANGED, contentSyncDeferred, observeContentSyncState } from "./contentSync";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview
@@ -114,6 +115,13 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   });
 
   const [previewPath, setPreviewPath] = useState<string | null>(null);
+  const [syncDeferred, setSyncDeferred] = useState(contentSyncDeferred);
+  useEffect(() => {
+    const update = () => setSyncDeferred(contentSyncDeferred());
+    window.addEventListener(CONTENT_SYNC_CHANGED, update);
+    return () => window.removeEventListener(CONTENT_SYNC_CHANGED, update);
+  }, []);
+  useEffect(() => { if (!offline) observeContentSyncState(state); }, [state, offline]);
   const [navNonce, setNavNonce] = useState(0);
   const preview = usePreview(state, previewPath, navNonce);
   lastReload.current = preview.lastReloadAt;
@@ -244,7 +252,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, refs, previewNav, reviewOpen, setReviewOpen, showPreviewPath,
   }), [reviewOpen, showPreviewPath, mode, refs, previewNav, objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
-  return <Ctx.Provider value={value}><ManifestReceiverFrame />{children}</Ctx.Provider>;
+  return <Ctx.Provider value={value}><ManifestReceiverFrame />{syncDeferred && <p role="status" className="border-b bg-muted px-3 py-2 text-xs text-muted-foreground">Your edits are saved. They'll be added after the current review finishes.</p>}{children}</Ctx.Provider>;
 }
 
 /** The design chat's state. Only works inside <DesignChatProvider>. */
