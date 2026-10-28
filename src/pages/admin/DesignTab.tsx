@@ -387,24 +387,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     changeBlocks((prev) => { const next = prev.filter(b => b.id !== id); return isPageContent(next[0]) ? next.slice(1) : next; });
   };
 
-  const save = async () => {
-    if (!page) return;
-    setSaving(true);
-    try {
-      const { error } = await (supabase as any)
-        .from("pages")
-        .update({ content: stripHeldObjects(blocks) })
-        .eq("id", page.id);
-      if (error) throw error;
-      pendingSave.current = null;
-      notifyContentEdited();
-      await load();
-      setDirty(false);
-      toast.success(`Saved — your page is live at ${page.path}`);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not save the page");
-    } finally { setSaving(false); }
-  };
 
   // Unsaved block changes waiting for auto-save; flushed if the editor closes or the page changes.
   const pendingSave = useRef<{ pageId: string; snapshot: Block[] } | null>(null);

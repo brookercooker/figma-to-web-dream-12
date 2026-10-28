@@ -2224,24 +2224,6 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     if (copyId) setActiveId(copyId);
   };
 
-  const save = async () => {
-    if (!object) return;
-    setSaving(true);
-    try {
-      const { error } = await (supabase as any)
-        .from("object_registry")
-        .update({ content: sections, updated_at: new Date().toISOString() })
-        .eq("id", object.id);
-      if (error) throw error;
-      await load();
-      setDirty(false);
-      toast.success(`Saved — you can place "${object.name}" on any page.`);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not save this object");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   // Embedded: no auto-save; the Site Manager saves through this when leaving (Back to page, Save changes, tab switch).
   const saveHeldRef = useRef<() => Promise<boolean>>(async () => true);
