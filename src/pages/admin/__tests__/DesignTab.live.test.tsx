@@ -96,10 +96,11 @@ describe("one surface for every page", () => {
     expect(mocks.frameRenders.mock.calls.length).toBeGreaterThanOrEqual(renders);
   });
   it("an unreachable frame shows Retry and no starter", async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
     try {
       setManifestBase("");
       open();
+      await screen.findByText("Loading the page editor…");
       await act(async () => { await vi.advanceTimersByTimeAsync(EDITOR_DECISION_TIMEOUT_MS + 300); });
       expect(screen.getByTestId("public-frame")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
