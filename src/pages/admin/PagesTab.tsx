@@ -16,7 +16,6 @@ import { Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphon
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
 import { workingPageFrom } from "./designChat/pageSelection";
 import { CopyRefButton, buildPageRef } from "./copyReference";
-import { clearAllRouteSnapshots } from "./routeSnapshot";
 import { reservedPrefixFor } from "./reservedPaths";
 import CreatePageDialog from "./CreatePageDialog";
 import LinkAuditView from "./LinkAuditView";

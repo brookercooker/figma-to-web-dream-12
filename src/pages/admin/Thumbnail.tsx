@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { assetKind } from "./assetType";
 import { requestRouteSnapshot, getCachedRouteSnapshot } from "./routeSnapshot";
 import { usePageThumbSrc } from "./signedThumb";
