@@ -32,11 +32,11 @@ describe("public page save/discard integration", () => {
     const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
     const source = frame.contentWindow;
     if (!source) throw new Error("Missing frame");
-    vi.spyOn(source, "postMessage").mockImplementation(() => {});
+    const post = vi.spyOn(source, "postMessage").mockImplementation(() => {});
     const send = (type: string, payload = {}) => act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", type, ...payload } })));
     send("edit-ready", { capabilities: { heldBlocks: true } });
     send("edit-block-select", { id: "old-video" });
-    expect(view.container.querySelector('[data-section-row="old-video"]')?.getAttribute("aria-current")).toBe("true");
+    expect(post).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", activeBlockId: "old-video" }), "https://public.example.com");
     send("edit-navigate", { path: "/about" });
     expect(onNavigate).toHaveBeenCalledWith("/about");
     view.rerender(<MemoryRouter><DesignTab key="about" embedded pageId="about" onNavigate={onNavigate} /></MemoryRouter>);
@@ -46,6 +46,7 @@ describe("public page save/discard integration", () => {
     expect(view.container.querySelector('[data-section-row="old-video"]')).toBeNull();
     expect(view.container.querySelector('[data-section-row="about-image"][aria-current]')).toBeNull();
     expect(view.container.querySelector('[data-page-block="about-image"]')).not.toBeNull();
+    expect(view.container.querySelector('[data-page-block="about-image"]')?.getAttribute("data-active")).toBeNull();
     expect(mocks.writes).not.toHaveBeenCalled();
   });
   async function openRemote(embedded = true, capable = false) {
