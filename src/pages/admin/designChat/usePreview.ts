@@ -49,7 +49,13 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   pathRef.current = path;
   /** Where the visitor has gone inside the preview, used for the next fresh copy instead of `path`. */
   const remembered = useRef<string | null>(null);
-  const rememberPath = useCallback((p: string | null) => { remembered.current = p; }, []);
+  /** A page picked on purpose sticks until the preview reports it: earlier reports (e.g. the home page still loading) never override it. */
+  const pinned = useRef<string | null>(null);
+  const rememberPath = useCallback((p: string | null) => {
+    if (pinned.current && p !== pinned.current && p?.split("?")[0] !== pinned.current) return;
+    pinned.current = null;
+    remembered.current = p;
+  }, []);
   const reloadAfter = useRef(false); // the page changed while an address was being fetched: fetch once more
   const expiry = useRef<ReturnType<typeof setTimeout>>();
   const swapTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
@@ -165,6 +171,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   useEffect(() => {
     if (firstPath.current) { firstPath.current = false; return; }
     remembered.current = null; // a page was picked on purpose
+    pinned.current = path;
     if (loading.current) reloadAfter.current = true; // an address is being fetched for the old page; fetch again when it's done
     else loadPreview();
   }, [path, nav, loadPreview]);

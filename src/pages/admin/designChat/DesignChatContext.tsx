@@ -153,7 +153,10 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   // Back/Forward/page choice move the mounted preview in place; a src change happens only as a single fallback.
   const pendingNav = useRef<{ expect: string; timer: ReturnType<typeof setTimeout> } | null>(null);
   const shownPath = useRef<string | null>(null);
+  // The page asked for sticks until the preview reports it (first-load race: the frame may still be on the home page).
+  const target = useRef<{ path: string; tries: number } | null>(null);
   const navigatePreview = useCallback((nav: PreviewNavigate, expect: string, fallback: () => void) => {
+    target.current = nav.action === "to" ? { path: expect, tries: 0 } : null;
     if (nav.action === "to" && shownPath.current === expect) return; // already showing it (e.g. entering or leaving Manual Edit Mode)
     if (pendingNav.current) { clearTimeout(pendingNav.current.timer); pendingNav.current = null; }
     if (!postPreviewNavigate(nav)) { fallback(); return; }
@@ -182,7 +185,11 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const rememberPath = preview.rememberPath;
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
-      if (notePreviewReady(event)) return;
+      if (notePreviewReady(event)) {
+        const t = target.current;
+        if (t && shownPath.current !== t.path && t.tries < 5) { t.tries++; postPreviewNavigate({ action: "to", path: t.path }); }
+        return;
+      }
       const d = event.data;
       if (!d || typeof d !== "object" || d.source !== "nova-site" || d.type !== "location") return;
       if (typeof d.path !== "string" || !d.path.startsWith("/") || d.path.length > 300) return;
@@ -192,6 +199,13 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       const search = typeof d.search === "string" && d.search.length <= 300 ? d.search : "";
       const notFound = d.notFound === true;
       setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search && Boolean(cur.notFound) === notFound ? cur : { path: d.path, search, ...(notFound ? { notFound: true } : {}) }));
+      const t = target.current;
+      if (t && t.path !== d.path && t.path !== d.path + search) {
+        // Still showing an earlier page: ask again (bounded) rather than adopt it.
+        if (t.tries < 5) { t.tries++; postPreviewNavigate({ action: "to", path: t.path }); }
+        return;
+      }
+      target.current = null;
       rememberPath(d.path + search);
       shownPath.current = d.path;
       const pending = pendingNav.current;
