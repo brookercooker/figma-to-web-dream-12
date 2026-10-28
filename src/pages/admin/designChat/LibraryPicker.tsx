@@ -169,7 +169,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button ref={trigger} variant="ghost" type="button" title={label} aria-label={label} aria-current={active ? "page" : undefined}
-          aria-haspopup="dialog" aria-expanded={open} aria-pressed={open} className={cnPicker(className)}>
+          aria-haspopup="dialog" aria-expanded={open} aria-pressed={open} className={`${className} data-[picker-open=true]:bg-accent data-[picker-open=true]:text-accent-foreground`}>
           <Icon className="w-4 h-4" />
           {showLabel && <span>{label}</span>}
         </Button>
