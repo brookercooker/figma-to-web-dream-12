@@ -1,6 +1,6 @@
 import { Suspense, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { matchesLabelFilter } from "./labelPath";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,16 +11,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import InlineEdit from "./InlineEdit";
 import {
-  Search, AlertCircle, Archive, Trash2, RotateCcw,
-  Pencil, Save, AlertTriangle, RefreshCw, ExternalLink, MoreHorizontal, Copy, Type,
-  Palette,
-} from "lucide-react";
+  Search, AlertCircle, Archive, RotateCcw,
+  Pencil, AlertTriangle, RefreshCw, ExternalLink, MoreHorizontal, Copy, Type,
+  } from "lucide-react";
 import { RenameDialog } from "./RenameDialog";
 import { renameObject } from "./renameHelpers";
-import { clearAllRouteSnapshots } from "./routeSnapshot";
 import { toast } from "sonner";
 import { CopyRefButton, buildObjectRef } from "./copyReference";
-import { buildObjectBuildPrompt } from "./objectPrompt";
 import SelectionBar from "./SelectionBar";
 import AddButtonRow from "./AddButtonRow";
 import FilterBar, { type TimeRange } from "./FilterBar";
@@ -40,17 +37,15 @@ import { objectRegistry } from "@/components/objects/registry";
 import CreateObjectDialog from "./CreateObjectDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import TagsPanel from "./TagsPanel";
-import Thumbnail from "./Thumbnail";
 import ObjectLiveThumbnail from "./ObjectLiveThumbnail";
 import LabelsCell from "./LabelsCell";
 import WorkStatusPopover from "./WorkStatusPopover";
 import { supabase } from "@/prototype/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAutoCaptureThumbnails, regenerateThumbnail, isStale } from "./useThumbnailCapture";
 import { type ObjectUsage } from "./objectUsages";
-import { useObjectPageUsages, OBJECT_PAGE_USAGES_QUERY_KEY } from "./useObjectPageUsages";
+import { useObjectPageUsages } from "./useObjectPageUsages";
 import InUseWarning from "./InUseWarning";
-import { toRouteSlug } from "./slug";
 
 type StatusFilter = "all" | "Ready" | "Draft";
 type SortKey = "newest" | "oldest" | "name" | "name_desc";
@@ -299,10 +294,6 @@ export default function ObjectsTab() {
   const gotoObject = (o: ObjectRegistryRow) => navigate(`/objects/${o.slug_id}`);
 
   // Edit button on a row: Ready → ask update-all vs make-a-copy; Draft → just open.
-  const handleEditClick = (o: ObjectRegistryRow) => {
-    if (o.status === "Ready") setEditReady(o);
-    else gotoObject(o);
-  };
 
 
 
@@ -791,58 +782,6 @@ export default function ObjectsTab() {
   );
 }
 
-function ArchiveDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const { data: archived = [], isLoading } = useArchivedObjects();
-  const restore = useRestoreObject();
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Archive className="w-4 h-4" /> Object Archive
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-          {isLoading && <div className="h-16 bg-muted rounded animate-pulse" />}
-          {!isLoading && archived.length === 0 && (
-            <p className="text-sm text-muted-foreground py-8 text-center">No archived objects.</p>
-          )}
-          {archived.map((o) => (
-            <div key={o.id} className="flex items-center gap-3 border rounded-md p-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium truncate">{o.name}</span>
-                  <Badge variant="secondary" className="text-[10px]">{o.status}</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground font-mono truncate">id: {o.slug_id}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Archived {o.archived_at ? new Date(o.archived_at).toLocaleString() : ""}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5"
-                disabled={restore.isPending}
-                onClick={async () => {
-                  try {
-                    await restore.mutateAsync(o.id);
-                    toast.success(`Restored "${o.name}"`);
-                  } catch (e: any) {
-                    toast.error(e?.message ?? "Restore failed");
-                  }
-                }}
-              >
-                <RotateCcw className="w-3.5 h-3.5" /> Restore
-              </Button>
-            </div>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 /**
  * On-demand live preview modal. Mounts the actual object component ONLY while

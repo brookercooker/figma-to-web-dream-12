@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
-  Copy, ExternalLink, Search, Archive, ArchiveRestore, Trash2, MoreHorizontal, Plus, Pencil, Files, RefreshCw, Type, MessageSquare,
+  ExternalLink, Search, Archive, ArchiveRestore, Trash2, MoreHorizontal, Pencil, Files, RefreshCw, Type, MessageSquare,
 } from "lucide-react";
 import { RenameDialog } from "./RenameDialog";
 import { renameLanding } from "./renameHelpers";
@@ -20,19 +20,18 @@ import SelectionBar from "./SelectionBar";
 import FilterBar, { type TimeRange } from "./FilterBar";
 import AddButtonRow from "./AddButtonRow";
 import ConfirmDialog from "./ConfirmDialog";
-import Thumbnail from "./Thumbnail";
 import PageMiniPreview from "./PageMiniPreview";
 import ListPager, { usePager } from "./ListPager";
 import PagePreviewDialog from "./PagePreviewDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
 import CreateLandingPageDialog from "./CreateLandingPageDialog";
-import { buildLandingReference, buildLandingBuildPrompt } from "./landingPrompt";
+import { buildLandingReference } from "./landingPrompt";
 import { CopyRefButton, CopyUrlButton } from "./copyReference";
 import { PUBLIC_LANDING_HOST } from "@/lib/publicHost";
 import { customLandingSlugs } from "../landing/customLandingPages";
 
 import { toRouteSlug } from "./slug";
-import { formatSchedule, formatScheduleShort, isoToLocalParts, localDateToIso } from "@/lib/landingDates";
+import { formatScheduleShort, isoToLocalParts, localDateToIso } from "@/lib/landingDates";
 import { useAutoCaptureThumbnails, regenerateThumbnail } from "./useThumbnailCapture";
 import { PAGES_SYNCED, syncManifestPages } from "./manifestPageSync";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
@@ -81,10 +80,6 @@ function fmtWindow(row: Landing): string {
   return `Until ${e}`;
 }
 
-async function copy(text: string, label = "Copied") {
-  try { await navigator.clipboard.writeText(text); toast.success(label); }
-  catch { toast.error("Copy failed"); }
-}
 
 function fmtDateTime(iso: string) {
   if (!iso) return null;

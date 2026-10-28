@@ -10,7 +10,7 @@ import { formatBytes } from "@/lib/imageOptimize";
 import { uploadImageFile } from "./captureUpload";
 import { tileSrcCandidates } from "./imageTileSrc";
 import TagsPanel from "./TagsPanel";
-import { Copy, Trash2, Search, Archive, ArchiveRestore, AlertTriangle, RefreshCw, Download, Globe, Lock } from "lucide-react";
+import { Trash2, Search, Archive, ArchiveRestore, AlertTriangle, RefreshCw, Download, Globe, Lock } from "lucide-react";
 import { GATED_BUCKET, clearAssetUrlCache } from "@/lib/assetUrl";
 import { downloadOriginalImage, downloadImagesAsZip } from "./downloadAssets";
 import { useImages, useImageThumbnails, usePages } from "./useAdminData";
@@ -271,11 +271,6 @@ export default function ImagesTab() {
   const pageOptions = useMemo(() => {
     const rows = (allPages as any[]).filter((p) => !p.archived_at);
     return [...rows].sort((a, b) => (a.name ?? a.path).localeCompare(b.name ?? b.path));
-  }, [allPages]);
-  const pageIdByPath = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const p of allPages as any[]) if (!p.archived_at) m.set(p.path, p.id);
-    return m;
   }, [allPages]);
 
 
@@ -613,10 +608,6 @@ export default function ImagesTab() {
   };
 
 
-  const copyId = (id: string) => {
-    navigator.clipboard.writeText(id);
-    toast.success(`"${id}" copied to your clipboard`, { duration: 4000 });
-  };
 
 
 

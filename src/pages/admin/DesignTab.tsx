@@ -10,31 +10,26 @@ import EmbeddedBox from "./designChat/EmbeddedBox";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
-  ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
-  AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
-  ChevronDown, ChevronRight, GripVertical, Film,
-PanelLeftOpen, PanelLeftClose, Monitor, Tablet, Smartphone, Eye } from "lucide-react";
-import { DeviceFrame, DEVICE_WIDTH, type Device } from "@/components/DeviceFrame";
+  ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, AlignCenter, AlignLeft, AlignRight, Trash2, Pencil, Boxes,
+  ChevronDown, ChevronRight, Film } from "lucide-react";
+import { DEVICE_WIDTH, type Device } from "@/components/DeviceFrame";
 import CreatePageDialog from "./CreatePageDialog";
-import ConfirmDialog from "./ConfirmDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import VideoPickerDialog from "./VideoPickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
-import TagsPanel from "./TagsPanel";
 import { matchesLabelFilter } from "./labelPath";
-import PageBlocks, { BlockView, newId, parseBlocks, type Block as RenderBlock, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, type CodeBlock, hasWideBlocks } from "@/components/PageBlocks";
+import PageBlocks, { BlockView, newId, type Block as RenderBlock, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock } from "@/components/PageBlocks";
 
 import SharedObjectNotice from "./SharedObjectNotice";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import InsertGap, { type InsertType } from "./InsertGap";
+import { type InsertType } from "./InsertGap";
 import { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
 import InlineStylePanel from "./InlineStylePanel";
 import InlineEditSafetyPanel from "./InlineEditSafetyPanel";
 import InlineDestinationPanel from "./InlineDestinationPanel";
-import { hasVisibleEdits, withoutPath } from "@/lib/inlineEditCore";
+import { withoutPath } from "@/lib/inlineEditCore";
 import type { InlineReports } from "@/components/InlineEditSurface";
-import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
 import { isPageContent, movePageBlock, orderedPageContent, parsePageContent, type PageContentItem } from "./pageContentOrder";
@@ -247,33 +242,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     return list;
   }, [pages, q, tagFilters, sortBy]);
 
-  const usageCounts = useMemo(() => {
-    const c: Record<string, number> = {};
-    pages.forEach((p) => (p.tags ?? []).forEach((t) => { c[t] = (c[t] ?? 0) + 1; }));
-    return c;
-  }, [pages]);
 
-  const applyTag = async (ids: string[], path: string) => {
-    for (const id of ids) {
-      const p = pages.find((x) => x.id === id);
-      if (!p || (p.tags ?? []).includes(path)) continue;
-      const nextTags = [...(p.tags ?? []), path];
-      await (supabase as any).from("pages").update({ tags: nextTags }).eq("id", id);
-      setPages((cur) => cur.map((x) => (x.id === id ? { ...x, tags: nextTags } : x)));
-    }
-  };
 
   const [deleting, setDeleting] = useState<PageRow | null>(null);
-  const deletePage = async (pg: PageRow) => {
-    await (supabase as any).from("pages").delete().eq("id", pg.id);
-    setPages((cur) => cur.filter((x) => x.id !== pg.id));
-    if (pg.id === selectedId && !embedded) {
-      const next = new URLSearchParams(params);
-      next.delete("page");
-      setParams(next, { replace: true });
-    }
-    setDeleting(null);
-  };
 
   const select = (id: string) => {
     if (embedded) return;
@@ -336,20 +307,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const chat = useDesignChatOptional();
   const device: Device = embedded ? "desktop" : localDevice;
   const deviceStyle = !embedded && DEVICE_WIDTH[device] ? { width: DEVICE_WIDTH[device], maxWidth: "100%", margin: "0 auto" } : undefined;
-  const h70 = embedded ? "h-full" : "h-[70vh]";
-  const frame = embedded ? "h-full overflow-hidden bg-background" : "border rounded-lg overflow-hidden bg-background";
-  const startDrag = (e: React.MouseEvent, id: string) => {
-    if (e.button !== 0) return;
-    const x0 = e.clientX, y0 = e.clientY;
-    const mv = (ev: MouseEvent) => {
-      if (Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 5) return;
-      window.removeEventListener("mousemove", mv);
-      grabRef.current = { x: ev.clientX, y: ev.clientY };
-      setDragId(id);
-    };
-    window.addEventListener("mousemove", mv);
-    window.addEventListener("mouseup", () => window.removeEventListener("mousemove", mv), { once: true });
-  };
   useEffect(() => {
     if (!dragId) return;
     let speed = 0, raf = 0;
@@ -430,24 +387,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     changeBlocks((prev) => { const next = prev.filter(b => b.id !== id); return isPageContent(next[0]) ? next.slice(1) : next; });
   };
 
-  const save = async () => {
-    if (!page) return;
-    setSaving(true);
-    try {
-      const { error } = await (supabase as any)
-        .from("pages")
-        .update({ content: stripHeldObjects(blocks) })
-        .eq("id", page.id);
-      if (error) throw error;
-      pendingSave.current = null;
-      notifyContentEdited();
-      await load();
-      setDirty(false);
-      toast.success(`Saved — your page is live at ${page.path}`);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not save the page");
-    } finally { setSaving(false); }
-  };
 
   // Unsaved block changes waiting for auto-save; flushed if the editor closes or the page changes.
   const pendingSave = useRef<{ pageId: string; snapshot: Block[] } | null>(null);
@@ -584,27 +523,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     return () => window.removeEventListener("beforeunload", warn);
   }, [hasUnsaved]);
 
-  const setBuildStatus = async (status: "draft" | "ready") => {
-    if (!page?.id || page.build_status === status) return;
-    const id = page.id;
-    const { error } = await (supabase as any).from("pages").update({ build_status: status }).eq("id", id);
-    if (error) { toast.error(error.message ?? "Could not change the status"); return; }
-    setPages((cur) => cur.map((x) => (x.id === id ? { ...x, build_status: status } : x)));
-    notifyContentEdited();
-    toast.success(status === "ready"
-      ? "Marked Ready. It will be included the next time you submit for review."
-      : "Marked Draft. It will not be published.");
-  };
-
-  const toolbarRef = useRef<HTMLDivElement | null>(null);
-  const [toolbarHidden, setToolbarHidden] = useState(false);
-  useEffect(() => {
-    const el = toolbarRef.current;
-    if (!el) { setToolbarHidden(false); return; }
-    const io = new IntersectionObserver(([e]) => setToolbarHidden(!e.isIntersecting && e.boundingClientRect.top < 0), { rootMargin: "-64px 0px 0px 0px" });
-    io.observe(el);
-    return () => io.disconnect();
-  });
 
   const addButtons = (
     <>

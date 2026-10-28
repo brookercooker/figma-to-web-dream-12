@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { assetKind } from "./assetType";
-import { requestRouteSnapshot, getCachedRouteSnapshot } from "./routeSnapshot";
 import { usePageThumbSrc } from "./signedThumb";
 
 /**
@@ -79,44 +78,7 @@ function GeneratingTile({ kind, label, subtext }: { kind: "page" | "object"; lab
   );
 }
 
-function StaticTile({ kind, label }: { kind: "page" | "object"; label: string }) {
-  return (
-    <div className="w-full h-full flex flex-col items-center justify-center text-[10px] text-muted-foreground p-1 text-center gap-1">
-      <div className="uppercase tracking-wider text-[8px] opacity-60">
-        {kind === "page" ? "Page" : "Object"}
-      </div>
-      <div className="truncate max-w-full font-medium text-foreground/80">{label}</div>
-    </div>
-  );
-}
 
-function PageSnapshot({ route, label, cacheKey }: { route: string; label: string; cacheKey: string }) {
-  const [src, setSrc] = useState<string | null>(() => getCachedRouteSnapshot(cacheKey));
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const requestedRef = useRef(false);
-
-  useEffect(() => {
-    if (src || requestedRef.current) return;
-    const el = wrapRef.current;
-    if (!el) return;
-    let cancelled = false;
-    const trigger = () => {
-      if (requestedRef.current) return;
-      requestedRef.current = true;
-      requestRouteSnapshot(route, cacheKey).then((v) => { if (!cancelled && v) setSrc(v); });
-    };
-    if (typeof IntersectionObserver === "undefined") { trigger(); return; }
-    const io = new IntersectionObserver((entries) => {
-      for (const e of entries) if (e.isIntersecting) { trigger(); io.disconnect(); break; }
-    }, { rootMargin: "200px" });
-    io.observe(el);
-    return () => { cancelled = true; io.disconnect(); };
-  }, [route, cacheKey, src]);
-
-  if (src) return <img ref={(n) => { if (n) (wrapRef as any).current = n.parentElement; }}
-    src={src} alt={label} className="w-full h-full object-cover object-top" loading="lazy" />;
-  return <div ref={wrapRef} className="w-full h-full"><StaticTile kind="page" label={label} /></div>;
-}
 
 function ImagePreview({ src, name, w, h }: { src: string; name?: string; w: number; h: number }) {
   const [broken, setBroken] = useState(false);

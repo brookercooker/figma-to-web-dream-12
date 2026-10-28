@@ -31,10 +31,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  ArrowLeft, MoreHorizontal, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
+  ArrowLeft, MoreHorizontal, ArrowDown, ArrowUp, Eye, Pencil, Plus, Trash2,
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
-  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
+  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, GripVertical,
   Video as VideoIcon, Minus, Link as LinkIcon, Copy, PanelLeftClose, PanelLeftOpen,
   PanelTop, PanelBottom,
   Monitor, Tablet, Smartphone,
@@ -62,9 +62,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  SectionEditing, partRotation, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, imageZoom, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, groupByFlow, flowWidthStyle, fitRowWidths, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
+  SectionEditing, partRotation, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, imageZoom, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, groupByFlow, flowWidthStyle, fitRowWidths, TEXT_COLORS, TEXT_FONTS, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeParagraph, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
-  type RowVAlign, type ImageHeight, type PartVAlign,
+  type RowVAlign, type PartVAlign,
   type TextColor, type TextFont, type TextSize, type TextStyle,
   ContainedBgContext,
   bgColorCss,
@@ -707,13 +707,6 @@ function IconPicker({
 }
 
 // Which style field on a section each clickable text part maps to.
-const STYLE_FIELD: Record<string, keyof FreeSection | undefined> = {
-  eyebrow: "eyebrowStyle",
-  heading: "textStyle",
-  body: "bodyStyle",
-  button: "labelStyle",
-  caption: "captionStyle",
-};
 
 const STYLE_FIELD_LABEL: Record<string, string> = {
   eyebrowStyle: "Eyebrow",
@@ -723,12 +716,6 @@ const STYLE_FIELD_LABEL: Record<string, string> = {
   captionStyle: "Caption",
 };
 
-const SIZE_WORD: Record<string, string> = {
-  sm: "Small",
-  md: "Medium",
-  lg: "Large",
-  xl: "Extra Large",
-};
 
 function EmphasisToggles({
   style, set, underlineDefault = false,
@@ -2237,24 +2224,6 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     if (copyId) setActiveId(copyId);
   };
 
-  const save = async () => {
-    if (!object) return;
-    setSaving(true);
-    try {
-      const { error } = await (supabase as any)
-        .from("object_registry")
-        .update({ content: sections, updated_at: new Date().toISOString() })
-        .eq("id", object.id);
-      if (error) throw error;
-      await load();
-      setDirty(false);
-      toast.success(`Saved — you can place "${object.name}" on any page.`);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Could not save this object");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   // Embedded: no auto-save; the Site Manager saves through this when leaving (Back to page, Save changes, tab switch).
   const saveHeldRef = useRef<() => Promise<boolean>>(async () => true);
@@ -5279,61 +5248,5 @@ function CodedImportProbe({
   );
 }
 
-type HeaderAction = {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  onClick: () => void;
-  disabled?: boolean;
-  selected?: boolean;
-};
 
 /** Block header buttons that fold into a "…" menu when the header is too narrow. */
-function BlockHeaderControls({ active, onToggle, actions }: { active: boolean; onToggle: () => void; actions: HeaderAction[] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(actions.length);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    const header = el?.parentElement;
-    if (!el || !header) return;
-    const measure = () => {
-      let used = 0;
-      for (const c of Array.from(header.children)) if (c !== el) used += (c as HTMLElement).offsetWidth + 10;
-      const room = header.clientWidth - 24 - used;
-      const EDIT = 64, BTN = 40, MORE = 40;
-      if (EDIT + actions.length * BTN <= room) return setVisible(actions.length);
-      setVisible(Math.max(0, Math.min(actions.length - 1, Math.floor((room - EDIT - MORE) / BTN))));
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(header);
-    return () => ro.disconnect();
-  }, [actions.length]);
-  const shown = actions.slice(0, visible);
-  const hidden = actions.slice(visible);
-  return (
-    <div ref={ref} className="ml-auto flex shrink-0 items-center gap-1">
-      <Button variant="ghost" size="sm" onClick={onToggle}>{active ? "Done" : "Edit"}</Button>
-      {shown.map((a) => (
-        <Button key={a.label} variant={a.selected ? "secondary" : "ghost"} size="sm" title={a.label} aria-label={a.label} disabled={a.disabled} onClick={a.onClick}>
-          <a.icon className="w-4 h-4" />
-        </Button>
-      ))}
-      {hidden.length > 0 && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" title="More" aria-label="More Block Controls">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {hidden.map((a) => (
-              <DropdownMenuItem key={a.label} disabled={a.disabled} onSelect={a.onClick} className="gap-2">
-                <a.icon className="w-4 h-4" /> {a.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
-    </div>
-  );
-}

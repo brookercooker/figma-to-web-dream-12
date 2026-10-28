@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 
 type Props = {
   label: string; // e.g. "Object" — rendered as "+ Add {label}"

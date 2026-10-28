@@ -4,24 +4,21 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import Thumbnail from "./Thumbnail";
 import PageMiniPreview from "./PageMiniPreview";
 import ListPager, { usePager } from "./ListPager";
 import TagsPanel from "./TagsPanel";
 import InlineEdit from "./InlineEdit";
 import ConfirmDialog from "./ConfirmDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
-import { Copy, Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, MessageSquare } from "lucide-react";
+import { Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, MessageSquare } from "lucide-react";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
 import { workingPageFrom } from "./designChat/pageSelection";
 import { CopyRefButton, buildPageRef } from "./copyReference";
-import { clearAllRouteSnapshots } from "./routeSnapshot";
 import { reservedPrefixFor } from "./reservedPaths";
 import CreatePageDialog from "./CreatePageDialog";
 import LinkAuditView from "./LinkAuditView";
-import { isComingSoonPath, getPageType, PAGE_TYPES, type PageType } from "./routeTable";
+import { getPageType, type PageType } from "./routeTable";
 import LabelsCell from "./LabelsCell";
 import SelectionBar from "./SelectionBar";
 import FilterBar, { type TimeRange } from "./FilterBar";
@@ -55,10 +52,6 @@ const FIELDS: { v: Field; label: string }[] = [
   { v: "tags", label: "Labels" },
 ];
 
-function fmtDate(iso: string) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
 function fmtDateTime(iso: string) {
   if (!iso) return null;
   const d = new Date(iso);
@@ -156,11 +149,6 @@ export default function PagesTab() {
     };
   }, []);
 
-  const refresh = async () => {
-    clearAllRouteSnapshots();
-    await load();
-    toast.success("Pages refreshed");
-  };
 
   // Auto-capture server-side thumbnails for stale/new pages.
   const captureCandidates = useMemo(() =>
@@ -360,7 +348,6 @@ export default function PagesTab() {
 
   const archivedCount = useMemo(() => pages.filter((p) => p.archived_at).length, [pages]);
 
-  const copyId = (slug: string) => { navigator.clipboard.writeText(slug); toast.success(`Copied ${slug}`); };
 
   const toggleSelect = (id: string, idx: number, shift: boolean) => {
     const n = new Set(selected);
@@ -541,12 +528,6 @@ export default function PagesTab() {
           {filtered.slice(pager.start, pager.end).map((p, i) => { const idx = pager.start + i;
             const on = selected.has(p.id);
             const pageType = getPageType(p.path, p.name);
-            const typeClass =
-              pageType === "System"
-                ? "bg-sky-500/10 text-sky-700 border-sky-500/30"
-                : pageType === "Supernova CC"
-                ? "bg-brass/20 text-brass border-brass/40"
-                : "bg-emerald-500/10 text-emerald-700 border-emerald-500/30";
             return (
               <tr
                 key={p.id}
