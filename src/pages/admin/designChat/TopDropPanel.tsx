@@ -23,7 +23,7 @@ export const TopDropContent = forwardRef<ElementRef<typeof DialogPrimitive.Conte
     const [placement, setPlacement] = useState<ReturnType<typeof topDropPlacement> | null>(null);
     const contentRef = useCallback((node: HTMLDivElement | null) => {
       if (typeof ref === "function") ref(node); else if (ref) ref.current = node;
-      if (!node) { setAnchor(null); setPlacement(null); return; }
+      if (!node) return;
       const active = document.activeElement;
       opener.current = anchorRef?.current ?? requestedAnchor ?? (active instanceof HTMLElement && active !== document.body ? active : null);
       requestedAnchor = null; setAnchor(opener.current);
@@ -48,7 +48,7 @@ export const TopDropContent = forwardRef<ElementRef<typeof DialogPrimitive.Conte
         onOpenAutoFocus={event => {
           onOpenAutoFocus?.(event);
         }}
-        onCloseAutoFocus={event => { onCloseAutoFocus?.(event); if (opener.current?.isConnected) { event.preventDefault(); opener.current.focus(); } }} {...props}>
+        onCloseAutoFocus={event => { onCloseAutoFocus?.(event); if (opener.current?.isConnected) { event.preventDefault(); opener.current.focus(); } setAnchor(null); }} {...props}>
         {placement && anchor && <span aria-hidden="true" data-picker-connector="" className="pointer-events-none absolute top-0 h-1 bg-primary" style={{ left: placement.connectorLeft, width: placement.connectorWidth }} />}
         {children}
         {!hideClose && (
