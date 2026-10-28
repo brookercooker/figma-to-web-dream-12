@@ -10,7 +10,7 @@ import { formatBytes } from "@/lib/imageOptimize";
 import { uploadImageFile } from "./captureUpload";
 import { tileSrcCandidates } from "./imageTileSrc";
 import TagsPanel from "./TagsPanel";
-import { Copy, Trash2, Search, Archive, ArchiveRestore, AlertTriangle, RefreshCw, Download, Globe, Lock } from "lucide-react";
+import { Trash2, Search, Archive, ArchiveRestore, AlertTriangle, RefreshCw, Download, Globe, Lock } from "lucide-react";
 import { GATED_BUCKET, clearAssetUrlCache } from "@/lib/assetUrl";
 import { downloadOriginalImage, downloadImagesAsZip } from "./downloadAssets";
 import { useImages, useImageThumbnails, usePages } from "./useAdminData";

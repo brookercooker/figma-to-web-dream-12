@@ -13,7 +13,7 @@ import {
 } from "./useAllLabels";
 import { colorFor, pickLeastUsedColor } from "./labelColors";
 import ColorSwatchPicker from "./ColorSwatchPicker";
-import { LABEL_SEP, MAX_DEPTH, leafOf, parentPath, validateLeafName, joinPath } from "./labelPath";
+import { LABEL_SEP, MAX_DEPTH, validateLeafName, joinPath } from "./labelPath";
 
 interface Props {
   scope: LabelScope;

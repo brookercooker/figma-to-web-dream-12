@@ -1,6 +1,6 @@
 import { Suspense, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { matchesLabelFilter } from "./labelPath";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,16 +11,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import InlineEdit from "./InlineEdit";
 import {
-  Search, AlertCircle, Archive, Trash2, RotateCcw,
-  Pencil, Save, AlertTriangle, RefreshCw, ExternalLink, MoreHorizontal, Copy, Type,
-  Palette,
-} from "lucide-react";
+  Search, AlertCircle, Archive, RotateCcw,
+  Pencil, AlertTriangle, RefreshCw, ExternalLink, MoreHorizontal, Copy, Type,
+  } from "lucide-react";
 import { RenameDialog } from "./RenameDialog";
 import { renameObject } from "./renameHelpers";
-import { clearAllRouteSnapshots } from "./routeSnapshot";
 import { toast } from "sonner";
 import { CopyRefButton, buildObjectRef } from "./copyReference";
-import { buildObjectBuildPrompt } from "./objectPrompt";
 import SelectionBar from "./SelectionBar";
 import AddButtonRow from "./AddButtonRow";
 import FilterBar, { type TimeRange } from "./FilterBar";
@@ -40,17 +37,15 @@ import { objectRegistry } from "@/components/objects/registry";
 import CreateObjectDialog from "./CreateObjectDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import TagsPanel from "./TagsPanel";
-import Thumbnail from "./Thumbnail";
 import ObjectLiveThumbnail from "./ObjectLiveThumbnail";
 import LabelsCell from "./LabelsCell";
 import WorkStatusPopover from "./WorkStatusPopover";
 import { supabase } from "@/prototype/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAutoCaptureThumbnails, regenerateThumbnail, isStale } from "./useThumbnailCapture";
 import { type ObjectUsage } from "./objectUsages";
-import { useObjectPageUsages, OBJECT_PAGE_USAGES_QUERY_KEY } from "./useObjectPageUsages";
+import { useObjectPageUsages } from "./useObjectPageUsages";
 import InUseWarning from "./InUseWarning";
-import { toRouteSlug } from "./slug";
 
 type StatusFilter = "all" | "Ready" | "Draft";
 type SortKey = "newest" | "oldest" | "name" | "name_desc";

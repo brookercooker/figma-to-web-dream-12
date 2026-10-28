@@ -31,10 +31,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import {
-  ArrowLeft, MoreHorizontal, ArrowDown, ArrowUp, Eye, Pencil, Plus, Save, Trash2,
+  ArrowLeft, MoreHorizontal, ArrowDown, ArrowUp, Eye, Pencil, Plus, Trash2,
   Tag, Heading, AlignLeft, Image as ImageIcon, MousePointerClick,
   AlignCenter, AlignRight, Rows2, Columns2, Layers, PanelLeft, PanelRight,
-  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, ChevronsUpDown, GripVertical,
+  LayoutGrid, GalleryHorizontal, Bold, Italic, Underline, ChevronDown, ChevronsDownUp, GripVertical,
   Video as VideoIcon, Minus, Link as LinkIcon, Copy, PanelLeftClose, PanelLeftOpen,
   PanelTop, PanelBottom,
   Monitor, Tablet, Smartphone,
@@ -62,9 +62,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  SectionEditing, partRotation, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_HEIGHTS, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, imageZoom, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, groupByFlow, flowWidthStyle, fitRowWidths, TEXT_COLORS, TEXT_FONTS, TEXT_SIZES, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
+  SectionEditing, partRotation, BG_COLORS, BODY_PX, FREE_TEXT_KINDS, isCustomColor, HEADING_PX, IMAGE_TEXT_DEFAULTS, IMAGE_TEXT_KINDS, IMAGE_FOCUS_OPTIONS, imageZoom, IMAGE_SCRIMS, IMAGE_SHADOWS, MAX_TEXT_PX, MIN_TEXT_PX, SECTION_ICONS, SECTION_ICON_NAMES, SECTION_LABEL, SectionFlowList, SectionView, groupByFlow, flowWidthStyle, fitRowWidths, TEXT_COLORS, TEXT_FONTS, cleanEditedHtml, imageGroupPart, imageGroups, makeSection, orderParts, newSectionId, parseSections, withEyebrowDefaults,
   type FreeDivider, type FreeParagraph, type FreeSection, type FreeTextKind, type SectionFlow, type ImageText, type ImageTextKind, type Section, type SectionAlign, type SectionImage, type SectionVideo, type SectionType,
-  type RowVAlign, type ImageHeight, type PartVAlign,
+  type RowVAlign, type PartVAlign,
   type TextColor, type TextFont, type TextSize, type TextStyle,
   ContainedBgContext,
   bgColorCss,

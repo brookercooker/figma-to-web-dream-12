@@ -10,31 +10,26 @@ import EmbeddedBox from "./designChat/EmbeddedBox";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
-  ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, Plus, Save,
-  AlignCenter, AlignLeft, AlignRight, Trash2, Type, ExternalLink, Pencil, Boxes,
-  ChevronDown, ChevronRight, GripVertical, Film,
-PanelLeftOpen, PanelLeftClose, Monitor, Tablet, Smartphone, Eye } from "lucide-react";
-import { DeviceFrame, DEVICE_WIDTH, type Device } from "@/components/DeviceFrame";
+  ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, AlignCenter, AlignLeft, AlignRight, Trash2, Pencil, Boxes,
+  ChevronDown, ChevronRight, Film } from "lucide-react";
+import { DEVICE_WIDTH, type Device } from "@/components/DeviceFrame";
 import CreatePageDialog from "./CreatePageDialog";
-import ConfirmDialog from "./ConfirmDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
 import VideoPickerDialog from "./VideoPickerDialog";
 import ObjectPickerDialog from "./ObjectPickerDialog";
-import TagsPanel from "./TagsPanel";
 import { matchesLabelFilter } from "./labelPath";
-import PageBlocks, { BlockView, newId, parseBlocks, type Block as RenderBlock, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock, type CodeBlock, hasWideBlocks } from "@/components/PageBlocks";
+import PageBlocks, { BlockView, newId, type Block as RenderBlock, type BlockAlign, type ImageBlock, type ObjectBlock, type TextBlock, type VideoBlock } from "@/components/PageBlocks";
 
 import SharedObjectNotice from "./SharedObjectNotice";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import InsertGap, { type InsertType } from "./InsertGap";
+import { type InsertType } from "./InsertGap";
 import { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
 import InlineStylePanel from "./InlineStylePanel";
 import InlineEditSafetyPanel from "./InlineEditSafetyPanel";
 import InlineDestinationPanel from "./InlineDestinationPanel";
-import { hasVisibleEdits, withoutPath } from "@/lib/inlineEditCore";
+import { withoutPath } from "@/lib/inlineEditCore";
 import type { InlineReports } from "@/components/InlineEditSurface";
-import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
 import { isPageContent, movePageBlock, orderedPageContent, parsePageContent, type PageContentItem } from "./pageContentOrder";
