@@ -80,10 +80,6 @@ function fmtWindow(row: Landing): string {
   return `Until ${e}`;
 }
 
-async function copy(text: string, label = "Copied") {
-  try { await navigator.clipboard.writeText(text); toast.success(label); }
-  catch { toast.error("Copy failed"); }
-}
 
 function fmtDateTime(iso: string) {
   if (!iso) return null;

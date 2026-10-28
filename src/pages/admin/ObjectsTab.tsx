@@ -294,10 +294,6 @@ export default function ObjectsTab() {
   const gotoObject = (o: ObjectRegistryRow) => navigate(`/objects/${o.slug_id}`);
 
   // Edit button on a row: Ready → ask update-all vs make-a-copy; Draft → just open.
-  const handleEditClick = (o: ObjectRegistryRow) => {
-    if (o.status === "Ready") setEditReady(o);
-    else gotoObject(o);
-  };
 
 
 
@@ -786,58 +782,6 @@ export default function ObjectsTab() {
   );
 }
 
-function ArchiveDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const { data: archived = [], isLoading } = useArchivedObjects();
-  const restore = useRestoreObject();
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Archive className="w-4 h-4" /> Object Archive
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-          {isLoading && <div className="h-16 bg-muted rounded animate-pulse" />}
-          {!isLoading && archived.length === 0 && (
-            <p className="text-sm text-muted-foreground py-8 text-center">No archived objects.</p>
-          )}
-          {archived.map((o) => (
-            <div key={o.id} className="flex items-center gap-3 border rounded-md p-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium truncate">{o.name}</span>
-                  <Badge variant="secondary" className="text-[10px]">{o.status}</Badge>
-                </div>
-                <p className="text-xs text-muted-foreground font-mono truncate">id: {o.slug_id}</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Archived {o.archived_at ? new Date(o.archived_at).toLocaleString() : ""}
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5"
-                disabled={restore.isPending}
-                onClick={async () => {
-                  try {
-                    await restore.mutateAsync(o.id);
-                    toast.success(`Restored "${o.name}"`);
-                  } catch (e: any) {
-                    toast.error(e?.message ?? "Restore failed");
-                  }
-                }}
-              >
-                <RotateCcw className="w-3.5 h-3.5" /> Restore
-              </Button>
-            </div>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 /**
  * On-demand live preview modal. Mounts the actual object component ONLY while

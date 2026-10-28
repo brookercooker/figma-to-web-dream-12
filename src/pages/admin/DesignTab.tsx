@@ -242,33 +242,9 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     return list;
   }, [pages, q, tagFilters, sortBy]);
 
-  const usageCounts = useMemo(() => {
-    const c: Record<string, number> = {};
-    pages.forEach((p) => (p.tags ?? []).forEach((t) => { c[t] = (c[t] ?? 0) + 1; }));
-    return c;
-  }, [pages]);
 
-  const applyTag = async (ids: string[], path: string) => {
-    for (const id of ids) {
-      const p = pages.find((x) => x.id === id);
-      if (!p || (p.tags ?? []).includes(path)) continue;
-      const nextTags = [...(p.tags ?? []), path];
-      await (supabase as any).from("pages").update({ tags: nextTags }).eq("id", id);
-      setPages((cur) => cur.map((x) => (x.id === id ? { ...x, tags: nextTags } : x)));
-    }
-  };
 
   const [deleting, setDeleting] = useState<PageRow | null>(null);
-  const deletePage = async (pg: PageRow) => {
-    await (supabase as any).from("pages").delete().eq("id", pg.id);
-    setPages((cur) => cur.filter((x) => x.id !== pg.id));
-    if (pg.id === selectedId && !embedded) {
-      const next = new URLSearchParams(params);
-      next.delete("page");
-      setParams(next, { replace: true });
-    }
-    setDeleting(null);
-  };
 
   const select = (id: string) => {
     if (embedded) return;
@@ -331,20 +307,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
   const chat = useDesignChatOptional();
   const device: Device = embedded ? "desktop" : localDevice;
   const deviceStyle = !embedded && DEVICE_WIDTH[device] ? { width: DEVICE_WIDTH[device], maxWidth: "100%", margin: "0 auto" } : undefined;
-  const h70 = embedded ? "h-full" : "h-[70vh]";
-  const frame = embedded ? "h-full overflow-hidden bg-background" : "border rounded-lg overflow-hidden bg-background";
-  const startDrag = (e: React.MouseEvent, id: string) => {
-    if (e.button !== 0) return;
-    const x0 = e.clientX, y0 = e.clientY;
-    const mv = (ev: MouseEvent) => {
-      if (Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 5) return;
-      window.removeEventListener("mousemove", mv);
-      grabRef.current = { x: ev.clientX, y: ev.clientY };
-      setDragId(id);
-    };
-    window.addEventListener("mousemove", mv);
-    window.addEventListener("mouseup", () => window.removeEventListener("mousemove", mv), { once: true });
-  };
   useEffect(() => {
     if (!dragId) return;
     let speed = 0, raf = 0;
@@ -579,17 +541,6 @@ export default function DesignTab({ embedded = false, pageId }: { embedded?: boo
     return () => window.removeEventListener("beforeunload", warn);
   }, [hasUnsaved]);
 
-  const setBuildStatus = async (status: "draft" | "ready") => {
-    if (!page?.id || page.build_status === status) return;
-    const id = page.id;
-    const { error } = await (supabase as any).from("pages").update({ build_status: status }).eq("id", id);
-    if (error) { toast.error(error.message ?? "Could not change the status"); return; }
-    setPages((cur) => cur.map((x) => (x.id === id ? { ...x, build_status: status } : x)));
-    notifyContentEdited();
-    toast.success(status === "ready"
-      ? "Marked Ready. It will be included the next time you submit for review."
-      : "Marked Draft. It will not be published.");
-  };
 
   const toolbarRef = useRef<HTMLDivElement | null>(null);
   const [toolbarHidden, setToolbarHidden] = useState(false);

@@ -90,33 +90,6 @@ function StaticTile({ kind, label }: { kind: "page" | "object"; label: string })
   );
 }
 
-function PageSnapshot({ route, label, cacheKey }: { route: string; label: string; cacheKey: string }) {
-  const [src, setSrc] = useState<string | null>(() => getCachedRouteSnapshot(cacheKey));
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const requestedRef = useRef(false);
-
-  useEffect(() => {
-    if (src || requestedRef.current) return;
-    const el = wrapRef.current;
-    if (!el) return;
-    let cancelled = false;
-    const trigger = () => {
-      if (requestedRef.current) return;
-      requestedRef.current = true;
-      requestRouteSnapshot(route, cacheKey).then((v) => { if (!cancelled && v) setSrc(v); });
-    };
-    if (typeof IntersectionObserver === "undefined") { trigger(); return; }
-    const io = new IntersectionObserver((entries) => {
-      for (const e of entries) if (e.isIntersecting) { trigger(); io.disconnect(); break; }
-    }, { rootMargin: "200px" });
-    io.observe(el);
-    return () => { cancelled = true; io.disconnect(); };
-  }, [route, cacheKey, src]);
-
-  if (src) return <img ref={(n) => { if (n) (wrapRef as any).current = n.parentElement; }}
-    src={src} alt={label} className="w-full h-full object-cover object-top" loading="lazy" />;
-  return <div ref={wrapRef} className="w-full h-full"><StaticTile kind="page" label={label} /></div>;
-}
 
 function ImagePreview({ src, name, w, h }: { src: string; name?: string; w: number; h: number }) {
   const [broken, setBroken] = useState(false);

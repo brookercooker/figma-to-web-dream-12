@@ -54,10 +54,6 @@ const FIELDS: { v: Field; label: string }[] = [
   { v: "tags", label: "Labels" },
 ];
 
-function fmtDate(iso: string) {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
 function fmtDateTime(iso: string) {
   if (!iso) return null;
   const d = new Date(iso);
@@ -155,11 +151,6 @@ export default function PagesTab() {
     };
   }, []);
 
-  const refresh = async () => {
-    clearAllRouteSnapshots();
-    await load();
-    toast.success("Pages refreshed");
-  };
 
   // Auto-capture server-side thumbnails for stale/new pages.
   const captureCandidates = useMemo(() =>
@@ -359,7 +350,6 @@ export default function PagesTab() {
 
   const archivedCount = useMemo(() => pages.filter((p) => p.archived_at).length, [pages]);
 
-  const copyId = (slug: string) => { navigator.clipboard.writeText(slug); toast.success(`Copied ${slug}`); };
 
   const toggleSelect = (id: string, idx: number, shift: boolean) => {
     const n = new Set(selected);
@@ -540,12 +530,6 @@ export default function PagesTab() {
           {filtered.slice(pager.start, pager.end).map((p, i) => { const idx = pager.start + i;
             const on = selected.has(p.id);
             const pageType = getPageType(p.path, p.name);
-            const typeClass =
-              pageType === "System"
-                ? "bg-sky-500/10 text-sky-700 border-sky-500/30"
-                : pageType === "Supernova CC"
-                ? "bg-brass/20 text-brass border-brass/40"
-                : "bg-emerald-500/10 text-emerald-700 border-emerald-500/30";
             return (
               <tr
                 key={p.id}
