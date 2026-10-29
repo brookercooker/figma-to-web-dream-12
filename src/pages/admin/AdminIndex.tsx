@@ -26,6 +26,7 @@ import { rememberTopDropAnchor } from "./designChat/TopDropPanel";
 import ManualPageSwitcher, { useManualPageNavigation } from "./designChat/ManualPageSwitcher";
 import ManualHistoryControls from "./designChat/ManualHistoryControls";
 import { manualHistoryShortcut } from "./designChat/manualEditHistory";
+import { referenceKey } from "./designChat/references";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -227,7 +228,7 @@ function AdminShell() {
                   // On the Preview, Objects, Images and Videos pick an item for the chat; on a management tab, or while editing by hand, they navigate.
                   if (!editing && tab === "preview" && (key === "objects" || key === "images" || key === "videos")) return (
                     <LibraryPicker key={key} kind={key} label={label} Icon={Icon} active={active} showLabel={showLabel} className={className}
-                      addedRefs={designChat.refs.references} onPick={(ref) => { if (designChat.refs.references.some(r => r.kind === ref.kind && r.id === ref.id)) designChat.refs.removeReference(ref.kind, ref.id); else designChat.refs.addReference(ref); setChatCollapsed(false); }}
+                      addedRefs={designChat.refs.references} onPick={(ref) => { if (designChat.refs.references.some(r => r.kind === ref.kind && r.id === ref.id)) designChat.refs.removeReference(referenceKey(ref)); else designChat.refs.addReference(ref); setChatCollapsed(false); }}
                       onOpenFull={() => navigate(`/manage/${key}`)} />
                   );
                   // In Manual Edit Mode they open the editor's picker and add the choice beneath the original, staying in the editor.

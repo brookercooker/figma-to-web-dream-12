@@ -624,6 +624,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
                       <Button variant="outline" size="sm" onClick={async () => { const id = objectRows.current.Header; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, inlineSel.key); } else navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(inlineSel.key)}`); }}>Open in Object Editor</Button>
                     </>}
                     <InlineStylePanel
+                      key={`${inlineSel?.scope}:${inlineSel?.key}`}
                       sel={inlineSel}
                       edits={inlineSel ? scopeEdits(inlineSel.scope) : inlineEdits}
                       onChange={(next) => changeScope(inlineSel?.scope ?? "page", next)}
@@ -633,7 +634,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
                         if (url) changeScope(inlineSel.scope, { ...scopeEdits(inlineSel.scope), [`img:${inlineSel.key}`]: url });
                       }}
                     />
-                    <InlineDestinationPanel selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
+                    <InlineDestinationPanel key={`${inlineSel?.scope}:${inlineSel?.key}`} selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
                     {/* Framed pages replay in the public frame; local reports would be stale, so show none until the frame reports. */}
                     <InlineEditSafetyPanel reports={framed ? framedReports : {}} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}

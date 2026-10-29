@@ -2284,7 +2284,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
       focusPart === `image:${index}` ||
       focusPart === `caption:${index}` ||
       focusPart.startsWith(`imagetext:${index}:`);
-    const imgOpen = openSub[imgKey] ?? imgFocused;
+    const imgOpen = openSub[imgKey] ?? true;
     const label = image.alt?.trim() || (image.url ? image.url.split("/").pop() : "No image selected");
 
     return (
@@ -2427,7 +2427,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
           </div>
           {(image.texts ?? []).map((t, ti) => {
             const tKey = `txt:${section.id}:${index}:${ti}`;
-            const tOpen = openSub[tKey] ?? focusPart === `imagetext:${index}:${ti}`;
+            const tOpen = openSub[tKey] ?? true;
             const kindLabel = IMAGE_TEXT_KINDS.find((k) => k.value === t.kind)?.label ?? "Text";
             const isDragging = dragText?.sectionId === section.id && dragText.index === index && dragText.ti === ti;
             const dropHere =
@@ -3045,8 +3045,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     return (
       <div key={key} data-inspector-part={part} className="relative scroll-mt-24">
         <ToolHeader icon={Icon} title={title} menu={menu} />
-        {order.map((g, gi) => buckets[g]?.length ? (
-          <ToolGroup key={g} icon={g === "Images" ? ImageIcon : g === "Layout" ? LayoutGrid : g === "Border & shadow" ? Frame : g === "Videos" ? VideoIcon : g === "Content" ? TypeIcon : Palette} title={isImages || isVideos ? g : `${g === "Content" ? "Text content" : "Text style"}`} defaultOpen={gi === 0}>
+        {order.map((g) => buckets[g]?.length ? (
+          <ToolGroup key={g} icon={g === "Images" ? ImageIcon : g === "Layout" ? LayoutGrid : g === "Border & shadow" ? Frame : g === "Videos" ? VideoIcon : g === "Content" ? TypeIcon : Palette} title={isImages || isVideos ? g : `${g === "Content" ? "Text content" : "Text style"}`}>
             {buckets[g]}
           </ToolGroup>
         ) : null)}
