@@ -24,6 +24,8 @@ import ReviewChangesView from "./designChat/ReviewChangesView";
 import { HEADER_HEIGHT_CLASS } from "./designChat/layout";
 import { rememberTopDropAnchor } from "./designChat/TopDropPanel";
 import ManualPageSwitcher, { useManualPageNavigation } from "./designChat/ManualPageSwitcher";
+import ManualHistoryControls from "./designChat/ManualHistoryControls";
+import { manualHistoryShortcut } from "./designChat/manualEditHistory";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -85,9 +87,19 @@ function AdminShell() {
     if (manual) editingHeaderRef.current?.focus();
     else requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Describe a Change"]')?.focus());
   }, [mode, manual]);
-  const { setSlot, saveAll, discardAll, hasChanges, requestAdd } = useEditorSlot();
+  const { setSlot, saveAll, discardAll, hasChanges, requestAdd, historyControls } = useEditorSlot();
   // Saves the editor's held changes, then leaves edit mode; on a failed save it stays in edit mode.
   const [finishing, setFinishing] = useState(false);
+  useEffect(() => {
+    if (!manual || objectOpen || finishing) return;
+    const shortcut = (event: KeyboardEvent) => {
+      const action = manualHistoryShortcut(event);
+      if (!action) return;
+      event.preventDefault(); historyControls?.[action]();
+    };
+    window.addEventListener("keydown", shortcut);
+    return () => window.removeEventListener("keydown", shortcut);
+  }, [manual, objectOpen, finishing, historyControls]);
   const pageNavigation = useManualPageNavigation(finishing, setFinishing);
   const finishingRef = useRef(false);
   const finishEditing = async (thenClear = false) => {
@@ -364,7 +376,8 @@ function AdminShell() {
               <div ref={editingHeaderRef} tabIndex={-1} className="flex shrink-0 flex-col gap-2 border-b px-3 py-3">
                 {designChat.state?.busy && <p role="status" className="flex items-center gap-1.5 text-xs font-medium"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />Claude Is Still Working on a Change</p>}
                 <ManualPageSwitcher navigation={pageNavigation} />
-                <div className="flex gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
+                  <ManualHistoryControls disabled={finishing || !!objectOpen} />
                   <Button type="button" size="sm" className="flex-1 gap-1.5" disabled={finishing} onClick={() => void saveChanges()}><Check className="h-4 w-4" aria-hidden />{finishing ? "Saving…" : "Finish Editing"}</Button>
                   <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing} onClick={discardEditing}><Undo2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
                 </div>

@@ -38,6 +38,7 @@ import { editMap, stripHeldObjects, type HeldObjectData } from "./framedPageProt
 import { draftEmbedUrl } from "./siteManifest";
 import { usePageEditorSurface } from "./usePageEditorSurface";
 import { remoteSnapshot } from "./remoteSelection";
+import { inlineEditAction, ManualEditHistory, sameEditState, type EditAction, type ManualEditSnapshot } from "./designChat/manualEditHistory";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
 
@@ -74,7 +75,18 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   const [params, setParams] = useSearchParams();
   // Embedded in the Site Manager's edit mode, the page comes from the working page, not the address.
   const selectedId = embedded ? pageId ?? "" : params.get("page") ?? "";
-  const { slot, registerSave, saveAll, registerDiscard, registerHasChanges, registerAdd } = useEditorSlot();
+  const { slot, registerSave, saveAll, registerDiscard, registerHasChanges, registerAdd, registerHistory } = useEditorSlot();
+  const history = useRef(new ManualEditHistory());
+  const editState = useRef<ManualEditSnapshot>({ blocks: [], inlineEdits: {}, objectEdits: {} });
+  const cleanState = useRef<ManualEditSnapshot>(structuredClone(editState.current));
+  const [historyRevision, setHistoryRevision] = useState(0);
+  const savingHistory = useRef(false);
+  const resetHistory = () => { history.current.reset(); setHistoryRevision(n => n + 1); };
+  const recordEdit = (patch: Partial<ManualEditSnapshot>, action: EditAction) => {
+    const next = { ...editState.current, ...patch };
+    if (embedded && history.current.record(editState.current, next, action)) setHistoryRevision(n => n + 1);
+    editState.current = next;
+  };
   // Embedded, nothing auto-saves: changes are held here until the Site Manager's Save changes saves them all.
   const pendingInline = useRef<{ pageId: string; next: InlineEdits } | null>(null);
   const pendingObjects = useRef<Record<string, InlineEdits>>({});
@@ -84,8 +96,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [sectionRevision, setSectionRevision] = useState(0);
   // Batch a held section change with exactly one explicit public-frame reload.
-  const changeBlocks = (next: Block[] | ((current: Block[]) => Block[])) => {
-    setBlocks(next);
+  const changeBlocks = (next: Block[] | ((current: Block[]) => Block[]), label = "changed a section", mergeKey?: string) => {
+    const result = typeof next === "function" ? next(editState.current.blocks) : next;
+    recordEdit({ blocks: result }, { label, mergeKey });
+    setBlocks(result);
     setSectionRevision((revision) => revision + 1);
     setDirty(true);
   };
@@ -140,6 +154,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
         if (r.inline_edits) edits[r.component_key] = r.inline_edits;
       });
       originalObjects.current = structuredClone(edits);
+      editState.current = { ...editState.current, objectEdits: edits };
+      cleanState.current = { ...cleanState.current, objectEdits: structuredClone(edits) };
       setHeldObjects(snapshots);
       setObjectEdits(edits);
     });
@@ -152,7 +168,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     if (scope === "page") {
       return changeInline(next, remote);
     }
-    setObjectEdits((cur) => ({ ...cur, [scope]: next }));
+    recordEdit({ objectEdits: { ...editState.current.objectEdits, [scope]: next } }, inlineEditAction(scope, editState.current.objectEdits[scope] ?? {}, next));
+    setObjectEdits(editState.current.objectEdits);
     const id = objectRows.current[scope];
     if (!id) return;
     if (embedded) { pendingObjects.current[scope] = next; setTweaksPending(true); return; }
@@ -182,6 +199,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   const pickImage = () => new Promise<string | null>((resolve) => setImgAsk(() => resolve));
   const inlineTimer = useRef<number>();
   const changeInline = (next: InlineEdits, remote = false) => {
+    recordEdit({ inlineEdits: next }, inlineEditAction("page", editState.current.inlineEdits, next));
     setInlineEdits(next);
     const id = selectedId;
     if (embedded) { pendingInline.current = { pageId: id, next }; setTweaksPending(true); return; }
@@ -225,6 +243,9 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     setInlineSel(null);
     setFoldedChunks(new Set());
     setInlineEdits(page?.inline_edits ?? {});
+    editState.current = { blocks: parsed, inlineEdits: page.inline_edits ?? {}, objectEdits: editState.current.objectEdits };
+    cleanState.current = structuredClone(editState.current);
+    resetHistory();
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
@@ -254,14 +275,15 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   };
 
   const update = (id: string, patch: Partial<Block>) => {
-    changeBlocks((prev) => prev.map((b) => (b.id === id ? ({ ...b, ...patch } as Block) : b)));
+    const wording = Object.keys(patch).length === 1 && "text" in patch;
+    changeBlocks((prev) => prev.map((b) => (b.id === id ? ({ ...b, ...patch } as Block) : b)), wording ? "text change" : "changed section settings", wording ? `block|${id}|text` : undefined);
   };
 
   const addPickedBlock = (block: Block, at: number) => {
     if (discarded.current) return;
     const next = insertPickedBlock(blocks, block, blocks.length);
     if (page) pendingSave.current = { pageId: page.id, snapshot: next };
-    changeBlocks(next);
+    changeBlocks(next, `added ${block.type === "object" ? block.name ?? "an object" : block.type}`);
     scrollToNew.current = block.id;
     setActiveId(block.id);
   };
@@ -294,7 +316,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   const move = (id: string, dir: -1 | 1) => {
     const i = orderedPageContent(blocks).findIndex(b => b.id === id);
     if (i < 0) return;
-    changeBlocks(prev => movePageBlock(prev, id, i + dir));
+    moveHeldBlock(id, i + dir);
     setActiveId(id); setInlineSel(null);
   };
 
@@ -378,13 +400,17 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     if (from < 0 || to < 0) return;
     if (!before) to++;
     if (from < to) to--;
-    changeBlocks(prev => movePageBlock(prev, id, to));
+    moveHeldBlock(id, to);
     setActiveId(id); setInlineSel(null);
   };
 
   const remove = (id: string) => {
     if (id === "page-content") return;
-    changeBlocks((prev) => { const next = prev.filter(b => b.id !== id); return isPageContent(next[0]) ? next.slice(1) : next; });
+    changeBlocks((prev) => { const next = prev.filter(b => b.id !== id); return isPageContent(next[0]) ? next.slice(1) : next; }, "removed a section");
+  };
+  const moveHeldBlock = (id: string, to: number) => {
+    const block = editState.current.blocks.find(b => b.id === id);
+    changeBlocks(prev => movePageBlock(prev, id, to), `moved ${block?.type === "object" ? block.name ?? "an object" : block?.type ?? "a section"}`);
   };
 
 
@@ -443,6 +469,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   const saveAllRef = useRef<() => Promise<boolean>>(async () => true);
   saveAllRef.current = async () => {
     if (discarded.current) return false;
+    savingHistory.current = true;
+    try {
     let wrote = false;
     let failed: string | null = null;
     const p = pendingSave.current;
@@ -452,6 +480,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       else {
         wrote = true;
         persistedPage.current = true;
+        cleanState.current = { ...cleanState.current, blocks: structuredClone(p.snapshot) };
         if (pendingSave.current === p) pendingSave.current = null;
         setPages((cur) => cur.map((x) => (x.id === p.pageId ? { ...x, content: p.snapshot, updated_at: new Date().toISOString() } as any : x)));
         setBlocks((cur) => { if (cur === p.snapshot) setDirty(false); return cur; });
@@ -465,6 +494,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       else {
         wrote = true;
         persistedPage.current = true;
+        cleanState.current = { ...cleanState.current, inlineEdits: structuredClone(inl.next) };
         if (pendingInline.current === inl) pendingInline.current = null;
         setPages((cur) => cur.map((x) => (x.id === inl.pageId ? { ...x, inline_edits: inl.next, updated_at } : x)));
       }
@@ -474,15 +504,45 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       if (!id) { delete pendingObjects.current[scope]; continue; }
       const { error } = await (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id);
       if (error) failed = failed ?? (error.message ?? "Could not save the shared section");
-      else { wrote = true; persistedObjects.current.add(scope); if (pendingObjects.current[scope] === next) delete pendingObjects.current[scope]; }
+      else { wrote = true; persistedObjects.current.add(scope); cleanState.current = { ...cleanState.current, objectEdits: { ...cleanState.current.objectEdits, [scope]: structuredClone(next) } }; if (pendingObjects.current[scope] === next) delete pendingObjects.current[scope]; }
     }
     setTweaksPending(!!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
     if (wrote) notifyContentEdited();
     if (failed) { toast.error(failed); return false; }
+    cleanState.current = structuredClone(editState.current);
+    resetHistory();
     return true;
+    } finally { savingHistory.current = false; }
   };
   const hasChangesRef = useRef<() => boolean>(() => false);
-  hasChangesRef.current = () => !discarded.current && (dirty || tweaksPending || !!pendingSave.current || !!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
+  hasChangesRef.current = () => !discarded.current && !sameEditState(editState.current, cleanState.current);
+  const restoreHistory = (kind: "undo" | "redo") => {
+    if (!embedded || savingHistory.current || chat?.objectOpen || discarded.current) return;
+    const snapshot = history.current[kind]();
+    if (!snapshot) return;
+    const blockChange = !sameEditState(editState.current.blocks, snapshot.blocks);
+    editState.current = snapshot;
+    setBlocks(snapshot.blocks); setInlineEdits(snapshot.inlineEdits); setObjectEdits(snapshot.objectEdits);
+    pendingSave.current = sameEditState(snapshot.blocks, cleanState.current.blocks) ? null : { pageId: selectedId, snapshot: snapshot.blocks };
+    pendingInline.current = sameEditState(snapshot.inlineEdits, cleanState.current.inlineEdits) ? null : { pageId: selectedId, next: snapshot.inlineEdits };
+    pendingObjects.current = {};
+    for (const scope of new Set([...Object.keys(snapshot.objectEdits), ...Object.keys(cleanState.current.objectEdits)])) {
+      if (!sameEditState(snapshot.objectEdits[scope] ?? {}, cleanState.current.objectEdits[scope] ?? {})) pendingObjects.current[scope] = snapshot.objectEdits[scope] ?? {};
+    }
+    setDirty(!!pendingSave.current); setTweaksPending(!!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
+    if (blockChange) setSectionRevision(n => n + 1);
+    setInlineSel(null); setFramedReports({});
+    if (!snapshot.blocks.some(b => b.id === activeId)) setActiveId("");
+    setHistoryRevision(n => n + 1);
+  };
+  const historyHandlers = useRef({ undo: () => {}, redo: () => {} });
+  historyHandlers.current = { undo: () => restoreHistory("undo"), redo: () => restoreHistory("redo") };
+  useEffect(() => {
+    if (!embedded || !registerHistory) return;
+    registerHistory({ undoLabel: history.current.undoLabel, redoLabel: history.current.redoLabel,
+      undo: () => historyHandlers.current.undo(), redo: () => historyHandlers.current.redo() });
+    return () => registerHistory(null);
+  }, [embedded, registerHistory, historyRevision]);
   useEffect(() => {
     if (!embedded) return;
     registerSave(() => saveAllRef.current());
@@ -505,6 +565,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
         setBlocks(parsePageContent(baseline.content)); setInlineEdits(baseline.inline_edits ?? {});
       }
       setObjectEdits(structuredClone(originalObjects.current));
+      editState.current = { blocks: parsePageContent(baseline?.content), inlineEdits: baseline?.inline_edits ?? {}, objectEdits: structuredClone(originalObjects.current) };
+      cleanState.current = structuredClone(editState.current); resetHistory();
       framedApi.current?.exit();
       setTweaksPending(false); setDirty(false); setActiveId("");
       setInlineSel(null); setFoldedChunks(new Set()); setResetKey((k) => k + 1); setClosed(true);
@@ -515,7 +577,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   }, [embedded, registerSave, registerDiscard, registerHasChanges]);
 
   // Embedded: ask before the browser leaves while changes are still held.
-  const hasUnsaved = embedded && (dirty || tweaksPending);
+  const hasUnsaved = embedded && hasChangesRef.current();
   useEffect(() => {
     if (!hasUnsaved) return;
     const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
@@ -576,7 +638,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
                     <InlineEditSafetyPanel reports={framed ? framedReports : {}} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
                       record={async () => { if (!framed) return; const maps = await recordFramed(); if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
-                      resetAll={() => { if (opening.current) changeBlocks(parsePageContent(opening.current.content)); changeInline({}); for (const scope of new Set([...Object.keys(framedReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); }} />
+                      resetAll={() => { if (opening.current) changeBlocks(parsePageContent(opening.current.content)); changeInline({}); for (const scope of new Set([...Object.keys(objectEdits), ...Object.keys(framedReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); resetHistory(); }} />
     </>
   );
   const blockTools = (b: RenderBlock, i: number) => (
@@ -719,7 +781,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
         <FramedPageEditor key={`public-${page.id}`} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
           sectionRevision={sectionRevision} heldBlocks={blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
-          onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { changeBlocks(prev => movePageBlock(prev, id, toIndex)); setActiveId(id); setInlineSel(null); }} fill={!deviceStyle}
+          onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setInlineSel(null); }} fill={!deviceStyle}
+          onUndo={() => restoreHistory("undo")} onRedo={() => restoreHistory("redo")}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
