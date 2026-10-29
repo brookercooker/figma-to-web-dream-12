@@ -42,6 +42,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const [opening, setOpening] = useState(() => ({ path: props.path, base: props.base }));
   const openingBase = opening.path === props.path ? opening.base ?? props.base : props.base;
   const target = editFrameUrl(openingBase, props.path);
+  useEffect(() => { if (opening.path !== props.path || (!opening.base && props.base)) setOpening({ path: props.path, base: props.base }); }, [opening.path, opening.base, props.path, props.base]);
   const origin = target ? new URL(target).origin : null;
   const frame = useRef<HTMLIFrameElement>(null);
   const latest = useRef(props); latest.current = props;
