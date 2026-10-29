@@ -480,6 +480,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       else {
         wrote = true;
         persistedPage.current = true;
+        cleanState.current = { ...cleanState.current, blocks: structuredClone(p.snapshot) };
         if (pendingSave.current === p) pendingSave.current = null;
         setPages((cur) => cur.map((x) => (x.id === p.pageId ? { ...x, content: p.snapshot, updated_at: new Date().toISOString() } as any : x)));
         setBlocks((cur) => { if (cur === p.snapshot) setDirty(false); return cur; });
@@ -493,6 +494,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       else {
         wrote = true;
         persistedPage.current = true;
+        cleanState.current = { ...cleanState.current, inlineEdits: structuredClone(inl.next) };
         if (pendingInline.current === inl) pendingInline.current = null;
         setPages((cur) => cur.map((x) => (x.id === inl.pageId ? { ...x, inline_edits: inl.next, updated_at } : x)));
       }
@@ -502,7 +504,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       if (!id) { delete pendingObjects.current[scope]; continue; }
       const { error } = await (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id);
       if (error) failed = failed ?? (error.message ?? "Could not save the shared section");
-      else { wrote = true; persistedObjects.current.add(scope); if (pendingObjects.current[scope] === next) delete pendingObjects.current[scope]; }
+      else { wrote = true; persistedObjects.current.add(scope); cleanState.current = { ...cleanState.current, objectEdits: { ...cleanState.current.objectEdits, [scope]: structuredClone(next) } }; if (pendingObjects.current[scope] === next) delete pendingObjects.current[scope]; }
     }
     setTweaksPending(!!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
     if (wrote) notifyContentEdited();
