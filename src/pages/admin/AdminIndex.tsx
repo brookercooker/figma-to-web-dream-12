@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Check, Undo2, ArrowLeft, Code, Loader2, Wrench } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Save, Trash2, ArrowLeft, Code, Loader2, Wrench } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import ChatPanel from "./designChat/ChatPanel";
 import PreviewTools, { SubmitButton } from "./designChat/PreviewTools";
