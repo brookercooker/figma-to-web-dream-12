@@ -16,3 +16,8 @@ export function inheritedWeight(weight: string | undefined): string {
   const names: Record<string, string> = { "100": "Thin", "200": "Extra Light", "300": "Light", "400": "Regular", "500": "Medium", "600": "Semibold", "700": "Bold", "800": "Extra Bold", "900": "Black" };
   return names[value] ?? value;
 }
+/** Font menu entries: the inherited font first (named plainly), then the editor fonts that differ from it, so no font is listed twice. */
+export function fontMenu(inheritedName: string) {
+  const same = (name: string) => name.toLowerCase() === inheritedName.toLowerCase();
+  return { inheritedLabel: inheritedName, others: EDITOR_FONTS.filter(([name]) => !same(name)) };
+}
