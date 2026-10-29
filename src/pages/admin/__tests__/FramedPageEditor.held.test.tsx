@@ -50,10 +50,11 @@ describe("held blocks handshake", () => {
     s.rerender(<FramedPageEditor {...s.props} edits={{ wording: "changed" }} />);
     expect(s.frame()).toBe(original);
     s.rerender(<FramedPageEditor {...s.props} path="/other" />);
+    vi.spyOn(s.frame().contentWindow as Window, "postMessage").mockImplementation(() => {});
     s.receive("edit-ready");
     expect(s.sent("restore-scroll")).toHaveLength(0);
     s.rerender(<FramedPageEditor {...s.props} />);
-    const post = vi.spyOn(s.frame().contentWindow as Window, "postMessage");
+    const post = vi.spyOn(s.frame().contentWindow as Window, "postMessage").mockImplementation(() => {});
     s.receive("edit-ready");
     expect(post).toHaveBeenCalledWith({ source: "nova-manager", type: "restore-scroll", path: "/draft", y: 640 }, "https://public.example.com");
   });

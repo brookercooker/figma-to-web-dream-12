@@ -18,6 +18,7 @@ import { CopyRefButton, buildImageRef } from "./copyReference";
 import ConfirmDialog from "./ConfirmDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
 import { deleteImageFilesAndRows } from "./deleteImages";
+import { loadImageDeleteUsageNames } from "./imageDeleteUsages";
 import { repairImageMetadata } from "./repairImageMetadata";
 import { extractAndPersistExif } from "./imageExif";
 import { assetKind, isImageAsset } from "./assetType";
@@ -130,7 +131,8 @@ export default function ImagesTab() {
   const [justAddedAt, setJustAddedAt] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
-  const [confirmDelete, setConfirmDelete] = useState<{ imgs: Img[] } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ imgs: Img[]; names: string[] } | null>(null);
+  const [checkingDelete, setCheckingDelete] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [brokenIds, setBrokenIds] = useState<Set<string>>(new Set());
   const [failedTileSources, setFailedTileSources] = useState<Record<string, string[]>>({});
@@ -547,9 +549,14 @@ export default function ImagesTab() {
   };
 
 
-  const requestDelete = (imgs: Img[]) => {
-    if (imgs.length === 0) return;
-    setConfirmDelete({ imgs });
+  const requestDelete = async (imgs: Img[]) => {
+    if (imgs.length === 0 || checkingDelete) return;
+    setCheckingDelete(true);
+    try {
+      const names = await loadImageDeleteUsageNames(imgs);
+      setConfirmDelete({ imgs, names: [...new Set([...names, ...imgs.flatMap(image => usagesFor(image.id).map(usage => usage.name || usage.path))])] });
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Couldn't check where this image is used. Try again."); }
+    finally { setCheckingDelete(false); }
   };
 
   const doDeleteImages = (imgs: Img[]) => {
@@ -1046,11 +1053,11 @@ export default function ImagesTab() {
         }
         description={
           <>
-            {confirmDelete && confirmDelete.imgs.some(i => usagesFor(i.id).length > 0) && <p className="mb-2">Used on: {[...new Set(confirmDelete.imgs.flatMap(i => usagesFor(i.id).map(u => u.name || u.path)))].join(", ")}</p>}
+            {!!confirmDelete?.names.length && <p className="mb-2">Used on: {confirmDelete.names.join(", ")}</p>}
             <p>This can't be undone after the 5-second undo window. Pages that use this image will show their missing-picture fallback.</p>
           </>
         }
-        confirmLabel={confirmDelete?.imgs.some(i => usagesFor(i.id).length > 0) ? "Delete Anyway" : "Delete Image"}
+        confirmLabel={confirmDelete?.names.length ? "Delete Anyway" : confirmDelete?.imgs.length === 1 ? "Delete Image" : "Delete Images"}
         confirmIcon={<Trash2 className="mr-2 h-4 w-4" aria-hidden />}
         onConfirm={() => confirmDelete && doDeleteImages(confirmDelete.imgs)}
       />
