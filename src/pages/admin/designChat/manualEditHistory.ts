@@ -9,6 +9,7 @@ export const sameEditState = (a: unknown, b: unknown) => JSON.stringify(canonica
 export function inlineEditAction(scope: string, before: InlineEdits, after: InlineEdits): EditAction {
   const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(key => before[key] !== after[key] && !key.startsWith("fp:"));
   const parsed = keys.length === 1 ? parseKey(keys[0]) : null;
+  if (parsed?.kind === "html" && (before[keys[0]] ?? "").replace(/<[^>]*>/g, "") === (after[keys[0]] ?? "").replace(/<[^>]*>/g, "")) return { label: "style change" };
   if (parsed?.kind === "html" || parsed?.kind === "placeholder") return {
     label: parsed.kind === "placeholder" ? "placeholder text change" : "text change", mergeKey: `${scope}|${parsed.kind}|${parsed.path}`,
   };

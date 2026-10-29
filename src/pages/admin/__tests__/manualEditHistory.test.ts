@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { inlineEditAction, ManualEditHistory, manualHistoryShortcut, type ManualEditSnapshot } from "../designChat/manualEditHistory";
 const initial = (): ManualEditSnapshot => ({ blocks: [], inlineEdits: {}, objectEdits: {} });
 describe("local edit history", () => {
+  it("word formatting remains a separate style step rather than merged typing", () => {
+    expect(inlineEditAction("page", { "0": "Words" }, { "0": "<b>Words</b>" })).toEqual({ label: "style change" });
+  });
   it.each(["wording", "style", "placeholder", "add", "remove", "replace", "move", "video settings", "shared object"])("%s is one snapshot action", label => {
     const h = new ManualEditHistory(); const a = initial(); const b = { ...a, inlineEdits: { "0": label } };
     h.record(a, b, { label }); expect(h.undo()).toEqual(a); expect(h.undo()).toBeNull(); expect(h.redo()).toEqual(b);

@@ -122,7 +122,7 @@ describe("public page save/discard integration", () => {
     expect(mocks.history.redoLabel).toBe(""); s.send("edit-undo"); expect(lastBlocks()[1].id).toBe("video");
     s.send("edit-change", { scope: "page", next: { "style:0": '{"font-size":"32px"}' } });
     fireEvent.click(screen.getByRole("button", { name: "Reset All Edits on This Page" }));
-    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits" }));
     expect(mocks.history.undoLabel).toBe(""); expect(mocks.history.redoLabel).toBe("");
     expect(lastBlocks()[1].width).toBe(100); expect(mocks.writes).not.toHaveBeenCalled();
   });
