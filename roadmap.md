@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Site Manager batch: toggle chat references; leave-dialog icons; expanded options; font previews; relocate history controls; image deletion; object thumbnails; picker attachment; trusted per-path frame scroll preservation.
 - [x] Add local Manual Edit Undo/Redo with snapshot restoration, typing merge, reset points and keyboard/frame shortcuts; disable while separate object editor is open. Signed-in image add/undo/redo and shortcuts verified; hosted edit frame unavailable, protocol covered by tests.
 - [x] Add guarded Manual Edit page switcher, previous/next and trusted edit-frame navigation. Signed-in search, switching and heading focus verified; tests cover unsaved choices and section reset. Public frame unavailable (Retry), so live frame navigation remains unverified.
 - [x] Attach shared top drop pickers to measured opening buttons with flip/clamp, pressed state, connector, resize observation and focus return. Signed-in Chat/Manual and mobile placement verified; 609 tests pass. Management-tab navigation remains unchanged.
