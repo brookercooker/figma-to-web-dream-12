@@ -1,6 +1,6 @@
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Check, Undo2, Pencil } from "lucide-react";
+import { Save, Trash2, Pencil } from "lucide-react";
 import ConfirmDialog from "../ConfirmDialog";
 import { useDesignChat } from "./DesignChatContext";
 import { useEditorSlot } from "./EditorSlot";
@@ -57,13 +57,14 @@ export function ModeSwitchProvider({ children }: { children: ReactNode }) {
     <Context.Provider value={{ requestChat, requestManual }}>
       {children}
       <ConfirmDialog open={pending !== null} onOpenChange={(open) => { if (!open && !savingRef.current) complete(false); }}
-        title={pending === "chat" ? "You Have Unsaved Edits." : state?.busy ? "Claude Is Still Working on a Change" : "A Review Is Running"}
+        title={pending === "chat" ? "Save Your Changes?" : state?.busy ? "Claude Is Still Working on a Change" : "A Review Is Running"}
         description={<>{pending === "chat" ? "Save them before Claude changes this page?" : state?.busy ? "Claude's change may affect this page. Continue editing by hand, or cancel and stay in Chat Mode." : <><p>{reviewedRequests(state?.draft?.requests, state?.publish?.open ?? 0)}</p><p className="mt-2">You can keep editing. Your edits are saved when you finish, and added to the site after this review is done.</p></>}{error && <p role="alert" className="mt-2 text-destructive">{error}</p>}</>}
-        destructive={false} confirmLabel={pending === "chat" ? "Save And Switch" : state?.busy ? "Continue Editing" : "Keep Editing"}
+        destructive={false} confirmLabel={pending === "chat" ? "Save Changes" : state?.busy ? "Continue Editing" : "Keep Editing"}
         cancelLabel={pending === "chat" ? "Keep Editing" : "Cancel"} busy={saving}
-        secondaryLabel={pending === "chat" ? "Discard And Switch" : undefined}
-        confirmIcon={pending === "chat" ? <Check className="mr-2 h-4 w-4" aria-hidden /> : undefined}
-        secondaryIcon={pending === "chat" ? <Undo2 className="h-4 w-4" aria-hidden /> : undefined}
+        secondaryLabel={pending === "chat" ? "Discard Changes" : undefined}
+        confirmIcon={pending === "chat" ? <Save className="h-4 w-4" aria-hidden /> : undefined}
+        secondaryIcon={pending === "chat" ? <Trash2 className="h-4 w-4" aria-hidden /> : undefined}
+        primaryFirst={pending === "chat"}
         cancelIcon={pending === "chat" ? <Pencil className="h-4 w-4" aria-hidden /> : undefined}
         onSecondary={() => { void Promise.resolve(discardAll()).then(() => { stopEditing(); complete(true); }).catch(() => setError("Your original page couldn't be restored. You are still in Manual Edit Mode.")); }}
         onConfirm={() => {

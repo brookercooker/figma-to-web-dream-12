@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Undo2, Pencil } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Pencil, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -110,9 +110,9 @@ export default function ManualPageSwitcher({ navigation }: { navigation: Navigat
       <DialogContent aria-describedby={undefined}>
         <DialogHeader><DialogTitle>Save Your Changes to {workingPage?.name}?</DialogTitle></DialogHeader>
         <DialogFooter className="flex-wrap gap-2 sm:space-x-0">
-          <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => navigation.setPending(null)}><Pencil className="h-4 w-4" aria-hidden />Stay Here</Button>
-          <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => void navigation.resolve(false)}><Undo2 className="h-4 w-4" aria-hidden />Discard and Go</Button>
-          <Button className="gap-2" disabled={disabled} onClick={() => void navigation.resolve(true)}><Check className="h-4 w-4" aria-hidden />Save and Go</Button>
+          <Button className="gap-2" disabled={disabled} onClick={() => void navigation.resolve(true)}><Save className="h-4 w-4" aria-hidden />Save Changes</Button>
+          <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => void navigation.resolve(false)}><Trash2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
+          <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => navigation.setPending(null)}><Pencil className="h-4 w-4" aria-hidden />Keep Editing</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

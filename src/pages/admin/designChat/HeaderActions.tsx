@@ -37,7 +37,7 @@ export default function HeaderActions() {
             <li>In Chat Mode, describe what you want changed. In Manual Edit Mode, change text, pictures and links yourself.</li>
             <li>To add a section, open Manual Edit Mode and choose an Object, Image or Video under Add to This Page.</li>
             <li>Discard Changes restores the page to how it was when you opened the editor.</li>
-            <li>Finish Editing saves your hand edits. The Review Status button lists the changes waiting for review.</li>
+            <li>Save Changes (top right) saves your hand edits and returns to Chat Mode. The Review Status button lists the changes waiting for review.</li>
             <li>If something looks wrong, pause and share a problem summary with the site owner before submitting.</li>
           </ul>
           <Button variant="outline" size="sm" onClick={() => void copySummary()}><Copy className="h-4 w-4" aria-hidden />Copy Problem Summary</Button>
