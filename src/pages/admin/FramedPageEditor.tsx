@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } f
 import { Button } from "@/components/ui/button";
 import type { InlineChunk, InlineEdits, InlineReports, InlineSelection } from "@/components/InlineEditSurface";
 import { parseObjectClick, type ObjectClick } from "./objectClick";
-import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, trustedEditMessage, type HeldObjectData } from "./framedPageProtocol";
+import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, objectSwapPayload, trustedEditMessage, type HeldObjectData } from "./framedPageProtocol";
 import { remoteSelection, validSnapshot, type EditQuery, type SelectionSnapshot } from "./remoteSelection";
 import { manualNavigationPath } from "./designChat/manualPageNavigation";
 import { acceptFrameScroll, restoreFrameScroll } from "./designChat/frameScroll";
@@ -76,7 +76,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     if (origin) current?.postMessage({ source: "nova-manager", type, ...payload }, origin);
   };
   const state = () => {
-    const base = { edits: latest.current.edits, objectEdits: latest.current.objectEdits, collapsed: [...latest.current.collapsed], selectedKey: latest.current.selectedKey, objectSwaps: latest.current.objectSwaps ?? {} };
+    const base = { edits: latest.current.edits, objectEdits: latest.current.objectEdits, collapsed: [...latest.current.collapsed], selectedKey: latest.current.selectedKey, objectSwaps: objectSwapPayload(latest.current.objectSwaps ?? {}, latest.current.heldObjects) };
     if (!capableRef.current) return base;
     // Too large: send an empty list so the frame draws nothing while the local list shows them.
     return { ...base, heldBlocks: heldBlocksPayload(latest.current.heldBlocks ?? [], moveCapableRef.current, latest.current.heldObjects) ?? [], activeBlockId: latest.current.activeBlockId || null };

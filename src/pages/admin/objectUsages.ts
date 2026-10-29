@@ -6,6 +6,7 @@
 
 import { supabase } from "@/prototype/client";
 import { loadSiteManifest, pagesUsingObject, type SiteManifest } from "./siteManifest";
+import { homeAliases, pageKey } from "./designChat/registerPage";
 
 export interface ObjectUsage {
   path: string;
@@ -28,7 +29,7 @@ const byTypeThenName = (a: ObjectUsage, b: ObjectUsage) =>
 /** Fill in name / thumbnail / id from the `pages` table. Mutates and returns the list. */
 export async function enrichUsages<T extends ObjectUsage>(usages: T[]): Promise<T[]> {
   if (usages.length === 0) return usages;
-  const paths = Array.from(new Set(usages.map((u) => u.path)));
+  const paths = Array.from(new Set(usages.flatMap((u) => homeAliases(u.path))));
   const { data } = await (supabase as any)
     .from("pages")
     .select("id,name,path,page_type,updated_at,thumbnail_updated_at,thumbnail_build_version,thumbnail_url,archived_at")
@@ -36,10 +37,10 @@ export async function enrichUsages<T extends ObjectUsage>(usages: T[]): Promise<
   const byPath = new Map<string, any>();
   for (const row of data ?? []) {
     if (row.archived_at) continue;
-    byPath.set(row.path, row);
+    byPath.set(pageKey(row.path), row);
   }
   for (const u of usages) {
-    const row = byPath.get(u.path);
+    const row = byPath.get(pageKey(u.path));
     if (!row) continue;
     u.name = row.name || u.name;
     u.pageId = row.id;
@@ -57,7 +58,17 @@ export async function findObjectUsages(componentKey: string): Promise<ObjectUsag
   const m = await loadSiteManifest();
   const usages = usagesFromManifest(m, componentKey);
   await enrichUsages(usages);
-  return usages.sort(byTypeThenName);
+  return uniquePageUsages(usages).sort(byTypeThenName);
+}
+
+export function uniquePageUsages<T extends { path: string; name: string }>(usages: T[]): T[] {
+  const unique = new Map<string, T>();
+  for (const usage of usages) {
+    const key = pageKey(usage.path);
+    const previous = unique.get(key);
+    if (!previous || previous.name.startsWith("/")) unique.set(key, usage);
+  }
+  return [...unique.values()];
 }
 
 /** Usage rows for many component keys with a single database round-trip. */

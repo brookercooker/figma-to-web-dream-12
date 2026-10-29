@@ -42,6 +42,7 @@ import { applySwap, copyName, objectClickKind, objectSwaps as swapsOf, unusedCop
 import ObjectClickDialog, { type ObjectAsk } from "./ObjectClickDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import { findObjectUsages } from "./objectUsages";
+import { cleanupObjectCopies } from "./objectCopyCleanup";
 import { Save as SaveIcon, Trash2 as TrashIcon, Pencil as PencilIcon } from "lucide-react";
 import { inlineEditAction, ManualEditHistory, sameEditState, type EditAction, type ManualEditSnapshot } from "./designChat/manualEditHistory";
 
@@ -83,11 +84,14 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   const { slot, registerSave, saveAll, registerDiscard, registerHasChanges, registerAdd, registerHistory, discardAll } = useEditorSlot();
   // Page-only object copies made this session; deleted again unless a save keeps them in use.
   const pendingCopies = useRef(new Set<string>());
-  const dropCopies = (ids: string[]) => {
+  const dropCopies = async (ids: string[]) => {
     if (!ids.length) return;
+    await cleanupObjectCopies(ids);
     ids.forEach((id) => pendingCopies.current.delete(id));
-    void (supabase as any).from("object_registry").delete().in("id", ids);
   };
+  useEffect(() => () => {
+    void cleanupObjectCopies([...pendingCopies.current]).catch(() => toast.error("Couldn't remove the unused copies. Try discarding again."));
+  }, []);
   const history = useRef(new ManualEditHistory());
   const editState = useRef<ManualEditSnapshot>({ blocks: [], inlineEdits: {}, objectEdits: {} });
   const cleanState = useRef<ManualEditSnapshot>(structuredClone(editState.current));
@@ -160,7 +164,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       const snapshots: Record<string, HeldObjectData> = {};
       const edits: Record<string, InlineEdits> = {};
       (data ?? []).forEach((r: any) => {
-        snapshots[r.id] = { status: r.status, name: r.name, component_key: r.component_key ?? null, content: r.content };
+        snapshots[r.id] = { status: r.status, name: r.name, component_key: r.component_key ?? null, content: r.content, inline_edits: r.inline_edits ?? {} };
         if (!r.component_key) return;
         objectRows.current[r.component_key] = r.id;
         if (r.inline_edits) edits[r.component_key] = r.inline_edits;
@@ -525,8 +529,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     resetHistory();
     // Copies the saved page still uses are kept for good; the rest (undone swaps) are removed.
     const unused = unusedCopies(pendingCopies.current, editState.current as any);
+    try { await dropCopies(unused); } catch (error) { toast.error(error instanceof Error ? error.message : "Couldn't remove the unused copies."); return false; }
     pendingCopies.current.clear();
-    dropCopies(unused);
     return true;
     } finally { savingHistory.current = false; }
   };
@@ -564,7 +568,6 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     registerSave(() => saveAllRef.current());
     registerDiscard(async () => {
       discarded.current = true;
-      dropCopies([...pendingCopies.current]);
       window.clearTimeout(inlineTimer.current);
       Object.values(objectTimers.current).forEach(window.clearTimeout);
       pendingSave.current = null; pendingInline.current = null; pendingObjects.current = {};
@@ -577,6 +580,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       }
       const results = await Promise.all(writes);
       if (results.some((r) => r.error)) { discarded.current = false; toast.error("Couldn't restore your original page. Try discarding again."); throw new Error("Discard failed"); }
+      try { await dropCopies([...pendingCopies.current]); } catch (error) { discarded.current = false; toast.error(error instanceof Error ? error.message : "Couldn't remove the unused copies."); throw error; }
       if (baseline) {
         setPages((cur) => cur.map((p) => p.id === baseline.id ? baseline : p));
         setBlocks(parsePageContent(baseline.content)); setInlineEdits(baseline.inline_edits ?? {});
@@ -794,7 +798,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     setObjectAsk({ ...click, kind, usedOn: [] });
     if (kind !== "shared") return;
     // Saved page references, plus the public site's own pages for coded objects.
-    const fromPages = pages.filter((p) => JSON.stringify([p.content ?? null, p.inline_edits ?? null]).includes(click.objectId)).map((p) => p.name);
+    const fromPages = pages.filter((p) => click.objectId && JSON.stringify([p.content ?? null, p.inline_edits ?? null]).includes(click.objectId)).map((p) => p.name);
     const fromSite = click.componentKey ? findObjectUsages(click.componentKey).then((u) => u.map((x) => x.name)).catch(() => null) : Promise.resolve([] as string[]);
     void fromSite.then((site) => setObjectAsk((cur) => {
       if (!cur || cur.objectId !== click.objectId) return cur;
@@ -808,7 +812,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     chat?.openObject(id);
   };
   const makeCopy = async () => {
-    const ask = objectAsk; if (!ask || !page || discarded.current) return;
+    const ask = objectAsk; if (!ask?.objectId || !page || discarded.current) return;
     setCopying(true);
     try {
       const { data: original, error } = await (supabase as any).from("object_registry").select("name,component_key,content,inline_edits,labels").eq("id", ask.objectId).maybeSingle();
@@ -816,10 +820,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       const { data: row, error: insertError } = await (supabase as any).from("object_registry").insert({
         name: copyName(original.name || ask.name, page.name), component_key: original.component_key, content: original.content,
         inline_edits: original.inline_edits ?? {}, labels: original.labels ?? [], status: "Ready",
-      }).select("id,name,status,component_key,content").single();
+      }).select("id,name,status,component_key,content,inline_edits").single();
       if (insertError || !row) throw new Error("insert");
       pendingCopies.current.add(row.id);
-      setHeldObjects((cur) => ({ ...(cur ?? {}), [row.id]: { status: row.status, name: row.name, component_key: row.component_key ?? null, content: row.content } }));
+      setHeldObjects((cur) => ({ ...(cur ?? {}), [row.id]: { status: row.status, name: row.name, component_key: row.component_key ?? null, content: row.content, inline_edits: row.inline_edits ?? {} } }));
       const next = applySwap(editState.current.blocks as any[], editState.current.inlineEdits, ask.slot, row.id);
       recordEdit({ blocks: next.blocks as Block[], inlineEdits: next.edits }, { label: `copied ${ask.name} for this page` });
       setInlineEdits(next.edits);
@@ -867,7 +871,16 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     {embedded && slot && createPortal(tools,slot)}
       <ObjectClickDialog ask={objectAsk} pageName={page?.name ?? "this page"} busy={copying}
         onCancel={() => setObjectAsk(null)} onCopy={() => void makeCopy()}
-        onOpen={() => { const id = objectAsk?.objectId; setObjectAsk(null); if (id) openObjectEditor(id); }} />
+        onOpen={async () => {
+          const ask = objectAsk; if (!ask) return;
+          let id = ask.objectId;
+          if (!id && ask.siteWide && (ask.componentKey === "Header" || ask.componentKey === "Footer")) {
+            const { data, error } = await supabase.from("object_registry").select("id").eq("component_key", ask.componentKey).eq("site_wide", true).is("archived_at", null).maybeSingle();
+            if (error || !data) { toast.error("Couldn't find this object. Try again."); return; }
+            id = data.id;
+          }
+          setObjectAsk(null); if (id) openObjectEditor(id);
+        }} />
       <ConfirmDialog open={!!openAsk} onOpenChange={(open) => { if (!open) setOpenAsk(null); }} title="Save Your Changes?"
         description="Save your edits to this page before opening the object editor?" destructive={false} primaryFirst
         confirmLabel="Save Changes" confirmIcon={<SaveIcon className="h-4 w-4" aria-hidden />}
