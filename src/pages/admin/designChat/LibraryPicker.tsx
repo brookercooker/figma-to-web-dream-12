@@ -16,7 +16,7 @@ import type { ChatReference } from "./references";
 import { GATED_BUCKET } from "@/lib/assetUrl";
 import { useImageThumbnails } from "../useAdminData";
 import { tileSrcCandidates } from "../imageTileSrc";
-import ObjectLiveThumbnail from "../ObjectLiveThumbnail";
+import ObjectThumbnail from "../ObjectThumbnail";
 
 export type LibraryKind = "images" | "videos" | "objects";
 const PAGE = 60;
@@ -73,7 +73,7 @@ async function loadRows(kind: LibraryKind): Promise<Row[]> {
     const type = o.component_key ? "built in code" : "built in the Site Manager";
     return {
       ref: { kind: "object", id: o.id, name: o.name, componentKey: o.component_key, type, thumb: o.thumbnail_url ?? undefined },
-      search: (t) => objectMatches(o, t), labels: o.labels ?? [], note: type, createdAt: o.createdAt,
+      search: (t) => objectMatches(o, t), labels: o.labels ?? [], note: o.status || type, createdAt: o.createdAt,
     };
   });
 }
@@ -213,7 +213,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
                       gated: r.visibility === "gated",
                       thumb: r.webPath ? (r.visibility === "gated" ? gatedThumbs : publicThumbs)[r.webPath] : undefined,
                       webUrl: r.webUrl ?? (r.ref.kind === "image" ? r.ref.url : ""),
-                    })} /> : r.ref.kind === "object" ? <ObjectLiveThumbnail componentKey={r.ref.componentKey} storedThumb={r.ref.thumb} /> : undefined} />
+                    })} /> : r.ref.kind === "object" ? <ObjectThumbnail id={r.ref.id} storedThumb={r.ref.thumb} /> : undefined} />
                 ))}
               </div>
               {matches.length > limit && (
