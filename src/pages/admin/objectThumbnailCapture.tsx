@@ -1,5 +1,6 @@
 import { Component, Suspense, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
+import { MemoryRouter } from "react-router-dom";
 import html2canvas from "html2canvas";
 import { supabase } from "@/prototype/client";
 import { objectRegistry } from "@/components/objects/registry";
@@ -38,7 +39,7 @@ async function capture(id: string, force: boolean): Promise<string | null> {
   document.body.appendChild(container);
   const root = createRoot(container);
   try {
-    root.render(<CaptureBoundary><ThumbnailContext.Provider value={true}><Suspense fallback={null}>{Live ? <Live /> : <ObjectSections sections={sections} />}</Suspense></ThumbnailContext.Provider></CaptureBoundary>);
+    root.render(<CaptureBoundary><MemoryRouter><ThumbnailContext.Provider value={true}><Suspense fallback={null}>{Live ? <Live /> : <ObjectSections sections={sections} />}</Suspense></ThumbnailContext.Provider></MemoryRouter></CaptureBoundary>);
     await new Promise(resolve => setTimeout(resolve, 1200));
     await Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise(resolve => setTimeout(resolve, 2000))]);
     await Promise.all(Array.from(container.querySelectorAll("img")).map(image => {

@@ -32,7 +32,7 @@ export function acceptFrameScroll(event: MessageEvent, frame: HTMLIFrameElement 
   return d?.source === "nova-site" && d.type === "page-scroll" && scrollPath(d.path) === scrollPath(expectedPath) && rememberScroll(d.path, d.y);
 }
 /** Hidden preview frames never overwrite the current editor's position. */
-export function usePreviewScroll(root: RefObject<HTMLElement>, editing: boolean) {
+export function usePreviewScroll(root: RefObject<HTMLElement>, editing: boolean, shownId?: number) {
   useEffect(() => {
     const receive = (event: MessageEvent) => {
       const frame = Array.from(root.current?.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview]") ?? []).find(f => f.contentWindow === event.source);
@@ -57,5 +57,5 @@ export function usePreviewScroll(root: RefObject<HTMLElement>, editing: boolean)
       if (frame) restoreFrameScroll(frame, framePaths.get(frame));
     }
     return () => window.removeEventListener("message", receive);
-  }, [root, editing]);
+  }, [root, editing, shownId]);
 }
