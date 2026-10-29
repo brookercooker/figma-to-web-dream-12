@@ -19,6 +19,7 @@ describe("edit-object-click", () => {
   it("chooses site-wide, page-only copy or shared", () => {
     expect(objectClickKind({ ...click, componentKey: "Header" }, {})).toBe("site");
     expect(objectClickKind({ ...click, componentKey: "Footer" }, {})).toBe("site");
+    expect(siteWideLabel("Footer")).toBe("Footer");
     expect(objectClickKind({ ...click, siteWide: true }, {})).toBe("site");
     expect(objectClickKind(click, { "objectSwap:x": "o1" })).toBe("copy");
     expect(objectClickKind(click, {})).toBe("shared");
