@@ -1,5 +1,5 @@
 // Shared-object clicks from the public edit frame: message validation, which dialog to show, copy naming and swaps.
-import type { InlineEdits } from "@/lib/inlineEditCore";
+import type { InlineEdits } from "@/components/InlineEditSurface";
 
 export interface ObjectClick { objectId: string; componentKey: string | null; name: string; slot: string; siteWide: boolean }
 export type ObjectClickKind = "site" | "copy" | "shared";
