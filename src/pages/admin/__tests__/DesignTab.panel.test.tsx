@@ -1,5 +1,5 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
@@ -34,6 +34,7 @@ it("replaces the hint with one options panel through repeated frame selections",
   if (!source || !mocks.slot) throw new Error("Missing editor");
   const slot = mocks.slot;
   vi.spyOn(source, "postMessage").mockImplementation(() => {});
+  act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", type: "edit-ready", capabilities: { heldBlocks: true } } })));
   const send = (selection: unknown) => act(() => window.dispatchEvent(new MessageEvent("message", {
     origin: "https://public.example.com", source,
     data: { source: "nova-site", type: "edit-select", selection },
@@ -44,6 +45,7 @@ it("replaces the hint with one options panel through repeated frame selections",
   select("0");
   expect(hintCount()).toBe(0);
   expect(slot.querySelectorAll('[aria-label="Font"]')).toHaveLength(1);
+  expect(slot.querySelector('option[value=""]')?.textContent).toBe("Regular (default)");
   const selectedChildren = slot.querySelector(".space-y-4.p-3")?.childElementCount;
   send(null);
   expect(hintCount()).toBe(1);
