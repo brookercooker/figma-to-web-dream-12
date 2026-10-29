@@ -48,8 +48,8 @@ describe("Site Manager mode cues", () => {
     expect(overlay).toHaveClass("pointer-events-none", "absolute");
     expect(overlay).not.toContainElement(canvas);
     expect(screen.getByText("Editing Homepage")).toBeVisible();
-    expect(document.querySelector("[data-chat-header]")).toContainElement(screen.getByRole("button", { name: "Undo", exact: true }));
-    expect(document.querySelector("[data-chat-header]")).toContainElement(screen.getByRole("button", { name: "Redo", exact: true }));
+    expect(document.querySelector("[data-chat-header]")).toContainElement(screen.getByRole("button", { name: "Undo" }));
+    expect(document.querySelector("[data-chat-header]")).toContainElement(screen.getByRole("button", { name: "Redo" }));
     expect(screen.queryByRole("button", { name: "Submit for Review" })).toBeNull();
     expect(screen.getByRole("radio", { name: "Manual Edit Mode" })).toHaveAttribute("aria-checked", "true");
     expect(document.querySelector("[data-manual-chat-bar]")).toBeNull();

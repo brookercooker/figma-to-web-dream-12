@@ -5,7 +5,7 @@ describe("image removal", () => {
     const remove = vi.fn(async () => ({ error: fail ? new Error("File removal failed") : null }));
     const rows = vi.fn(async () => ({ error: null }));
     const from = vi.fn(() => ({ delete: () => ({ in: rows }) }));
-    const bucket = vi.fn(() => ({ remove }));
+    const bucket = vi.fn((_name: string) => ({ remove }));
     return { db: { storage: { from: bucket }, from }, remove, rows, bucket, from };
   }
   it("removes originals, the correct public/private files and fallbacks before rows", async () => {

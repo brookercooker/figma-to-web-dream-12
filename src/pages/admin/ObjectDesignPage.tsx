@@ -29,6 +29,7 @@ import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   ArrowLeft, MoreHorizontal, ArrowDown, ArrowUp, Eye, Pencil, Plus, Trash2,
@@ -492,11 +493,7 @@ function TextStyleFields({
         {!colorOnly && (
           <Field label="Font">
             <div>
-              <Choice
-                value={style.font ?? defaults.font}
-                options={TEXT_FONTS}
-                onChange={(v) => set({ font: v })}
-              />
+              <ObjectFontSelect value={style.font} fallback={defaults.font} onChange={font => set({ font })} />
             </div>
           </Field>
         )}
@@ -784,6 +781,7 @@ function IconSelect<T extends string>({
 function Dropdown({
   label, value, options, onChange,
 }: { label: string; value: string; options: { value: string; label: string; icon?: LucideIcon }[]; onChange: (v: string) => void }) {
+  if (label === "Font") return <ObjectFontSelect value={value === "serif" || value === "sans" ? value : undefined} fallback="sans" onChange={font => onChange(font ?? "")} />;
   if (options.length > 0 && options.every((o) => o.icon)) {
     return (
       <span className="flex items-center gap-1.5 text-xs">
@@ -5015,12 +5013,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 onChange={(v) => patchImageText(toolbar.sectionId, imgText.img, imgText.t, { kind: v as ImageTextKind })}
               />
             )}
-            <Dropdown
-              label="Font"
-              value={es.font ?? kindDefaults?.font ?? defaultFont[fieldKey] ?? "sans"}
-              options={TEXT_FONTS.map((f) => ({ value: f.value as string, label: f.label }))}
-              onChange={(v) => set({ font: (v || undefined) as TextFont | undefined })}
-            />
+            <ObjectFontSelect value={es.font} fallback={(kindDefaults?.font ?? defaultFont[fieldKey] ?? "sans") as TextFont} onChange={font => set({ font })} />
             <SizeControl
               style={es}
               defaultSize={kindDefaults?.size ?? (fieldKey === "textStyle" ? "xl" : fieldKey === "bodyStyle" || extraIdx >= 0 ? "md" : "sm")}
