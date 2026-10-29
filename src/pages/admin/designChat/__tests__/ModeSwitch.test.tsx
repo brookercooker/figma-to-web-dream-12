@@ -29,14 +29,14 @@ describe("mode switch safeguards", () => {
   });
   it("saves before switching", async () => {
     open(); fireEvent.click(screen.getByText("Chat Mode"));
-    expect(screen.getByRole("alertdialog")).toHaveTextContent("You Have Unsaved Edits.");
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("Save Your Changes?");
     expect(m.stop).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByText("Save And Switch"));
+    fireEvent.click(screen.getByText("Save Changes"));
     await waitFor(() => expect(m.result).toHaveBeenCalledWith(true));
     expect(m.save).toHaveBeenCalledTimes(1); expect(m.stop).toHaveBeenCalledTimes(1); expect(m.discard).not.toHaveBeenCalled();
   });
   it("discards before switching without saving", async () => {
-    open(); fireEvent.click(screen.getByText("Chat Mode")); fireEvent.click(screen.getByText("Discard And Switch"));
+    open(); fireEvent.click(screen.getByText("Chat Mode")); fireEvent.click(screen.getByText("Discard Changes"));
     await waitFor(() => expect(m.result).toHaveBeenCalledWith(true));
     expect(m.discard).toHaveBeenCalledTimes(1); expect(m.stop).toHaveBeenCalledTimes(1); expect(m.save).not.toHaveBeenCalled();
   });
@@ -47,7 +47,7 @@ describe("mode switch safeguards", () => {
   });
   it.each([false, "throw"])("stays manual when saving fails (%s)", async (failure) => {
     if (failure === "throw") m.save.mockRejectedValue(new Error("private detail")); else m.save.mockResolvedValue(false);
-    open(); fireEvent.click(screen.getByText("Chat Mode")); fireEvent.click(screen.getByText("Save And Switch"));
+    open(); fireEvent.click(screen.getByText("Chat Mode")); fireEvent.click(screen.getByText("Save Changes"));
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("You are still in Manual Edit Mode"));
     expect(screen.getByRole("alertdialog")).toBeVisible(); expect(m.stop).not.toHaveBeenCalled(); expect(m.result).not.toHaveBeenCalled();
   });
