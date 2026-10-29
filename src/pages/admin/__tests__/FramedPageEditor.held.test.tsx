@@ -43,6 +43,14 @@ describe("held blocks payload", () => {
   it("clamps edit-size", () => { expect(clampEditSize(10)).toBe(400); expect(clampEditSize(99999)).toBe(20000); expect(clampEditSize(1500)).toBe(1500); });
 });
 describe("held blocks handshake", () => {
+  it("accepts undo and redo only from the ready exact-origin edit frame", () => {
+    const onUndo = vi.fn(); const onRedo = vi.fn(); const s = setup({ onUndo, onRedo });
+    s.receive("edit-undo"); s.receive("edit-redo"); expect(onUndo).not.toHaveBeenCalled(); expect(onRedo).not.toHaveBeenCalled();
+    s.receive("edit-ready");
+    for (const type of ["edit-undo", "edit-redo"]) { s.receive(type, {}, "https://evil.example"); s.receive(type, {}, "https://public.example.com", window); }
+    expect(onUndo).not.toHaveBeenCalled(); expect(onRedo).not.toHaveBeenCalled();
+    s.receive("edit-undo"); s.receive("edit-redo"); expect(onUndo).toHaveBeenCalledTimes(1); expect(onRedo).toHaveBeenCalledTimes(1);
+  });
   it("accepts edit-navigate only from the ready exact-origin frame with an internal path", () => {
     const onNavigate = vi.fn();
     const s = setup({ onNavigate });
