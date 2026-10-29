@@ -224,7 +224,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const historyRef = useRef(history);
   historyRef.current = history;
   const go = useCallback((by: -1 | 1) => {
-    if (editing) return; // the editor is on screen; leaving it goes through Finish Editing / Discard Changes
+    if (editing) return; // the editor is on screen; leaving it goes through Save Changes / Discard Changes
     const r = step(historyRef.current, by);
     if (!r.address) return;
     setHistory(r.history);

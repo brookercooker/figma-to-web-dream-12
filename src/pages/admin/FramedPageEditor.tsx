@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } from "react";
 import { Button } from "@/components/ui/button";
 import type { InlineChunk, InlineEdits, InlineReports, InlineSelection } from "@/components/InlineEditSurface";
+import { parseObjectClick, type ObjectClick } from "./objectClick";
 import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, trustedEditMessage, type HeldObjectData } from "./framedPageProtocol";
 import { remoteSelection, validSnapshot, type EditQuery, type SelectionSnapshot } from "./remoteSelection";
 import { manualNavigationPath } from "./designChat/manualPageNavigation";
@@ -30,6 +31,10 @@ export interface FramedPageEditorProps {
   onBlockSelect?: (id: string) => void;
   onBlockMove?: (id: string, toIndex: number) => void;
   onNavigate?: (path: string) => void;
+  /** Shared object clicked in the frame; the Manager asks before editing it. */
+  onObjectClick?: (click: ObjectClick) => void;
+  /** Page-only copies: slot → copied object id, sent so the frame renders the copy straight away. */
+  objectSwaps?: Record<string, string>;
   onUndo?: () => void;
   onRedo?: () => void;
   /** True while this frame draws the held blocks itself, so the caller hides its local list. */
@@ -71,7 +76,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     if (origin) current?.postMessage({ source: "nova-manager", type, ...payload }, origin);
   };
   const state = () => {
-    const base = { edits: latest.current.edits, objectEdits: latest.current.objectEdits, collapsed: [...latest.current.collapsed], selectedKey: latest.current.selectedKey };
+    const base = { edits: latest.current.edits, objectEdits: latest.current.objectEdits, collapsed: [...latest.current.collapsed], selectedKey: latest.current.selectedKey, objectSwaps: latest.current.objectSwaps ?? {} };
     if (!capableRef.current) return base;
     // Too large: send an empty list so the frame draws nothing while the local list shows them.
     return { ...base, heldBlocks: heldBlocksPayload(latest.current.heldBlocks ?? [], moveCapableRef.current, latest.current.heldObjects) ?? [], activeBlockId: latest.current.activeBlockId || null };
@@ -152,6 +157,8 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         latest.current.onUndo?.();
       } else if (data.type === "edit-redo") {
         latest.current.onRedo?.();
+      } else if (data.type === "edit-object-click") {
+        const click = parseObjectClick(data); if (click) latest.current.onObjectClick?.(click);
       } else if (data.type === "edit-navigate") {
         const path = manualNavigationPath(data.path);
         if (path !== null) latest.current.onNavigate?.(path);
@@ -173,7 +180,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     window.addEventListener("message", receive);
     return () => { clearTimeout(timeout); exit(); window.removeEventListener("message", receive); if (props.apiRef) props.apiRef.current = null; };
   }, [target, attempt, frameRevision]); // Only section actions on frames without heldBlocks reload; everything else travels through edit-update.
-  useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.heldObjects, props.activeBlockId, heldCapable, moveCapable]);
+  useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.heldObjects, props.activeBlockId, props.objectSwaps, heldCapable, moveCapable]);
   useEffect(() => { latest.current.onHeldInFrame?.(heldInFrame); }, [heldInFrame]);
   useEffect(() => { setSized(false); }, [target, attempt, frameRevision]);
   // Capable frames fill the canvas so their own scroll is the only one; edit-size still wins once received.

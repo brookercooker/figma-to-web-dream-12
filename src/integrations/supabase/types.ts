@@ -390,6 +390,7 @@ export type Database = {
           labels: string[]
           name: string
           preview_url: string | null
+          site_wide: boolean
           slug_id: string | null
           status: string
           thumbnail_build_version: string | null
@@ -409,6 +410,7 @@ export type Database = {
           labels?: string[]
           name: string
           preview_url?: string | null
+          site_wide?: boolean
           slug_id?: string | null
           status?: string
           thumbnail_build_version?: string | null
@@ -428,6 +430,7 @@ export type Database = {
           labels?: string[]
           name?: string
           preview_url?: string | null
+          site_wide?: boolean
           slug_id?: string | null
           status?: string
           thumbnail_build_version?: string | null

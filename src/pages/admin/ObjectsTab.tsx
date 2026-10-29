@@ -396,7 +396,7 @@ export default function ObjectsTab() {
           itemLabel="object"
           onClear={() => setSelected(new Set())}
         >
-          <Button size="sm" variant="outline" onClick={() => bulkArchive([...selected])}>
+          <Button size="sm" variant="outline" onClick={() => bulkArchive([...selected].filter((id) => !objects.find((o) => o.id === id)?.site_wide))}>
             <Archive className="w-3.5 h-3.5 mr-1.5" /> Archive
           </Button>
         </SelectionBar>
@@ -631,12 +631,13 @@ export default function ObjectsTab() {
                               <DropdownMenuSeparator />
                             </>
                           )}
-                          <DropdownMenuItem onSelect={() => setConfirmArchive(obj)}>
+                          {!obj.site_wide && <DropdownMenuItem onSelect={() => setConfirmArchive(obj)}>
                             <Archive className="w-4 h-4 mr-2" /> Archive (Reversible)
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
+                          </DropdownMenuItem>}
+                          {!obj.site_wide && <DropdownMenuSeparator />}
                           <DropdownMenuItem
                             className="text-destructive focus:text-destructive"
+                            disabled={!!obj.site_wide}
                             onSelect={() => setConfirmDelete(obj)}
                           >
                             <AlertTriangle className="w-4 h-4 mr-2" /> Delete Permanently…

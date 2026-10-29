@@ -74,18 +74,18 @@ describe("manual page navigation", () => {
     fireEvent.keyDown(await screen.findByRole("combobox"), { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("combobox")).not.toBeInTheDocument());
   });
-  it.each(["Save and Go", "Discard and Go", "Stay Here"])("protects unsaved edits with %s", async action => {
+  it.each(["Save Changes", "Discard Changes", "Keep Editing"])("protects unsaved edits with %s", async action => {
     m.dirty = true; await open(); fireEvent.click(screen.getByRole("button", { name: "Next Page" }));
-    expect(screen.getByRole("dialog", { name: "Save Your Changes to Contact?" })).toBeVisible();
+    expect(screen.getByRole("dialog", { name: "Save Your Changes?" })).toBeVisible();
     expect(m.select).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: action }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    if (action === "Stay Here") { expect(m.select).not.toHaveBeenCalled(); expect(m.save).not.toHaveBeenCalled(); expect(m.discard).not.toHaveBeenCalled(); }
-    else { expect(m.select).toHaveBeenCalledWith({ id: "draft", name: "Autumn", path: "/landing/autumn" }); expect(action === "Save and Go" ? m.save : m.discard).toHaveBeenCalledOnce(); }
+    if (action === "Keep Editing") { expect(m.select).not.toHaveBeenCalled(); expect(m.save).not.toHaveBeenCalled(); expect(m.discard).not.toHaveBeenCalled(); }
+    else { expect(m.select).toHaveBeenCalledWith({ id: "draft", name: "Autumn", path: "/landing/autumn" }); expect(action === "Save Changes" ? m.save : m.discard).toHaveBeenCalledOnce(); }
   });
   it("stays on the same page after a failed save", async () => {
     m.dirty = true; m.save.mockResolvedValue(false); await open();
-    fireEvent.click(screen.getByRole("button", { name: "Next Page" })); fireEvent.click(screen.getByRole("button", { name: "Save and Go" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next Page" })); fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
     await waitFor(() => expect(m.save).toHaveBeenCalledOnce());
     expect(m.select).not.toHaveBeenCalled(); expect(screen.getByRole("heading", { name: "Editing Contact", hidden: true })).toBeInTheDocument();
     expect(screen.getByRole("dialog")).toBeVisible();
@@ -94,7 +94,7 @@ describe("manual page navigation", () => {
     m.dirty = true; await open(); fireEvent.click(screen.getByRole("button", { name: "Unknown Navigation" }));
     expect(m.toast).toHaveBeenCalledWith("That page isn't in the Site Manager."); expect(m.select).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Frame Navigation" }));
-    expect(screen.getByRole("dialog", { name: "Save Your Changes to Contact?" })).toBeVisible();
+    expect(screen.getByRole("dialog", { name: "Save Your Changes?" })).toBeVisible();
   });
   it("disables page changes while an object is open", async () => {
     m.objectOpen = true; render(<Harness />);
@@ -105,8 +105,8 @@ describe("manual page navigation", () => {
   it("disables navigation until saving finishes", async () => {
     let finish: (ok: boolean) => void = () => {};
     m.dirty = true; m.save.mockImplementation(() => new Promise<boolean>(resolve => { finish = resolve; }));
-    await open(); fireEvent.click(screen.getByRole("button", { name: "Next Page" })); fireEvent.click(screen.getByRole("button", { name: "Save and Go" }));
-    expect(screen.getByRole("button", { name: "Editing Contact", hidden: true })).toBeDisabled(); expect(screen.getByRole("button", { name: "Save and Go" })).toBeDisabled();
+    await open(); fireEvent.click(screen.getByRole("button", { name: "Next Page" })); fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(screen.getByRole("button", { name: "Editing Contact", hidden: true })).toBeDisabled(); expect(screen.getByRole("button", { name: "Save Changes" })).toBeDisabled();
     finish(true); await waitFor(() => expect(m.select).toHaveBeenCalledOnce());
   });
 });

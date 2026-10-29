@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Undo2, Pencil } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Pencil, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandInput, CommandList, CommandGroup, CommandItem, CommandEmpty } from "@/components/ui/command";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useDesignChat } from "./DesignChatContext";
 import { useEditorSlot } from "./EditorSlot";
 import { loadManualPages, workingPageFrom } from "./pageSelection";
@@ -107,12 +107,12 @@ export default function ManualPageSwitcher({ navigation }: { navigation: Navigat
       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" aria-label="Next Page" title="Next Page" disabled={disabled || loading || index < 0 || index >= pages.length - 1} onClick={() => { const page = pages[index + 1]; if (page) choose(page); }}><ChevronRight className="h-4 w-4" aria-hidden /></Button>
     </div>
     <Dialog open={!!pending} onOpenChange={value => { if (!value && !disabled) navigation.setPending(null); }}>
-      <DialogContent aria-describedby={undefined}>
-        <DialogHeader><DialogTitle>Save Your Changes to {workingPage?.name}?</DialogTitle></DialogHeader>
-        <DialogFooter className="flex-wrap gap-2 sm:space-x-0">
-          <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => navigation.setPending(null)}><Pencil className="h-4 w-4" aria-hidden />Stay Here</Button>
-          <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => void navigation.resolve(false)}><Undo2 className="h-4 w-4" aria-hidden />Discard and Go</Button>
-          <Button className="gap-2" disabled={disabled} onClick={() => void navigation.resolve(true)}><Check className="h-4 w-4" aria-hidden />Save and Go</Button>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Save Your Changes?</DialogTitle><DialogDescription>You have unsaved edits on {workingPage?.name}. Save them before going to the next page?</DialogDescription></DialogHeader>
+        <DialogFooter className="flex-row flex-wrap justify-start gap-2 sm:justify-start sm:space-x-0">
+          <Button className="gap-2" disabled={disabled} onClick={() => void navigation.resolve(true)}><Save className="h-4 w-4" aria-hidden />Save Changes</Button>
+          <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => void navigation.resolve(false)}><Trash2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
+          <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => navigation.setPending(null)}><Pencil className="h-4 w-4" aria-hidden />Keep Editing</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

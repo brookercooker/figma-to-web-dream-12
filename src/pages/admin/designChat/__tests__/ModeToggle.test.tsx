@@ -115,15 +115,15 @@ describe("segmented mode switch", () => {
     fireEvent.click(manual()); fireEvent.click(await screen.findByRole("button", { name: /About/ }));
     await waitFor(() => expect(manual()).toHaveAttribute("aria-checked", "true")); expect(m.select).toHaveBeenCalledWith({ id: "chosen", name: "About", path: "/about" });
   });
-  it.each(["Save And Switch", "Discard And Switch", "Keep Editing"])("preserves the unsaved guard: %s", async (choice) => {
+  it.each(["Save Changes", "Discard Changes", "Keep Editing"])("preserves the unsaved guard: %s", async (choice) => {
     m.initial = "manual"; m.dirty = true; open(); fireEvent.click(chat());
     expect(screen.getByRole("alertdialog")).toBeVisible(); expect(manual()).toHaveAttribute("aria-checked", "true");
     fireEvent.click(screen.getByRole("button", { name: choice }));
     await waitFor(() => expect(choice === "Keep Editing" ? manual() : chat()).toHaveAttribute("aria-checked", "true"));
-    expect(m.save).toHaveBeenCalledTimes(choice === "Save And Switch" ? 1 : 0); expect(m.discard).toHaveBeenCalledTimes(choice === "Discard And Switch" ? 1 : 0);
+    expect(m.save).toHaveBeenCalledTimes(choice === "Save Changes" ? 1 : 0); expect(m.discard).toHaveBeenCalledTimes(choice === "Discard Changes" ? 1 : 0);
   });
   it("failed save keeps manual selected and shows the reason", async () => {
-    m.initial = "manual"; m.dirty = true; m.save.mockResolvedValue(false); open(); fireEvent.click(chat()); fireEvent.click(screen.getByText("Save And Switch"));
+    m.initial = "manual"; m.dirty = true; m.save.mockResolvedValue(false); open(); fireEvent.click(chat()); fireEvent.click(screen.getByText("Save Changes"));
     await screen.findByRole("alert"); expect(manual()).toHaveAttribute("aria-checked", "true"); expect(m.stop).not.toHaveBeenCalled();
   });
   it.each(["busy", "review"])("confirms Claude %s before changing the highlight", async (kind) => {

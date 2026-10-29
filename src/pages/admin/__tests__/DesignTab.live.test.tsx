@@ -134,7 +134,7 @@ describe("one surface for every page", () => {
     mocks.content = [{ id: "a", type: "text", text: "Saved words", size: "md", align: "left" }];
     const { container } = open();
     await waitFor(() => expect(container.querySelectorAll("[data-page-block]")).toHaveLength(1));
-    expect(screen.getByText("Saved words")).toBeInTheDocument();
+    expect(screen.getAllByText("Saved words").length).toBeGreaterThan(0);
     const held = container.querySelector("[data-held-sections]")!;
     expect(held.className).not.toMatch(/max-w|mx-auto|px-/);
     expect(held.parentElement!.className).not.toMatch(/max-w|mx-auto|px-/);

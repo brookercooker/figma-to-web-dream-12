@@ -38,6 +38,11 @@ import { editMap, stripHeldObjects, type HeldObjectData } from "./framedPageProt
 import { draftEmbedUrl } from "./siteManifest";
 import { usePageEditorSurface } from "./usePageEditorSurface";
 import { remoteSnapshot } from "./remoteSelection";
+import { applySwap, copyName, objectClickKind, objectSwaps as swapsOf, unusedCopies, type ObjectClick } from "./objectClick";
+import ObjectClickDialog, { type ObjectAsk } from "./ObjectClickDialog";
+import ConfirmDialog from "./ConfirmDialog";
+import { findObjectUsages } from "./objectUsages";
+import { Save as SaveIcon, Trash2 as TrashIcon, Pencil as PencilIcon } from "lucide-react";
 import { inlineEditAction, ManualEditHistory, sameEditState, type EditAction, type ManualEditSnapshot } from "./designChat/manualEditHistory";
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
@@ -75,7 +80,14 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   const [params, setParams] = useSearchParams();
   // Embedded in the Site Manager's edit mode, the page comes from the working page, not the address.
   const selectedId = embedded ? pageId ?? "" : params.get("page") ?? "";
-  const { slot, registerSave, saveAll, registerDiscard, registerHasChanges, registerAdd, registerHistory } = useEditorSlot();
+  const { slot, registerSave, saveAll, registerDiscard, registerHasChanges, registerAdd, registerHistory, discardAll } = useEditorSlot();
+  // Page-only object copies made this session; deleted again unless a save keeps them in use.
+  const pendingCopies = useRef(new Set<string>());
+  const dropCopies = (ids: string[]) => {
+    if (!ids.length) return;
+    ids.forEach((id) => pendingCopies.current.delete(id));
+    void (supabase as any).from("object_registry").delete().in("id", ids);
+  };
   const history = useRef(new ManualEditHistory());
   const editState = useRef<ManualEditSnapshot>({ blocks: [], inlineEdits: {}, objectEdits: {} });
   const cleanState = useRef<ManualEditSnapshot>(structuredClone(editState.current));
@@ -511,6 +523,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     if (failed) { toast.error(failed); return false; }
     cleanState.current = structuredClone(editState.current);
     resetHistory();
+    // Copies the saved page still uses are kept for good; the rest (undone swaps) are removed.
+    const unused = unusedCopies(pendingCopies.current, editState.current as any);
+    pendingCopies.current.clear();
+    dropCopies(unused);
     return true;
     } finally { savingHistory.current = false; }
   };
@@ -548,6 +564,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     registerSave(() => saveAllRef.current());
     registerDiscard(async () => {
       discarded.current = true;
+      dropCopies([...pendingCopies.current]);
       window.clearTimeout(inlineTimer.current);
       Object.values(objectTimers.current).forEach(window.clearTimeout);
       pendingSave.current = null; pendingInline.current = null; pendingObjects.current = {};
@@ -768,6 +785,52 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     if (result && typeof result === "object") for (const [scope, map] of Object.entries(result as Record<string, unknown>)) { const ok = editMap(map); if (ok) out[scope] = ok; }
     return out;
   };
+  const [objectAsk, setObjectAsk] = useState<ObjectAsk | null>(null);
+  const [copying, setCopying] = useState(false);
+  const [openAsk, setOpenAsk] = useState<string | null>(null);
+  const swaps = useMemo(() => swapsOf(inlineEdits), [inlineEdits]);
+  const askObject = (click: ObjectClick) => {
+    const kind = objectClickKind(click, editState.current.inlineEdits);
+    setObjectAsk({ ...click, kind, usedOn: [] });
+    if (kind !== "shared") return;
+    // Saved page references, plus the public site's own pages for coded objects.
+    const fromPages = pages.filter((p) => JSON.stringify([p.content ?? null, p.inline_edits ?? null]).includes(click.objectId)).map((p) => p.name);
+    const fromSite = click.componentKey ? findObjectUsages(click.componentKey).then((u) => u.map((x) => x.name)).catch(() => null) : Promise.resolve([] as string[]);
+    void fromSite.then((site) => setObjectAsk((cur) => {
+      if (!cur || cur.objectId !== click.objectId) return cur;
+      const names = [...new Set([...(site ?? []), ...fromPages, page?.name ?? ""].filter(Boolean))];
+      return { ...cur, usedOn: site === null && !fromPages.length ? null : names };
+    }));
+  };
+  const openObjectEditor = (id: string) => {
+    if (!embedded) { navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}`); return; }
+    if (hasChangesRef.current()) { setOpenAsk(id); return; }
+    chat?.openObject(id);
+  };
+  const makeCopy = async () => {
+    const ask = objectAsk; if (!ask || !page || discarded.current) return;
+    setCopying(true);
+    try {
+      const { data: original, error } = await (supabase as any).from("object_registry").select("name,component_key,content,inline_edits,labels").eq("id", ask.objectId).maybeSingle();
+      if (error || !original) throw new Error("missing");
+      const { data: row, error: insertError } = await (supabase as any).from("object_registry").insert({
+        name: copyName(original.name || ask.name, page.name), component_key: original.component_key, content: original.content,
+        inline_edits: original.inline_edits ?? {}, labels: original.labels ?? [], status: "Draft",
+      }).select("id,name,status,component_key,content").single();
+      if (insertError || !row) throw new Error("insert");
+      pendingCopies.current.add(row.id);
+      setHeldObjects((cur) => ({ ...(cur ?? {}), [row.id]: { status: row.status, name: row.name, component_key: row.component_key ?? null, content: row.content } }));
+      const next = applySwap(editState.current.blocks as any[], editState.current.inlineEdits, ask.slot, row.id);
+      recordEdit({ blocks: next.blocks as Block[], inlineEdits: next.edits }, { label: `copied ${ask.name} for this page` });
+      setInlineEdits(next.edits);
+      pendingInline.current = { pageId: page.id, next: next.edits }; setTweaksPending(true);
+      if (next.changedBlocks) { setBlocks(next.blocks as Block[]); pendingSave.current = { pageId: page.id, snapshot: next.blocks as Block[] }; setSectionRevision((n) => n + 1); setDirty(true); }
+      setObjectAsk(null);
+      toast.success(`This copy is only used on ${page.name}. Click it on the page to open it in the object editor.`);
+    } catch {
+      toast.error("Couldn't make a copy. Try again.");
+    } finally { setCopying(false); }
+  };
   const openInlineObject = async (key: string, section: string) => {
     const id = objectRows.current[key]; if (!id) return;
     if (embedded) { if (await saveAll()) chat?.openObject(id, section); }
@@ -787,18 +850,31 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
-          onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} onNavigate={onNavigate} />
+          onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} onNavigate={onNavigate}
+          onObjectClick={askObject} objectSwaps={swaps} />
         {/* Held sections: full pane width, selected (never played or opened) until saved into the public page. */}
         {!heldInFrame && <div data-held-sections className="w-full">
           {blocks.filter((b): b is RenderBlock => !isPageContent(b)).map((b)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
-            className={`relative ${embedded ? "cursor-pointer [&_iframe]:pointer-events-none [&_video]:pointer-events-none" : ""} ${embedded && activeId === b.id ? "outline outline-2 -outline-offset-2 outline-primary" : ""}`}
+            className={`relative ${embedded ? "cursor-pointer [&_iframe]:pointer-events-none [&_video]:pointer-events-none" : ""}`}
             onClickCapture={embedded ? (e) => { if ((e.target as HTMLElement).closest("[contenteditable=true],input,textarea,select")) return; e.preventDefault(); setActiveId(b.id); setInlineSel(null); } : undefined}>
+            {/* The bar takes its own row above the section (like the public frame's reserved space), never covering content. */}
+            {embedded && <div data-section-bar className={`flex h-7 items-center px-3 text-xs ${activeId === b.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{blockLabel(b)}</div>}
             <BlockView block={b} />
           </section>)}
         </div>}
       </div>
     </EmbeddedBox>}
     {embedded && slot && createPortal(tools,slot)}
+      <ObjectClickDialog ask={objectAsk} pageName={page?.name ?? "this page"} busy={copying}
+        onCancel={() => setObjectAsk(null)} onCopy={() => void makeCopy()}
+        onOpen={() => { const id = objectAsk?.objectId; setObjectAsk(null); if (id) openObjectEditor(id); }} />
+      <ConfirmDialog open={!!openAsk} onOpenChange={(open) => { if (!open) setOpenAsk(null); }} title="Save Your Changes?"
+        description="Save your edits to this page before opening the object editor?" destructive={false} primaryFirst
+        confirmLabel="Save Changes" confirmIcon={<SaveIcon className="h-4 w-4" aria-hidden />}
+        secondaryLabel="Discard Changes" secondaryIcon={<TrashIcon className="h-4 w-4" aria-hidden />}
+        cancelLabel="Keep Editing" cancelIcon={<PencilIcon className="h-4 w-4" aria-hidden />}
+        onConfirm={async () => { const id = openAsk; setOpenAsk(null); if (id && await saveAll()) chat?.openObject(id); }}
+        onSecondary={async () => { const id = openAsk; setOpenAsk(null); if (!id) return; try { await discardAll(); chat?.openObject(id); } catch { /* stays on the page */ } }} />
       <CreatePageDialog
         open={createOpen}
         onOpenChange={setCreateOpen}

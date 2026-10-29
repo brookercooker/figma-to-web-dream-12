@@ -45,7 +45,7 @@ it("replaces the hint with one options panel through repeated frame selections",
   select("0");
   expect(hintCount()).toBe(0);
   expect(slot.querySelectorAll('[aria-label="Font"]')).toHaveLength(1);
-  expect(slot.querySelector('option[value=""]')?.textContent).toBe("Regular (default)");
+  expect(slot.querySelector('option[value=""]')?.textContent).toBe("Regular");
   const selectedChildren = slot.querySelector(".space-y-4.p-3")?.childElementCount;
   send(null);
   expect(hintCount()).toBe(1);

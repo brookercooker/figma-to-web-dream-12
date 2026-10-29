@@ -78,8 +78,10 @@ async function loadRows(kind: LibraryKind): Promise<Row[]> {
   });
 }
 
-export default function LibraryPicker({ kind, label, Icon, active, showLabel, className, onPick, onOpenFull, addedRefs = [] }: {
+export default function LibraryPicker({ kind, label, Icon, active, showLabel, className, onPick, onOpenFull, addedRefs = [], onDeselectAll }: {
   kind: LibraryKind; label: string; Icon: ComponentType<{ className?: string }>; active: boolean; showLabel: boolean; className: string;
+  /** Removes every attached reference of this picker's kind (image / video / object). */
+  onDeselectAll?: (refKind: ChatReference["kind"]) => void;
   onPick: (ref: ChatReference) => void; onOpenFull: () => void; addedRefs?: ChatReference[];
 }) {
   const [open, setOpen] = useState(false);
@@ -223,8 +225,10 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
           )}
         </div>
         <div className="flex shrink-0 items-center justify-between gap-3 border-t px-4 py-3">
-          <div className="flex flex-col">
+          <div className="flex items-center gap-2">
             <span className="text-sm" aria-live="polite">{addedIds.size > 0 ? `${addedIds.size} selected` : "Nothing selected yet"}</span>
+            <Button variant="ghost" size="sm" data-picker-own-enter="" disabled={addedIds.size === 0}
+              onClick={() => onDeselectAll?.(kind === "images" ? "image" : kind === "videos" ? "video" : "object")}>Deselect All</Button>
           </div>
           <div className="flex items-center gap-2">
             <Button data-picker-own-enter="" onClick={finish}>Done</Button>

@@ -481,8 +481,8 @@ function ObjectFontSelect({ value, fallback, onChange }: { value?: TextFont; fal
   return <Select value={value ?? "inherited"} onValueChange={font => onChange(font === "inherited" ? undefined : font as TextFont)}>
     <SelectTrigger aria-label="Font" style={{ fontFamily: family(value ?? fallback) }}><SelectValue /></SelectTrigger>
     <SelectContent>
-      <SelectItem value="inherited" style={{ fontFamily: family(fallback) }}>{name(fallback)} (default)</SelectItem>
-      {(["serif", "sans"] as const).map(font => <SelectItem key={font} value={font} style={{ fontFamily: family(font) }}>{name(font)}</SelectItem>)}
+      <SelectItem value="inherited" style={{ fontFamily: family(fallback) }}>{name(fallback)}</SelectItem>
+      {(["serif", "sans"] as const).filter(font => font !== fallback).map(font => <SelectItem key={font} value={font} style={{ fontFamily: family(font) }}>{name(font)}</SelectItem>)}
     </SelectContent>
   </Select>;
 }
