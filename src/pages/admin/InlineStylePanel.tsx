@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EDITOR_FONTS, inheritedFont, inheritedWeight } from "./designChat/fontOptions";
+import { fontMenu, inheritedFont, inheritedWeight } from "./designChat/fontOptions";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, Film, TextCursorInput, icons } from "lucide-react";
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { LINK_ICONS, readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
@@ -332,7 +332,7 @@ export default function InlineStylePanel({
             <SelectTrigger aria-label="Font" style={{ fontFamily: style["font-family"] || inherited.family }}><SelectValue>{fontName}</SelectValue></SelectTrigger>
             <SelectContent>
               <SelectItem value="inherited" style={{ fontFamily: inherited.family }}>{inherited.name}</SelectItem>
-              {style["font-family"] && !EDITOR_FONTS.some(([, value]) => value === style["font-family"]) && <SelectItem value={style["font-family"]} style={{ fontFamily: style["font-family"] }}>{fontName}</SelectItem>}
+              {style["font-family"] && !fontMenu(inherited.name).others.some(([, value]) => value === style["font-family"]) && <SelectItem value={style["font-family"]} style={{ fontFamily: style["font-family"] }}>{fontName}</SelectItem>}
               {fontMenu(inherited.name).others.map(([name, family]) => <SelectItem key={family} value={family} style={{ fontFamily: family }}>{name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -344,7 +344,7 @@ export default function InlineStylePanel({
           <ToolField label="Weight">
             <select className="h-10 w-full rounded-md border bg-background px-2 text-sm" value={style["font-weight"] ?? ""} onChange={(e) => apply("font-weight", e.target.value)}>
               <option value="">{inheritedWeight(computed.fontWeight)}</option>
-              {WEIGHTS.map(([l, v]) => <option key={v} value={v}>{l}</option>)}
+              {WEIGHTS.filter(([l, v]) => l !== inheritedWeight(computed.fontWeight) || style["font-weight"] === v).map(([l, v]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </ToolField>
         </ToolGrid>
