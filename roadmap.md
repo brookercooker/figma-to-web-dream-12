@@ -1,5 +1,5 @@
 # Roadmap — coded object import fidelity
-- [ ] Fix duplicate Manual Edit panel siblings, verify thumbnail replay isolation, label inherited weight and add select/deselect regression coverage.
+- [x] Fix colliding style/destination panel keys; reproduced duplicate hints before fix, repeated select/deselect now passes. Capture replay isolation and inherited weights tested; all 723 tests pass, build OK. Signed-in Homepage shows one hint at 1600×1000; hosted frame unavailable for hero clicking.
 - [x] Site Manager nine-item batch implemented: reference toggles, dialog icons, expanded options/font previews, relocated history, confirmed single/bulk deletion, signed/background object previews, button-attached panels and trusted per-path scroll handoff. 714 tests pass; build OK.
 - [x] Continue interrupted batch: fixed scroll test fixture; signed-in thumbnails, single/bulk Used on warnings and temporary-image delete/Undo/permanent-delete verified; reload audit in docs/site-manager-batch.md.
 - [ ] Verify hosted scroll handoff against public commit 3c4b3ea: blocked because the embed service supplied no draft page address in the signed-in check; manager protocol and retained-preview behavior pass local tests.
