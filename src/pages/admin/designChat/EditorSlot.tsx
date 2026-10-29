@@ -6,7 +6,10 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState, type
  * The embedded editor also registers its save function here, so pressing Save changes can save everything first.
  */
 type SaveFn = () => Promise<boolean>;
+export interface HistoryControls { undoLabel: string; redoLabel: string; undo: () => void; redo: () => void }
 type EditorSlotValue = {
+  historyControls: HistoryControls | null;
+  registerHistory: (controls: HistoryControls | null) => void;
   slot: HTMLElement | null;
   setSlot: (el: HTMLElement | null) => void;
   registerSave: (fn: SaveFn | null) => void;
@@ -25,9 +28,10 @@ type EditorSlotValue = {
 };
 export type AddKind = "objects" | "images" | "videos";
 
-const Ctx = createContext<EditorSlotValue>({ slot: null, setSlot: () => {}, registerSave: () => {}, saveAll: async () => true, registerDiscard: () => {}, discardAll: async () => {}, registerHasChanges: () => {}, hasChanges: () => false, registerAdd: () => {}, requestAdd: () => false });
+const Ctx = createContext<EditorSlotValue>({ historyControls: null, registerHistory: () => {}, slot: null, setSlot: () => {}, registerSave: () => {}, saveAll: async () => true, registerDiscard: () => {}, discardAll: async () => {}, registerHasChanges: () => {}, hasChanges: () => false, registerAdd: () => {}, requestAdd: () => false });
 
 export function EditorSlotProvider({ children }: { children: ReactNode }) {
+  const [historyControls, registerHistory] = useState<HistoryControls | null>(null);
   const [slot, setSlot] = useState<HTMLElement | null>(null);
   const saveRef = useRef<SaveFn | null>(null);
   const registerSave = useCallback((fn: SaveFn | null) => { saveRef.current = fn; }, []);
@@ -42,8 +46,8 @@ export function EditorSlotProvider({ children }: { children: ReactNode }) {
   const registerAdd = useCallback((fn: ((kind: AddKind) => void) | null) => { addRef.current = fn; }, []);
   const requestAdd = useCallback((kind: AddKind) => { if (!addRef.current) return false; addRef.current(kind); return true; }, []);
   const value = useMemo(
-    () => ({ slot, setSlot, registerSave, saveAll, registerDiscard, discardAll, registerHasChanges, hasChanges, registerAdd, requestAdd }),
-    [slot, registerSave, saveAll, registerDiscard, discardAll, registerHasChanges, hasChanges, registerAdd, requestAdd],
+    () => ({ historyControls, registerHistory, slot, setSlot, registerSave, saveAll, registerDiscard, discardAll, registerHasChanges, hasChanges, registerAdd, requestAdd }),
+    [historyControls, slot, registerSave, saveAll, registerDiscard, discardAll, registerHasChanges, hasChanges, registerAdd, requestAdd],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
