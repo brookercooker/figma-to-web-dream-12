@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { applySwap, copyName, objectClickKind, objectSwaps, parseObjectClick, unusedCopies } from "../objectClick";
+import { applySwap, copyName, objectClickKind, objectSwaps, parseObjectClick, siteWideLabel, unusedCopies } from "../objectClick";
 import ObjectClickDialog from "../ObjectClickDialog";
 import ConfirmDialog from "../ConfirmDialog";
 import { fontMenu } from "../designChat/fontOptions";
