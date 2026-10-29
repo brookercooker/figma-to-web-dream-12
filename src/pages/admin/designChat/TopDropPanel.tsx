@@ -12,7 +12,7 @@ export function rememberTopDropAnchor(button: HTMLElement) { requestedAnchor = b
 export const TOP_DROP_PANEL_CLASS =
   "fixed z-50 flex w-full max-w-[720px] max-h-[70vh] flex-col gap-0 overflow-hidden rounded-b-lg border bg-background p-0 shadow-lg duration-200 ease-out " +
   "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 " +
-  "data-[state=open]:slide-in-from-top-full data-[state=closed]:slide-out-to-top-full " +
+  "data-[state=open]:slide-in-from-top-2 data-[state=closed]:slide-out-to-top-2 " +
   "motion-reduce:[--tw-enter-translate-y:0] motion-reduce:[--tw-exit-translate-y:0]";
 
 /** Shared panel for the Objects, Images and Videos pickers. Esc/outside click close; focus returns to the opener (Radix). */
@@ -46,7 +46,7 @@ export const TopDropContent = forwardRef<ElementRef<typeof DialogPrimitive.Conte
     return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-background/10 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0" />
-      <DialogPrimitive.Content ref={contentRef} data-top-drop-panel="" className={cn(TOP_DROP_PANEL_CLASS, className)} style={{ top: HEADER_HEIGHT_PX, ...style, ...(placement ? { top: placement.top, left: placement.left, width: placement.width, transformOrigin: `${placement.origin}px 0` } : {}) }}
+      <DialogPrimitive.Content ref={contentRef} data-top-drop-panel="" className={cn(TOP_DROP_PANEL_CLASS, className)} style={{ top: HEADER_HEIGHT_PX, visibility: placement ? "visible" : "hidden", ...style, ...(placement ? { top: placement.top, left: placement.left, width: placement.width, transformOrigin: `${placement.origin}px 0` } : {}) }}
         onOpenAutoFocus={event => {
           onOpenAutoFocus?.(event);
         }}

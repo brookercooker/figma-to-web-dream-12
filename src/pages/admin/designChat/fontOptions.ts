@@ -1,0 +1,11 @@
+export const EDITOR_FONTS = [
+  ["Cormorant Garamond", "'Cormorant Garamond', Georgia, serif"],
+  ["Figtree", "Figtree, system-ui, sans-serif"],
+  ["Georgia", "Georgia, serif"],
+  ["Monospace", "ui-monospace, monospace"],
+] as const;
+export function inheritedFont(family: string | undefined, tag: string) {
+  const fallback = /^H[1-6]$/i.test(tag) ? EDITOR_FONTS[0][1] : EDITOR_FONTS[1][1];
+  const value = family?.trim() || fallback;
+  return { family: value, name: value.split(",")[0].trim().replace(/^['"]|['"]$/g, "") };
+}

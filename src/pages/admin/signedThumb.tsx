@@ -28,9 +28,10 @@ export function usePageThumbSrc(url: string | null | undefined): string | undefi
     staleTime: 55 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     queryFn: async () => {
+      if (!path) return null;
       const { data, error } = await (supabase as any).storage
         .from(BUCKET)
-        .createSignedUrl(path!, 60 * 60);
+        .createSignedUrl(path, 60 * 60);
       if (error) return null;
       return (data?.signedUrl as string) ?? null;
     },

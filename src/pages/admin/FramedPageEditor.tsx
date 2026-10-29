@@ -4,6 +4,7 @@ import type { InlineChunk, InlineEdits, InlineReports, InlineSelection } from "@
 import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, trustedEditMessage, type HeldObjectData } from "./framedPageProtocol";
 import { remoteSelection, validSnapshot, type EditQuery, type SelectionSnapshot } from "./remoteSelection";
 import { manualNavigationPath } from "./designChat/manualPageNavigation";
+import { acceptFrameScroll, restoreFrameScroll } from "./designChat/frameScroll";
 
 export interface FramedEditorController { exit: () => void; query: EditQuery }
 export interface FramedPageEditorProps {
@@ -104,10 +105,12 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         destination.current = frame.current?.contentWindow ?? null;
         capableRef.current = data.capabilities?.heldBlocks === true; setHeldCapable(capableRef.current);
         moveCapableRef.current = data.capabilities?.blockMove === true; setMoveCapable(moveCapableRef.current);
-        clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); return;
+        clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); restoreFrameScroll(frame.current, latest.current.path); return;
       }
       if (!ready.current) return;
-      if (data.type === "edit-change" && typeof data.scope === "string" && data.scope) {
+      if (data.type === "page-scroll") {
+        acceptFrameScroll(event, frame.current, latest.current.path);
+      } else if (data.type === "edit-change" && typeof data.scope === "string" && data.scope) {
         const next = editMap(data.next); if (next) latest.current.onChange(data.scope, next);
       } else if (data.type === "edit-select") {
         const version = ++selectionVersion.current;

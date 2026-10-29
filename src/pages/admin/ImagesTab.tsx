@@ -17,6 +17,8 @@ import { useImages, useImageThumbnails, usePages } from "./useAdminData";
 import { CopyRefButton, buildImageRef } from "./copyReference";
 import ConfirmDialog from "./ConfirmDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
+import { deleteImageFilesAndRows } from "./deleteImages";
+import { loadImageDeleteUsageNames } from "./imageDeleteUsages";
 import { repairImageMetadata } from "./repairImageMetadata";
 import { extractAndPersistExif } from "./imageExif";
 import { assetKind, isImageAsset } from "./assetType";
@@ -129,7 +131,8 @@ export default function ImagesTab() {
   const [justAddedAt, setJustAddedAt] = useState<string | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
-  const [confirmDelete, setConfirmDelete] = useState<{ imgs: Img[] } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ imgs: Img[]; names: string[] } | null>(null);
+  const [checkingDelete, setCheckingDelete] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [brokenIds, setBrokenIds] = useState<Set<string>>(new Set());
   const [failedTileSources, setFailedTileSources] = useState<Record<string, string[]>>({});
@@ -546,9 +549,14 @@ export default function ImagesTab() {
   };
 
 
-  const requestDelete = (imgs: Img[]) => {
-    if (imgs.length === 0) return;
-    setConfirmDelete({ imgs });
+  const requestDelete = async (imgs: Img[]) => {
+    if (imgs.length === 0 || checkingDelete) return;
+    setCheckingDelete(true);
+    try {
+      const names = await loadImageDeleteUsageNames(imgs);
+      setConfirmDelete({ imgs, names: [...new Set([...names, ...imgs.flatMap(image => usagesFor(image.id).map(usage => usage.name || usage.path))])] });
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Couldn't check where this image is used. Try again."); }
+    finally { setCheckingDelete(false); }
   };
 
   const doDeleteImages = (imgs: Img[]) => {
@@ -562,17 +570,7 @@ export default function ImagesTab() {
         : `Deleted ${imgs.length} images`,
       hide: () => setHiddenIds((s) => { const n = new Set(s); ids.forEach((i) => n.add(i)); return n; }),
       restore: () => setHiddenIds((s) => { const n = new Set(s); ids.forEach((i) => n.delete(i)); return n; }),
-      commit: async () => {
-        const origPaths = imgs.map((i) => (i as any).original_path).filter(Boolean);
-        const webPaths = imgs.map((i) => (i as any).web_path).filter(Boolean);
-        if (origPaths.length) await (supabase as any).storage.from("images-original").remove(origPaths);
-        if (webPaths.length) {
-          await (supabase as any).storage.from("images-web").remove(webPaths);
-          await (supabase as any).storage.from(GATED_BUCKET).remove(webPaths);
-        }
-        const { error } = await (supabase as any).from("images").delete().in("id", ids);
-        if (error) throw error;
-      },
+      commit: () => deleteImageFilesAndRows(imgs),
       onCommitted: () => { removeLocalPreviews(ids); setHiddenIds((s) => { const n = new Set(s); ids.forEach((i) => n.delete(i)); return n; }); invalidate(); },
     });
   };
@@ -857,7 +855,7 @@ export default function ImagesTab() {
           <Download className="w-3.5 h-3.5 mr-1.5" /> Download .zip
         </Button>
         <Button size="sm" variant="destructive" onClick={bulkDelete}>
-          <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
+          <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete Images
         </Button>
       </SelectionBar>
 
@@ -1049,17 +1047,18 @@ export default function ImagesTab() {
         title={
           confirmDelete
             ? confirmDelete.imgs.length === 1
-              ? `Delete image "${confirmDelete.imgs[0].filename}"?`
+              ? `Delete ${confirmDelete.imgs[0].filename}?`
               : `Delete ${confirmDelete.imgs.length} images?`
             : ""
         }
         description={
           <>
-            {confirmDelete && <InUseWarning items={confirmDelete.imgs.map((i) => ({ label: i.filename, usages: usagesFor(i.id) }))} />}
-            <p>Files and label associations will be removed. You have 5 seconds to undo before it's permanent.</p>
+            {!!confirmDelete?.names.length && <p className="mb-2">Used on: {confirmDelete.names.join(", ")}</p>}
+            <p>This can't be undone after the 5-second undo window. Pages that use this image will show their missing-picture fallback.</p>
           </>
         }
-        confirmLabel="Delete"
+        confirmLabel={confirmDelete?.names.length ? "Delete Anyway" : confirmDelete?.imgs.length === 1 ? "Delete Image" : "Delete Images"}
+        confirmIcon={<Trash2 className="mr-2 h-4 w-4" aria-hidden />}
         onConfirm={() => confirmDelete && doDeleteImages(confirmDelete.imgs)}
       />
       </div>
@@ -1199,7 +1198,7 @@ function ImageDetail({ img, tags, allTags, broken, onBroken, usages, onAddTag, o
           </Button>
         )}
         <Button size="sm" variant="destructive" onClick={onDelete}>
-          <Trash2 className="w-4 h-4 mr-1" /> Delete
+          <Trash2 className="w-4 h-4 mr-1" /> Delete Image
         </Button>
       </div>
       </div>

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Box, Image as ImageIcon } from "lucide-react";
@@ -16,6 +17,7 @@ vi.mock("../../ImagePickerDialog", async () => {
   const real = await vi.importActual<any>("../../ImagePickerDialog");
   return { ...real, loadLibraryImages: async () => many };
 });
+vi.mock("../../ObjectThumbnail", () => ({ default: () => <div /> }));
 vi.mock("../../VideoPickerDialog", () => ({ loadLibraryVideos: async () => [], videoMatches: () => true }));
 vi.mock("../../ObjectPickerDialog", async () => {
   const real = await vi.importActual<any>("../../ObjectPickerDialog");
@@ -36,33 +38,32 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const setup = (kind: "images" | "objects" = "images", addedRefs: ChatReference[] = []) => {
-  const onPick = vi.fn(), onOpenFull = vi.fn();
+  const picked = vi.fn(), onOpenFull = vi.fn();
+  function Picker() {
+    const [refs, setRefs] = useState(addedRefs);
+    return <LibraryPicker addedRefs={refs} kind={kind} label={label} Icon={kind === "images" ? ImageIcon : Box} active={false} showLabel className="" onPick={ref => { picked(ref); setRefs(current => current.some(r => r.id === ref.id) ? current.filter(r => r.id !== ref.id) : [...current, ref]); }} onOpenFull={onOpenFull} />;
+  }
   const label = kind === "images" ? "Images" : "Objects";
-  const view = render(<LibraryPicker addedRefs={addedRefs} kind={kind} label={label} Icon={kind === "images" ? ImageIcon : Box} active={false} showLabel className="" onPick={onPick} onOpenFull={onOpenFull} />);
+  const view = render(<Picker />);
   fireEvent.click(screen.getByRole("button", { name: label }));
-  return { onPick, onOpenFull, ...view };
+  return { onPick: picked, onOpenFull, ...view };
 };
 const cards = () => within(screen.getByRole("dialog")).getAllByRole("button").filter((b) => /^(photo-|Hero|Flyer)/.test(b.getAttribute("title") ?? ""));
 
 describe("library picker", () => {
-  it("marks attached images, updates with refs and on reopen, and skips duplicates on Done", async () => {
+  it("toggles attached images immediately and keeps the card synchronized", async () => {
     const ref: ChatReference = { kind: "image", id: "i3", name: "photo-03.jpg", url: "url", labels: [] };
-    const { onPick, onOpenFull, rerender } = setup("images", [ref]);
+    const { onPick } = setup("images", [ref]);
     await screen.findByText("60 of 70 shown");
     const card = screen.getByTitle("photo-03.jpg");
-    expect(card).toHaveAccessibleName("photo-03.jpg — Already added");
-    expect(within(card).getByText("Added")).toBeInTheDocument();
+    expect(card).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(card);
-    expect(within(card).getByText("Selected")).toBeInTheDocument();
-    fireEvent.click(screen.getByTitle("photo-04.jpg"));
+    expect(card).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(card);
+    expect(card).toHaveAttribute("aria-pressed", "true");
+    expect(onPick).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
-    expect(onPick.mock.calls.map(([picked]) => picked.id)).toEqual(["i4"]);
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    fireEvent.click(screen.getByRole("button", { name: "Images" }));
-    await screen.findByText("60 of 70 shown");
-    expect(within(screen.getByTitle("photo-03.jpg")).getByText("Added")).toBeInTheDocument();
-    rerender(<LibraryPicker addedRefs={[]} kind="images" label="Images" Icon={ImageIcon} active={false} showLabel className="" onPick={onPick} onOpenFull={onOpenFull} />);
-    expect(screen.queryByText("Added")).toBeNull();
+    expect(onPick).toHaveBeenCalledTimes(2);
   });
   it.each(["video", "object"] as const)("marks already-attached %s separately from selection", (kind) => {
     const item: ChatReference = kind === "video" ? { kind, id: "v", name: "Video", url: "video", labels: [] } : { kind, id: "o", name: "Object", type: "built in code" };
@@ -204,7 +205,7 @@ describe("library picker", () => {
     await screen.findByText("60 of 70 shown");
     fireEvent.click(screen.getByTitle("photo-04.jpg"));
     fireEvent.click(screen.getByTitle("photo-03.jpg"));
-    expect(onPick).not.toHaveBeenCalled();
+    expect(onPick).toHaveBeenCalledTimes(2);
     expect(screen.getByTitle("photo-04.jpg")).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByText("2 selected")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
@@ -219,24 +220,24 @@ describe("library picker", () => {
     expect(screen.getByTitle("photo-03.jpg")).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByText("Nothing selected yet")).toBeInTheDocument();
   });
-  it("Done is disabled with no selection", async () => {
+  it("Done closes with no selection", async () => {
     setup();
     await screen.findByText("60 of 70 shown");
-    expect(screen.getByRole("button", { name: "Done" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Done" })).toBeEnabled();
   });
-  it("Cancel and Escape add nothing", async () => {
+  it("Done and Escape dismiss without changing picked references", async () => {
     const { onPick } = setup();
     await screen.findByText("60 of 70 shown");
     fireEvent.click(screen.getByTitle("photo-03.jpg"));
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     fireEvent.click(screen.getByRole("button", { name: "Images" }));
     await screen.findByText("60 of 70 shown");
-    expect(screen.getByText("Nothing selected yet")).toBeInTheDocument();
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
     fireEvent.click(screen.getByTitle("photo-03.jpg"));
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(onPick).not.toHaveBeenCalled();
+    expect(onPick).toHaveBeenCalledTimes(2);
   });
   it("Enter in the search box finishes only with a selection", async () => {
     const { onPick } = setup();
@@ -296,10 +297,10 @@ describe("library picker", () => {
     const { onPick } = setup();
     await screen.findByText("60 of 70 shown");
     fireEvent.click(screen.getByTitle("photo-03.jpg"));
-    for (const name of ["Cancel", "Done", "Show More"]) {
+    for (const name of ["Done", "Show More"]) {
       expect(fireEvent.keyDown(screen.getByRole("button", { name }), { key: "Enter" })).toBe(true);
     }
-    expect(onPick).not.toHaveBeenCalled();
+    expect(onPick).toHaveBeenCalledTimes(1);
   });
   it("Enter does nothing with nothing selected", async () => {
     const { onPick } = setup();
@@ -330,7 +331,7 @@ describe("library picker", () => {
   it("sort resets on reopen", async () => {
     setup(); await screen.findByText("60 of 70 shown");
     sortTo("name-desc");
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     fireEvent.click(screen.getByRole("button", { name: "Images" }));
     await screen.findByText("60 of 70 shown");

@@ -1,5 +1,6 @@
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { Check, Undo2, Pencil } from "lucide-react";
 import ConfirmDialog from "../ConfirmDialog";
 import { useDesignChat } from "./DesignChatContext";
 import { useEditorSlot } from "./EditorSlot";
@@ -61,6 +62,9 @@ export function ModeSwitchProvider({ children }: { children: ReactNode }) {
         destructive={false} confirmLabel={pending === "chat" ? "Save And Switch" : state?.busy ? "Continue Editing" : "Keep Editing"}
         cancelLabel={pending === "chat" ? "Keep Editing" : "Cancel"} busy={saving}
         secondaryLabel={pending === "chat" ? "Discard And Switch" : undefined}
+        confirmIcon={pending === "chat" ? <Check className="mr-2 h-4 w-4" aria-hidden /> : undefined}
+        secondaryIcon={pending === "chat" ? <Undo2 className="h-4 w-4" aria-hidden /> : undefined}
+        cancelIcon={pending === "chat" ? <Pencil className="h-4 w-4" aria-hidden /> : undefined}
         onSecondary={() => { void Promise.resolve(discardAll()).then(() => { stopEditing(); complete(true); }).catch(() => setError("Your original page couldn't be restored. You are still in Manual Edit Mode.")); }}
         onConfirm={() => {
           if (pending === "chat") void saveAndSwitch();

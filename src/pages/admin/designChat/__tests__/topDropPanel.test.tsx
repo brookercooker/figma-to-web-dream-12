@@ -3,12 +3,13 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { Dialog, DialogTitle } from "@/components/ui/dialog";
 import { TopDropContent, TOP_DROP_PANEL_CLASS } from "../TopDropPanel";
 import { HEADER_HEIGHT_PX } from "../layout";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { topDropPlacement } from "../topDropPlacement";
 
 function Harness() {
   const [open, setOpen] = useState(true);
-  return <Dialog open={open} onOpenChange={setOpen}><TopDropContent aria-describedby={undefined}><DialogTitle>Pick</DialogTitle></TopDropContent></Dialog>;
+  const anchor = useRef<HTMLButtonElement>(null);
+  return <><button ref={anchor}>Opener</button><Dialog open={open} onOpenChange={setOpen}><TopDropContent anchorRef={anchor} aria-describedby={undefined}><DialogTitle>Pick</DialogTitle></TopDropContent></Dialog></>;
 }
 
 describe("component selector panel", () => {
@@ -23,8 +24,8 @@ describe("component selector panel", () => {
     expect(narrow.left).toBe(300); expect(narrow.width).toBe(100);
   });
   it("drops down from the top under the toolbar, never from the side", () => {
-    expect(TOP_DROP_PANEL_CLASS).toContain("slide-in-from-top-full");
-    expect(TOP_DROP_PANEL_CLASS).toContain("slide-out-to-top-full");
+    expect(TOP_DROP_PANEL_CLASS).toContain("slide-in-from-top-2");
+    expect(TOP_DROP_PANEL_CLASS).toContain("slide-out-to-top-2");
     expect(TOP_DROP_PANEL_CLASS).not.toMatch(/from-(right|left)/);
     expect(TOP_DROP_PANEL_CLASS).toContain("max-w-[720px]");
     expect(TOP_DROP_PANEL_CLASS).toContain("max-h-[70vh]");

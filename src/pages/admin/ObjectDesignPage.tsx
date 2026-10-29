@@ -29,6 +29,7 @@ import { useEditorLinkGuard } from "@/components/useEditorLinkGuard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   ArrowLeft, MoreHorizontal, ArrowDown, ArrowUp, Eye, Pencil, Plus, Trash2,
@@ -474,6 +475,18 @@ function SizeControl({
 }
 
 
+function ObjectFontSelect({ value, fallback, onChange }: { value?: TextFont; fallback: TextFont; onChange: (font: TextFont | undefined) => void }) {
+  const name = (font: TextFont) => font === "serif" ? "Cormorant Garamond" : "Figtree";
+  const family = (font: TextFont) => font === "serif" ? "'Cormorant Garamond', Georgia, serif" : "Figtree, system-ui, sans-serif";
+  return <Select value={value ?? "inherited"} onValueChange={font => onChange(font === "inherited" ? undefined : font as TextFont)}>
+    <SelectTrigger aria-label="Font" style={{ fontFamily: family(value ?? fallback) }}><SelectValue /></SelectTrigger>
+    <SelectContent>
+      <SelectItem value="inherited" style={{ fontFamily: family(fallback) }}>{name(fallback)} (default)</SelectItem>
+      {(["serif", "sans"] as const).map(font => <SelectItem key={font} value={font} style={{ fontFamily: family(font) }}>{name(font)}</SelectItem>)}
+    </SelectContent>
+  </Select>;
+}
+
 function TextStyleFields({
   label, value, defaults, onChange, colorOnly,
 }: {
@@ -492,11 +505,7 @@ function TextStyleFields({
         {!colorOnly && (
           <Field label="Font">
             <div>
-              <Choice
-                value={style.font ?? defaults.font}
-                options={TEXT_FONTS}
-                onChange={(v) => set({ font: v })}
-              />
+              <ObjectFontSelect value={style.font} fallback={defaults.font} onChange={font => set({ font })} />
             </div>
           </Field>
         )}
@@ -784,6 +793,7 @@ function IconSelect<T extends string>({
 function Dropdown({
   label, value, options, onChange,
 }: { label: string; value: string; options: { value: string; label: string; icon?: LucideIcon }[]; onChange: (v: string) => void }) {
+  if (label === "Font") return <ObjectFontSelect value={value === "serif" || value === "sans" ? value : undefined} fallback="sans" onChange={font => onChange(font ?? "")} />;
   if (options.length > 0 && options.every((o) => o.icon)) {
     return (
       <span className="flex items-center gap-1.5 text-xs">
@@ -2284,7 +2294,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
       focusPart === `image:${index}` ||
       focusPart === `caption:${index}` ||
       focusPart.startsWith(`imagetext:${index}:`);
-    const imgOpen = openSub[imgKey] ?? imgFocused;
+    const imgOpen = openSub[imgKey] ?? true;
     const label = image.alt?.trim() || (image.url ? image.url.split("/").pop() : "No image selected");
 
     return (
@@ -2427,7 +2437,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
           </div>
           {(image.texts ?? []).map((t, ti) => {
             const tKey = `txt:${section.id}:${index}:${ti}`;
-            const tOpen = openSub[tKey] ?? focusPart === `imagetext:${index}:${ti}`;
+            const tOpen = openSub[tKey] ?? true;
             const kindLabel = IMAGE_TEXT_KINDS.find((k) => k.value === t.kind)?.label ?? "Text";
             const isDragging = dragText?.sectionId === section.id && dragText.index === index && dragText.ti === ti;
             const dropHere =
@@ -3045,8 +3055,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     return (
       <div key={key} data-inspector-part={part} className="relative scroll-mt-24">
         <ToolHeader icon={Icon} title={title} menu={menu} />
-        {order.map((g, gi) => buckets[g]?.length ? (
-          <ToolGroup key={g} icon={g === "Images" ? ImageIcon : g === "Layout" ? LayoutGrid : g === "Border & shadow" ? Frame : g === "Videos" ? VideoIcon : g === "Content" ? TypeIcon : Palette} title={isImages || isVideos ? g : `${g === "Content" ? "Text content" : "Text style"}`} defaultOpen={gi === 0}>
+        {order.map((g) => buckets[g]?.length ? (
+          <ToolGroup key={g} icon={g === "Images" ? ImageIcon : g === "Layout" ? LayoutGrid : g === "Border & shadow" ? Frame : g === "Videos" ? VideoIcon : g === "Content" ? TypeIcon : Palette} title={isImages || isVideos ? g : `${g === "Content" ? "Text content" : "Text style"}`}>
             {buckets[g]}
           </ToolGroup>
         ) : null)}
@@ -5015,12 +5025,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
                 onChange={(v) => patchImageText(toolbar.sectionId, imgText.img, imgText.t, { kind: v as ImageTextKind })}
               />
             )}
-            <Dropdown
-              label="Font"
-              value={es.font ?? kindDefaults?.font ?? defaultFont[fieldKey] ?? "sans"}
-              options={TEXT_FONTS.map((f) => ({ value: f.value as string, label: f.label }))}
-              onChange={(v) => set({ font: (v || undefined) as TextFont | undefined })}
-            />
+            <ObjectFontSelect value={es.font} fallback={(kindDefaults?.font ?? defaultFont[fieldKey] ?? "sans") as TextFont} onChange={font => set({ font })} />
             <SizeControl
               style={es}
               defaultSize={kindDefaults?.size ?? (fieldKey === "textStyle" ? "xl" : fieldKey === "bodyStyle" || extraIdx >= 0 ? "md" : "sm")}
