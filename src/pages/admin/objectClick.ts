@@ -1,7 +1,7 @@
 // Shared-object clicks from the public edit frame: message validation, which dialog to show, copy naming and swaps.
 import type { InlineEdits } from "@/components/InlineEditSurface";
 
-export interface ObjectClick { objectId: string; componentKey: string | null; name: string; slot: string; siteWide: boolean }
+export interface ObjectClick { objectId: string | null; componentKey: string | null; name: string; slot: string; siteWide: boolean }
 export type ObjectClickKind = "site" | "copy" | "shared";
 
 const SITE_WIDE_KEYS = new Set(["Header", "Footer"]);
@@ -10,11 +10,12 @@ const SWAP_PREFIX = "objectSwap:";
 /** Accepts the frame's `edit-object-click` payload; anything malformed is ignored (null). */
 export function parseObjectClick(data: unknown): ObjectClick | null {
   const d = data as Record<string, unknown> | null;
-  if (!d || typeof d.objectId !== "string" || !d.objectId || typeof d.slot !== "string" || !d.slot) return null;
+  if (!d || typeof d.slot !== "string" || !d.slot) return null;
   if (d.componentKey != null && typeof d.componentKey !== "string") return null;
   const componentKey = (d.componentKey as string | null | undefined) || null;
+  if (!(typeof d.objectId === "string" && d.objectId) && !(d.objectId === null && d.siteWide === true && componentKey && SITE_WIDE_KEYS.has(componentKey))) return null;
   const name = typeof d.name === "string" && d.name.trim() ? d.name.trim().slice(0, 120) : componentKey ?? "This object";
-  return { objectId: d.objectId, componentKey, name, slot: d.slot, siteWide: d.siteWide === true };
+  return { objectId: d.objectId as string | null, componentKey, name, slot: d.slot, siteWide: d.siteWide === true };
 }
 
 /** The swaps recorded in a page's inline edits: slot → copied object id. */
@@ -27,7 +28,7 @@ export const swapKey = (slot: string) => `${SWAP_PREFIX}${slot}`;
 
 export function objectClickKind(click: ObjectClick, edits: InlineEdits, rowSiteWide = false): ObjectClickKind {
   if (click.siteWide || rowSiteWide || (click.componentKey && SITE_WIDE_KEYS.has(click.componentKey))) return "site";
-  if (Object.values(objectSwaps(edits)).includes(click.objectId)) return "copy";
+  if (click.objectId && Object.values(objectSwaps(edits)).includes(click.objectId)) return "copy";
   return "shared";
 }
 

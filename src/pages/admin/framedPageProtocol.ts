@@ -20,7 +20,21 @@ export function editMap(value: unknown): InlineEdits | null {
 }
 export const HELD_BLOCKS_MAX = 50;
 export const HELD_BLOCKS_MAX_BYTES = 500_000;
-export interface HeldObjectData { status: string; name: string; component_key: string | null; content: unknown }
+export interface HeldObjectData { status: string; name: string; component_key: string | null; content: unknown; inline_edits?: InlineEdits }
+export type ObjectSwapData = HeldObjectData & { id: string; inline_edits: InlineEdits };
+/** Swap snapshots only travel to the frame; stored inline edits remain slot → id. */
+export function objectSwapPayload(swaps: Record<string, string>, objects?: Record<string, HeldObjectData>): Record<string, ObjectSwapData> {
+  const out: Record<string, ObjectSwapData> = {};
+  for (const [slot, id] of Object.entries(swaps)) {
+    const object = objects?.[id];
+    if (!object) continue;
+    const snapshot = { id, ...object, inline_edits: object.inline_edits ?? {} };
+    try {
+      if (new Blob([JSON.stringify({ ...out, [slot]: snapshot })]).size <= HELD_BLOCKS_MAX_BYTES) out[slot] = snapshot;
+    } catch { /* Omit a snapshot that cannot be transported safely. */ }
+  }
+  return out;
+}
 /** Object snapshots are transport-only; never let them reach pages.content. */
 export function stripHeldObjects<T>(blocks: readonly T[]): T[] {
   return blocks.map(block => {

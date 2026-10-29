@@ -4,11 +4,29 @@ import { applySwap, copyName, objectClickKind, objectSwaps, parseObjectClick, si
 import ObjectClickDialog from "../ObjectClickDialog";
 import ConfirmDialog from "../ConfirmDialog";
 import { fontMenu } from "../designChat/fontOptions";
+import { objectSwapPayload } from "../framedPageProtocol";
+import { uniquePageUsages } from "../objectUsages";
 
 afterEach(cleanup);
 const click = { objectId: "o1", componentKey: "AboutUs", name: "About Us", slot: "s1", siteWide: false };
 
 describe("edit-object-click", () => {
+  it("accepts the exact site header payload with a null object id", () => {
+    const payload = { type: "edit-object-click", objectId: null, componentKey: "Header", name: "Header", slot: "site-header", siteWide: true };
+    expect(parseObjectClick(payload)).toEqual({ objectId: null, componentKey: "Header", name: "Header", slot: "site-header", siteWide: true });
+    expect(parseObjectClick({ ...payload, componentKey: "Footer" })?.objectId).toBeNull();
+    expect(parseObjectClick({ ...payload, componentKey: "Categories" })).toBeNull();
+    expect(parseObjectClick({ ...payload, siteWide: false })).toBeNull();
+  });
+  it("sends the copied object's full saved data with the swap without changing stored edits", () => {
+    const edits = { "objectSwap:code:home-categories": "copy" };
+    const row = { status: "Ready", name: "Categories (Homepage)", component_key: "Categories", content: { sections: [] }, inline_edits: { "0": "Saved wording" } };
+    expect(objectSwapPayload(objectSwaps(edits), { copy: row })).toEqual({ "code:home-categories": { id: "copy", ...row } });
+    expect(edits).toEqual({ "objectSwap:code:home-categories": "copy" });
+  });
+  it("shows the Homepage once by name for both home paths", () => {
+    expect(uniquePageUsages([{ path: "/home", name: "/home" }, { path: "/", name: "Homepage" }, { path: "/about", name: "About" }]).map(u => u.name)).toEqual(["Homepage", "About"]);
+  });
   it("validates the frame message", () => {
     expect(parseObjectClick({ type: "edit-object-click", objectId: "o1", slot: "s1", name: "About Us", componentKey: "AboutUs" })).toEqual(click);
     expect(parseObjectClick({ objectId: "", slot: "s1" })).toBeNull();
