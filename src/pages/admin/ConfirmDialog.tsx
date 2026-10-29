@@ -36,7 +36,7 @@ export default function ConfirmDialog({
             <div className="text-sm text-muted-foreground">{description}</div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        <AlertDialogFooter className="flex-wrap gap-2 sm:space-x-0">
           <AlertDialogCancel className="gap-2" disabled={busy}>{cancelIcon}{cancelLabel}</AlertDialogCancel>
           {secondaryLabel && <Button type="button" variant="outline" className="gap-2" disabled={busy} onClick={onSecondary}>{secondaryIcon}{secondaryLabel}</Button>}
           <AlertDialogAction
