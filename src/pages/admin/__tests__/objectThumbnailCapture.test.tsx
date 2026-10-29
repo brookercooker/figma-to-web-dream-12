@@ -26,7 +26,9 @@ it("applies and restores saved edits only inside its own capture container", asy
     return { toBlob: (done: (blob: Blob) => void) => done(new Blob(["thumbnail"])) };
   });
   let thumbnail: string | null = null;
-  await act(async () => { thumbnail = await requestObjectThumbnail("isolated-object"); });
+  let pending: Promise<string | null> = Promise.resolve(null);
+  await act(async () => { pending = requestObjectThumbnail("isolated-object"); await Promise.resolve(); });
+  thumbnail = await pending;
   expect(thumbnail).toMatch(/^https:\/\/example.com\/thumb.jpg/);
   expect(capture).toHaveBeenCalledOnce();
   expect(heading.firstChild).toBe(originalNode);
