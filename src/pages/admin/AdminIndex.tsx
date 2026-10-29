@@ -91,6 +91,15 @@ function AdminShell() {
   const { setSlot, saveAll, discardAll, hasChanges, requestAdd, historyControls } = useEditorSlot();
   // Saves the editor's held changes, then leaves edit mode; on a failed save it stays in edit mode.
   const [finishing, setFinishing] = useState(false);
+  // Save Changes is enabled only while the editor holds unsaved edits; editors expose that as a function, so it is checked often.
+  const [dirty, setDirty] = useState(false);
+  useEffect(() => {
+    if (!manual) { setDirty(false); return; }
+    const check = () => setDirty(hasChanges());
+    check();
+    const id = window.setInterval(check, 400);
+    return () => window.clearInterval(id);
+  }, [manual, hasChanges]);
   useEffect(() => {
     if (!manual || objectOpen || finishing) return;
     const shortcut = (event: KeyboardEvent) => {
@@ -252,7 +261,12 @@ function AdminShell() {
               <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />
 
               <div aria-hidden className={cn("h-9 w-px bg-border shrink-0", compact && "hidden")} />
-              {!editing && <SubmitButton compact={compact} />}
+              {!manual && !editing && <SubmitButton compact={compact} />}
+              {manual && (
+                <Button type="button" size="sm" className="shrink-0 gap-1.5" aria-label="Save Changes" title="Save Changes" disabled={finishing || !dirty} onClick={() => void saveChanges()}>
+                  <Save className="h-4 w-4" aria-hidden />{!compact && (finishing ? "Saving…" : "Save Changes")}
+                </Button>
+              )}
 
             </div>
           </header>
@@ -379,8 +393,7 @@ function AdminShell() {
                 {designChat.state?.busy && <p role="status" className="flex items-center gap-1.5 text-xs font-medium"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />Claude Is Still Working on a Change</p>}
                 <ManualPageSwitcher navigation={pageNavigation} />
                 <div className="flex flex-wrap gap-1.5">
-                  <Button type="button" size="sm" className="flex-1 gap-1.5" disabled={finishing} onClick={() => void saveChanges()}><Check className="h-4 w-4" aria-hidden />{finishing ? "Saving…" : "Finish Editing"}</Button>
-                  <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing} onClick={discardEditing}><Undo2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
+                  <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing} onClick={discardEditing}><Trash2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
                 </div>
               </div>
               <div ref={setSlot} aria-label="Page Editing Options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
