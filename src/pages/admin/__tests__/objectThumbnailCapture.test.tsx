@@ -1,4 +1,4 @@
-import { cleanup, render } from "@testing-library/react";
+import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { requestObjectThumbnail } from "../objectThumbnailCapture";
 
@@ -25,7 +25,9 @@ it("applies and restores saved edits only inside its own capture container", asy
     expect(heading.textContent).toBe("Live manager panel");
     return { toBlob: (done: (blob: Blob) => void) => done(new Blob(["thumbnail"])) };
   });
-  expect(await requestObjectThumbnail("isolated-object")).toMatch(/^https:\/\/example.com\/thumb.jpg/);
+  let thumbnail: string | null = null;
+  await act(async () => { thumbnail = await requestObjectThumbnail("isolated-object"); });
+  expect(thumbnail).toMatch(/^https:\/\/example.com\/thumb.jpg/);
   expect(capture).toHaveBeenCalledOnce();
   expect(heading.firstChild).toBe(originalNode);
   expect(live.container.querySelectorAll("h1")).toHaveLength(1);

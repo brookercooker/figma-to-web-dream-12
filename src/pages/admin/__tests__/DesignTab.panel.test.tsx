@@ -53,6 +53,7 @@ it("replaces the hint with one options panel through repeated frame selections",
   select("0"); select("1"); select("0");
   expect(hintCount()).toBe(0);
   expect(slot.querySelectorAll('[aria-label="Font"]')).toHaveLength(1);
-  expect(slot.querySelectorAll('button[aria-expanded]')).toHaveLength(4);
+  expect(slot.querySelectorAll('button[aria-expanded]')).toHaveLength(5);
+  expect(Array.from(slot.querySelectorAll('button[aria-expanded]')).filter(el => el.textContent?.trim() === "Text")).toHaveLength(1);
   expect(slot.querySelector(".space-y-4.p-3")?.childElementCount).toBe(selectedChildren);
 });
