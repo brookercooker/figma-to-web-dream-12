@@ -8,7 +8,7 @@ export default function ManualHistoryControls({ disabled }: { disabled: boolean 
     const label = kind === "undo" ? "Undo" : "Redo";
     const action = historyControls?.[`${kind}Label`];
     const Icon = kind === "undo" ? Undo2 : Redo2;
-    return <Tooltip key={kind}><TooltipTrigger asChild><span className="inline-flex"><Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={label}
+    return <Tooltip key={kind}><TooltipTrigger asChild><span className="inline-flex"><Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" aria-label={label}
       disabled={disabled || !action} onClick={() => historyControls?.[kind]()}><Icon className="h-4 w-4" aria-hidden /></Button></span></TooltipTrigger>
       <TooltipContent>{action ? `${label}: ${action}` : label}</TooltipContent></Tooltip>;
   })}</TooltipProvider>;

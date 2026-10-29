@@ -43,6 +43,14 @@ describe("held blocks payload", () => {
   it("clamps edit-size", () => { expect(clampEditSize(10)).toBe(400); expect(clampEditSize(99999)).toBe(20000); expect(clampEditSize(1500)).toBe(1500); });
 });
 describe("held blocks handshake", () => {
+  it("does not replace an open frame when its signed base is refreshed or held blocks change before ready", () => {
+    const s = setup(); const frame = s.frame();
+    s.rerender(<FramedPageEditor {...s.props} base="https://public.example.com/?token=new" sectionRevision={1} />);
+    expect(s.frame()).toBe(frame);
+    s.receive("edit-ready", { capabilities: { heldBlocks: true } });
+    expect(s.frame()).toBe(frame);
+    expect(s.sent("edit-init")).toHaveLength(1);
+  });
   it("preserves matching scroll across editor reloads without reloading for inline updates", () => {
     const s = setup(); s.receive("edit-ready", { capabilities: { heldBlocks: true } });
     s.receive("page-scroll", { path: "/draft", y: 640 });

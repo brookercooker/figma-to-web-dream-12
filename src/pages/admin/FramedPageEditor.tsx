@@ -38,7 +38,11 @@ export interface FramedPageEditorProps {
   fill?: boolean;
 }
 export default function FramedPageEditor(props: FramedPageEditorProps) {
-  const target = editFrameUrl(props.base, props.path);
+  // A refreshed signed address must not replace an already open editor. Retry may explicitly adopt it.
+  const [opening, setOpening] = useState(() => ({ path: props.path, base: props.base }));
+  const openingBase = opening.path === props.path ? opening.base ?? props.base : props.base;
+  const target = editFrameUrl(openingBase, props.path);
+  useEffect(() => { if (opening.path !== props.path || (!opening.base && props.base)) setOpening({ path: props.path, base: props.base }); }, [opening.path, opening.base, props.path, props.base]);
   const origin = target ? new URL(target).origin : null;
   const frame = useRef<HTMLIFrameElement>(null);
   const latest = useRef(props); latest.current = props;
@@ -51,7 +55,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const [sized, setSized] = useState(false);
   // Section changes reload only frames that cannot draw held blocks themselves.
   const [frameRevision, setFrameRevision] = useState(props.sectionRevision ?? 0);
-  useEffect(() => { if (!heldCapable) setFrameRevision(props.sectionRevision ?? 0); }, [props.sectionRevision, heldCapable]);
+  useEffect(() => { if (status === "ready" && !heldCapable) setFrameRevision(props.sectionRevision ?? 0); }, [props.sectionRevision, heldCapable, status]);
   const heldPayload = heldBlocksPayload(props.heldBlocks ?? [], moveCapable, props.heldObjects);
   const heldInFrame = heldCapable && heldPayload !== null;
   const capableRef = useRef(false);
@@ -177,7 +181,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   return <div className={`relative w-full ${filling ? "h-full" : ""}`}>
     {status !== "ready" && <div role="status" className="flex items-center justify-center gap-3 bg-muted p-6 text-sm text-muted-foreground">
       {status === "loading" && target ? "Loading the page editor…" : "Couldn't reach the public page"}
-      {(status === "failed" || !target) && <Button variant="outline" size="sm" onClick={() => setAttempt((n) => n + 1)}>Retry</Button>}
+      {(status === "failed" || !target) && <Button variant="outline" size="sm" onClick={() => { setOpening({ path: props.path, base: props.base }); setAttempt((n) => n + 1); }}>Retry</Button>}
     </div>}
     {target && <iframe key={`${target}|${attempt}|${frameRevision}`} ref={frame} src={target} title="Public Page Editor" data-site-editor="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : filling ? "block h-full" : "block"}`} height={filling ? "100%" : height} onError={() => setStatus("failed")} />}
   </div>;

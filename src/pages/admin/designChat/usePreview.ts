@@ -139,6 +139,8 @@ export function usePreview(state: RelayState | null, path: string | null = null,
 
   /** The helper saw the preview's new build: reload now and a few times just after (the build is served a little later). */
   const buildSeen = useCallback((showing: boolean) => {
+    // A confirmed build supersedes the older builder-finished retry series.
+    reloadTimers.current.forEach(clearTimeout); reloadTimers.current = [];
     resetSiteManifestCache();
     void syncManifestPages();
     buildFrame.current = seq.current + 1;
@@ -171,6 +173,8 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   useEffect(() => {
     if (firstPath.current) { firstPath.current = false; return; }
     remembered.current = null; // a page was picked on purpose
+    reloadTimers.current.forEach(clearTimeout); reloadTimers.current = [];
+    followTimers.current.forEach(clearTimeout); followTimers.current = [];
     pinned.current = path;
     if (loading.current) reloadAfter.current = true; // an address is being fetched for the old page; fetch again when it's done
     else loadPreview();

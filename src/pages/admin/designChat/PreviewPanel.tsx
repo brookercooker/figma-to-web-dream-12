@@ -21,7 +21,7 @@ export default function PreviewPanel() {
   const [updated, setUpdated] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   usePreviewEdits(sectionRef);
-  usePreviewScroll(sectionRef, editing);
+  usePreviewScroll(sectionRef, editing, preview.shownId);
   useEffect(() => {
     if (!preview.completedAt) return;
     setUpdated(true);

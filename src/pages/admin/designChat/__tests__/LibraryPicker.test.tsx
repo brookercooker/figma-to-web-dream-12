@@ -268,14 +268,14 @@ describe("library picker", () => {
   });
   const titles = () => cards().map((c) => c.getAttribute("title"));
   const sortTo = (v: string) => fireEvent.change(screen.getByLabelText("Sort"), { target: { value: v } });
-  it("Enter finishes after clicking a card", async () => {
+  it("Enter on a card retains native keyboard activation for toggling", async () => {
     const { onPick } = setup();
     await screen.findByText("60 of 70 shown");
     const card = screen.getByTitle("photo-03.jpg");
     fireEvent.click(card); card.focus();
-    fireEvent.keyDown(card, { key: "Enter" });
+    expect(fireEvent.keyDown(card, { key: "Enter" })).toBe(true);
     expect(onPick).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
   it("Enter finishes even when focus is on the page body", async () => {
     const { onPick } = setup();

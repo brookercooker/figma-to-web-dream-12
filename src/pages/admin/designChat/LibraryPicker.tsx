@@ -148,6 +148,8 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const handleEnter = (e: KeyboardEvent) => {
     if (e.key !== "Enter" || e.isComposing || e.defaultPrevented) return;
     const t = e.target instanceof Element ? e.target : null;
+    // Cards own keyboard activation, including deselection of an attached reference.
+    if (t?.closest("[data-picker-card]")) return;
     if (t?.closest("[data-picker-own-enter]")) return;
     if (countRef.current === 0) return; // cards select natively; elsewhere nothing happens
     e.preventDefault();
