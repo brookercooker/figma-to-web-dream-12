@@ -3,9 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
-const mocks = vi.hoisted(() => ({ remote: true, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
+const mocks = vi.hoisted(() => ({ remote: true, slot: null as HTMLElement | null, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
 vi.mock("../siteManifest", async (importOriginal) => ({ ...await importOriginal<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.reject(new Error("fixture")), manifestHasPage: () => mocks.remote, draftEmbedUrl: () => "https://public.example.com/?embed=fixture" }));
-vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: null, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: (cb: any) => mocks.hasChanges = cb, registerHistory: (cb: any) => mocks.history = cb, registerAdd: (cb: any) => mocks.add = cb }) }));
+vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: mocks.slot, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: (cb: any) => mocks.hasChanges = cb, registerHistory: (cb: any) => mocks.history = cb, registerAdd: (cb: any) => mocks.add = cb }) }));
 vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => null }));
 vi.mock("../designChat/contentSync", () => ({ notifyContentEdited: vi.fn() }));
 vi.mock("@/prototype/client", () => ({ supabase: { from: (table: string) => {
@@ -23,7 +23,7 @@ vi.mock("../CreatePageDialog", () => ({ default: () => null }));
 vi.mock("../TagsPanel", () => ({ default: () => null }));
 vi.mock("../PageMiniPreview", () => ({ default: () => null }));
 beforeEach(() => { mocks.remote = true; mocks.path = "/draft"; mocks.history = null; mocks.failSave = false; mocks.writes.mockClear(); mocks.original.content = null; mocks.original.inline_edits = {}; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
-afterEach(cleanup);
+afterEach(() => { cleanup(); mocks.slot?.remove(); mocks.slot = null; });
 describe("public page save/discard integration", () => {
   it("routes trusted navigation through the caller and resets Sections on a new page opening", async () => {
     mocks.original.content = [{ id: "old-video", type: "video", url: "/old.mp4", align: "left", width: 100 }];
@@ -37,10 +37,13 @@ describe("public page save/discard integration", () => {
     send("edit-ready", { capabilities: { heldBlocks: true } });
     send("edit-block-select", { id: "old-video" });
     expect(post).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", activeBlockId: "old-video" }), "https://public.example.com");
+    send("edit-change", { scope: "page", next: { "0": "Unsaved" } });
+    expect(mocks.history.undoLabel).toBe("text change");
     send("edit-navigate", { path: "/about" });
     expect(onNavigate).toHaveBeenCalledWith("/about");
     view.rerender(<MemoryRouter><DesignTab key="about" embedded pageId="about" onNavigate={onNavigate} /></MemoryRouter>);
     const next = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+    expect(mocks.history.undoLabel).toBe(""); expect(mocks.history.redoLabel).toBe("");
     expect(new URL(next.src).pathname).toBe("/about");
     expect(next).not.toBe(frame);
     expect(view.container.querySelector('[data-section-row="old-video"]')).toBeNull();
@@ -103,6 +106,25 @@ describe("public page save/discard integration", () => {
     mocks.failSave = false; await act(async () => { expect(await mocks.save()).toBe(true); }); expect(mocks.history.undoLabel).toBe("");
     s.send("edit-change", { scope: "page", next: { "0": "New" } });
     await act(async () => { await mocks.discard(); }); expect(mocks.history.undoLabel).toBe("");
+  });
+  it("video width, replacement, deletion and Reset All use the same full history", async () => {
+    mocks.slot = document.createElement("div"); document.body.appendChild(mocks.slot);
+    mocks.original.content = [{ id: "video", type: "video", url: "/original.mp4", align: "left", width: 100 }];
+    const s = await openRemote(true, true);
+    const lastBlocks = () => s.post.mock.calls.at(-1)?.[0].heldBlocks;
+    s.send("edit-block-select", { id: "video" });
+    fireEvent.click(screen.getByRole("button", { name: "Width 50%" }));
+    expect(lastBlocks()[1].width).toBe(50); s.send("edit-undo"); expect(lastBlocks()[1].width).toBe(100);
+    s.send("edit-redo"); expect(lastBlocks()[1].width).toBe(50);
+    fireEvent.click(screen.getByRole("button", { name: "Replace Video" })); fireEvent.click(screen.getByRole("button", { name: "Pick Video" }));
+    expect(lastBlocks()[1].url).toBe("/held.mp4"); s.send("edit-undo"); expect(lastBlocks()[1].url).toBe("/original.mp4");
+    fireEvent.click(screen.getAllByRole("button", { name: "Delete Block" })[0]); expect(lastBlocks()).toHaveLength(1);
+    expect(mocks.history.redoLabel).toBe(""); s.send("edit-undo"); expect(lastBlocks()[1].id).toBe("video");
+    s.send("edit-change", { scope: "page", next: { "style:0": '{"font-size":"32px"}' } });
+    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits on This Page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits", exact: true }));
+    expect(mocks.history.undoLabel).toBe(""); expect(mocks.history.redoLabel).toBe("");
+    expect(lastBlocks()[1].width).toBe(100); expect(mocks.writes).not.toHaveBeenCalled();
   });
   it("passes existing positional edits unchanged on init and saves only the held map", async () => {
     const original = { "0.0.3": "Saved words", "style:0.1": '{"font-size":"24px"}' };
