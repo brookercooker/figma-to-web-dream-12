@@ -43,6 +43,20 @@ describe("held blocks payload", () => {
   it("clamps edit-size", () => { expect(clampEditSize(10)).toBe(400); expect(clampEditSize(99999)).toBe(20000); expect(clampEditSize(1500)).toBe(1500); });
 });
 describe("held blocks handshake", () => {
+  it("preserves matching scroll across editor reloads without reloading for inline updates", () => {
+    const s = setup(); s.receive("edit-ready", { capabilities: { heldBlocks: true } });
+    s.receive("page-scroll", { path: "/draft", y: 640 });
+    const original = s.frame();
+    s.rerender(<FramedPageEditor {...s.props} edits={{ wording: "changed" }} />);
+    expect(s.frame()).toBe(original);
+    s.rerender(<FramedPageEditor {...s.props} path="/other" />);
+    s.receive("edit-ready");
+    expect(s.sent("restore-scroll")).toHaveLength(0);
+    s.rerender(<FramedPageEditor {...s.props} />);
+    const post = vi.spyOn(s.frame().contentWindow as Window, "postMessage");
+    s.receive("edit-ready");
+    expect(post).toHaveBeenCalledWith({ source: "nova-manager", type: "restore-scroll", path: "/draft", y: 640 }, "https://public.example.com");
+  });
   it("accepts undo and redo only from the ready exact-origin edit frame", () => {
     const onUndo = vi.fn(); const onRedo = vi.fn(); const s = setup({ onUndo, onRedo });
     s.receive("edit-undo"); s.receive("edit-redo"); expect(onUndo).not.toHaveBeenCalled(); expect(onRedo).not.toHaveBeenCalled();
