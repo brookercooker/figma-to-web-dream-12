@@ -22,6 +22,7 @@ const lazyEntry = (
  */
 export const objectRegistry: Record<string, RegistryEntry> = {
   Header:               lazyEntry(() => import("@/components/Header"), 1280, 200),
+  Footer:               lazyEntry(() => import("@/components/Footer"), 1280, 420),
   AboutUs:              lazyEntry(() => import("./AboutUs")),
   BrandRepresentation:  lazyEntry(() => import("./BrandRepresentation")),
   Categories:           lazyEntry(() => import("./Categories")),

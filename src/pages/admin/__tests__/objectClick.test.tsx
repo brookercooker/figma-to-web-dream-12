@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { applySwap, copyName, objectClickKind, objectSwaps, parseObjectClick, unusedCopies } from "../objectClick";
+import { applySwap, copyName, objectClickKind, objectSwaps, parseObjectClick, siteWideLabel, unusedCopies } from "../objectClick";
 import ObjectClickDialog from "../ObjectClickDialog";
 import ConfirmDialog from "../ConfirmDialog";
 import { fontMenu } from "../designChat/fontOptions";
@@ -19,6 +19,7 @@ describe("edit-object-click", () => {
   it("chooses site-wide, page-only copy or shared", () => {
     expect(objectClickKind({ ...click, componentKey: "Header" }, {})).toBe("site");
     expect(objectClickKind({ ...click, componentKey: "Footer" }, {})).toBe("site");
+    expect(siteWideLabel("Footer")).toBe("Footer");
     expect(objectClickKind({ ...click, siteWide: true }, {})).toBe("site");
     expect(objectClickKind(click, { "objectSwap:x": "o1" })).toBe("copy");
     expect(objectClickKind(click, {})).toBe("shared");
