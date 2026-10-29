@@ -61,7 +61,7 @@ describe("edit-frame protocol", () => {
     s.receive("edit-ready", {}, "https://public.example.com", window);
     expect(s.send).not.toHaveBeenCalled();
     s.receive("edit-ready");
-    expect(s.send).toHaveBeenCalledWith({ source: "nova-manager", type: "edit-init", edits: {}, objectEdits: {}, collapsed: [], selectedKey: null }, "https://public.example.com");
+    expect(s.send).toHaveBeenCalledWith({ source: "nova-manager", type: "edit-init", edits: {}, objectEdits: {}, collapsed: [], selectedKey: null, objectSwaps: {} }, "https://public.example.com");
     s.rerender(<FramedPageEditor {...s.props} edits={{ "0": "Changed" }} collapsed={new Set(["0"])} selectedKey="page|0" />);
     expect(s.send).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", edits: { "0": "Changed" }, collapsed: ["0"], selectedKey: "page|0" }), "https://public.example.com");
     expect(s.container.querySelector("iframe")).toBe(s.frame);
