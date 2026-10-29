@@ -855,8 +855,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
         {/* Held sections: full pane width, selected (never played or opened) until saved into the public page. */}
         {!heldInFrame && <div data-held-sections className="w-full">
           {blocks.filter((b): b is RenderBlock => !isPageContent(b)).map((b)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
-            className={`relative ${embedded ? "cursor-pointer [&_iframe]:pointer-events-none [&_video]:pointer-events-none" : ""} ${embedded && activeId === b.id ? "outline outline-2 -outline-offset-2 outline-primary" : ""}`}
+            className={`relative ${embedded ? "cursor-pointer [&_iframe]:pointer-events-none [&_video]:pointer-events-none" : ""}`}
             onClickCapture={embedded ? (e) => { if ((e.target as HTMLElement).closest("[contenteditable=true],input,textarea,select")) return; e.preventDefault(); setActiveId(b.id); setInlineSel(null); } : undefined}>
+            {/* The bar takes its own row above the section (like the public frame's reserved space), never covering content. */}
+            {embedded && <div data-section-bar className={`flex h-7 items-center px-3 text-xs ${activeId === b.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>{blockLabel(b)}</div>}
             <BlockView block={b} />
           </section>)}
         </div>}
