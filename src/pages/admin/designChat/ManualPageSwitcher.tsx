@@ -109,7 +109,7 @@ export default function ManualPageSwitcher({ navigation }: { navigation: Navigat
     <Dialog open={!!pending} onOpenChange={value => { if (!value && !disabled) navigation.setPending(null); }}>
       <DialogContent aria-describedby={undefined}>
         <DialogHeader><DialogTitle>Save Your Changes to {workingPage?.name}?</DialogTitle></DialogHeader>
-        <DialogFooter className="flex-wrap gap-2">
+        <DialogFooter className="flex-wrap gap-2 sm:space-x-0">
           <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => navigation.setPending(null)}><Pencil className="h-4 w-4" aria-hidden />Stay Here</Button>
           <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => void navigation.resolve(false)}><Undo2 className="h-4 w-4" aria-hidden />Discard and Go</Button>
           <Button className="gap-2" disabled={disabled} onClick={() => void navigation.resolve(true)}><Check className="h-4 w-4" aria-hidden />Save and Go</Button>
