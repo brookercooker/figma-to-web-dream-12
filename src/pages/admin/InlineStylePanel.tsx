@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EDITOR_FONTS, inheritedFont } from "./designChat/fontOptions";
+import { EDITOR_FONTS, inheritedFont, inheritedWeight } from "./designChat/fontOptions";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, Film, TextCursorInput, icons } from "lucide-react";
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { LINK_ICONS, readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
@@ -343,7 +343,7 @@ export default function InlineStylePanel({
           </ToolField>
           <ToolField label="Weight">
             <select className="h-10 w-full rounded-md border bg-background px-2 text-sm" value={style["font-weight"] ?? ""} onChange={(e) => apply("font-weight", e.target.value)}>
-              <option value="">Default</option>
+              <option value="">{inheritedWeight(computed.fontWeight)} (default)</option>
               {WEIGHTS.map(([l, v]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </ToolField>
