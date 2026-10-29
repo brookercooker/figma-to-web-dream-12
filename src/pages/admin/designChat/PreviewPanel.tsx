@@ -7,6 +7,7 @@ import { useDesignChat, type Device } from "./DesignChatContext";
 import PreviewProgress from "./PreviewProgress";
 import DrawLayer from "./DrawLayer";
 import { usePreviewEdits } from "./previewEdits";
+import { usePreviewScroll } from "./frameScroll";
 
 const WIDTH: Record<Device, string> = { mobile: "390px", tablet: "820px", desktop: "100%" };
 
@@ -20,6 +21,7 @@ export default function PreviewPanel() {
   const [updated, setUpdated] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   usePreviewEdits(sectionRef);
+  usePreviewScroll(sectionRef, editing);
   useEffect(() => {
     if (!preview.completedAt) return;
     setUpdated(true);
