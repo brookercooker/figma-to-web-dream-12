@@ -475,6 +475,18 @@ function SizeControl({
 }
 
 
+function ObjectFontSelect({ value, fallback, onChange }: { value?: TextFont; fallback: TextFont; onChange: (font: TextFont | undefined) => void }) {
+  const name = (font: TextFont) => font === "serif" ? "Cormorant Garamond" : "Figtree";
+  const family = (font: TextFont) => font === "serif" ? "'Cormorant Garamond', Georgia, serif" : "Figtree, system-ui, sans-serif";
+  return <Select value={value ?? "inherited"} onValueChange={font => onChange(font === "inherited" ? undefined : font as TextFont)}>
+    <SelectTrigger aria-label="Font" style={{ fontFamily: family(value ?? fallback) }}><SelectValue /></SelectTrigger>
+    <SelectContent>
+      <SelectItem value="inherited" style={{ fontFamily: family(fallback) }}>{name(fallback)} (default)</SelectItem>
+      {(["serif", "sans"] as const).map(font => <SelectItem key={font} value={font} style={{ fontFamily: family(font) }}>{name(font)}</SelectItem>)}
+    </SelectContent>
+  </Select>;
+}
+
 function TextStyleFields({
   label, value, defaults, onChange, colorOnly,
 }: {
