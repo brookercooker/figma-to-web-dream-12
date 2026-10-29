@@ -140,7 +140,6 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const toggle = (r: Row) => setSelected((s) => s.some((x) => x.ref.id === r.ref.id) ? s.filter((x) => x.ref.id !== r.ref.id) : [...s, r]);
   const finish = () => {
     if (selected.length === 0) return;
-    selected.filter((r) => !addedIds.has(r.ref.id)).forEach((r) => onPick(r.ref));
     picked.current = true;
     setOpen(false);
   };
@@ -209,7 +208,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
             <>
               <div className="grid grid-cols-2 gap-3">
                 {shown.map((r) => (
-                  <LibraryCard key={r.ref.id} item={r.ref} labels={r.labels} note={r.note} added={addedIds.has(r.ref.id)} selected={selectedIds.has(r.ref.id)} FallbackIcon={FallbackIcon} colorOf={colorOf} onPick={() => toggle(r)}
+                  <LibraryCard key={r.ref.id} item={r.ref} labels={r.labels} note={r.note} added={addedIds.has(r.ref.id)} selected={addedIds.has(r.ref.id)} FallbackIcon={FallbackIcon} colorOf={colorOf} onPick={() => { onPick(r.ref); toggle(r); }}
                     thumbnail={kind === "images" ? <ImageThumbnail candidates={tileSrcCandidates({
                       gated: r.visibility === "gated",
                       thumb: r.webPath ? (r.visibility === "gated" ? gatedThumbs : publicThumbs)[r.webPath] : undefined,

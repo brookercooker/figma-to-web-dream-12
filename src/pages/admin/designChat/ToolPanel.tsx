@@ -40,13 +40,11 @@ export function ToolHeader({ icon: Icon, title, subtitle, menu }: {
   );
 }
 
-const groupOpen = new Map<string, boolean>();
-
-export function ToolGroup({ title, icon: Icon, defaultOpen = false, summary, children }: {
+export function ToolGroup({ title, icon: Icon, summary, children }: {
   title: string; icon?: LucideIcon; defaultOpen?: boolean; summary?: ReactNode; children: ReactNode;
 }) {
-  const [open, setOpen] = useState(() => groupOpen.get(title) ?? defaultOpen);
-  const flip = () => setOpen((o) => { groupOpen.set(title, !o); return !o; });
+  const [open, setOpen] = useState(true);
+  const flip = () => setOpen((o) => !o);
   return (
     <div className="border-t">
       <button type="button" aria-expanded={open} onClick={flip} className="flex w-full items-center gap-2 py-2.5 text-left">

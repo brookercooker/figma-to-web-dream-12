@@ -227,7 +227,7 @@ function AdminShell() {
                   // On the Preview, Objects, Images and Videos pick an item for the chat; on a management tab, or while editing by hand, they navigate.
                   if (!editing && tab === "preview" && (key === "objects" || key === "images" || key === "videos")) return (
                     <LibraryPicker key={key} kind={key} label={label} Icon={Icon} active={active} showLabel={showLabel} className={className}
-                      addedRefs={designChat.refs.references} onPick={(ref) => { designChat.refs.addReference(ref); setChatCollapsed(false); }}
+                      addedRefs={designChat.refs.references} onPick={(ref) => { if (designChat.refs.references.some(r => r.kind === ref.kind && r.id === ref.id)) designChat.refs.removeReference(ref.kind, ref.id); else designChat.refs.addReference(ref); setChatCollapsed(false); }}
                       onOpenFull={() => navigate(`/manage/${key}`)} />
                   );
                   // In Manual Edit Mode they open the editor's picker and add the choice beneath the original, staying in the editor.
@@ -357,6 +357,7 @@ function AdminShell() {
             </TooltipProvider>
             <HeaderActions />
             <div className={cn("flex-1", chatCollapsed && !manual && "hidden")} />
+            {manual && <ManualHistoryControls disabled={finishing || !!objectOpen} />}
             {!manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={chatCollapsed ? "Expand Chat" : "Collapse Chat"} title={chatCollapsed ? "Expand Chat" : "Collapse Chat"} aria-expanded={!chatCollapsed} onClick={() => setChatCollapsed(!chatCollapsed)}>
               {chatCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </Button>}
@@ -377,7 +378,6 @@ function AdminShell() {
                 {designChat.state?.busy && <p role="status" className="flex items-center gap-1.5 text-xs font-medium"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />Claude Is Still Working on a Change</p>}
                 <ManualPageSwitcher navigation={pageNavigation} />
                 <div className="flex flex-wrap gap-1.5">
-                  <ManualHistoryControls disabled={finishing || !!objectOpen} />
                   <Button type="button" size="sm" className="flex-1 gap-1.5" disabled={finishing} onClick={() => void saveChanges()}><Check className="h-4 w-4" aria-hidden />{finishing ? "Saving…" : "Finish Editing"}</Button>
                   <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing} onClick={discardEditing}><Undo2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
                 </div>
