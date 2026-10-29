@@ -89,7 +89,6 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const [labelF, setLabelF] = useState("");
   const [limit, setLimit] = useState(PAGE);
   const [sort, setSort] = useState<SortKey>("name");
-  const [selected, setSelected] = useState<Row[]>([]);
   const picked = useRef(false); // after a pick, the chat box keeps focus instead of the tab button
 
   const { data: labelRows = [], refetch } = useLabelsForScope(kind);
@@ -113,7 +112,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
 
   useEffect(() => {
     if (!open) return;
-    setTerm(""); setLabelF(""); setSort("name"); setLimit(PAGE); setSelected([]);
+    setTerm(""); setLabelF(""); setSort("name"); setLimit(PAGE);
     void refetchRef.current();
     let live = true;
     setRows(null);
@@ -136,17 +135,14 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const clear = () => { setTerm(""); setLabelF(""); };
   const FallbackIcon = kind === "images" ? ImageIcon : kind === "videos" ? Film : Box;
 
-  const selectedIds = useMemo(() => new Set(selected.map((r) => r.ref.id)), [selected]);
-  const toggle = (r: Row) => setSelected((s) => s.some((x) => x.ref.id === r.ref.id) ? s.filter((x) => x.ref.id !== r.ref.id) : [...s, r]);
   const finish = () => {
-    if (selected.length === 0) return;
     picked.current = true;
     setOpen(false);
   };
   const finishRef = useRef(finish);
   finishRef.current = finish;
   const countRef = useRef(0);
-  countRef.current = selected.length;
+  countRef.current = addedIds.size;
 
   /** Enter finishes from anywhere in the popup, except controls that own Enter. */
   const handleEnter = (e: KeyboardEvent) => {
@@ -208,7 +204,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
             <>
               <div className="grid grid-cols-2 gap-3">
                 {shown.map((r) => (
-                  <LibraryCard key={r.ref.id} item={r.ref} labels={r.labels} note={r.note} added={addedIds.has(r.ref.id)} selected={addedIds.has(r.ref.id)} FallbackIcon={FallbackIcon} colorOf={colorOf} onPick={() => { onPick(r.ref); toggle(r); }}
+                  <LibraryCard key={r.ref.id} item={r.ref} labels={r.labels} note={r.note} selected={addedIds.has(r.ref.id)} FallbackIcon={FallbackIcon} colorOf={colorOf} onPick={() => onPick(r.ref)}
                     thumbnail={kind === "images" ? <ImageThumbnail candidates={tileSrcCandidates({
                       gated: r.visibility === "gated",
                       thumb: r.webPath ? (r.visibility === "gated" ? gatedThumbs : publicThumbs)[r.webPath] : undefined,
@@ -226,11 +222,10 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
         </div>
         <div className="flex shrink-0 items-center justify-between gap-3 border-t px-4 py-3">
           <div className="flex flex-col">
-            <span className="text-sm" aria-live="polite">{selected.length > 0 ? `${selected.length} selected` : "Nothing selected yet"}</span>
+            <span className="text-sm" aria-live="polite">{addedIds.size > 0 ? `${addedIds.size} selected` : "Nothing selected yet"}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" data-picker-own-enter="" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button data-picker-own-enter="" onClick={finish} disabled={selected.length === 0}>Done</Button>
+            <Button data-picker-own-enter="" onClick={finish}>Done</Button>
           </div>
         </div>
       </TopDropContent>

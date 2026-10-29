@@ -93,11 +93,11 @@ export default function CodedObjectEditor({ object, embedded, focusSection, onCo
   const editsFor = (scope: string) => scope === key ? edits : {};
   const tools = <>
     {key === "Header" && <SharedObjectNotice componentKey={key} />}
-    <InlineStylePanel sel={selection} edits={edits} onChange={(next) => change(key, next)} onReplaceImage={async () => {
+    <InlineStylePanel key={selection?.key} sel={selection} edits={edits} onChange={(next) => change(key, next)} onReplaceImage={async () => {
       if (!selection) return; const url = await pickImage();
       if (url) change(key, { ...current.current, [`img:${selection.key}`]: url });
     }} />
-    <InlineDestinationPanel selection={selection} editsFor={editsFor} onChange={change} pages={pages} />
+    <InlineDestinationPanel key={selection?.key} selection={selection} editsFor={editsFor} onChange={change} pages={pages} />
     <InlineEditSafetyPanel reports={reports} selection={selection} editsFor={editsFor}
       discard={(scope, path) => change(scope, withoutPath(current.current, path))}
       record={() => { const next = api.current?.record()[key]; if (next) { change(key, next); void saveRef.current(); } }}
