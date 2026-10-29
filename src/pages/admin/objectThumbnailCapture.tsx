@@ -69,5 +69,5 @@ async function capture(id: string, force: boolean): Promise<string | null> {
     if (!url) return null;
     const { error: saveError } = await db.from("object_registry").update({ thumbnail_url: url, thumbnail_updated_at: new Date().toISOString(), thumbnail_build_version: BUILD_ID }).eq("id", id);
     return saveError ? null : url;
-  } finally { replay.restore(); root.unmount(); container.remove(); }
+  } finally { replay.restoreAll(); root.unmount(); container.remove(); }
 }
