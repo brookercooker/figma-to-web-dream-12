@@ -815,7 +815,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       if (error || !original) throw new Error("missing");
       const { data: row, error: insertError } = await (supabase as any).from("object_registry").insert({
         name: copyName(original.name || ask.name, page.name), component_key: original.component_key, content: original.content,
-        inline_edits: original.inline_edits ?? {}, labels: original.labels ?? [], status: "Draft",
+        inline_edits: original.inline_edits ?? {}, labels: original.labels ?? [], status: "Ready",
       }).select("id,name,status,component_key,content").single();
       if (insertError || !row) throw new Error("insert");
       pendingCopies.current.add(row.id);
