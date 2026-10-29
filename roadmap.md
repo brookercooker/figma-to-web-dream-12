@@ -1,8 +1,8 @@
 # Roadmap — coded object import fidelity
-- [ ] Object dialog regressions: null-id chrome lookup, awaited reference-safe copy cleanup, swap snapshots and named home usage; test and verify.
+- [x] Object dialog regressions: null-id chrome lookup, awaited reference-safe copy cleanup, swap snapshots and named home usage. Removed verified-unused owner test copy; regression tests pass. Hosted frame check blocked by unavailable design service.
 - [ ] Verify external relay packages objectSwap-referenced copies: package builder is not in this project.
 - [x] Save Changes in the top bar, Save/Discard/Keep Editing dialogs, picker Deselect All, plain font names, in-flow section bars, object click dialogs with page-only copies (objectSwap) and site-wide Header flag. 733 tests pass.
-- [ ] Footer object row: blocked, no Footer component is registered in the object registry yet.
+- [x] Footer registered and Site Footer row present as Ready/site-wide; database existence verified.
 - [x] Fix colliding style/destination panel keys; reproduced duplicate hints before fix, repeated select/deselect now passes. Capture replay isolation and inherited weights tested; all 723 tests pass, build OK. Signed-in Homepage shows one hint at 1600×1000; hosted frame unavailable for hero clicking.
 - [x] Site Manager nine-item batch implemented: reference toggles, dialog icons, expanded options/font previews, relocated history, confirmed single/bulk deletion, signed/background object previews, button-attached panels and trusted per-path scroll handoff. 714 tests pass; build OK.
 - [x] Continue interrupted batch: fixed scroll test fixture; signed-in thumbnails, single/bulk Used on warnings and temporary-image delete/Undo/permanent-delete verified; reload audit in docs/site-manager-batch.md.

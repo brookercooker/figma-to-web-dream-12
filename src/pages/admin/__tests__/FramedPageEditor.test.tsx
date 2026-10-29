@@ -55,6 +55,15 @@ describe("public edit-frame guards", () => {
   });
 });
 describe("edit-frame protocol", () => {
+  it("includes swap snapshots on init and update, including saved copies", () => {
+    const object = { status: "Ready", name: "Categories (Homepage)", component_key: "Categories", content: { sections: [] }, inline_edits: { "0": "Original" } };
+    const s = setup({ objectSwaps: { "code:home-categories": "copy" }, heldObjects: { copy: object } });
+    s.receive("edit-ready");
+    expect(s.send).toHaveBeenCalledWith(expect.objectContaining({ type: "edit-init", objectSwaps: { "code:home-categories": { id: "copy", ...object } } }), "https://public.example.com");
+    const updated = { ...object, inline_edits: { "0": "Updated" } };
+    s.rerender(<FramedPageEditor {...s.props} heldObjects={{ copy: updated }} />);
+    expect(s.send).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", objectSwaps: { "code:home-categories": { id: "copy", ...updated } } }), "https://public.example.com");
+  });
   it("ignores wrong origins and sources, then initializes and synchronizes", () => {
     const s = setup();
     s.receive("edit-ready", {}, "https://evil.example");
