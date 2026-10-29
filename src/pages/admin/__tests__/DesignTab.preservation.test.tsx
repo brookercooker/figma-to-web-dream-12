@@ -3,14 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
-const mocks = vi.hoisted(() => ({ remote: true, slot: null as HTMLElement | null, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
+const mocks = vi.hoisted(() => ({ remote: true, slot: null as HTMLElement | null, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), cleanup: vi.fn(), openObject: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
 vi.mock("../siteManifest", async (importOriginal) => ({ ...await importOriginal<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.reject(new Error("fixture")), manifestHasPage: () => mocks.remote, draftEmbedUrl: () => "https://public.example.com/?embed=fixture" }));
 vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: mocks.slot, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: (cb: any) => mocks.hasChanges = cb, registerHistory: (cb: any) => mocks.history = cb, registerAdd: (cb: any) => mocks.add = cb }) }));
-vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => null }));
+vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => ({ openObject: mocks.openObject }) }));
+vi.mock("../objectCopyCleanup", () => ({ cleanupObjectCopies: (ids: string[]) => mocks.cleanup(ids) }));
 vi.mock("../designChat/contentSync", () => ({ notifyContentEdited: vi.fn() }));
 vi.mock("@/prototype/client", () => ({ supabase: { from: (table: string) => {
   const data = table === "pages" ? [{ id: "contact", path: mocks.path, name: "Contact", updated_at: "original-date", ...mocks.original }, { id: "about", path: "/about", name: "About", updated_at: "about-date", content: [{ id: "about-image", type: "image", url: "/about.jpg", align: "left", width: 100 }], inline_edits: {} }] : [];
-  const q: any = { select: () => q, is: () => q, order: () => Promise.resolve({ data }), update: (patch: any) => { mocks.writes(table, patch); return { eq: () => Promise.resolve({ error: mocks.failSave ? { message: "Could not save" } : null }) }; }, then: (cb: any) => Promise.resolve({ data }).then(cb) }; return q;
+  const object = { id: "copy", name: "Categories (Contact)", status: "Ready", component_key: "Categories", content: { sections: [] }, inline_edits: { "0": "Original" }, labels: [] };
+  const q: any = { select: () => q, is: () => q, eq: () => q, maybeSingle: async () => ({ data: table === "object_registry" ? { ...object, id: "site-header" } : null }), single: async () => ({ data: object }), insert: (patch: any) => { mocks.writes(table, patch); return q; }, order: () => Promise.resolve({ data }), update: (patch: any) => { mocks.writes(table, patch); return { eq: () => Promise.resolve({ error: mocks.failSave ? { message: "Could not save" } : null }) }; }, then: (cb: any) => Promise.resolve({ data }).then(cb) }; return q;
 } } }));
 vi.mock("@/components/Header", () => ({ default: () => null }));
 vi.mock("@/components/Footer", () => ({ default: () => null }));
@@ -22,7 +24,7 @@ vi.mock("../VideoPickerDialog", () => ({ default: ({ open, onPick }: any) => ope
 vi.mock("../CreatePageDialog", () => ({ default: () => null }));
 vi.mock("../TagsPanel", () => ({ default: () => null }));
 vi.mock("../PageMiniPreview", () => ({ default: () => null }));
-beforeEach(() => { mocks.remote = true; mocks.path = "/draft"; mocks.history = null; mocks.failSave = false; mocks.writes.mockClear(); mocks.original.content = null; mocks.original.inline_edits = {}; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
+beforeEach(() => { mocks.remote = true; mocks.path = "/draft"; mocks.history = null; mocks.failSave = false; mocks.writes.mockClear(); mocks.cleanup.mockReset().mockResolvedValue([]); mocks.openObject.mockClear(); mocks.original.content = null; mocks.original.inline_edits = {}; vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} }); HTMLElement.prototype.scrollIntoView = vi.fn(); });
 afterEach(() => { cleanup(); mocks.slot?.remove(); mocks.slot = null; });
 describe("public page save/discard integration", () => {
   it("routes trusted navigation through the caller and resets Sections on a new page opening", async () => {
@@ -64,6 +66,24 @@ describe("public page save/discard integration", () => {
     send("edit-ready", capable ? { capabilities: { heldBlocks: true, blockMove: true } } : {});
     return { ...view, frame, post, send };
   }
+  it("opens null-id site chrome through the registry lookup", async () => {
+    const s = await openRemote(true, true);
+    s.send("edit-object-click", { objectId: null, componentKey: "Header", name: "Header", slot: "site-header", siteWide: true });
+    fireEvent.click(screen.getByRole("button", { name: "Open in Object Editor" }));
+    await waitFor(() => expect(mocks.openObject).toHaveBeenCalledWith("site-header"));
+  });
+  it.each(["discard", "undo-save", "leave"])("transports a Ready coded-slot copy and cleans it on %s", async action => {
+    const s = await openRemote(true, true);
+    s.send("edit-object-click", { objectId: "categories", componentKey: "Categories", name: "Categories", slot: "code:home-categories" });
+    fireEvent.click(screen.getByRole("button", { name: "Make a Copy for This Page" }));
+    await waitFor(() => expect(s.post).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", objectSwaps: { "code:home-categories": { id: "copy", status: "Ready", name: "Categories (Contact)", component_key: "Categories", content: { sections: [] }, inline_edits: { "0": "Original" } } } }), "https://public.example.com"));
+    expect(mocks.writes).toHaveBeenCalledWith("object_registry", expect.objectContaining({ status: "Ready" }));
+    if (action === "discard") await act(async () => mocks.discard());
+    if (action === "undo-save") { s.send("edit-undo"); await act(async () => mocks.save()); }
+    if (action === "leave") s.unmount();
+    await waitFor(() => expect(mocks.cleanup).toHaveBeenCalledWith(["copy"]));
+    expect(mocks.writes.mock.calls.filter(([table]) => table === "pages")).toHaveLength(0);
+  });
   it.each(["/", "/contact", "/about", "/team", "/locations", "/full-vendor-list", "/inspiration-gallery", "/test-page", "/race-test-page", "/landing/test", "/draft"])("opens %s through the public editor without local markup", async (path) => {
     mocks.path = path;
     const s = await openRemote();
