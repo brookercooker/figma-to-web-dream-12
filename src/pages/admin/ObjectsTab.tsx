@@ -396,7 +396,7 @@ export default function ObjectsTab() {
           itemLabel="object"
           onClear={() => setSelected(new Set())}
         >
-          <Button size="sm" variant="outline" onClick={() => bulkArchive([...selected])}>
+          <Button size="sm" variant="outline" onClick={() => bulkArchive([...selected].filter((id) => !objects.find((o) => o.id === id)?.site_wide))}>
             <Archive className="w-3.5 h-3.5 mr-1.5" /> Archive
           </Button>
         </SelectionBar>

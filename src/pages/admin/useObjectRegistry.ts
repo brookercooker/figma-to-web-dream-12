@@ -5,6 +5,8 @@ export type ObjectStatus = "Draft" | "Ready";
 
 export interface ObjectRegistryRow {
   id: string;
+  /** Site-wide chrome (Header/Footer): cannot be archived or copied. */
+  site_wide?: boolean;
   slug_id: string;
   name: string;
   status: ObjectStatus;
