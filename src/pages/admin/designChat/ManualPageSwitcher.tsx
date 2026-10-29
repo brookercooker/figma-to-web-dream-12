@@ -107,9 +107,9 @@ export default function ManualPageSwitcher({ navigation }: { navigation: Navigat
       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" aria-label="Next Page" title="Next Page" disabled={disabled || loading || index < 0 || index >= pages.length - 1} onClick={() => { const page = pages[index + 1]; if (page) choose(page); }}><ChevronRight className="h-4 w-4" aria-hidden /></Button>
     </div>
     <Dialog open={!!pending} onOpenChange={value => { if (!value && !disabled) navigation.setPending(null); }}>
-      <DialogContent aria-describedby={undefined}>
-        <DialogHeader><DialogTitle>Save Your Changes to {workingPage?.name}?</DialogTitle></DialogHeader>
-        <DialogFooter className="flex-wrap gap-2 sm:space-x-0">
+      <DialogContent>
+        <DialogHeader><DialogTitle>Save Your Changes?</DialogTitle><DialogDescription>You have unsaved edits on {workingPage?.name}. Save them before going to the next page?</DialogDescription></DialogHeader>
+        <DialogFooter className="flex-row flex-wrap justify-start gap-2 sm:justify-start sm:space-x-0">
           <Button className="gap-2" disabled={disabled} onClick={() => void navigation.resolve(true)}><Save className="h-4 w-4" aria-hidden />Save Changes</Button>
           <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => void navigation.resolve(false)}><Trash2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
           <Button className="gap-2" variant="outline" disabled={disabled} onClick={() => navigation.setPending(null)}><Pencil className="h-4 w-4" aria-hidden />Keep Editing</Button>
