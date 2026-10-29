@@ -41,7 +41,7 @@ const setup = (kind: "images" | "objects" = "images", addedRefs: ChatReference[]
   const picked = vi.fn(), onOpenFull = vi.fn();
   function Picker() {
     const [refs, setRefs] = useState(addedRefs);
-    return <LibraryPicker addedRefs={refs} kind={kind} label={label} Icon={kind === "images" ? ImageIcon : Box} active={false} showLabel className="" onPick={ref => { picked(ref); setRefs(current => current.some(r => r.id === ref.id) ? current.filter(r => r.id !== ref.id) : [...current, ref]); }} onOpenFull={onOpenFull} />;
+    return <LibraryPicker addedRefs={refs} kind={kind} label={label} Icon={kind === "images" ? ImageIcon : Box} active={false} showLabel className="" onPick={ref => { picked(ref); setRefs(current => current.some(r => r.id === ref.id) ? current.filter(r => r.id !== ref.id) : [...current, ref]); }} onOpenFull={onOpenFull} onDeselectAll={(k) => setRefs(current => current.filter(r => r.kind !== k))} />;
   }
   const label = kind === "images" ? "Images" : "Objects";
   const view = render(<Picker />);
@@ -365,5 +365,18 @@ describe("library picker", () => {
     expect(chip.style.background).toBe(bgOf(PALETTE[7].bg));
     fireEvent.click(chip);
     expect(chip.style.background).toBe(bgOf(PALETTE[7].swatch));
+  });
+  it("Deselect All removes only this picker's kind and is disabled when nothing is selected", async () => {
+    const image: ChatReference = { kind: "image", id: "i3", name: "photo-03.jpg", url: "url", labels: [] };
+    const object: ChatReference = { kind: "object", id: "o1", name: "Hero", type: "coded" };
+    setup("images", [image, object]);
+    await screen.findByText("60 of 70 shown");
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: "Deselect All" });
+    expect(button).toBeEnabled();
+    fireEvent.click(button);
+    expect(screen.getByText("Nothing selected yet")).toBeInTheDocument();
+    expect(screen.getByTitle("photo-03.jpg")).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Deselect All" })).toBeDisabled();
   });
 });
