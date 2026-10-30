@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type MutableRefObject } f
 import { Button } from "@/components/ui/button";
 import type { InlineChunk, InlineEdits, InlineReports, InlineSelection } from "@/components/InlineEditSurface";
 import { parseObjectClick, type ObjectClick } from "./objectClick";
-import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, objectSwapPayload, trustedEditMessage, type HeldObjectData } from "./framedPageProtocol";
+import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, objectScopePayload, objectSwapPayload, type ObjectEditTarget, trustedEditMessage, type HeldObjectData } from "./framedPageProtocol";
 import { remoteSelection, validSnapshot, type EditQuery, type SelectionSnapshot } from "./remoteSelection";
 import { manualNavigationPath } from "./designChat/manualPageNavigation";
 import { acceptFrameScroll, restoreFrameScroll } from "./designChat/frameScroll";
@@ -41,6 +41,10 @@ export interface FramedPageEditorProps {
   onHeldInFrame?: (inFrame: boolean) => void;
   /** Fill the editing area (one scroll inside the frame) when the frame draws held sections. */
   fill?: boolean;
+  /** Editing one object alone (/__object/<id>): edit-init/update carry scope "object"; page navigation and object clicks are ignored. */
+  objectScope?: ObjectEditTarget | null;
+  /** After opening, ask the page frame to scroll to this object (used when coming back from the object editor). */
+  scrollToSlot?: { slot: string | null; objectId: string } | null;
 }
 export default function FramedPageEditor(props: FramedPageEditorProps) {
   // A refreshed signed address must not replace an already open editor. Retry may explicitly adopt it.
@@ -77,9 +81,10 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   };
   const state = () => {
     const base = { edits: latest.current.edits, objectEdits: latest.current.objectEdits, collapsed: [...latest.current.collapsed], selectedKey: latest.current.selectedKey, objectSwaps: objectSwapPayload(latest.current.objectSwaps ?? {}, latest.current.heldObjects) };
-    if (!capableRef.current) return base;
+    const scoped = latest.current.objectScope ? { ...base, ...objectScopePayload(latest.current.objectScope, latest.current.objectEdits) } : base;
+    if (!capableRef.current) return scoped;
     // Too large: send an empty list so the frame draws nothing while the local list shows them.
-    return { ...base, heldBlocks: heldBlocksPayload(latest.current.heldBlocks ?? [], moveCapableRef.current, latest.current.heldObjects) ?? [], activeBlockId: latest.current.activeBlockId || null };
+    return { ...scoped, heldBlocks: heldBlocksPayload(latest.current.heldBlocks ?? [], moveCapableRef.current, latest.current.heldObjects) ?? [], activeBlockId: latest.current.activeBlockId || null };
   };
   const query: EditQuery = (op, scope, key, props) => {
     if (!ready.current || exited.current) return Promise.resolve(null);
@@ -114,7 +119,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         destination.current = frame.current?.contentWindow ?? null;
         capableRef.current = data.capabilities?.heldBlocks === true; setHeldCapable(capableRef.current);
         moveCapableRef.current = data.capabilities?.blockMove === true; setMoveCapable(moveCapableRef.current);
-        clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); restoreFrameScroll(frame.current, latest.current.path); return;
+        clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); restoreFrameScroll(frame.current, latest.current.path); if (latest.current.scrollToSlot) post("scroll-to-slot", { ...latest.current.scrollToSlot }); return;
       }
       if (!ready.current) return;
       if (data.type === "page-scroll") {
@@ -157,6 +162,8 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         latest.current.onUndo?.();
       } else if (data.type === "edit-redo") {
         latest.current.onRedo?.();
+      } else if (latest.current.objectScope && (data.type === "edit-object-click" || data.type === "edit-navigate")) {
+        return; // Not meaningful while one object is open on its own.
       } else if (data.type === "edit-object-click") {
         const click = parseObjectClick(data); if (click) latest.current.onObjectClick?.(click);
       } else if (data.type === "edit-navigate") {
@@ -180,14 +187,14 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     window.addEventListener("message", receive);
     return () => { clearTimeout(timeout); exit(); window.removeEventListener("message", receive); if (props.apiRef) props.apiRef.current = null; };
   }, [target, attempt, frameRevision]); // Only section actions on frames without heldBlocks reload; everything else travels through edit-update.
-  useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.heldObjects, props.activeBlockId, props.objectSwaps, heldCapable, moveCapable]);
+  useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.heldObjects, props.activeBlockId, props.objectSwaps, props.objectScope, heldCapable, moveCapable]);
   useEffect(() => { latest.current.onHeldInFrame?.(heldInFrame); }, [heldInFrame]);
   useEffect(() => { setSized(false); }, [target, attempt, frameRevision]);
   // Capable frames fill the canvas so their own scroll is the only one; edit-size still wins once received.
   const filling = !!props.fill && heldInFrame && !sized;
   return <div className={`relative w-full ${filling ? "h-full" : ""}`}>
     {status !== "ready" && <div role="status" className="flex items-center justify-center gap-3 bg-muted p-6 text-sm text-muted-foreground">
-      {status === "loading" && target ? "Loading the page editor…" : "Couldn't reach the public page"}
+      {status === "loading" && target ? (props.objectScope ? "Loading the object editor…" : "Loading the page editor…") : (props.objectScope ? "Couldn't reach the public object page" : "Couldn't reach the public page")}
       {(status === "failed" || !target) && <Button variant="outline" size="sm" onClick={() => { setOpening({ path: props.path, base: props.base }); setAttempt((n) => n + 1); }}>Retry</Button>}
     </div>}
     {target && <iframe key={`${target}|${attempt}|${frameRevision}`} ref={frame} src={target} title="Public Page Editor" data-site-editor="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : filling ? "block h-full" : "block"}`} height={filling ? "100%" : height} onError={() => setStatus("failed")} />}

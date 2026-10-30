@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Save, Trash2, ArrowLeft, Code, Loader2, Wrench } from "lucide-react";
+import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Save, Trash2, Code, Loader2, Wrench } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import ChatPanel from "./designChat/ChatPanel";
 import PreviewTools, { SubmitButton } from "./designChat/PreviewTools";
@@ -24,6 +24,8 @@ import ReviewChangesView from "./designChat/ReviewChangesView";
 import { HEADER_HEIGHT_CLASS } from "./designChat/layout";
 import { rememberTopDropAnchor } from "./designChat/TopDropPanel";
 import ManualPageSwitcher, { useManualPageNavigation } from "./designChat/ManualPageSwitcher";
+import ObjectEditorHeader, { type ObjectInfo } from "./designChat/ObjectEditorHeader";
+import { requestObjectThumbnail } from "./objectThumbnailCapture";
 import ManualHistoryControls from "./designChat/ManualHistoryControls";
 import { manualHistoryShortcut } from "./designChat/manualEditHistory";
 import { referenceKey } from "./designChat/references";
@@ -34,7 +36,6 @@ const ImagesTab = lazy(() => import("./ImagesTab"));
 const VideoTab = lazy(() => import("./VideoTab"));
 const PreviewTab = lazy(() => import("./DesignChatTab"));
 const DesignTab = lazy(() => import("./DesignTab"));
-const ObjectDesignPage = lazy(() => import("./ObjectDesignPage"));
 
 type TabKey = "preview" | "pages" | "objects" | "images" | "videos";
 
@@ -101,7 +102,7 @@ function AdminShell() {
     return () => window.clearInterval(id);
   }, [manual, hasChanges]);
   useEffect(() => {
-    if (!manual || objectOpen || finishing) return;
+    if (!manual || finishing) return;
     const shortcut = (event: KeyboardEvent) => {
       const action = manualHistoryShortcut(event);
       if (!action) return;
@@ -109,7 +110,7 @@ function AdminShell() {
     };
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
-  }, [manual, objectOpen, finishing, historyControls]);
+  }, [manual, finishing, historyControls]);
   const pageNavigation = useManualPageNavigation(finishing, setFinishing);
   const finishingRef = useRef(false);
   const finishEditing = async (thenClear = false) => {
@@ -122,9 +123,22 @@ function AdminShell() {
       return ok;
     } finally { finishingRef.current = false; setFinishing(false); }
   };
-  const backToPage = async () => { const ok = await saveAll(); if (ok) closeObject(); };
+  const [objectInfo, setObjectInfo] = useState<ObjectInfo | null>(null);
+  useEffect(() => { if (!objectOpen) setObjectInfo(null); }, [objectOpen]);
   const saveChanges = async () => {
     const had = hasChanges();
+    if (objectOpen) {
+      // Object editor: save the object, refresh its thumbnail, then go back to the page scrolled to it.
+      if (finishingRef.current) return;
+      finishingRef.current = true; setFinishing(true);
+      try {
+        const ok = await saveAll();
+        if (!ok) return;
+        if (had) { toast.success("Changes saved."); void requestObjectThumbnail(objectOpen.id, true).catch(() => {}); }
+        closeObject();
+      } finally { finishingRef.current = false; setFinishing(false); }
+      return;
+    }
     const ok = await finishEditing();
     if (ok && had) toast.success("Changes saved.");
   };
@@ -288,15 +302,9 @@ function AdminShell() {
               <div className="h-full w-full">
                 <Suspense fallback={<TabSkeleton />}>
                   {objectOpen ? (
-                    <ObjectDesignPage
-                      key={objectOpen.id}
-                      embedded
-                      objectId={objectOpen.id}
-                      focusSection={objectOpen.section}
-                      onBack={backToPage}
-                    />
+                    <DesignTab key={`object-${objectOpen.id}`} embedded pageId={workingPage.id} objectId={objectOpen.id} onObjectInfo={setObjectInfo} />
                   ) : (
-                    <DesignTab key={workingPage.id} embedded pageId={workingPage.id} onNavigate={pageNavigation.requestPath} />
+                    <DesignTab key={workingPage.id} embedded pageId={workingPage.id} onNavigate={pageNavigation.requestPath} returnTo={designChat.returnTo} />
                   )}
                 </Suspense>
               </div>
@@ -374,7 +382,7 @@ function AdminShell() {
             </TooltipProvider>
             <HeaderActions />
             <div className={cn("flex-1", chatCollapsed && !manual && "hidden")} />
-            {manual && <ManualHistoryControls disabled={finishing || !!objectOpen} />}
+            {manual && <ManualHistoryControls disabled={finishing} />}
             {!manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={chatCollapsed ? "Expand Chat" : "Collapse Chat"} title={chatCollapsed ? "Expand Chat" : "Collapse Chat"} aria-expanded={!chatCollapsed} onClick={() => setChatCollapsed(!chatCollapsed)}>
               {chatCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </Button>}
@@ -384,16 +392,11 @@ function AdminShell() {
           {reviewShown && <ReviewChangesView onShowPreview={() => { if (tab !== "preview") navigate("/manage/preview"); }} />}
           {manual && workingPage && (
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="flex items-center justify-between px-3 pt-2">
-                {objectOpen && (
-                  <Button type="button" variant="ghost" size="sm" aria-label="Back to Page" disabled={finishing} onClick={() => void backToPage()} className="h-7 gap-1.5 text-xs text-muted-foreground">
-                    <ArrowLeft className="h-3 w-3" aria-hidden />Back to Page
-                  </Button>
-                )}
-              </div>
               <div ref={editingHeaderRef} tabIndex={-1} className="flex shrink-0 flex-col gap-2 border-b px-3 py-3">
                 {designChat.state?.busy && <p role="status" className="flex items-center gap-1.5 text-xs font-medium"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />Claude Is Still Working on a Change</p>}
-                <ManualPageSwitcher navigation={pageNavigation} />
+                {objectOpen
+                  ? <ObjectEditorHeader info={objectInfo} backLabel={`Back to ${workingPage.name}`} disabled={finishing} onLeave={closeObject} />
+                  : <ManualPageSwitcher navigation={pageNavigation} />}
                 <div className="flex flex-wrap gap-1.5">
                   <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing} onClick={discardEditing}><Trash2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
                 </div>

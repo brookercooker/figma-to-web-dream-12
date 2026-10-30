@@ -65,3 +65,21 @@ export function heldBlocksPayload<T>(blocks: readonly T[], blockMove = false, ob
   }, []);
 }
 export const clampEditSize = (h: number) => Math.max(400, Math.min(20000, h));
+
+/** The object being edited on its own in the public edit frame (agreed with the public site). */
+export interface ObjectEditTarget { objectId: string; name: string; status: string; component_key: string | null; siteWide: boolean }
+/** Public route that renders one object alone; the frame gates it with ?nova-edit=1 like pages. */
+export const objectFramePath = (id: string) => `/__object/${encodeURIComponent(id)}`;
+/** Edit scope of an object: its component_key for coded objects, `object:<id>` for designed ones. */
+export const objectEditScope = (o: { objectId?: string; id?: string; component_key: string | null }) => o.component_key || `object:${o.objectId ?? o.id}`;
+/** Extra edit-init / edit-update fields for object scope. */
+export function objectScopePayload(target: ObjectEditTarget, objectEdits: Record<string, InlineEdits>) {
+  const { objectId, ...object } = target;
+  return { scope: "object" as const, objectId, object, inlineEdits: objectEdits[objectEditScope(target)] ?? {} };
+}
+/** What the header note under "Editing <name>" says. */
+export function objectEditorNote(o: { name: string; component_key: string | null; siteWide: boolean }, usedOn: string[], copyOf?: string | null): string {
+  if (o.siteWide) return "Site-wide object · shown on every page";
+  if (copyOf) return `This copy is only used on ${copyOf}`;
+  return usedOn.length ? `Shared object · used on ${usedOn.join(", ")}` : "Shared object · not used on any page yet";
+}
