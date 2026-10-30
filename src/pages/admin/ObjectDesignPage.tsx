@@ -2244,7 +2244,7 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     const updated_at = new Date().toISOString();
     const { error } = await (supabase as any).from("object_registry").update({ content, updated_at }).eq("id", id);
     if (error) { toast.error(error.message ?? "Could not save this object"); return false; }
-    notifyContentEdited();
+    notifyContentEdited([`Object "${(object.name ?? "").slice(0, 50)}": changed its sections`]);
     setObjects((cur) => cur.map((o) => (o.id === id ? ({ ...o, content, updated_at } as any) : o)));
     setSections((cur) => { if (cur === content) setDirty(false); return cur; });
     return true;
