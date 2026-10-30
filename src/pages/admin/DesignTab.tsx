@@ -752,7 +752,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                     )}
                     {inlineSel?.scope === "Header" && <>
                       <SharedObjectNotice componentKey="Header" />
-                      <Button variant="outline" size="sm" onClick={async () => { const id = objectRows.current.Header; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, inlineSel.key); } else navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(inlineSel.key)}`); }}>Edit Object</Button>
+                      <Button variant="outline" size="sm" onClick={async () => { const id = objectRows.current.Header; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, inlineSel.key, { slot: "site-header" }); } else navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(inlineSel.key)}`); }}>Edit Object</Button>
                     </>}
                     <InlineStylePanel
                       key={`style:${inlineSel?.scope}:${inlineSel?.key}`}
@@ -795,7 +795,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                               </ToolButton>
                               <ToolButton
                                 title="Edit"
-                                onClick={async () => { if (embedded) { if (await saveAll()) chat?.openObject(b.objectId); return; } navigate(`/manage/objects/design?object=${b.objectId}&returnPage=${selectedId}`); }}
+                                onClick={async () => { if (embedded) { if (await saveAll()) chat?.openObject(b.objectId, undefined, { slot: b.id }); return; } navigate(`/manage/objects/design?object=${b.objectId}&returnPage=${selectedId}`); }}
                               >
                                 <Pencil className="w-4 h-4" />
                                 <span className="ml-1 text-xs">Edit</span>
@@ -934,20 +934,23 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     const kind = objectClickKind(click, editState.current.inlineEdits, !!click.objectId && siteWideIds.current.has(click.objectId));
     const here = page?.name ?? "";
     if (kind === "site") { setObjectAsk({ ...click, kind, usedOn: [] }); return; }
-    if (kind === "copy" && click.objectId) { openObjectEditor(click.objectId); return; }
+    if (kind === "copy" && click.objectId) { openObjectEditor(click.objectId, click.slot); return; }
     // Every page that uses it: saved page content and swaps, plus code placements in the public manifest.
     const fromPages = pages.filter((p) => click.objectId && JSON.stringify([p.content ?? null, p.inline_edits ?? null]).includes(click.objectId)).map((p) => p.name);
     const fromSite = click.componentKey ? findObjectUsages(click.componentKey).then((u) => u.map((x) => x.name)).catch(() => null) : Promise.resolve([] as string[]);
     void fromSite.then((site) => {
       const usedOn = site === null && !fromPages.some((n) => n !== here) ? null : [...new Set([...(site ?? []), ...fromPages, here].filter(Boolean))];
-      if (objectClickAction(kind, usedOn, here) === "open" && click.objectId) openObjectEditor(click.objectId);
+      if (objectClickAction(kind, usedOn, here) === "open" && click.objectId) openObjectEditor(click.objectId, click.slot);
       else setObjectAsk({ ...click, kind, usedOn });
     });
   };
-  const openObjectEditor = (id: string) => {
+  /** The page slot the object was opened from, so Save can scroll the page back to it. */
+  const openSlot = useRef<string | undefined>(undefined);
+  const openObjectEditor = (id: string, slot?: string) => {
+    openSlot.current = slot;
     if (!embedded) { navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}`); return; }
     if (hasChangesRef.current()) { setOpenAsk(id); return; }
-    chat?.openObject(id);
+    chat?.openObject(id, undefined, { slot: openSlot.current });
   };
   const makeCopy = async () => {
     const ask = objectAsk; if (!ask?.objectId || !page || discarded.current) return;
@@ -1019,15 +1022,15 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
             if (error || !data) { toast.error("Couldn't find this object. Try again."); return; }
             id = data.id;
           }
-          setObjectAsk(null); if (id) openObjectEditor(id);
+          setObjectAsk(null); if (id) openObjectEditor(id, ask.slot);
         }} />
       <ConfirmDialog open={!!openAsk} onOpenChange={(open) => { if (!open) setOpenAsk(null); }} title="Save Your Changes?"
         description="Save your edits to this page before opening the object editor?" destructive={false} primaryFirst
         confirmLabel="Save Changes" confirmIcon={<SaveIcon className="h-4 w-4" aria-hidden />}
         secondaryLabel="Discard Changes" secondaryIcon={<TrashIcon className="h-4 w-4" aria-hidden />}
         cancelLabel="Keep Editing" cancelIcon={<PencilIcon className="h-4 w-4" aria-hidden />}
-        onConfirm={async () => { const id = openAsk; setOpenAsk(null); if (id && await saveAll()) chat?.openObject(id); }}
-        onSecondary={async () => { const id = openAsk; setOpenAsk(null); if (!id) return; try { await discardAll(); chat?.openObject(id); } catch { /* stays on the page */ } }} />
+        onConfirm={async () => { const id = openAsk; setOpenAsk(null); if (id && await saveAll()) chat?.openObject(id, undefined, { slot: openSlot.current }); }}
+        onSecondary={async () => { const id = openAsk; setOpenAsk(null); if (!id) return; try { await discardAll(); chat?.openObject(id, undefined, { slot: openSlot.current }); } catch { /* stays on the page */ } }} />
       <CreatePageDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
