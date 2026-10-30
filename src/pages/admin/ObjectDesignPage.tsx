@@ -1,5 +1,4 @@
 import ConfirmDialog from "./ConfirmDialog";
-import CodedObjectEditor from "./CodedObjectEditor";
 import type { InlineEdits } from "@/lib/inlineEditCore";
 import InlineLinkControl from "./InlineLinkControl";
 import PictureLinkControl from "./PictureLinkControl";
@@ -4407,12 +4406,19 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
     </div>
   );
 
+  // Coded objects are edited in the unified editor; the designer keeps only the conversion into blocks.
   if (object && codedKey && blockModeId !== object.id) return (
-    <CodedObjectEditor key={object.id} object={{ ...object, component_key: codedKey }} embedded={embedded}
-      focusSection={focusSection ?? focusChunk ?? undefined} onConvert={() => {
-        const existing = parseSections(object.content);
-        setBlockModeId(object.id); setPreview(false); setSections(existing); setImporting(!existing.length); setDirty(false);
-      }} />
+    <div className="mx-auto max-w-xl space-y-4 p-8">
+      <h1 className="font-serif text-2xl">{object.name}</h1>
+      <p className="text-sm text-muted-foreground">This object is built in code. Edit its wording, pictures and links in the object editor, or convert it into blocks.</p>
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => { window.location.assign(`/manage/preview?editObject=${encodeURIComponent(object.id)}`); }}>Edit Object</Button>
+        <Button variant="outline" onClick={() => {
+          const existing = parseSections(object.content);
+          setBlockModeId(object.id); setPreview(false); setSections(existing); setImporting(!existing.length); setDirty(false);
+        }}>Convert to Blocks</Button>
+      </div>
+    </div>
   );
 
   return (
