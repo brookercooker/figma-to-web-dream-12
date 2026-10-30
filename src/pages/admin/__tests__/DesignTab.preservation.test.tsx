@@ -231,7 +231,8 @@ describe("public page save/discard integration", () => {
     fireEvent.click(down);
     await waitFor(() => expect(order()).toEqual(["second", "first"]));
     stubReloadedFrame();
-    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Page Content", "Video", "Image"]);
+    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Site Header", "Page Content", "Video", "Image", "Site Footer"]);
+    for (const slot of ["site-header", "site-footer"]) expect(list.querySelector(`[data-section-row="${slot}"] [aria-label="Move Up"], [data-section-row="${slot}"] [aria-label="Move Down"], [data-section-row="${slot}"] [aria-label="Delete Block"]`)).toBeNull();
     const imageRow = [...list.querySelectorAll("li")].find(el => el.textContent === "Image");
     const imageButton = imageRow?.querySelector("button");
     if (!imageButton) throw new Error("Missing image section control");
