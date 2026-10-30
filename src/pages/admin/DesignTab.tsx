@@ -50,6 +50,7 @@ import { inlineEditAction, ManualEditHistory, sameEditState, type EditAction, ty
 
 interface PageRow { id: string; name: string; path: string; content: unknown; updated_at: string; tags?: string[] | null; inline_edits?: InlineEdits | null; build_status?: string | null }
 
+const NO_BLOCKS: never[] = [];
 export const previewSrc = (path: string) => (path === "/" ? "/home" : path);
 export function InlinePagePreview({ name, blocks }: { name: string; blocks: RenderBlock[] }) {
   return <div><Header /><h1 className="font-serif text-3xl">{name}</h1><PageBlocks blocks={blocks} /><Footer /></div>;
@@ -277,6 +278,12 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
 
   const page = useMemo(() => pages.find((p) => p.id === selectedId) ?? null, [pages, selectedId]);
   const surface = usePageEditorSurface(page);
+  const infoRef = useRef(onObjectInfo); infoRef.current = onObjectInfo;
+  useEffect(() => {
+    if (!objectTarget) { infoRef.current?.(null); return; }
+    const usedOn = objectTarget.siteWide ? [] : pages.filter((p) => JSON.stringify([p.content ?? null, p.inline_edits ?? null]).includes(objectTarget.objectId)).map((p) => p.name);
+    infoRef.current?.({ ...objectTarget, usedOn });
+  }, [objectTarget, pages]);
   const framed = surface === "framed";
   useEffect(() => {
     // Wait for the page to load so a "mode=edit" link isn't used up early.
@@ -679,10 +686,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     else addBlock(kind === "images" ? "image" : "video");
   };
   useEffect(() => {
-    if (!embedded || !registerAdd) return;
+    if (!embedded || !registerAdd || objectId) return;
     registerAdd((kind) => addFromTopBar.current(kind));
     return () => registerAdd(null);
-  }, [embedded, registerAdd]);
+  }, [embedded, registerAdd, objectId]);
 
   const stylePanel = (
     <>
@@ -821,6 +828,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const blockLabel = (b: RenderBlock) => b.type === "object" ? `Object: ${b.name ?? "Saved Object"}` : b.type === "code" ? b.name : b.type === "text" || b.type === "heading" ? b.text : b.type === "image" ? "Image" : "Video";
   const tools = <div className="space-y-4 p-3">
     {stylePanel}
+    {!objectId && <>
     <p className="text-xs font-medium">Sections</p>
     <ol className="divide-y border rounded-md">
       {orderedPageContent(blocks).map((b,i) => isPageContent(b) ? <li key={b.id} data-section-row={b.id} className="px-2 py-2 text-xs">Page Content</li> : <li key={b.id} data-section-row={b.id} aria-current={activeId === b.id || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeId === b.id ? "bg-accent" : ""}`}>
@@ -831,6 +839,13 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
       </li>)}
     </ol>
     {(() => { const list=orderedPageContent(blocks); const i=list.findIndex(b=>b.id===activeId); const b=list[i]; return !b || isPageContent(b) ? null : <div className="flex flex-wrap gap-1">{blockTools(b,i)}</div>; })()}
+    </>}
+    {objectTarget && !objectTarget.component_key && (
+      <p className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+        Wording, pictures and links can be changed here. Section layout settings are still in the{" "}
+        <a className="underline" href={`/manage/objects/design?object=${objectTarget.objectId}&legacy=1`}>full designer</a>.
+      </p>
+    )}
   </div>;
 
   /** Framed pages: the public frame records fingerprints (withFingerprints per scope); invalid maps are dropped. */
@@ -899,17 +914,18 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     {page && surface !== "loading" && <EmbeddedBox chat={embedded ? chat : null}>
       <div ref={blockCanvasRef} className={`relative isolate h-full w-full ${heldInFrame && !deviceStyle ? "overflow-hidden" : "overflow-y-auto"} bg-background`} style={deviceStyle}>
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
-        <FramedPageEditor key={`public-${page.id}`} base={draftEmbedUrl()} path={page.path} edits={inlineEdits} objectEdits={objectEdits}
-          sectionRevision={sectionRevision} heldBlocks={blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
+        <FramedPageEditor key={objectId ? `object-${objectId}` : `public-${page.id}`} base={draftEmbedUrl()} path={objectId ? objectFramePath(objectId) : page.path} edits={inlineEdits} objectEdits={objectEdits}
+          objectScope={objectTarget} scrollToSlot={objectId ? null : returnTo ?? null}
+          sectionRevision={sectionRevision} heldBlocks={objectId ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
           onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setInlineSel(null); }} fill={!deviceStyle}
           onUndo={() => restoreHistory("undo")} onRedo={() => restoreHistory("redo")}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
-          onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} onNavigate={onNavigate}
-          onObjectClick={askObject} objectSwaps={swaps} />
+          onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} onNavigate={objectId ? undefined : onNavigate}
+          onObjectClick={objectId ? undefined : askObject} objectSwaps={swaps} />
         {/* Held sections: full pane width, selected (never played or opened) until saved into the public page. */}
-        {!heldInFrame && <div data-held-sections className="w-full">
+        {!heldInFrame && !objectId && <div data-held-sections className="w-full">
           {blocks.filter((b): b is RenderBlock => !isPageContent(b)).map((b)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
             className={`relative ${embedded ? "cursor-pointer [&_iframe]:pointer-events-none [&_video]:pointer-events-none" : ""}`}
             onClickCapture={embedded ? (e) => { if ((e.target as HTMLElement).closest("[contenteditable=true],input,textarea,select")) return; e.preventDefault(); setActiveId(b.id); setInlineSel(null); } : undefined}>
