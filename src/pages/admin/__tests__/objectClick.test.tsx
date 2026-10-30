@@ -64,11 +64,11 @@ describe("edit-object-click", () => {
 
 describe("object dialogs", () => {
   const props = { pageName: "Homepage", busy: false, onOpen: vi.fn(), onCopy: vi.fn(), onCancel: vi.fn() };
-  it("object used elsewhere offers Edit Everywhere, copy and cancel, naming the other pages", () => {
+  it("object used elsewhere offers Edit Object, copy and cancel, naming the other pages", () => {
     render(<ObjectClickDialog {...props} ask={{ ...click, kind: "shared", usedOn: ["Homepage", "About"] }} />);
     expect(screen.getByRole("heading", { name: "Edit About Us?" })).toBeInTheDocument();
     expect(screen.getByText("About Us is also used on About. Edit it everywhere, or make a copy just for Homepage?")).toBeInTheDocument();
-    expect(screen.getAllByRole("button").filter(b => b.textContent).map(b => b.textContent)).toEqual(["Edit Everywhere", "Make a Copy for This Page", "Cancel", "Close"]);
+    expect(screen.getAllByRole("button").filter(b => b.textContent).map(b => b.textContent)).toEqual(["Edit Object", "Make a Copy for This Page", "Cancel", "Close"]);
     fireEvent.click(screen.getByRole("button", { name: "Make a Copy for This Page" }));
     expect(props.onCopy).toHaveBeenCalled();
   });

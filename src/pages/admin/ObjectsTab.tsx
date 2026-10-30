@@ -567,8 +567,8 @@ export default function ObjectsTab() {
                       <button
                         type="button"
                         onClick={() => navigate(`/manage/objects/design?object=${obj.id}`)}
-                        aria-label="Edit in the Object Editor"
-                        title="Edit"
+                        aria-label="Edit Object"
+                        title="Edit Object"
                         className="inline-flex items-center justify-center p-1.5 rounded border hover:bg-muted"
                       >
                         <Pencil className="w-4 h-4" />

@@ -70,7 +70,7 @@ describe("public page save/discard integration", () => {
   it("opens null-id site chrome through the registry lookup", async () => {
     const s = await openRemote(true, true);
     s.send("edit-object-click", { objectId: null, componentKey: "Header", name: "Header", slot: "site-header", siteWide: true });
-    fireEvent.click(screen.getByRole("button", { name: "Open in Object Editor" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Object" }));
     await waitFor(() => expect(mocks.openObject).toHaveBeenCalledWith("site-header"));
   });
   it.each(["discard", "undo-save", "leave"])("transports a Ready coded-slot copy and cleans it on %s", async action => {

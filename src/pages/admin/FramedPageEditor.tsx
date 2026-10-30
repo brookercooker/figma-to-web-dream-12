@@ -7,7 +7,7 @@ import { remoteSelection, validSnapshot, type EditQuery, type SelectionSnapshot 
 import { manualNavigationPath } from "./designChat/manualPageNavigation";
 import { acceptFrameScroll, restoreFrameScroll } from "./designChat/frameScroll";
 
-export interface FramedEditorController { exit: () => void; query: EditQuery }
+export interface FramedEditorController { exit: () => void; query: EditQuery; scrollToSlot?: (slot: string) => void }
 export interface FramedPageEditorProps {
   base: string | null;
   path: string;
@@ -111,7 +111,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       queries.current.forEach(({ resolve, timer }) => { clearTimeout(timer); resolve(null); });
       queries.current.clear();
     };
-    if (props.apiRef) props.apiRef.current = { exit, query };
+    if (props.apiRef) props.apiRef.current = { exit, query, scrollToSlot: (slot) => { if (ready.current && !exited.current) post("scroll-to-slot", { slot }); } };
     const receive = (event: MessageEvent) => {
       if (!trustedEditMessage(event, frame.current, origin) || exited.current) return;
       const data = event.data;

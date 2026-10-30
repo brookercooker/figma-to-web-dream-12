@@ -710,7 +710,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                     )}
                     {inlineSel?.scope === "Header" && <>
                       <SharedObjectNotice componentKey="Header" />
-                      <Button variant="outline" size="sm" onClick={async () => { const id = objectRows.current.Header; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, inlineSel.key); } else navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(inlineSel.key)}`); }}>Open in Object Editor</Button>
+                      <Button variant="outline" size="sm" onClick={async () => { const id = objectRows.current.Header; if (!id) return; if (embedded) { if (await saveAll()) chat?.openObject(id, inlineSel.key); } else navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}&section=${encodeURIComponent(inlineSel.key)}`); }}>Edit Object</Button>
                     </>}
                     <InlineStylePanel
                       key={`style:${inlineSel?.scope}:${inlineSel?.key}`}
@@ -836,17 +836,23 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   );
 
   const blockLabel = (b: RenderBlock) => b.type === "object" ? `Object: ${b.name ?? "Saved Object"}` : b.type === "code" ? b.name : b.type === "text" || b.type === "heading" ? b.text : b.type === "image" ? "Image" : "Video";
+  /** Shared site chrome in the Sections list: fixed first/last, no move or delete; selecting scrolls the frame to it. */
+  const chromeRow = (slot: "site-header" | "site-footer", label: string) => <li key={slot} data-section-row={slot} className="flex items-center px-2 py-2">
+    <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(""); setInlineSel(null); framedApi.current?.scrollToSlot?.(slot); }}>{label}</Button>
+  </li>;
   const tools = <div className="space-y-4 p-3">
     {stylePanel}
     {!objectId && <>
     <p className="text-xs font-medium">Sections</p>
     <ol className="divide-y border rounded-md">
+      {chromeRow("site-header", "Site Header")}
       {orderedPageContent(blocks).map((b,i) => isPageContent(b) ? <li key={b.id} data-section-row={b.id} className="px-2 py-2 text-xs">Page Content</li> : <li key={b.id} data-section-row={b.id} aria-current={activeId === b.id || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeId === b.id ? "bg-accent" : ""}`}>
         <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); if (heldInFrame) { void framedApi.current?.query("scrollTo", "held", b.id); return; } blockCanvasRef.current?.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>{blockLabel(b)}</Button>
         {i > 0 && <ToolButton title="Move Up" onClick={() => move(b.id,-1)}><ArrowUp className="h-4 w-4" /></ToolButton>}
         {i < orderedPageContent(blocks).length-1 && <ToolButton title="Move Down" onClick={() => move(b.id,1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
         <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="h-4 w-4" /></ToolButton>
       </li>)}
+      {chromeRow("site-footer", "Site Footer")}
     </ol>
     {(() => { const list=orderedPageContent(blocks); const i=list.findIndex(b=>b.id===activeId); const b=list[i]; return !b || isPageContent(b) ? null : <div className="flex flex-wrap gap-1">{blockTools(b,i)}</div>; })()}
     </>}
