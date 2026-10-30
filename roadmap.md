@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Polish Manual Edit sections, unsaved counts and confirmed bottom reset actions; validate protocol and save/discard behavior.
 - [x] Remove object status UI and warnings; all 31 existing objects normalized to Ready, default deprecated/Ready; creation verified signed-in, page-copy and picker availability covered by tests; page statuses unchanged.
 - [x] Object dialog regressions: null-id chrome lookup, awaited reference-safe copy cleanup, swap snapshots and named home usage. Removed verified-unused owner test copy; regression tests pass. Hosted frame check blocked by unavailable design service.
 - [ ] Verify external relay packages objectSwap-referenced copies: package builder is not in this project.
