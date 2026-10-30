@@ -244,7 +244,7 @@ describe("public page save/discard integration", () => {
     fireEvent.click(deletes[0]);
     await waitFor(() => expect(order()).toEqual(["first"]));
     stubReloadedFrame();
-    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Page Content", "Image"]);
+    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Site Header", "Page Content", "Image", "Site Footer"]);
     s.unmount();
   });
   it("moves held components around page content without reload and restores saved order on discard", async () => {
