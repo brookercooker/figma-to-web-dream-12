@@ -25,7 +25,7 @@ export default function ObjectClickDialog({ ask, pageName, busy, onOpen, onCopy,
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-row flex-wrap justify-start gap-2 sm:justify-start sm:space-x-0">
-          <Button className="gap-2" disabled={busy} onClick={onOpen}><PencilRuler className="h-4 w-4" aria-hidden />{ask?.kind === "shared" ? "Edit Everywhere" : "Open in Object Editor"}</Button>
+          <Button className="gap-2" disabled={busy} onClick={onOpen}><PencilRuler className="h-4 w-4" aria-hidden />Edit Object</Button>
           {ask?.kind === "shared" && <Button variant="outline" className="gap-2" disabled={busy} onClick={onCopy}><Copy className="h-4 w-4" aria-hidden />{busy ? "Copying…" : "Make a Copy for This Page"}</Button>}
           <Button variant="outline" disabled={busy} onClick={onCancel}>Cancel</Button>
         </DialogFooter>

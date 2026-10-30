@@ -606,7 +606,7 @@ export default function InlineEditSurface({
             className="absolute z-[70] my-1.5 inline-flex h-7 items-center gap-1.5 rounded-md border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted"
             style={{ top: b.top, left: b.left + b.width - 190, width: 180 }}
           >
-            <ExternalLink className="h-3.5 w-3.5" /> Open in Object Editor
+            <ExternalLink className="h-3.5 w-3.5" /> Edit Object
           </button>
         )}
       </div>
