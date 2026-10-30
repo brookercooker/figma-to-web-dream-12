@@ -13,4 +13,20 @@ describe("frame section list", () => {
     expect(parseFrameSections(Array.from({ length: 501 }, (_, i) => row(String(i))))).toBeNull();
     expect(parseFrameSections([])).toEqual([]);
   });
+  it.each([
+    ["Shared object: Categories", "Categories"],
+    ["Shared object · You May Like", "You May Like"],
+    ["Hinkley · Shared object: Hinkley New Arrivals", "Hinkley New Arrivals"],
+    ["Categories", "Categories"],
+    ["Categories · New Arrivals", "Categories · New Arrivals"],
+  ])("normalizes object metadata in %s without changing identity", (name, expected) => {
+    const section = { ...row("categories", "object"), name, objectId: "object-123" };
+    expect(parseFrameSections([section])).toEqual([{ ...section, name: expected }]);
+  });
+  it("normalizes held object names but preserves non-object section names", () => {
+    const name = "Shared object: Categories";
+    const held = { ...row("held", "held"), name, objectId: "object-123" };
+    const page = { ...row("page"), name };
+    expect(parseFrameSections([held, page])).toEqual([{ ...held, name: "Categories" }, page]);
+  });
 });
