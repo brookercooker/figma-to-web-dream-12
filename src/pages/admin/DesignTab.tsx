@@ -35,6 +35,7 @@ import type { InlineReports } from "@/components/InlineEditSurface";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import { objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";
 import SectionLayoutGroup from "./SectionLayoutGroup";
+import { notReadyObjectNames, saveRow } from "./saveRow";
 import { imageSection, moveSection, sectionLabel, videoSection } from "./objectSectionsEdit";
 import { parseSections, type Section } from "@/components/ObjectSections";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
@@ -571,7 +572,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     const p = pendingSave.current;
     if (p && objectId) {
       // Object scope: the held sections are the object's content.
-      const { error } = await (supabase as any).from("object_registry").update({ content: p.snapshot, updated_at: new Date().toISOString() }).eq("id", objectId);
+      const { error } = await saveRow("object_registry", { content: p.snapshot, updated_at: new Date().toISOString() }, objectId);
       if (error) failed = error.message ?? "Could not save the object";
       else {
         wrote = true; persistedContent.current = true;
@@ -580,7 +581,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         setBlocks((cur) => { if (cur === p.snapshot) setDirty(false); return cur; });
       }
     } else if (p) {
-      const { error } = await (supabase as any).from("pages").update({ content: stripHeldObjects(p.snapshot) }).eq("id", p.pageId);
+      const { error } = await saveRow("pages", { content: stripHeldObjects(p.snapshot) }, p.pageId);
       if (error) failed = error.message ?? "Could not save the page";
       else {
         wrote = true;
@@ -594,7 +595,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     const inl = pendingInline.current;
     if (inl) {
       const updated_at = new Date().toISOString();
-      const { error } = await (supabase as any).from("pages").update({ inline_edits: inl.next, updated_at }).eq("id", inl.pageId);
+      const { error } = await saveRow("pages", { inline_edits: inl.next, updated_at }, inl.pageId);
       if (error) failed = failed ?? (error.message ?? "Could not save your changes");
       else {
         wrote = true;
@@ -607,12 +608,12 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     for (const [scope, next] of Object.entries(pendingObjects.current)) {
       const id = objectRows.current[scope];
       if (!id) { delete pendingObjects.current[scope]; continue; }
-      const { error } = await (supabase as any).from("object_registry").update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("id", id);
+      const { error } = await saveRow("object_registry", { inline_edits: next, updated_at: new Date().toISOString() }, id);
       if (error) failed = failed ?? (error.message ?? "Could not save the shared section");
       else { wrote = true; persistedObjects.current.add(scope); cleanState.current = { ...cleanState.current, objectEdits: { ...cleanState.current.objectEdits, [scope]: structuredClone(next) } }; if (pendingObjects.current[scope] === next) delete pendingObjects.current[scope]; }
     }
     setTweaksPending(!!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
-    if (wrote) notifyContentEdited(lines);
+    if (wrote) { notifyContentEdited(lines); warnDraftObjects(); }
     if (failed) { toast.error(failed); return false; }
     cleanState.current = structuredClone(editState.current);
     resetHistory();
@@ -622,6 +623,13 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     pendingCopies.current.clear();
     return true;
     } finally { savingHistory.current = false; }
+  };
+  /** After a save: objects on the page that aren't Ready won't appear in the preview yet. */
+  const warnDraftObjects = () => {
+    if (objectId) return;
+    void notReadyObjectNames(editState.current.blocks).then((names) => {
+      if (names.length) toast.warning(`${names.map(quote).join(", ")} ${names.length > 1 ? "aren't" : "isn't"} Ready yet, so ${names.length > 1 ? "they won't" : "it won't"} show in the preview until marked Ready.`);
+    }).catch(() => {});
   };
   /** Plain lines for everything this save writes (clean state → current state). */
   const describeSave = () => {

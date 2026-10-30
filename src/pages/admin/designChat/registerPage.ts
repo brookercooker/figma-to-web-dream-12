@@ -23,10 +23,16 @@ export function pageSlugSuffix() {
   return Array.from(crypto.getRandomValues(new Uint8Array(3)), (n) => n.toString(16).padStart(2, "0")).join("");
 }
 
+/** Editor-only addresses ("/__object/…", the manager, admin and preview) are never site pages. */
+export const isInternalPath = (path: string) => {
+  const k = normalizePreviewPath(path);
+  return k.startsWith("/__") || /^\/(manage|admin|preview)(\/|$)/.test(k);
+};
+
 /** Only visitor pages can be automatically added for hand editing. */
 export function pageToRegister(path: string, notFound = false): RegistrablePage | null {
   const key = normalizePreviewPath(path);
-  if (notFound || !key.startsWith("/") || key === "/" || key === "/home" || key === "*" ||
+  if (notFound || isInternalPath(key) || !key.startsWith("/") || key === "/" || key === "/home" || key === "*" ||
       key.startsWith("/preview/") || key.startsWith("/manage") || key.startsWith("/admin") || key.startsWith("/landing/")) return null;
   const name = (key.split("/").pop() ?? "").replace(/[-_]+/g, " ").split(/\s+/).filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ");

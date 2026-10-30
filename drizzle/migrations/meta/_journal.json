@@ -29,6 +29,13 @@
       "when": 1793252268126,
       "tag": "0003_object_registry_site_wide",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793399990672,
+      "tag": "0004_archive_object_page_and_touch_on_content",
+      "breakpoints": true
     }
   ]
 }

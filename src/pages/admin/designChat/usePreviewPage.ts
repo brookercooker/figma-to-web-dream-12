@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/prototype/client";
 import { notifyContentEdited } from "./contentSync";
-import { homeAliases, isHomePath, pageKey, pageToRegister, pageRow, pageSlugSuffix, type RegistrablePage } from "./registerPage";
+import { homeAliases, isHomePath, isInternalPath, pageKey, pageToRegister, pageRow, pageSlugSuffix, type RegistrablePage } from "./registerPage";
 export { normalizePreviewPath } from "./registerPage";
 import { normalizePreviewPath } from "./registerPage";
 
@@ -15,6 +15,7 @@ const registering = new Map<string, Promise<PreviewPage>>();
 /** Register once even when more than one click or editor requests the same page. */
 export function registerPreviewPage(candidate: RegistrablePage): Promise<PreviewPage> {
   const key = pageKey(candidate.path); // the front page is stored as "/", never "/home"
+  if (isInternalPath(key)) return Promise.reject(new Error("This address isn't a site page."));
   const existing = cache.get(key);
   if (existing) return Promise.resolve(existing);
   const pending = registering.get(key);
