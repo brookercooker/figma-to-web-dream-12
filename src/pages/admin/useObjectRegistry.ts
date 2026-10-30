@@ -68,7 +68,7 @@ export function useCreateObject() {
         .from("object_registry")
         .insert({
           name: payload.name,
-          status: "Draft",
+          status: "Ready",
           component_key: null,
           description: payload.description ?? "",
           intended_pages: payload.intended_pages ?? [],
@@ -112,51 +112,6 @@ export function useRestoreObject() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "object_registry"] });
     },
-  });
-}
-
-/** Flip status Ready → Draft. */
-export function useRevertToDraft() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await (supabase as any)
-        .from("object_registry")
-        .update({ status: "Draft" })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "object_registry"] }),
-  });
-}
-
-/** Flip status Draft → Ready. */
-export function useMarkAsBuilt() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await (supabase as any)
-        .from("object_registry")
-        .update({ status: "Ready" })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "object_registry"] }),
-  });
-}
-
-/** Set an object's work status explicitly (used by the WorkStatusPopover). */
-export function useSetObjectStatus() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: "Draft" | "Ready" }) => {
-      const { error } = await (supabase as any)
-        .from("object_registry")
-        .update({ status })
-        .eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "object_registry"] }),
   });
 }
 

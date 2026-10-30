@@ -15,19 +15,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import ObjectSections, { parseSections } from "@/components/ObjectSections";
 
-/**
- * /objects/:slug — renders a single object's real shared component in isolation.
- *
- * The floating "Save" button opens a confirmation dialog that:
- *   - clarifies save ≠ publish,
- *   - lets the user consciously choose Ready vs Draft (current status preselected),
- *   - then persists the status and refreshes thumbnails for the object and every
- *     page that uses it.
- */
+/** Renders a single object and refreshes its saved previews. */
 export default function ObjectRoute() {
   const { slug } = useParams();
   const [row, setRow] = useState<any | null>(null);
@@ -35,7 +26,6 @@ export default function ObjectRoute() {
   const [notFound, setNotFound] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
-  const [chosenStatus, setChosenStatus] = useState<"Draft" | "Ready">("Draft");
   const [headerUsages, setHeaderUsages] = useState<ObjectUsage[]>([]);
 
   useEffect(() => {
@@ -82,9 +72,8 @@ export default function ObjectRoute() {
 
   const entry = row.component_key ? objectRegistry[row.component_key] : undefined;
   const designed = parseSections(row.content);
-  const isReady = row.status === "Ready";
   const ref = buildObjectRef({
-    id: row.slug_id, name: row.name, status: row.status, description: row.description,
+    id: row.slug_id, name: row.name, description: row.description,
   });
   const lastModified = row.updated_at
     ? new Date(row.updated_at).toLocaleDateString(undefined, {
@@ -93,20 +82,12 @@ export default function ObjectRoute() {
     : null;
 
   const openSaveDialog = () => {
-    setChosenStatus((row.status as "Draft" | "Ready") ?? "Draft");
     setSaveOpen(true);
   };
 
   const handleConfirmSave = async () => {
     setSaving(true);
     try {
-      if (chosenStatus !== row.status) {
-        const { error } = await (supabase as any)
-          .from("object_registry")
-          .update({ status: chosenStatus })
-          .eq("id", row.id);
-        if (error) throw error;
-      }
 
       if (row.component_key) {
         regenerateThumbnail({
@@ -134,8 +115,7 @@ export default function ObjectRoute() {
         }).catch((e) => console.warn("page thumb refresh failed", u.path, e));
       }
 
-      toast.success(`Saved as ${chosenStatus}.`);
-      setRow({ ...row, status: chosenStatus });
+      toast.success("Object saved.");
       setSaveOpen(false);
     } catch (e: any) {
       toast.error(e?.message ?? "Save failed");
@@ -154,9 +134,6 @@ export default function ObjectRoute() {
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Object</span>
           <span className="font-medium truncate">{row.name}</span>
-          <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-widest ${
-            isReady ? "border-emerald-500/40 text-emerald-700" : "border-brass/40 text-brass"
-          }`}>{row.status}</span>
         </div>
         <div className="text-muted-foreground truncate">
           {headerUsages.length === 0
@@ -172,8 +149,6 @@ export default function ObjectRoute() {
           <CopyRefButton
             reference={ref}
             label="Copy Reference"
-            disabled={!isReady}
-            disabledMessage="Save this object as Ready before you can use it on a page."
           />
         </div>
       </div>
@@ -187,7 +162,7 @@ export default function ObjectRoute() {
       ) : (
         <div className="min-h-[60vh] bg-cream flex items-center justify-center p-8">
           <div className="max-w-md text-center border-2 border-dashed border-brass/40 bg-brass/5 rounded-md p-8">
-            <p className="text-[10px] uppercase tracking-widest text-brass mb-2">Draft</p>
+            <p className="text-[10px] uppercase tracking-widest text-brass mb-2">Object</p>
             <h1 className="font-serif text-2xl text-ink mb-2">{row.name}</h1>
             {row.description && <p className="text-sm text-stone mb-3">{row.description}</p>}
             <p className="text-xs text-stone">
@@ -218,52 +193,10 @@ export default function ObjectRoute() {
                   Your changes are saved and available to reference when you
                   chat with Lovable (via <b>Copy Reference</b>).
                 </p>
-                <p>
-                  This does <b>not</b> publish them to your live site — to
-                  publish, click the <b>Publish</b> button inside Lovable.
-                </p>
               </div>
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Work Status</p>
-            <p className="text-xs text-muted-foreground">
-              Draft vs Ready is just your work-tracking marker for whether the
-              object is finished being built. It is separate from publishing —
-              Draft vs Ready is not the same as live vs not-live.
-            </p>
-            <RadioGroup
-              value={chosenStatus}
-              onValueChange={(v) => setChosenStatus(v as "Draft" | "Ready")}
-              className="gap-2"
-            >
-              <label
-                htmlFor="obj-status-ready"
-                className="flex items-start gap-3 rounded border p-3 cursor-pointer hover:bg-muted/40"
-              >
-                <RadioGroupItem value="Ready" id="obj-status-ready" className="mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium">Mark as Ready</div>
-                  <div className="text-xs text-muted-foreground">
-                    Complete — safe to reference.
-                  </div>
-                </div>
-              </label>
-              <label
-                htmlFor="obj-status-draft"
-                className="flex items-start gap-3 rounded border p-3 cursor-pointer hover:bg-muted/40"
-              >
-                <RadioGroupItem value="Draft" id="obj-status-draft" className="mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium">Keep as Draft</div>
-                  <div className="text-xs text-muted-foreground">
-                    Still being built.
-                  </div>
-                </div>
-              </label>
-            </RadioGroup>
-          </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setSaveOpen(false)} disabled={saving}>
