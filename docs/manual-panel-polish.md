@@ -1,0 +1,7 @@
+# Manual Edit panel polish
+
+- `edit-ready.capabilities.sectionList: true` enables trusted `edit-sections { sections: [{ key, name, kind, objectId?, collapsed, movable, deletable }] }` snapshots. Lists are bounded to 500 entries; duplicate keys and malformed values are rejected. Frame reload/error clears snapshots. Older frames retain the held-section list.
+- Selection posts exactly `{ source: "nova-manager", type: "scroll-to-section", key }` to the frame's origin/window. Site Header/Footer stay first/last with no mutation controls.
+- Held keys matching Manager block ids reuse existing move/delete state, history and save paths. Other coded section controls send `edit-section-move { key, direction: -1 | 1 }` or `edit-section-delete { key }`; the public frame must handle these and return ordinary `edit-change` messages for saving. These two command shapes are Manager additions, not established by the owner's sectionList brief.
+- Unsaved count is merged undo steps, minimum one for dirty changes with cleared history (for example confirmed reset); clean state shows no count. Save is primary only when dirty, Discard disabled when clean.
+- Reset lives last in the options panel, requires named destructive confirmation, and is held until Save Changes. Page reset clears page overrides and restores opening held content, without clearing shared-object overrides. Object reset clears only `object:<id>` overrides and preserves designed sections. Both clear Undo/Redo, matching the existing reset boundary; Discard can still cancel a staged reset.

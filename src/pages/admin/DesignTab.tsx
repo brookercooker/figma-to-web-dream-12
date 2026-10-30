@@ -48,6 +48,8 @@ import { remoteSnapshot } from "./remoteSelection";
 import { applySwap, copyName, objectClickKind, objectClickAction, objectSwaps as swapsOf, unusedCopies, type ObjectClick } from "./objectClick";
 import ObjectClickDialog, { type ObjectAsk } from "./ObjectClickDialog";
 import ConfirmDialog from "./ConfirmDialog";
+import ResetEditsAction from "./ResetEditsAction";
+import type { FrameSection } from "./frameSections";
 import { findObjectUsages } from "./objectUsages";
 import { cleanupObjectCopies } from "./objectCopyCleanup";
 import { Save as SaveIcon, Trash2 as TrashIcon, Pencil as PencilIcon } from "lucide-react";
@@ -137,6 +139,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   };
   const [activeId, setActiveId] = useState<string>("");
   const [heldInFrame, setHeldInFrame] = useState(false);
+  const [frameSections, setFrameSections] = useState<FrameSection[] | null>(null);
+  const [activeSection, setActiveSection] = useState("");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -293,7 +297,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
       if (e.key !== "Escape" || e.defaultPrevented) return;
       const t = e.target as HTMLElement | null;
       if (t?.closest("input,textarea,select,[contenteditable=true],[role=dialog],[role=listbox],[role=menu]")) return;
-      setInlineSel(null); setActiveId("");
+      setInlineSel(null); setActiveId(""); setActiveSection("");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -665,7 +669,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   historyHandlers.current = { undo: () => restoreHistory("undo"), redo: () => restoreHistory("redo") };
   useEffect(() => {
     if (!embedded || !registerHistory) return;
-    registerHistory({ undoLabel: history.current.undoLabel, redoLabel: history.current.redoLabel,
+    registerHistory({ undoLabel: history.current.undoLabel, redoLabel: history.current.redoLabel, changeCount: hasChangesRef.current() ? Math.max(1, history.current.changeCount) : 0,
       undo: () => historyHandlers.current.undo(), redo: () => historyHandlers.current.redo() });
     return () => registerHistory(null);
   }, [embedded, registerHistory, historyRevision]);
@@ -745,6 +749,22 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     return () => registerAdd(null);
   }, [embedded, registerAdd, objectId, designedObject]);
 
+  function resetEdits() {
+    if (objectId) {
+      changeScope(`object:${objectId}`, {});
+    } else {
+      if (opening.current) changeBlocks(parsePageContent(opening.current.content));
+      changeInline({});
+    }
+    setInlineSel(null); setActiveId(""); setActiveSection(""); resetHistory();
+  }
+  function sectionAction(section: FrameSection, action: "up" | "down" | "delete") {
+    if (section.kind === "site" || (action === "delete" ? !section.deletable : !section.movable)) return;
+    // Held sections remain Manager-owned; code sections report their resulting inline edits back.
+    if (blocks.some(b => b.id === section.key)) {
+      if (action === "delete") remove(section.key); else move(section.key, action === "up" ? -1 : 1);
+    } else framedApi.current?.sectionAction?.(section.key, action);
+  }
   const stylePanel = (
     <>
                     {inlineSel && inlineSel.scope !== "page" && !objectId && (
@@ -769,13 +789,13 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                     />
                     <InlineDestinationPanel key={`destination:${inlineSel?.scope}:${inlineSel?.key}`} selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
                     {/* Framed pages replay in the public frame; local reports would be stale, so show none until the frame reports. */}
-                    <InlineEditSafetyPanel reports={framed ? framedReports : {}} selection={inlineSel} editsFor={scopeEdits}
+                    <InlineEditSafetyPanel hideReset objectName={objectTarget?.name} reports={framed ? framedReports : {}} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
                       record={async () => { if (!framed) return; const maps = await recordFramed(); if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
-                      resetAll={() => { if (opening.current) changeBlocks(parsePageContent(opening.current.content)); changeInline({}); for (const scope of new Set([...Object.keys(objectEdits), ...Object.keys(framedReports), "Header"])) if (scope !== "page") changeScope(scope, {}); setInlineSel(null); resetHistory(); }} />
+                      resetAll={resetEdits} />
     </>
   );
-  const blockTools = (b: RenderBlock, i: number) => (
+  const blockTools = (b: RenderBlock, i: number, showActions = true) => (
     <>
                           {b.type === "code" ? <span className="text-xs">{b.name}{b.locked ? " · Built in Code" : ""}</span> : b.type === "object" ? (
                             <>
@@ -789,7 +809,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                                 className="flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground hover:bg-muted"
                               >
                                 {collapsed[b.id] ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                <span>Object: {b.name ?? "Saved Object"}</span>
+                                <span>{b.name ?? "Saved Object"}</span><span className="text-muted-foreground">Shared</span>
                               </button>
                               <ToolButton title="Replace" onClick={() => setObjectFor(b.id)}>
                                 <Boxes className="w-4 h-4" />
@@ -869,24 +889,37 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                             </>
                           )}
                           <span className="mx-1 h-5 w-px bg-border" />
-                          {i > 0 && (
+                          {showActions && i > 0 && (
                             <ToolButton title="Move Up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
                           )}
-                          {i < orderedPageContent(blocks).length - 1 && (
+                          {showActions && i < orderedPageContent(blocks).length - 1 && (
                             <ToolButton title="Move Down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
                           )}
-                          <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
+                          {showActions && <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>}
     </>
   );
 
-  const blockLabel = (b: RenderBlock) => b.type === "object" ? `Object: ${b.name ?? "Saved Object"}` : b.type === "code" ? b.name : b.type === "text" || b.type === "heading" ? b.text : b.type === "image" ? "Image" : "Video";
+  const blockLabel = (b: RenderBlock) => b.type === "object" ? b.name ?? "Saved Object" : b.type === "code" ? b.name : b.type === "text" || b.type === "heading" ? b.text : b.type === "image" ? "Image" : "Video";
   /** Shared site chrome in the Sections list: fixed first/last, no move or delete; selecting scrolls the frame to it. */
   const chromeRow = (slot: "site-header" | "site-footer", label: string) => <li key={slot} data-section-row={slot} className="flex items-center px-2 py-2">
     <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(""); setInlineSel(null); framedApi.current?.scrollToSlot?.(slot); }}>{label}</Button>
   </li>;
   const tools = <div className="space-y-4 p-3">
     {stylePanel}
-    {designedObject && <>
+    {frameSections !== null && <>
+      <p className="text-xs font-medium">Sections</p>
+      <ol className="divide-y rounded-md border">
+        {frameSections.map((section, i) => <li key={section.key} data-section-row={section.key} aria-current={activeSection === section.key || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeSection === section.key ? "bg-accent" : ""}`}>
+          {section.collapsed && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label="Collapsed" />}
+          <Button variant="ghost" size="sm" className="h-auto min-w-0 flex-1 justify-start whitespace-normal text-left" onClick={() => { setActiveSection(section.key); setActiveId(blocks.some(b => b.id === section.key) ? section.key : ""); setInlineSel(null); framedApi.current?.scrollToSection?.(section.key); }}>{section.name}</Button>
+          {(section.kind === "object" || section.objectId) && <span className="text-[10px] text-muted-foreground">Shared</span>}
+          {section.movable && i > 0 && frameSections[i-1].kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title="Move Up" aria-label="Move Up" onClick={() => sectionAction(section, "up")}><ArrowUp className="h-3.5 w-3.5" /></Button>}
+          {section.movable && i < frameSections.length-1 && frameSections[i+1].kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title="Move Down" aria-label="Move Down" onClick={() => sectionAction(section, "down")}><ArrowDown className="h-3.5 w-3.5" /></Button>}
+          {section.deletable && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title="Delete Section" aria-label="Delete Section" onClick={() => sectionAction(section, "delete")}><Trash2 className="h-3.5 w-3.5" /></Button>}
+        </li>)}
+      </ol>
+    </>}
+    {designedObject && frameSections === null && <>
     <p className="text-xs font-medium">Sections</p>
     {blocks.length === 0 ? <p className="text-xs text-muted-foreground">No sections yet. Add a picture or video from the top bar.</p> :
     <ol className="divide-y border rounded-md">
@@ -899,12 +932,13 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     </ol>}
     {(() => { const b = blocks.find(x => x.id === activeId); return b ? <SectionLayoutGroup section={b as unknown as Section} onChange={updateSection} /> : null; })()}
     </>}
-    {!objectId && <>
+    {designedObject && frameSections !== null && (() => { const b = blocks.find(x => x.id === activeId); return b ? <SectionLayoutGroup section={b as unknown as Section} onChange={updateSection} /> : null; })()}
+    {!objectId && frameSections === null && <>
     <p className="text-xs font-medium">Sections</p>
     <ol className="divide-y border rounded-md">
       {chromeRow("site-header", "Site Header")}
       {orderedPageContent(blocks).map((b,i) => isPageContent(b) ? <li key={b.id} data-section-row={b.id} className="px-2 py-2 text-xs">Page Content</li> : <li key={b.id} data-section-row={b.id} aria-current={activeId === b.id || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeId === b.id ? "bg-accent" : ""}`}>
-        <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); if (heldInFrame) { void framedApi.current?.query("scrollTo", "held", b.id); return; } blockCanvasRef.current?.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>{blockLabel(b)}</Button>
+        <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); if (heldInFrame) { void framedApi.current?.query("scrollTo", "held", b.id); return; } blockCanvasRef.current?.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>{blockLabel(b)}</Button>{b.type === "object" && <span className="text-[10px] text-muted-foreground">Shared</span>}
         {i > 0 && <ToolButton title="Move Up" onClick={() => move(b.id,-1)}><ArrowUp className="h-4 w-4" /></ToolButton>}
         {i < orderedPageContent(blocks).length-1 && <ToolButton title="Move Down" onClick={() => move(b.id,1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
         <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="h-4 w-4" /></ToolButton>
@@ -919,6 +953,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         <a className="underline" href={`/manage/objects/design?object=${objectTarget.objectId}&legacy=1`}>full designer</a>.
       </p>
     )}
+    {!objectId && frameSections !== null && (() => { const list = orderedPageContent(blocks); const i = list.findIndex(b => b.id === activeId); const b = list[i]; return !b || isPageContent(b) ? null : <div className="flex flex-wrap gap-1">{blockTools(b,i,false)}</div>; })()}
+    <ResetEditsAction name={objectTarget?.name ?? page?.name ?? "this page"} object={!!objectId} onReset={resetEdits} />
   </div>;
 
   /** Framed pages: the public frame records fingerprints (withFingerprints per scope); invalid maps are dropped. */
@@ -994,7 +1030,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         <FramedPageEditor key={objectId ? `object-${objectId}` : `public-${page.id}`} base={draftEmbedUrl()} path={objectId ? objectFramePath(objectId) : page.path} edits={inlineEdits} objectEdits={objectEdits}
           objectScope={objectTarget} scrollToSlot={objectId ? null : returnTo ?? null}
           sectionRevision={sectionRevision} heldBlocks={objectId && !designedObject ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
-          onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setInlineSel(null); }} fill={!deviceStyle}
+          onSections={setFrameSections}
+          onBlockSelect={(id) => { setActiveId(id); setActiveSection(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setActiveSection(id); setInlineSel(null); }} fill={!deviceStyle}
           onUndo={() => restoreHistory("undo")} onRedo={() => restoreHistory("redo")}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}

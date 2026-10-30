@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import { inlineEditAction, ManualEditHistory, manualHistoryShortcut, type ManualEditSnapshot } from "../designChat/manualEditHistory";
 const initial = (): ManualEditSnapshot => ({ blocks: [], inlineEdits: {}, objectEdits: {} });
 describe("local edit history", () => {
+  it("counts merged undo steps consistently through undo, redo and save/reset", () => {
+    const h = new ManualEditHistory(); const a = initial(); const b = { ...a, inlineEdits: { "0": "a" } }; const c = { ...a, inlineEdits: { "0": "ab" } };
+    expect(h.changeCount).toBe(0);
+    h.record(a, b, { label: "typing", mergeKey: "0" }, 0); h.record(b, c, { label: "typing", mergeKey: "0" }, 500);
+    expect(h.changeCount).toBe(1); h.undo(); expect(h.changeCount).toBe(0); h.redo(); expect(h.changeCount).toBe(1);
+    h.reset(); expect(h.changeCount).toBe(0);
+  });
   it("word formatting remains a separate style step rather than merged typing", () => {
     expect(inlineEditAction("page", { "0": "Words" }, { "0": "<b>Words</b>" })).toEqual({ label: "style change" });
   });

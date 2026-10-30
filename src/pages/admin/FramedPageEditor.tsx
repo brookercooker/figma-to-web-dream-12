@@ -6,8 +6,9 @@ import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, objectScopePay
 import { remoteSelection, validSnapshot, type EditQuery, type SelectionSnapshot } from "./remoteSelection";
 import { manualNavigationPath } from "./designChat/manualPageNavigation";
 import { acceptFrameScroll, restoreFrameScroll } from "./designChat/frameScroll";
+import { parseFrameSections, type FrameSection } from "./frameSections";
 
-export interface FramedEditorController { exit: () => void; query: EditQuery; scrollToSlot?: (slot: string) => void }
+export interface FramedEditorController { exit: () => void; query: EditQuery; scrollToSlot?: (slot: string) => void; scrollToSection?: (key: string) => void; sectionAction?: (key: string, action: "up" | "down" | "delete") => void }
 export interface FramedPageEditorProps {
   base: string | null;
   path: string;
@@ -30,6 +31,7 @@ export interface FramedPageEditorProps {
   activeBlockId?: string | null;
   onBlockSelect?: (id: string) => void;
   onBlockMove?: (id: string, toIndex: number) => void;
+  onSections?: (sections: FrameSection[] | null) => void;
   onNavigate?: (path: string) => void;
   /** Shared object clicked in the frame; the Manager asks before editing it. */
   onObjectClick?: (click: ObjectClick) => void;
@@ -62,6 +64,8 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const [heldCapable, setHeldCapable] = useState(false);
   const [moveCapable, setMoveCapable] = useState(false);
   const moveCapableRef = useRef(false);
+  const sectionsCapable = useRef(false);
+  const sectionsRef = useRef<FrameSection[]>([]);
   const [sized, setSized] = useState(false);
   // Section changes reload only frames that cannot draw held blocks themselves.
   const [frameRevision, setFrameRevision] = useState(props.sectionRevision ?? 0);
@@ -101,6 +105,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     ready.current = false; exited.current = false; setStatus("loading"); setFailure(null);
     capableRef.current = false; setHeldCapable(false);
     moveCapableRef.current = false; setMoveCapable(false);
+    sectionsCapable.current = false; sectionsRef.current = []; latest.current.onSections?.(null);
     latest.current.onReport?.({});
     destination.current = frame.current?.contentWindow ?? null;
     const timeout = setTimeout(() => setStatus("failed"), 15000);
@@ -111,7 +116,13 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       queries.current.forEach(({ resolve, timer }) => { clearTimeout(timer); resolve(null); });
       queries.current.clear();
     };
-    if (props.apiRef) props.apiRef.current = { exit, query, scrollToSlot: (slot) => { if (ready.current && !exited.current) post("scroll-to-slot", { slot }); } };
+    if (props.apiRef) props.apiRef.current = { exit, query, scrollToSlot: (slot) => { if (ready.current && !exited.current) post("scroll-to-slot", { slot }); },
+      scrollToSection: key => { if (ready.current && !exited.current && sectionsRef.current.some(s => s.key === key)) post("scroll-to-section", { key }); },
+      sectionAction: (key, action) => {
+        const section = sectionsRef.current.find(s => s.key === key);
+        if (!ready.current || exited.current || !section || (action === "delete" ? !section.deletable : !section.movable)) return;
+        post(action === "delete" ? "edit-section-delete" : "edit-section-move", { key, ...(action !== "delete" ? { direction: action === "up" ? -1 : 1 } : {}) });
+      } };
     const receive = (event: MessageEvent) => {
       if (!trustedEditMessage(event, frame.current, origin) || exited.current) return;
       const data = event.data;
@@ -121,15 +132,20 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         destination.current = frame.current?.contentWindow ?? null;
         capableRef.current = data.capabilities?.heldBlocks === true; setHeldCapable(capableRef.current);
         moveCapableRef.current = data.capabilities?.blockMove === true; setMoveCapable(moveCapableRef.current);
+        sectionsCapable.current = data.capabilities?.sectionList === true;
         clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); restoreFrameScroll(frame.current, latest.current.path); if (latest.current.scrollToSlot?.slot) post("scroll-to-slot", { slot: latest.current.scrollToSlot.slot }); return;
       }
       if (data.type === "edit-error") {
         clearTimeout(timeout); ready.current = false;
+        sectionsRef.current = []; latest.current.onSections?.(null);
         setFailure(typeof data.reason === "string" && data.reason.trim() ? data.reason.trim().slice(0, 200) : "The public page couldn't open this for editing.");
         setStatus("failed"); return;
       }
       if (!ready.current) return;
-      if (data.type === "page-scroll") {
+      if (data.type === "edit-sections" && sectionsCapable.current) {
+        const sections = parseFrameSections(data.sections);
+        if (sections) { sectionsRef.current = sections; latest.current.onSections?.(sections); }
+      } else if (data.type === "page-scroll") {
         acceptFrameScroll(event, frame.current, latest.current.path);
       } else if (data.type === "edit-change" && typeof data.scope === "string" && data.scope) {
         const next = editMap(data.next); if (next) latest.current.onChange(data.scope, next);

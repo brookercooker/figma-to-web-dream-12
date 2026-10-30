@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState, type
  * The embedded editor also registers its save function here, so pressing Save changes can save everything first.
  */
 type SaveFn = () => Promise<boolean>;
-export interface HistoryControls { undoLabel: string; redoLabel: string; undo: () => void; redo: () => void }
+export interface HistoryControls { undoLabel: string; redoLabel: string; changeCount?: number; undo: () => void; redo: () => void }
 type EditorSlotValue = {
   historyControls: HistoryControls | null;
   registerHistory: (controls: HistoryControls | null) => void;
