@@ -162,6 +162,32 @@ describe("public page save/discard integration", () => {
     await act(async () => mocks.save());
     expect(mocks.writes).toHaveBeenCalledWith("pages", expect.objectContaining({ inline_edits: {} }));
   });
+  it("full section list selects and scrolls real sections, and held delete stages a page content write", async () => {
+    mocks.slot = document.createElement("div"); document.body.appendChild(mocks.slot);
+    mocks.original.content = [{ id: "stats", type: "object", objectId: "o", name: "About Us", align: "left" }];
+    const s = await openRemote(true, true);
+    s.send("edit-sections", { sections: [] });
+    expect(mocks.slot.querySelector('[data-section-row="stats"]')).not.toBeNull();
+    // Capability is latched at ready, so use a fresh opening.
+    s.unmount();
+    const next = await openRemote(true, true);
+    const source = next.frame.contentWindow; if (!source) throw new Error("Missing frame");
+    next.rerender(<MemoryRouter><DesignTab key="section-capable" embedded pageId="contact" /></MemoryRouter>);
+    const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+    const current = frame.contentWindow; if (!current) throw new Error("Missing frame");
+    const post = vi.spyOn(current, "postMessage").mockImplementation(() => {});
+    const send = (type: string, payload = {}) => act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source: current, data: { source: "nova-site", type, ...payload } })));
+    send("edit-ready", { capabilities: { heldBlocks: true, sectionList: true } });
+    const row = (key: string, name: string, kind: string) => ({ key, name, kind, collapsed: false, movable: kind !== "site", deletable: kind !== "site" });
+    send("edit-sections", { sections: [row("site-header", "Site Header", "site"), row("people", "The People Behind Nova", "page"), row("stats", "About Us", "object"), row("site-footer", "Site Footer", "site")] });
+    fireEvent.click(screen.getByRole("button", { name: "The People Behind Nova" }));
+    expect(post).toHaveBeenCalledWith({ source: "nova-manager", type: "scroll-to-section", key: "people" }, "https://public.example.com");
+    expect(mocks.slot.querySelector('[data-section-row="people"]')?.getAttribute("aria-current")).toBe("true");
+    for (const key of ["site-header", "site-footer"]) expect(mocks.slot.querySelector(`[data-section-row="${key}"]`)?.querySelectorAll("button")).toHaveLength(1);
+    const deletion = mocks.slot.querySelector('[data-section-row="stats"] button[aria-label="Delete Section"]'); if (!deletion) throw new Error("Missing delete");
+    fireEvent.click(deletion); expect(mocks.writes).not.toHaveBeenCalled();
+    await act(async () => mocks.save()); expect(mocks.writes).toHaveBeenCalledWith("pages", { content: [] });
+  });
   it("passes existing positional edits unchanged on init and saves only the held map", async () => {
     const original = { "0.0.3": "Saved words", "style:0.1": '{"font-size":"24px"}' };
     mocks.original.inline_edits = original;
