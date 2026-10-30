@@ -1,3 +1,4 @@
+import { mergeChangeLines } from "../changeLines";
 import { postToHelper, RELAY, type RelayState } from "./helper";
 
 export const CONTENT_SAVED = "nova:content-saved";
@@ -5,7 +6,7 @@ export const CONTENT_SYNC_CHANGED = "nova:content-sync-changed";
 export const SYNC_RETRY_MS = 20_000;
 export const SYNC_RETRY_WINDOW_MS = 30 * 60_000;
 const STORAGE_KEY = `nova:content-sync-owed:${RELAY}`;
-type Owed = { version: number; deferred: boolean };
+type Owed = { version: number; deferred: boolean; changes?: string[] };
 function restore(): Owed | null {
   try { const value = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null"); return value && typeof value.version === "number" ? value : null; } catch { return null; }
 }
@@ -28,9 +29,10 @@ async function run() {
   if (!owed || inFlight || Date.now() > deadline) return;
   if (owed.deferred && (!latestState || contentSyncBusy(latestState))) return;
   const version = owed.version;
+  const changes = owed.changes ?? [];
   inFlight = true; nextRetry = Date.now() + SYNC_RETRY_MS;
   try {
-    const result = await postToHelper("/content/sync");
+    const result = await postToHelper("/content/sync", changes.length ? { changes } : {});
     if (result.ok) {
       if (owed?.version === version) owed = null;
       persist();
@@ -47,10 +49,12 @@ export function observeContentSyncState(state: RelayState | null) {
   latestState = state;
   if (state && owed && !timer && !inFlight && !contentSyncBusy(state) && Date.now() >= nextRetry && Date.now() <= deadline) void run();
 }
-/** Preview wording updates immediately; relay sync is coalesced and remembered across loads. */
-export function notifyContentEdited() {
+/** Preview wording updates immediately; relay sync is coalesced and remembered across loads.
+ * `changes` are plain lines describing this save; lines from saves sharing one sync are combined and resent on retry. */
+export function notifyContentEdited(changes?: string[]) {
   window.dispatchEvent(new Event(CONTENT_SAVED));
-  owed = { version: Math.max(Date.now(), (owed?.version ?? 0) + 1), deferred: owed?.deferred ?? false };
+  const merged = mergeChangeLines(owed?.changes, changes);
+  owed = { version: Math.max(Date.now(), (owed?.version ?? 0) + 1), deferred: owed?.deferred ?? false, ...(merged.length ? { changes: merged } : {}) };
   deadline = Date.now() + SYNC_RETRY_WINDOW_MS;
   persist();
   schedule(owed.deferred ? Math.max(0, nextRetry - Date.now()) : 4000);

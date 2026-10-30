@@ -1,5 +1,6 @@
 import { useEditorSlot, type AddKind } from "./designChat/EditorSlot";
 import { notifyContentEdited } from "./designChat/contentSync";
+import { blockChangeLines, inlineChangeLines, mergeChangeLines, quote, type ElementLabel } from "./changeLines";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -158,6 +159,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   const objectRows = useRef<Record<string, string>>({});
   const [heldObjects, setHeldObjects] = useState<Record<string, HeldObjectData>>();
   const objectTimers = useRef<Record<string, number>>({});
+  /** What each edited element looked like when first touched (scope|path), for plain change lines on save. */
+  const elementLabels = useRef<Record<string, ElementLabel>>({});
+  const swapNames = useRef<Record<string, string>>({});
+  useEffect(() => { elementLabels.current = {}; swapNames.current = {}; }, [selectedId]);
   useEffect(() => {
     (supabase as any).from("object_registry").select("id,status,name,component_key,content,inline_edits").then(({ data, error }: any) => {
       if (error) return;
@@ -179,6 +184,15 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   const changeScope = (scope: InlineScope, next: InlineEdits, remote = false) => {
     remote = remote || !!(inlineSel && remoteSnapshot(inlineSel.el));
     const snapshot = inlineSel && remoteSnapshot(inlineSel.el);
+    if (inlineSel) {
+      const labelKey = `${scope}|${snapshot?.key ?? inlineSel.key}`;
+      if (!elementLabels.current[labelKey]) {
+        const el = inlineSel.el;
+        elementLabels.current[labelKey] = snapshot
+          ? { tag: snapshot.tag, kind: snapshot.kind, text: snapshot.text, style: snapshot.style }
+          : { tag: el.tagName, kind: inlineSel.kind, text: el.textContent ?? "", style: (() => { const c = getComputedStyle(el); return { fontSize: c.fontSize, fontFamily: c.fontFamily, color: c.color, fontWeight: c.fontWeight }; })() };
+      }
+    }
     if (snapshot && scope === snapshot.scope && snapshot.fingerprint && Object.keys(next).some(k => { const parsed = k.includes(":") ? k.slice(k.indexOf(":") + 1) : k; return parsed === snapshot.key && !k.startsWith("fp:"); })) next = { ...next, [`fp:${snapshot.key}`]: JSON.stringify(snapshot.fingerprint) };
     if (snapshot?.link?.fingerprint && scope === snapshot.link.scope && next[`link:${snapshot.link.key}`]) next = { ...next, [`fp:${snapshot.link.key}`]: JSON.stringify(snapshot.link.fingerprint) };
     if (scope === "page") {
@@ -489,6 +503,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     try {
     let wrote = false;
     let failed: string | null = null;
+    const lines = describeSave();
     const p = pendingSave.current;
     if (p) {
       const { error } = await (supabase as any).from("pages").update({ content: stripHeldObjects(p.snapshot) }).eq("id", p.pageId);
@@ -523,7 +538,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       else { wrote = true; persistedObjects.current.add(scope); cleanState.current = { ...cleanState.current, objectEdits: { ...cleanState.current.objectEdits, [scope]: structuredClone(next) } }; if (pendingObjects.current[scope] === next) delete pendingObjects.current[scope]; }
     }
     setTweaksPending(!!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
-    if (wrote) notifyContentEdited();
+    if (wrote) notifyContentEdited(lines);
     if (failed) { toast.error(failed); return false; }
     cleanState.current = structuredClone(editState.current);
     resetHistory();
@@ -533,6 +548,22 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
     pendingCopies.current.clear();
     return true;
     } finally { savingHistory.current = false; }
+  };
+  /** Plain lines for everything this save writes (clean state → current state). */
+  const describeSave = () => {
+    const subject = page?.name ?? "This page";
+    const before = cleanState.current, after = editState.current;
+    const labelsFor = (scope: string) => Object.fromEntries(Object.entries(elementLabels.current).filter(([k]) => k.startsWith(`${scope}|`)).map(([k, v]) => [k.slice(scope.length + 1), v]));
+    const named = (list: Block[]) => list.map((b: any) => b.type === "object" && !b.name && heldObjects?.[b.objectId]?.name ? { ...b, name: heldObjects[b.objectId].name } : b);
+    const objectLines = Object.keys(pendingObjects.current).flatMap((scope) => {
+      const name = heldObjects?.[objectRows.current[scope]]?.name ?? scope;
+      return inlineChangeLines(`Object ${quote(name)}`, before.objectEdits[scope] ?? {}, after.objectEdits[scope] ?? {}, labelsFor(scope));
+    });
+    return mergeChangeLines(
+      pendingSave.current ? blockChangeLines(subject, named(before.blocks), named(after.blocks)) : [],
+      pendingInline.current ? inlineChangeLines(subject, before.inlineEdits, after.inlineEdits, labelsFor("page"), swapNames.current) : [],
+      objectLines,
+    );
   };
   const hasChangesRef = useRef<() => boolean>(() => false);
   hasChangesRef.current = () => !discarded.current && !sameEditState(editState.current, cleanState.current);
@@ -823,6 +854,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
       }).select("id,name,status,component_key,content,inline_edits").single();
       if (insertError || !row) throw new Error("insert");
       pendingCopies.current.add(row.id);
+      swapNames.current[ask.slot] = original.name || ask.name;
       setHeldObjects((cur) => ({ ...(cur ?? {}), [row.id]: { status: row.status, name: row.name, component_key: row.component_key ?? null, content: row.content, inline_edits: row.inline_edits ?? {} } }));
       const next = applySwap(editState.current.blocks as any[], editState.current.inlineEdits, ask.slot, row.id);
       recordEdit({ blocks: next.blocks as Block[], inlineEdits: next.edits }, { label: `copied ${ask.name} for this page` });

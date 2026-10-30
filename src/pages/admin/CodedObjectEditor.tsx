@@ -17,6 +17,7 @@ import EmbeddedBox from "./designChat/EmbeddedBox";
 import { useEditorSlot } from "./designChat/EditorSlot";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
 import { notifyContentEdited } from "./designChat/contentSync";
+import { inlineChangeLines, quote } from "./changeLines";
 
 export interface CodedObjectRow { id: string; name: string; component_key: string; inline_edits?: InlineEdits }
 
@@ -53,9 +54,10 @@ export default function CodedObjectEditor({ object, embedded, focusSection, onCo
     const { error } = await (supabase as any).from("object_registry")
       .update({ inline_edits: next, updated_at: new Date().toISOString() }).eq("component_key", key);
     if (error) { toast.error(error.message ?? "Could not save this object"); return false; }
+    const lines = inlineChangeLines(`Object ${quote(object.name ?? key)}`, saved.current, next);
     saved.current = next;
     if (revision === version.current) pending.current = false;
-    notifyContentEdited();
+    notifyContentEdited(lines);
     return true;
   };
   const saveRef = useRef(save); saveRef.current = save;

@@ -61,4 +61,29 @@ describe("Changes waiting for review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Back to Chat" }));
     expect(m.setReviewOpen).toHaveBeenCalledWith(false);
   });
+  it("lists Site Manager details with Show all, keeping the page line and preview button", () => {
+    const details = ["Homepage: changed the heading \"A\" to \"B\"", "L2", "L3", "L4", "L5", "L6"];
+    m.state.draft.requests = [{ id: "s", request: "Edits made in the Site Manager: x (and 4 more)", source: "content", at: now, details, page: { name: "Homepage", path: "/" } }];
+    render(<ReviewChangesView onShowPreview={vi.fn()} />);
+    const list = screen.getByRole("list", { name: "What Changed" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(4);
+    expect(screen.queryByText(/and 4 more/)).toBeNull();
+    expect(screen.getByText("Edits Made in the Site Manager")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show all 6 changes" }));
+    expect(within(list).getAllByRole("listitem")).toHaveLength(6);
+    expect(screen.getByText(/Page: Homepage/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View Page on Preview" })).toBeInTheDocument();
+  });
+  it("falls back to the request text when details are empty, and lists chat details too", () => {
+    m.state.draft.requests = [
+      { id: "o", request: "Edits made in the Site Manager: changed the hero text", source: "content", at: now, details: [] },
+      { id: "c", request: "Make it warmer", source: "chat", at: now - 1000, details: ["Homepage: warmer colours"] },
+    ];
+    render(<ReviewChangesView onShowPreview={vi.fn()} />);
+    expect(within(cards()[0]).getByText("changed the hero text")).toBeInTheDocument();
+    expect(within(cards()[0]).queryByRole("list", { name: "What Changed" })).toBeNull();
+    expect(within(cards()[1]).getByText("Make it warmer")).toBeInTheDocument();
+    expect(within(cards()[1]).getByText("Homepage: warmer colours")).toBeInTheDocument();
+    expect(within(cards()[1]).queryByRole("button", { name: /Show all/ })).toBeNull();
+  });
 });

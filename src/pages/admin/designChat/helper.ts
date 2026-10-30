@@ -67,6 +67,8 @@ export type DraftRequest = {
   notes?: string; decision?: unknown;
   /** Sent by redeployed relays only. */
   page?: { name: string; path: string } | null;
+  /** Plain lines saying what changed; empty for older requests. */
+  details?: string[];
 };
 
 export type RelayState = {
