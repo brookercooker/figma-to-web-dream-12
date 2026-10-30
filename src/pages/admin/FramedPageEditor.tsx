@@ -56,6 +56,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const frame = useRef<HTMLIFrameElement>(null);
   const latest = useRef(props); latest.current = props;
   const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const [failure, setFailure] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [height, setHeight] = useState(1200);
   const [heldCapable, setHeldCapable] = useState(false);
@@ -97,7 +98,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   };
   useLayoutEffect(() => {
     if (!origin || !target) { setStatus("failed"); return; }
-    ready.current = false; exited.current = false; setStatus("loading");
+    ready.current = false; exited.current = false; setStatus("loading"); setFailure(null);
     capableRef.current = false; setHeldCapable(false);
     moveCapableRef.current = false; setMoveCapable(false);
     latest.current.onReport?.({});
@@ -116,10 +117,16 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       const data = event.data;
       if (data.type === "edit-ready") {
         if (ready.current) return;
+        if (latest.current.objectScope && data.capabilities?.objectEditing !== true) { clearTimeout(timeout); setFailure("This public site can't open objects for editing yet."); setStatus("failed"); return; }
         destination.current = frame.current?.contentWindow ?? null;
         capableRef.current = data.capabilities?.heldBlocks === true; setHeldCapable(capableRef.current);
         moveCapableRef.current = data.capabilities?.blockMove === true; setMoveCapable(moveCapableRef.current);
         clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); restoreFrameScroll(frame.current, latest.current.path); if (latest.current.scrollToSlot) post("scroll-to-slot", { ...latest.current.scrollToSlot }); return;
+      }
+      if (data.type === "edit-error") {
+        clearTimeout(timeout); ready.current = false;
+        setFailure(typeof data.reason === "string" && data.reason.trim() ? data.reason.trim().slice(0, 200) : "The public page couldn't open this for editing.");
+        setStatus("failed"); return;
       }
       if (!ready.current) return;
       if (data.type === "page-scroll") {
@@ -194,7 +201,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const filling = !!props.fill && heldInFrame && !sized;
   return <div className={`relative w-full ${filling ? "h-full" : ""}`}>
     {status !== "ready" && <div role="status" className="flex items-center justify-center gap-3 bg-muted p-6 text-sm text-muted-foreground">
-      {status === "loading" && target ? (props.objectScope ? "Loading the object editor…" : "Loading the page editor…") : (props.objectScope ? "Couldn't reach the public object page" : "Couldn't reach the public page")}
+      {status === "loading" && target ? (props.objectScope ? "Loading the object editor…" : "Loading the page editor…") : (failure ?? (props.objectScope ? "Couldn't reach the public object page" : "Couldn't reach the public page"))}
       {(status === "failed" || !target) && <Button variant="outline" size="sm" onClick={() => { setOpening({ path: props.path, base: props.base }); setAttempt((n) => n + 1); }}>Retry</Button>}
     </div>}
     {target && <iframe key={`${target}|${attempt}|${frameRevision}`} ref={frame} src={target} title="Public Page Editor" data-site-editor="true" className={`w-full border-0 ${status !== "ready" ? "invisible absolute" : filling ? "block h-full" : "block"}`} height={filling ? "100%" : height} onError={() => setStatus("failed")} />}

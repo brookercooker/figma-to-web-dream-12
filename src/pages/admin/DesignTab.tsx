@@ -32,7 +32,7 @@ import InlineDestinationPanel from "./InlineDestinationPanel";
 import { withoutPath } from "@/lib/inlineEditCore";
 import type { InlineReports } from "@/components/InlineEditSurface";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
-import { objectEditScope, objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";
+import { objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
 import { isPageContent, movePageBlock, orderedPageContent, parsePageContent, type PageContentItem } from "./pageContentOrder";
 type Block = PageContentItem;
@@ -40,7 +40,7 @@ import { editMap, stripHeldObjects, type HeldObjectData } from "./framedPageProt
 import { draftEmbedUrl } from "./siteManifest";
 import { usePageEditorSurface } from "./usePageEditorSurface";
 import { remoteSnapshot } from "./remoteSelection";
-import { applySwap, copyName, objectClickKind, objectSwaps as swapsOf, unusedCopies, type ObjectClick } from "./objectClick";
+import { applySwap, copyName, objectClickKind, objectClickAction, objectSwaps as swapsOf, unusedCopies, type ObjectClick } from "./objectClick";
 import ObjectClickDialog, { type ObjectAsk } from "./ObjectClickDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import { findObjectUsages } from "./objectUsages";
@@ -171,7 +171,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const siteWideIds = useRef(new Set<string>());
   const objectTarget = useMemo<ObjectEditTarget | null>(() => {
     const o = objectId ? heldObjects?.[objectId] : undefined;
-    return objectId && o ? { objectId, name: o.name, status: o.status, component_key: o.component_key, siteWide: siteWideIds.current.has(objectId) } : null;
+    return objectId && o ? { objectId, name: o.name, status: o.status, component_key: o.component_key, siteWide: siteWideIds.current.has(objectId), content: o.content, inline_edits: o.inline_edits } : null;
   }, [objectId, heldObjects]);
   const objectTimers = useRef<Record<string, number>>({});
   /** What each edited element looked like when first touched (scope|path), for plain change lines on save. */
@@ -186,12 +186,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
       (data ?? []).forEach((r: any) => {
         snapshots[r.id] = { status: r.status, name: r.name, component_key: r.component_key ?? null, content: r.content, inline_edits: r.inline_edits ?? {} };
         if (r.site_wide) siteWideIds.current.add(r.id);
-        if (!r.component_key) {
-          // Designed objects edit under `object:<id>` when opened on their own.
-          objectRows.current[`object:${r.id}`] = r.id;
-          if (r.inline_edits) edits[`object:${r.id}`] = r.inline_edits;
-          return;
-        }
+        // Opened on its own, every object edits under `object:<id>`.
+        objectRows.current[`object:${r.id}`] = r.id;
+        if (r.id === objectId && r.inline_edits) edits[`object:${r.id}`] = r.inline_edits;
+        if (!r.component_key) return;
         objectRows.current[r.component_key] = r.id;
         if (r.inline_edits) edits[r.component_key] = r.inline_edits;
       });
@@ -278,6 +276,18 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
 
   const page = useMemo(() => pages.find((p) => p.id === selectedId) ?? null, [pages, selectedId]);
   const surface = usePageEditorSurface(page);
+  // Escape (outside text fields and dialogs) clears the selection, back to the hint.
+  useEffect(() => {
+    if (!embedded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest("input,textarea,select,[contenteditable=true],[role=dialog],[role=listbox],[role=menu]")) return;
+      setInlineSel(null); setActiveId("");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [embedded]);
   const infoRef = useRef(onObjectInfo); infoRef.current = onObjectInfo;
   useEffect(() => {
     if (!objectTarget) { infoRef.current?.(null); return; }
@@ -860,17 +870,18 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const [openAsk, setOpenAsk] = useState<string | null>(null);
   const swaps = useMemo(() => swapsOf(inlineEdits), [inlineEdits]);
   const askObject = (click: ObjectClick) => {
-    const kind = objectClickKind(click, editState.current.inlineEdits);
-    setObjectAsk({ ...click, kind, usedOn: [] });
-    if (kind !== "shared") return;
-    // Saved page references, plus the public site's own pages for coded objects.
+    const kind = objectClickKind(click, editState.current.inlineEdits, !!click.objectId && siteWideIds.current.has(click.objectId));
+    const here = page?.name ?? "";
+    if (kind === "site") { setObjectAsk({ ...click, kind, usedOn: [] }); return; }
+    if (kind === "copy" && click.objectId) { openObjectEditor(click.objectId); return; }
+    // Every page that uses it: saved page content and swaps, plus code placements in the public manifest.
     const fromPages = pages.filter((p) => click.objectId && JSON.stringify([p.content ?? null, p.inline_edits ?? null]).includes(click.objectId)).map((p) => p.name);
     const fromSite = click.componentKey ? findObjectUsages(click.componentKey).then((u) => u.map((x) => x.name)).catch(() => null) : Promise.resolve([] as string[]);
-    void fromSite.then((site) => setObjectAsk((cur) => {
-      if (!cur || cur.objectId !== click.objectId) return cur;
-      const names = [...new Set([...(site ?? []), ...fromPages, page?.name ?? ""].filter(Boolean))];
-      return { ...cur, usedOn: site === null && !fromPages.length ? null : names };
-    }));
+    void fromSite.then((site) => {
+      const usedOn = site === null && !fromPages.some((n) => n !== here) ? null : [...new Set([...(site ?? []), ...fromPages, here].filter(Boolean))];
+      if (objectClickAction(kind, usedOn, here) === "open" && click.objectId) openObjectEditor(click.objectId);
+      else setObjectAsk({ ...click, kind, usedOn });
+    });
   };
   const openObjectEditor = (id: string) => {
     if (!embedded) { navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}`); return; }

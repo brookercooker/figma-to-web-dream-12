@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
 const mocks = vi.hoisted(() => ({ remote: true, slot: null as HTMLElement | null, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), cleanup: vi.fn(), openObject: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
+vi.mock("../objectUsages", async (importOriginal) => ({ ...await importOriginal<typeof import("../objectUsages")>(), findObjectUsages: () => Promise.resolve([{ name: "Homepage" }, { name: "Contact" }]) }));
 vi.mock("../siteManifest", async (importOriginal) => ({ ...await importOriginal<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.reject(new Error("fixture")), manifestHasPage: () => mocks.remote, draftEmbedUrl: () => "https://public.example.com/?embed=fixture" }));
 vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: mocks.slot, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: (cb: any) => mocks.hasChanges = cb, registerHistory: (cb: any) => mocks.history = cb, registerAdd: (cb: any) => mocks.add = cb }) }));
 vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => ({ openObject: mocks.openObject }) }));
@@ -75,7 +76,7 @@ describe("public page save/discard integration", () => {
   it.each(["discard", "undo-save", "leave"])("transports a Ready coded-slot copy and cleans it on %s", async action => {
     const s = await openRemote(true, true);
     s.send("edit-object-click", { objectId: "categories", componentKey: "Categories", name: "Categories", slot: "code:home-categories" });
-    fireEvent.click(screen.getByRole("button", { name: "Make a Copy for This Page" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Make a Copy for This Page" }));
     await waitFor(() => expect(s.post).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", objectSwaps: { "code:home-categories": { id: "copy", status: "Ready", name: "Categories (Contact)", component_key: "Categories", content: { sections: [] }, inline_edits: { "0": "Original" } } } }), "https://public.example.com"));
     expect(mocks.writes).toHaveBeenCalledWith("object_registry", expect.objectContaining({ status: "Ready" }));
     if (action === "discard") await act(async () => mocks.discard());

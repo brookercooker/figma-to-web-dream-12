@@ -1,4 +1,4 @@
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import FramedPageEditor, { type FramedPageEditorProps } from "../FramedPageEditor";
 import { editFrameUrl, objectEditScope, objectEditorNote, objectFramePath, objectScopePayload } from "../framedPageProtocol";
@@ -8,7 +8,7 @@ afterEach(() => cleanup());
 const header = { objectId: "h1", name: "Header", status: "Ready", component_key: "Header", siteWide: true };
 const designed = { objectId: "d1", name: "About Us", status: "Draft", component_key: null, siteWide: false };
 function setup(patch: Partial<FramedPageEditorProps> = {}) {
-  const props: FramedPageEditorProps = { base: "https://public.example.com/", path: objectFramePath("d1"), edits: {}, objectEdits: { "object:d1": { "text:0": "Hi" } }, collapsed: new Set(), selectedKey: null,
+  const props: FramedPageEditorProps = { base: "https://public.example.com/", path: objectFramePath("d1"), edits: {}, objectEdits: { "object:d1": { "0.1": "Hi" } }, collapsed: new Set(), selectedKey: null,
     onChange: vi.fn(), onSelect: vi.fn(), onToggle: vi.fn(), onReorder: vi.fn(), onOpenObject: vi.fn(), onNavigate: vi.fn(), onObjectClick: vi.fn(), objectScope: designed, ...patch };
   const view = render(<FramedPageEditor {...props} />);
   const frame = () => view.container.querySelector("iframe")!;
@@ -24,16 +24,26 @@ describe("object editor protocol", () => {
     expect(editFrameUrl("https://public.example.com/", objectFramePath("d1"))).toBe("https://public.example.com/__object/d1?nova-edit=1");
   });
   it("scopes coded objects by component key and designed objects by id", () => {
-    expect(objectEditScope(header)).toBe("Header");
+    expect(objectEditScope(header)).toBe("object:h1");
     expect(objectEditScope(designed)).toBe("object:d1");
-    expect(objectScopePayload(designed, { "object:d1": { a: "1" } })).toEqual({ scope: "object", objectId: "d1", object: { name: "About Us", status: "Draft", component_key: null, siteWide: false }, inlineEdits: { a: "1" } });
+    expect(objectScopePayload({ ...designed, inline_edits: { a: "0" } }, { "object:d1": { a: "1" } })).toEqual({ scope: "object", object: { id: "d1", name: "About Us", status: "Draft", component_key: null, content: null, inline_edits: { a: "0" }, siteWide: false }, edits: { a: "1" } });
+    expect(objectScopePayload({ ...header, inline_edits: { a: "0" } }, {}).edits).toEqual({ a: "0" });
   });
-  it("edit-init carries object scope and the object's saved edits unchanged", () => {
-    const s = setup(); s.receive("edit-ready", {});
-    expect(s.sent("edit-init")[0]).toMatchObject({ scope: "object", objectId: "d1", inlineEdits: { "text:0": "Hi" } });
+  it("edit-init carries object scope and the object's edits unchanged", () => {
+    const s = setup(); s.receive("edit-ready", { capabilities: { objectEditing: true, navigate: false } });
+    expect(s.sent("edit-init")[0]).toMatchObject({ scope: "object", object: { id: "d1" }, edits: { "0.1": "Hi" } });
+  });
+  it("frames without objectEditing, or that report edit-error, show Retry and never a local fallback", () => {
+    const a = setup(); a.receive("edit-ready", {});
+    expect(a.sent("edit-init")).toHaveLength(0);
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    cleanup();
+    const b = setup(); b.receive("edit-error", { reason: "Object not found" });
+    expect(screen.getByText("Object not found")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
   it("ignores page navigation and object clicks, and messages from other origins", () => {
-    const s = setup(); s.receive("edit-ready", {});
+    const s = setup(); s.receive("edit-ready", { capabilities: { objectEditing: true } });
     s.receive("edit-navigate", { path: "/about" });
     s.receive("edit-object-click", { objectId: "x", componentKey: "Y", name: "Y", slot: "s" });
     s.receive("edit-change", { scope: "object:d1", next: { "0.1": "b" } }, "https://evil.example.com");
@@ -53,6 +63,7 @@ describe("object editor header note", () => {
   it("names site-wide, page-copy and shared objects in plain words", () => {
     expect(objectEditorNote(header, [])).toBe("Site-wide object · shown on every page");
     expect(objectEditorNote(designed, ["Homepage", "About"])).toBe("Shared object · used on Homepage, About");
+    expect(objectEditorNote(designed, ["Homepage"])).toBe("Used only on Homepage");
     const copy = { ...designed, name: "About Us (Contact)", usedOn: ["Contact"] };
     expect(copyPageOf(copy)).toBe("Contact");
     expect(objectEditorNote(copy, copy.usedOn, copyPageOf(copy))).toBe("This copy is only used on Contact");
