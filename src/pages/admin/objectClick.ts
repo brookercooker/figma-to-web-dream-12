@@ -55,3 +55,15 @@ export function unusedCopies(copies: Iterable<string>, state: { blocks: { object
   const used = new Set([...Object.values(objectSwaps(state.inlineEdits)), ...state.blocks.map((b) => b.objectId).filter(Boolean) as string[]]);
   return [...copies].filter((id) => !used.has(id));
 }
+
+/** Other pages (by name) that use the object, or null when that can't be told. */
+export function otherPagesUsing(usedOn: string[] | null, pageName: string): string[] | null {
+  return usedOn === null ? null : [...new Set(usedOn.filter((n) => n && n !== pageName))];
+}
+/** Open straight away for page-only copies and objects used only on this page; ask otherwise. */
+export function objectClickAction(kind: ObjectClickKind, usedOn: string[] | null, pageName: string): "open" | "ask" {
+  if (kind === "site") return "ask";
+  if (kind === "copy") return "open";
+  const others = otherPagesUsing(usedOn, pageName);
+  return others !== null && others.length === 0 ? "open" : "ask";
+}

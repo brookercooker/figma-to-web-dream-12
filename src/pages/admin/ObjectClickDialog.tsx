@@ -1,7 +1,7 @@
 import { Copy, PencilRuler } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { siteWideLabel, type ObjectClick, type ObjectClickKind } from "./objectClick";
+import { otherPagesUsing, siteWideLabel, type ObjectClick, type ObjectClickKind } from "./objectClick";
 
 export interface ObjectAsk extends ObjectClick { kind: ObjectClickKind; usedOn: string[] | null }
 
@@ -12,7 +12,8 @@ export default function ObjectClickDialog({ ask, pageName, busy, onOpen, onCopy,
 }) {
   const label = ask ? siteWideLabel(ask.componentKey) : "Header";
   const title = !ask ? "" : ask.kind === "site" ? `Edit the Site ${label}?` : `Edit ${ask.name}?`;
-  const usedOn = ask?.usedOn === null ? "the pages that use it" : ask?.usedOn?.length ? ask.usedOn.join(", ") : pageName;
+  const others = ask ? otherPagesUsing(ask.usedOn, pageName) : [];
+  const elsewhere = others === null ? "other pages" : others.join(", ");
   return (
     <Dialog open={!!ask} onOpenChange={(open) => { if (!open && !busy) onCancel(); }}>
       <DialogContent>
@@ -20,12 +21,11 @@ export default function ObjectClickDialog({ ask, pageName, busy, onOpen, onCopy,
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             {ask?.kind === "site" && `The ${label.toLowerCase()} appears on every page. Changes made in the object editor change it across the whole site.`}
-            {ask?.kind === "copy" && `This copy is only used on ${pageName}.`}
-            {ask?.kind === "shared" && `${ask.name} is a shared object. Changes made in the object editor show up everywhere it's used: ${usedOn}.`}
+            {ask?.kind === "shared" && `${ask.name} is also used on ${elsewhere}. Edit it everywhere, or make a copy just for ${pageName}?`}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-row flex-wrap justify-start gap-2 sm:justify-start sm:space-x-0">
-          <Button className="gap-2" disabled={busy} onClick={onOpen}><PencilRuler className="h-4 w-4" aria-hidden />Open in Object Editor</Button>
+          <Button className="gap-2" disabled={busy} onClick={onOpen}><PencilRuler className="h-4 w-4" aria-hidden />{ask?.kind === "shared" ? "Edit Everywhere" : "Open in Object Editor"}</Button>
           {ask?.kind === "shared" && <Button variant="outline" className="gap-2" disabled={busy} onClick={onCopy}><Copy className="h-4 w-4" aria-hidden />{busy ? "Copying…" : "Make a Copy for This Page"}</Button>}
           <Button variant="outline" disabled={busy} onClick={onCancel}>Cancel</Button>
         </DialogFooter>

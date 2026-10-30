@@ -40,7 +40,7 @@ import { editMap, stripHeldObjects, type HeldObjectData } from "./framedPageProt
 import { draftEmbedUrl } from "./siteManifest";
 import { usePageEditorSurface } from "./usePageEditorSurface";
 import { remoteSnapshot } from "./remoteSelection";
-import { applySwap, copyName, objectClickKind, objectSwaps as swapsOf, unusedCopies, type ObjectClick } from "./objectClick";
+import { applySwap, copyName, objectClickKind, objectClickAction, objectSwaps as swapsOf, unusedCopies, type ObjectClick } from "./objectClick";
 import ObjectClickDialog, { type ObjectAsk } from "./ObjectClickDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import { findObjectUsages } from "./objectUsages";
@@ -860,17 +860,18 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const [openAsk, setOpenAsk] = useState<string | null>(null);
   const swaps = useMemo(() => swapsOf(inlineEdits), [inlineEdits]);
   const askObject = (click: ObjectClick) => {
-    const kind = objectClickKind(click, editState.current.inlineEdits);
-    setObjectAsk({ ...click, kind, usedOn: [] });
-    if (kind !== "shared") return;
-    // Saved page references, plus the public site's own pages for coded objects.
+    const kind = objectClickKind(click, editState.current.inlineEdits, !!click.objectId && siteWideIds.current.has(click.objectId));
+    const here = page?.name ?? "";
+    if (kind === "site") { setObjectAsk({ ...click, kind, usedOn: [] }); return; }
+    if (kind === "copy" && click.objectId) { openObjectEditor(click.objectId); return; }
+    // Every page that uses it: saved page content and swaps, plus code placements in the public manifest.
     const fromPages = pages.filter((p) => click.objectId && JSON.stringify([p.content ?? null, p.inline_edits ?? null]).includes(click.objectId)).map((p) => p.name);
     const fromSite = click.componentKey ? findObjectUsages(click.componentKey).then((u) => u.map((x) => x.name)).catch(() => null) : Promise.resolve([] as string[]);
-    void fromSite.then((site) => setObjectAsk((cur) => {
-      if (!cur || cur.objectId !== click.objectId) return cur;
-      const names = [...new Set([...(site ?? []), ...fromPages, page?.name ?? ""].filter(Boolean))];
-      return { ...cur, usedOn: site === null && !fromPages.length ? null : names };
-    }));
+    void fromSite.then((site) => {
+      const usedOn = site === null && !fromPages.some((n) => n !== here) ? null : [...new Set([...(site ?? []), ...fromPages, here].filter(Boolean))];
+      if (objectClickAction(kind, usedOn, here) === "open" && click.objectId) openObjectEditor(click.objectId);
+      else setObjectAsk({ ...click, kind, usedOn });
+    });
   };
   const openObjectEditor = (id: string) => {
     if (!embedded) { navigate(`/manage/objects/design?object=${id}&returnPage=${selectedId}`); return; }
