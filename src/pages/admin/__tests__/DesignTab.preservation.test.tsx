@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
 const mocks = vi.hoisted(() => ({ remote: true, slot: null as HTMLElement | null, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), cleanup: vi.fn(), openObject: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
-vi.mock("../assetUsages", async (importOriginal) => ({ ...await importOriginal<typeof import("../assetUsages")>(), findObjectUsages: () => Promise.resolve([{ name: "Homepage" }, { name: "Contact" }]) }));
+vi.mock("../objectUsages", async (importOriginal) => ({ ...await importOriginal<typeof import("../objectUsages")>(), findObjectUsages: () => Promise.resolve([{ name: "Homepage" }, { name: "Contact" }]) }));
 vi.mock("../siteManifest", async (importOriginal) => ({ ...await importOriginal<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.reject(new Error("fixture")), manifestHasPage: () => mocks.remote, draftEmbedUrl: () => "https://public.example.com/?embed=fixture" }));
 vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: mocks.slot, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: (cb: any) => mocks.hasChanges = cb, registerHistory: (cb: any) => mocks.history = cb, registerAdd: (cb: any) => mocks.add = cb }) }));
 vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => ({ openObject: mocks.openObject }) }));
