@@ -148,6 +148,20 @@ describe("public page save/discard integration", () => {
     expect(mocks.history.undoLabel).toBe(""); expect(mocks.history.redoLabel).toBe("");
     expect(lastBlocks()[1].width).toBe(100); expect(mocks.writes).not.toHaveBeenCalled();
   });
+  it("page reset stages only page edits and preserves shared overrides until Save Changes", async () => {
+    mocks.slot = document.createElement("div"); document.body.appendChild(mocks.slot);
+    mocks.original.inline_edits = { "0": "Saved hand edit" };
+    const s = await openRemote(true, true);
+    s.send("edit-change", { scope: "Header", next: { "0": "Shared edit" } });
+    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits on This Page" }));
+    expect(mocks.writes).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits" }));
+    expect(mocks.hasChanges()).toBe(true); expect(mocks.history.changeCount).toBe(1);
+    expect(s.post.mock.calls.at(-1)?.[0]).toMatchObject({ edits: {}, objectEdits: { Header: { "0": "Shared edit" } } });
+    expect(mocks.writes).not.toHaveBeenCalled();
+    await act(async () => mocks.save());
+    expect(mocks.writes).toHaveBeenCalledWith("pages", expect.objectContaining({ inline_edits: {} }));
+  });
   it("passes existing positional edits unchanged on init and saves only the held map", async () => {
     const original = { "0.0.3": "Saved words", "style:0.1": '{"font-size":"24px"}' };
     mocks.original.inline_edits = original;

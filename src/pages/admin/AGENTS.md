@@ -5,3 +5,5 @@
 - Object clicks open the editor directly when the object is used only on this page (or is a page-only copy); otherwise ask Edit Everywhere / Make a Copy / Cancel; Header/Footer keep the site-wide dialog.
 - Editor saves go through saveRow, which treats an update that returns no row as a failure (RLS skips are silent); paths starting with `/__`, /manage, /admin or /preview are never registered as pages (isInternalPath).
 - Object status is a deprecated compatibility field, never an availability gate; creation defaults and frame snapshots remain compatible with older consumers while archive checks determine availability.
+- sectionList-capable frames supply bounded, trusted edit-sections snapshots; row selection sends scroll-to-section, held mutations use Manager state and coded section commands must return edit-change for persistence. Older frames retain the local list; snapshots never enter stored content.
+- Unsaved counts use merged undo steps (minimum one for staged resets); reset actions are staged until Save Changes, page reset never clears shared-object overrides, and object reset only clears its object:<id> map.

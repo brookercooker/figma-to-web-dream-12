@@ -749,6 +749,22 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     return () => registerAdd(null);
   }, [embedded, registerAdd, objectId, designedObject]);
 
+  function resetEdits() {
+    if (objectId) {
+      changeScope(`object:${objectId}`, {});
+    } else {
+      if (opening.current) changeBlocks(parsePageContent(opening.current.content));
+      changeInline({});
+    }
+    setInlineSel(null); setActiveId(""); setActiveSection(""); resetHistory();
+  }
+  function sectionAction(section: FrameSection, action: "up" | "down" | "delete") {
+    if (section.kind === "site" || (action === "delete" ? !section.deletable : !section.movable)) return;
+    // Held sections remain Manager-owned; code sections report their resulting inline edits back.
+    if (blocks.some(b => b.id === section.key)) {
+      if (action === "delete") remove(section.key); else move(section.key, action === "up" ? -1 : 1);
+    } else framedApi.current?.sectionAction?.(section.key, action);
+  }
   const stylePanel = (
     <>
                     {inlineSel && inlineSel.scope !== "page" && !objectId && (

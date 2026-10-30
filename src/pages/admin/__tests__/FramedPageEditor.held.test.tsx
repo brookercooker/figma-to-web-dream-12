@@ -43,6 +43,22 @@ describe("held blocks payload", () => {
   it("clamps edit-size", () => { expect(clampEditSize(10)).toBe(400); expect(clampEditSize(99999)).toBe(20000); expect(clampEditSize(1500)).toBe(1500); });
 });
 describe("held blocks handshake", () => {
+  it("accepts section lists only from a capable ready exact-origin/window frame and clears on navigation", () => {
+    const onSections = vi.fn(); const apiRef = { current: null as import("../FramedPageEditor").FramedEditorController | null };
+    const s = setup({ onSections, apiRef });
+    const sections = [{ key: "people", name: "The People Behind Nova", kind: "page", collapsed: true, movable: true, deletable: true }];
+    s.receive("edit-sections", { sections }); expect(onSections).toHaveBeenCalledTimes(1);
+    s.receive("edit-ready", { capabilities: { sectionList: true } });
+    s.receive("edit-sections", { sections }, "https://evil.example"); s.receive("edit-sections", { sections }, "https://public.example.com", window);
+    expect(onSections).toHaveBeenCalledTimes(1);
+    s.receive("edit-sections", { sections }); expect(onSections).toHaveBeenLastCalledWith(sections);
+    apiRef.current?.scrollToSection?.("people");
+    expect(s.sent("scroll-to-section")).toEqual([{ source: "nova-manager", type: "scroll-to-section", key: "people" }]);
+    apiRef.current?.scrollToSection?.("unknown"); expect(s.sent("scroll-to-section")).toHaveLength(1);
+    s.receive("edit-sections", { sections: [...sections, ...sections] }); expect(onSections).toHaveBeenCalledTimes(2);
+    s.rerender(<FramedPageEditor {...s.props} path="/other" />); expect(onSections).toHaveBeenLastCalledWith(null);
+    s.receive("edit-ready"); s.receive("edit-sections", { sections }); expect(onSections).toHaveBeenLastCalledWith(null);
+  });
   it("does not replace an open frame when its signed base is refreshed or held blocks change before ready", () => {
     const s = setup(); const frame = s.frame();
     s.rerender(<FramedPageEditor {...s.props} base="https://public.example.com/?token=new" sectionRevision={1} />);
