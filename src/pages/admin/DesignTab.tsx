@@ -624,7 +624,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   };
   /** Plain lines for everything this save writes (clean state → current state). */
   const describeSave = () => {
-    const subject = page?.name ?? "This page";
+    const subject = objectTarget ? `Object ${quote(objectTarget.name)}` : page?.name ?? "This page";
     const before = cleanState.current, after = editState.current;
     const labelsFor = (scope: string) => Object.fromEntries(Object.entries(elementLabels.current).filter(([k]) => k.startsWith(`${scope}|`)).map(([k, v]) => [k.slice(scope.length + 1), v]));
     const named = (list: Block[]) => list.map((b: any) => b.type === "object" && !b.name && heldObjects?.[b.objectId]?.name ? { ...b, name: heldObjects[b.objectId].name } : b);
@@ -913,7 +913,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     </>}
     {objectTarget && !objectTarget.component_key && (
       <p className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
-        Wording, pictures and links can be changed here. Section layout settings are still in the{" "}
+        Each section's layout is under Section Layout when you select it. A few settings are still only in the{" "}
         <a className="underline" href={`/manage/objects/design?object=${objectTarget.objectId}&legacy=1`}>full designer</a>.
       </p>
     )}
