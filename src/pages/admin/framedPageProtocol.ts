@@ -66,20 +66,21 @@ export function heldBlocksPayload<T>(blocks: readonly T[], blockMove = false, ob
 }
 export const clampEditSize = (h: number) => Math.max(400, Math.min(20000, h));
 
-/** The object being edited on its own in the public edit frame (agreed with the public site). */
-export interface ObjectEditTarget { objectId: string; name: string; status: string; component_key: string | null; siteWide: boolean }
-/** Public route that renders one object alone; the frame gates it with ?nova-edit=1 like pages. */
+/** The object being edited on its own in the public edit frame (shapes agreed with the public site). */
+export interface ObjectEditTarget { objectId: string; name: string; status: string; component_key: string | null; siteWide: boolean; content?: unknown; inline_edits?: InlineEdits }
+/** Public route that renders one object alone; the frame gates it with ?nova-edit=1 like pages. Header/Footer open by row id too. */
 export const objectFramePath = (id: string) => `/__object/${encodeURIComponent(id)}`;
-/** Edit scope of an object: its component_key for coded objects, `object:<id>` for designed ones. */
-export const objectEditScope = (o: { objectId?: string; id?: string; component_key: string | null }) => o.component_key || `object:${o.objectId ?? o.id}`;
-/** Extra edit-init / edit-update fields for object scope. */
+/** Edit scope in object scope: always `object:<id>` (page copies share their original's component_key, so only the id is safe). */
+export const objectEditScope = (o: { objectId?: string; id?: string }) => `object:${o.objectId ?? o.id}`;
+/** Extra edit-init / edit-update fields for object scope; `edits` (the unsaved map) overrides object.inline_edits. */
 export function objectScopePayload(target: ObjectEditTarget, objectEdits: Record<string, InlineEdits>) {
-  const { objectId, ...object } = target;
-  return { scope: "object" as const, objectId, object, inlineEdits: objectEdits[objectEditScope(target)] ?? {} };
+  const { objectId, name, component_key, status, siteWide, content, inline_edits } = target;
+  return { scope: "object" as const, object: { id: objectId, name, component_key, status, content: content ?? null, inline_edits: inline_edits ?? {}, siteWide }, edits: objectEdits[objectEditScope(target)] ?? inline_edits ?? {} };
 }
 /** What the header note under "Editing <name>" says. */
 export function objectEditorNote(o: { name: string; component_key: string | null; siteWide: boolean }, usedOn: string[], copyOf?: string | null): string {
   if (o.siteWide) return "Site-wide object · shown on every page";
   if (copyOf) return `This copy is only used on ${copyOf}`;
+  if (usedOn.length === 1) return `Used only on ${usedOn[0]}`;
   return usedOn.length ? `Shared object · used on ${usedOn.join(", ")}` : "Shared object · not used on any page yet";
 }

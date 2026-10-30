@@ -171,7 +171,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const siteWideIds = useRef(new Set<string>());
   const objectTarget = useMemo<ObjectEditTarget | null>(() => {
     const o = objectId ? heldObjects?.[objectId] : undefined;
-    return objectId && o ? { objectId, name: o.name, status: o.status, component_key: o.component_key, siteWide: siteWideIds.current.has(objectId) } : null;
+    return objectId && o ? { objectId, name: o.name, status: o.status, component_key: o.component_key, siteWide: siteWideIds.current.has(objectId), content: o.content, inline_edits: o.inline_edits } : null;
   }, [objectId, heldObjects]);
   const objectTimers = useRef<Record<string, number>>({});
   /** What each edited element looked like when first touched (scope|path), for plain change lines on save. */
@@ -186,12 +186,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
       (data ?? []).forEach((r: any) => {
         snapshots[r.id] = { status: r.status, name: r.name, component_key: r.component_key ?? null, content: r.content, inline_edits: r.inline_edits ?? {} };
         if (r.site_wide) siteWideIds.current.add(r.id);
-        if (!r.component_key) {
-          // Designed objects edit under `object:<id>` when opened on their own.
-          objectRows.current[`object:${r.id}`] = r.id;
-          if (r.inline_edits) edits[`object:${r.id}`] = r.inline_edits;
-          return;
-        }
+        // Opened on its own, every object edits under `object:<id>`.
+        objectRows.current[`object:${r.id}`] = r.id;
+        if (r.inline_edits) edits[`object:${r.id}`] = r.inline_edits;
+        if (!r.component_key) return;
         objectRows.current[r.component_key] = r.id;
         if (r.inline_edits) edits[r.component_key] = r.inline_edits;
       });
