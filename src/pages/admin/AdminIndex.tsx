@@ -304,9 +304,10 @@ function AdminShell() {
               <div aria-hidden className={cn("h-9 w-px bg-border shrink-0", compact && "hidden")} />
               {!manual && !editing && <SubmitButton compact={compact} />}
               {manual && (
-                <Button type="button" size="sm" className="shrink-0 gap-1.5" aria-label="Save Changes" title="Save Changes" disabled={finishing || !dirty} onClick={() => void saveChanges()}>
+                <><span role="status" className="max-w-28 shrink-0 text-xs text-muted-foreground">{dirty ? `${Math.max(1, historyControls?.changeCount ?? 0)} unsaved ${Math.max(1, historyControls?.changeCount ?? 0) === 1 ? "change" : "changes"}` : ""}</span>
+                <Button type="button" size="sm" variant={dirty ? "default" : "outline"} className="shrink-0 gap-1.5" aria-label="Save Changes" title="Save Changes" disabled={finishing || !dirty} onClick={() => void saveChanges()}>
                   <Save className="h-4 w-4" aria-hidden />{!compact && (finishing ? "Saving…" : "Save Changes")}
-                </Button>
+                </Button></>
               )}
 
             </div>
@@ -423,7 +424,7 @@ function AdminShell() {
                   ? <ObjectEditorHeader info={objectInfo} backLabel={objectOpen.from === "objects" ? "Back to Objects" : `Back to ${workingPage.name}`} disabled={finishing} onLeave={leaveObject} />
                   : <ManualPageSwitcher navigation={pageNavigation} />}
                 <div className="flex flex-wrap gap-1.5">
-                  <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing} onClick={discardEditing}><Trash2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
+                  <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing || !dirty} onClick={discardEditing}><Trash2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
                 </div>
               </div>
               <div ref={setSlot} aria-label="Page Editing Options" role="region" className="min-h-0 flex-1 overflow-y-auto" />

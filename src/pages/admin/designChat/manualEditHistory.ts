@@ -21,6 +21,7 @@ export class ManualEditHistory {
   private redoSteps: Step[] = [];
   get undoLabel() { return this.undoSteps.at(-1)?.action.label ?? ""; }
   get redoLabel() { return this.redoSteps.at(-1)?.action.label ?? ""; }
+  get changeCount() { return this.undoSteps.length; }
   reset() { this.undoSteps = []; this.redoSteps = []; }
   record(before: ManualEditSnapshot, after: ManualEditSnapshot, action: EditAction, time = Date.now()) {
     if (sameEditState(before, after)) return false;
