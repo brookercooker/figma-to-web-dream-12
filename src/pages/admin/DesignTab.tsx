@@ -33,6 +33,9 @@ import { withoutPath } from "@/lib/inlineEditCore";
 import type { InlineReports } from "@/components/InlineEditSurface";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import { objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";
+import SectionLayoutGroup from "./SectionLayoutGroup";
+import { imageSection, moveSection, sectionLabel, videoSection } from "./objectSectionsEdit";
+import { parseSections, type Section } from "@/components/ObjectSections";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
 import { isPageContent, movePageBlock, orderedPageContent, parsePageContent, type PageContentItem } from "./pageContentOrder";
 type Block = PageContentItem;
@@ -173,6 +176,11 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     const o = objectId ? heldObjects?.[objectId] : undefined;
     return objectId && o ? { objectId, name: o.name, status: o.status, component_key: o.component_key, siteWide: siteWideIds.current.has(objectId), content: o.content, inline_edits: o.inline_edits } : null;
   }, [objectId, heldObjects]);
+  /** Designed objects (no component_key) edit their sections as held blocks; coded objects have none. */
+  const designedObject = !!objectTarget && !objectTarget.component_key;
+  const orderedList = <T extends { id: string; type: string }>(list: readonly T[]) => (objectId ? [...list] : orderedPageContent(list as never)) as T[];
+  const originalContent = useRef<unknown>(null);
+  const persistedContent = useRef(false);
   const objectTimers = useRef<Record<string, number>>({});
   /** What each edited element looked like when first touched (scope|path), for plain change lines on save. */
   const elementLabels = useRef<Record<string, ElementLabel>>({});
@@ -314,6 +322,18 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     cleanState.current = structuredClone(editState.current);
     resetHistory();
   }, [page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Object scope: the object's own sections replace the page's held blocks, loaded once per opening.
+  const sectionsLoaded = useRef<string | null>(null);
+  useEffect(() => {
+    if (!objectTarget || !page || sectionsLoaded.current === objectTarget.objectId) return;
+    sectionsLoaded.current = objectTarget.objectId;
+    originalContent.current = objectTarget.content ?? null;
+    const sections = (designedObject ? parseSections(objectTarget.content) : []) as unknown as Block[];
+    setBlocks(sections); setActiveId(""); setDirty(false);
+    editState.current = { ...editState.current, blocks: sections };
+    cleanState.current = { ...cleanState.current, blocks: structuredClone(sections) };
+    resetHistory();
+  }, [objectTarget, page?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
   const [sortBy, setSortBy] = useState<"name" | "recent" | "label">("name");
@@ -346,6 +366,12 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     changeBlocks((prev) => prev.map((b) => (b.id === id ? ({ ...b, ...patch } as Block) : b)), wording ? "text change" : "changed section settings", wording ? `block|${id}|text` : undefined);
   };
 
+  const addSection = (section: Section) => {
+    if (discarded.current) return;
+    changeBlocks((prev) => [...prev, section as unknown as Block], `added ${sectionLabel(section).toLowerCase()}`);
+    setActiveId(section.id); setInlineSel(null);
+  };
+  const updateSection = (section: Section) => changeBlocks((prev) => prev.map((b) => b.id === section.id ? section as unknown as Block : b), "changed section layout", `layout|${section.id}`);
   const addPickedBlock = (block: Block, at: number) => {
     if (discarded.current) return;
     const next = insertPickedBlock(blocks, block, blocks.length);
@@ -381,7 +407,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   };
 
   const move = (id: string, dir: -1 | 1) => {
-    const i = orderedPageContent(blocks).findIndex(b => b.id === id);
+    const i = orderedList(blocks).findIndex(b => b.id === id);
     if (i < 0) return;
     moveHeldBlock(id, i + dir);
     setActiveId(id); setInlineSel(null);
@@ -461,7 +487,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   /** Drag a block to a new position in the page. */
   const moveTo = (id: string, targetId: string, before: boolean) => {
     if (id === targetId) return;
-    const full = orderedPageContent(blocks);
+    const full = orderedList(blocks);
     const from = full.findIndex(b => b.id === id);
     let to = full.findIndex(b => b.id === targetId);
     if (from < 0 || to < 0) return;
@@ -477,7 +503,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   };
   const moveHeldBlock = (id: string, to: number) => {
     const block = editState.current.blocks.find(b => b.id === id);
-    changeBlocks(prev => movePageBlock(prev, id, to), `moved ${block?.type === "object" ? block.name ?? "an object" : block?.type ?? "a section"}`);
+    changeBlocks(prev => objectId ? moveSection(prev, id, to) : movePageBlock(prev, id, to), `moved ${block?.type === "object" ? block.name ?? "an object" : block?.type ?? "a section"}`);
   };
 
 
@@ -542,7 +568,17 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     let failed: string | null = null;
     const lines = describeSave();
     const p = pendingSave.current;
-    if (p) {
+    if (p && objectId) {
+      // Object scope: the held sections are the object's content.
+      const { error } = await (supabase as any).from("object_registry").update({ content: p.snapshot, updated_at: new Date().toISOString() }).eq("id", objectId);
+      if (error) failed = error.message ?? "Could not save the object";
+      else {
+        wrote = true; persistedContent.current = true;
+        cleanState.current = { ...cleanState.current, blocks: structuredClone(p.snapshot) };
+        if (pendingSave.current === p) pendingSave.current = null;
+        setBlocks((cur) => { if (cur === p.snapshot) setDirty(false); return cur; });
+      }
+    } else if (p) {
       const { error } = await (supabase as any).from("pages").update({ content: stripHeldObjects(p.snapshot) }).eq("id", p.pageId);
       if (error) failed = error.message ?? "Could not save the page";
       else {
@@ -605,7 +641,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const hasChangesRef = useRef<() => boolean>(() => false);
   hasChangesRef.current = () => !discarded.current && !sameEditState(editState.current, cleanState.current);
   const restoreHistory = (kind: "undo" | "redo") => {
-    if (!embedded || savingHistory.current || chat?.objectOpen || discarded.current) return;
+    if (!embedded || savingHistory.current || discarded.current) return;
     const snapshot = history.current[kind]();
     if (!snapshot) return;
     const blockChange = !sameEditState(editState.current.blocks, snapshot.blocks);
@@ -641,6 +677,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
       pendingSave.current = null; pendingInline.current = null; pendingObjects.current = {};
       const baseline = opening.current;
       const writes: Promise<any>[] = [];
+      if (objectId && persistedContent.current) writes.push((supabase as any).from("object_registry").update({ content: originalContent.current }).eq("id", objectId));
       if (baseline && persistedPage.current) writes.push((supabase as any).from("pages").update({ content: baseline.content, inline_edits: baseline.inline_edits, updated_at: baseline.updated_at }).eq("id", baseline.id));
       for (const scope of persistedObjects.current) {
         const id = objectRows.current[scope];
@@ -692,14 +729,19 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   // Manual Edit Mode: the top bar's Objects / Images / Videos open these pickers; choices go beneath the original.
   const addFromTopBar = useRef<(kind: AddKind) => void>(() => {});
   addFromTopBar.current = (kind) => {
+    if (objectId) {
+      if (kind === "objects") { toast("Objects can't be placed inside an object."); return; }
+      if (kind === "images") setPickerFor("new"); else setVideoFor("new");
+      return;
+    }
     if (kind === "objects") insertAt("object", pageInsertPosition(blocks, activeId));
     else addBlock(kind === "images" ? "image" : "video");
   };
   useEffect(() => {
-    if (!embedded || !registerAdd || objectId) return;
+    if (!embedded || !registerAdd || (objectId && !designedObject)) return;
     registerAdd((kind) => addFromTopBar.current(kind));
     return () => registerAdd(null);
-  }, [embedded, registerAdd, objectId]);
+  }, [embedded, registerAdd, objectId, designedObject]);
 
   const stylePanel = (
     <>
@@ -842,6 +884,19 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   </li>;
   const tools = <div className="space-y-4 p-3">
     {stylePanel}
+    {designedObject && <>
+    <p className="text-xs font-medium">Sections</p>
+    {blocks.length === 0 ? <p className="text-xs text-muted-foreground">No sections yet. Add a picture or video from the top bar.</p> :
+    <ol className="divide-y border rounded-md">
+      {blocks.map((b, i) => <li key={b.id} data-section-row={b.id} aria-current={activeId === b.id || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeId === b.id ? "bg-accent" : ""}`}>
+        <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); setInlineSel(null); void framedApi.current?.query("scrollTo", "held", b.id); }}>{sectionLabel(b as unknown as Section)}</Button>
+        {i > 0 && <ToolButton title="Move Up" onClick={() => move(b.id,-1)}><ArrowUp className="h-4 w-4" /></ToolButton>}
+        {i < blocks.length-1 && <ToolButton title="Move Down" onClick={() => move(b.id,1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
+        <ToolButton title="Delete Section" onClick={() => remove(b.id)}><Trash2 className="h-4 w-4" /></ToolButton>
+      </li>)}
+    </ol>}
+    {(() => { const b = blocks.find(x => x.id === activeId); return b ? <SectionLayoutGroup section={b as unknown as Section} onChange={updateSection} /> : null; })()}
+    </>}
     {!objectId && <>
     <p className="text-xs font-medium">Sections</p>
     <ol className="divide-y border rounded-md">
@@ -933,7 +988,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
         <FramedPageEditor key={objectId ? `object-${objectId}` : `public-${page.id}`} base={draftEmbedUrl()} path={objectId ? objectFramePath(objectId) : page.path} edits={inlineEdits} objectEdits={objectEdits}
           objectScope={objectTarget} scrollToSlot={objectId ? null : returnTo ?? null}
-          sectionRevision={sectionRevision} heldBlocks={objectId ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
+          sectionRevision={sectionRevision} heldBlocks={objectId && !designedObject ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
           onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setInlineSel(null); }} fill={!deviceStyle}
           onUndo={() => restoreHistory("undo")} onRedo={() => restoreHistory("redo")}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
@@ -996,7 +1051,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         open={!!videoFor}
         onOpenChange={(v) => { if (!v) { setVideoFor(null); setVideoAt(null); } }}
         onPick={({ url, poster }) => {
-          if (videoFor === "new") {
+          if (videoFor === "new" && objectId) addSection(videoSection(url, poster));
+          else if (videoFor === "new") {
             addPickedBlock({ id: newId(), type: "video", align: "left", width: 100, url, poster: poster ?? undefined } as VideoBlock, pageInsertPosition(blocks, activeId, videoAt));
           } else if (videoFor) update(videoFor, { url, poster: poster ?? undefined } as Partial<Block>);
           setVideoFor(null);
@@ -1012,7 +1068,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         open={!!pickerFor}
         onOpenChange={(v) => { if (!v) { setPickerFor(null); setImageAt(null); } }}
         onPick={({ url, alt }) => {
-          if (pickerFor === "new") {
+          if (pickerFor === "new" && objectId) addSection(imageSection(url, alt || ""));
+          else if (pickerFor === "new") {
             addPickedBlock({ id: newId(), type: "image", align: "left", width: 100, url, alt: alt || "" } as ImageBlock, pageInsertPosition(blocks, activeId, imageAt));
           } else if (pickerFor) update(pickerFor, { url, alt: alt || "" } as Partial<Block>);
           setPickerFor(null);
