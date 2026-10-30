@@ -184,7 +184,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const [objectOpen, setObjectOpen] = useState<{ id: string; section?: string } | null>(null);
   const openObject = useCallback((id: string, section?: string) => { if (editing) setObjectOpen({ id, section }); }, [editing]);
   const [returnTo, setReturnTo] = useState<{ slot: string | null; objectId: string } | null>(null);
-  const closeObject = useCallback(() => { setObjectOpen((cur) => { if (cur) setReturnTo({ slot: cur.section ?? null, objectId: cur.id }); return null; }); }, []);
+  const closeObject = useCallback(() => { if (objectOpen) setReturnTo({ slot: null, objectId: objectOpen.id }); setObjectOpen(null); }, [objectOpen]);
   useEffect(() => { if (objectOpen) return; const t = setTimeout(() => setReturnTo(null), 5000); return () => clearTimeout(t); }, [objectOpen, returnTo]);
 
   const [previewLocation, setPreviewLocation] = useState<{ path: string; search: string; notFound?: boolean } | null>(null);
