@@ -28,6 +28,7 @@ import ObjectEditorHeader, { type ObjectInfo } from "./designChat/ObjectEditorHe
 import { requestObjectThumbnail } from "./objectThumbnailCapture";
 import ManualHistoryControls from "./designChat/ManualHistoryControls";
 import { manualHistoryShortcut } from "./designChat/manualEditHistory";
+import { loadManualPages, workingPageFrom } from "./designChat/pageSelection";
 import { referenceKey } from "./designChat/references";
 
 const PagesTab = lazy(() => import("./PagesTab"));
@@ -124,6 +125,29 @@ function AdminShell() {
     } finally { finishingRef.current = false; setFinishing(false); }
   };
   const [objectInfo, setObjectInfo] = useState<ObjectInfo | null>(null);
+  // `?editObject=<id>` (Tools > Objects, or the old designer address) opens that object in the editor.
+  const location = useLocation();
+  const opened = useRef<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const id = params.get("editObject");
+    if (!id || opened.current === location.search) return;
+    opened.current = location.search;
+    const returnPage = params.get("returnPage");
+    void loadManualPages().then((pages) => {
+      const page = pages.find((p) => p.id === returnPage) ?? pages.find((p) => p.path === "/") ?? pages[0];
+      if (!page) { toast.error("Couldn't open the object editor. Try again."); return; }
+      designChat.selectPage(workingPageFrom(page));
+      designChat.startEditing();
+      designChat.openObject(id, params.get("section") ?? undefined, { from: returnPage && page.id === returnPage ? "page" : "objects" });
+      navigate("/manage/preview", { replace: true });
+    }).catch(() => toast.error("Couldn't open the object editor. Try again."));
+  }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
+  const leaveObject = () => {
+    const fromObjects = objectOpen?.from === "objects";
+    closeObject();
+    if (fromObjects) { stopEditing(); navigate("/manage/objects"); }
+  };
   useEffect(() => { if (!objectOpen) setObjectInfo(null); }, [objectOpen]);
   const saveChanges = async () => {
     const had = hasChanges();
@@ -135,7 +159,8 @@ function AdminShell() {
         const ok = await saveAll();
         if (!ok) return;
         if (had) { toast.success("Changes saved."); void requestObjectThumbnail(objectOpen.id, true).catch(() => {}); }
-        closeObject();
+        // Opened from Tools > Objects, saving stays in the object editor.
+        if (objectOpen.from !== "objects") closeObject();
       } finally { finishingRef.current = false; setFinishing(false); }
       return;
     }
@@ -395,7 +420,7 @@ function AdminShell() {
               <div ref={editingHeaderRef} tabIndex={-1} className="flex shrink-0 flex-col gap-2 border-b px-3 py-3">
                 {designChat.state?.busy && <p role="status" className="flex items-center gap-1.5 text-xs font-medium"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />Claude Is Still Working on a Change</p>}
                 {objectOpen
-                  ? <ObjectEditorHeader info={objectInfo} backLabel={`Back to ${workingPage.name}`} disabled={finishing} onLeave={closeObject} />
+                  ? <ObjectEditorHeader info={objectInfo} backLabel={objectOpen.from === "objects" ? "Back to Objects" : `Back to ${workingPage.name}`} disabled={finishing} onLeave={leaveObject} />
                   : <ManualPageSwitcher navigation={pageNavigation} />}
                 <div className="flex flex-wrap gap-1.5">
                   <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing} onClick={discardEditing}><Trash2 className="h-4 w-4" aria-hidden />Discard Changes</Button>

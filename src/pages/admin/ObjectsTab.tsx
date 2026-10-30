@@ -566,7 +566,7 @@ export default function ObjectsTab() {
                     <td className="px-1 py-3 text-center">
                       <button
                         type="button"
-                        onClick={() => navigate(`/manage/objects/design?object=${obj.id}`)}
+                        onClick={() => navigate(`/manage/preview?editObject=${encodeURIComponent(obj.id)}`)}
                         aria-label="Edit Object"
                         title="Edit Object"
                         className="inline-flex items-center justify-center p-1.5 rounded border hover:bg-muted"
