@@ -1,4 +1,5 @@
 import { mergeChangeLines } from "../changeLines";
+import { toast } from "sonner";
 import { postToHelper, RELAY, type RelayState } from "./helper";
 
 export const CONTENT_SAVED = "nova:content-saved";
@@ -36,6 +37,11 @@ async function run() {
     if (result.ok) {
       if (owed?.version === version) owed = null;
       persist();
+      // The relay explains anything it left out (for example an object that isn't Ready yet).
+      const d = result.data ?? {};
+      const notes = [...(Array.isArray(d.warnings) ? d.warnings : []), ...(typeof d.warning === "string" ? [d.warning] : [])]
+        .map((w: unknown) => (typeof w === "string" ? w : (w as { message?: string })?.message)).filter((w): w is string => !!w);
+      notes.forEach((w) => toast.warning(w));
     } else if (result.data?.busy === true && owed) {
       owed.deferred = true; persist();
     }
