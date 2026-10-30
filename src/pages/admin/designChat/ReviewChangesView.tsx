@@ -47,6 +47,9 @@ function ChangeCard({ r, now, onView }: { r: DraftRequest; now: number; onView: 
   const { title, body } = changeTitle(r);
   const ms = atMs(r.at);
   const long = body.length > 160 || body.split("\n").length > 3;
+  const details = (r.details ?? []).filter((d) => typeof d === "string" && d.trim());
+  // Site Manager request text repeats its first lines, so the list replaces it.
+  const showBody = !(details.length && title) && !!body;
   return (
     <li data-change-id={r.id} className="space-y-2 rounded-lg border p-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -58,12 +61,30 @@ function ChangeCard({ r, now, onView }: { r: DraftRequest; now: number; onView: 
         )}
       </div>
       {title && <h3 className="font-sans text-sm font-semibold">{title}</h3>}
-      <p className={`whitespace-pre-wrap break-words ${more ? "" : "line-clamp-3"}`}>{body}</p>
-      {long && <button type="button" className="text-xs underline underline-offset-2" aria-expanded={more} onClick={() => setMore(!more)}>{more ? "Show Less" : "Show More"}</button>}
+      {showBody && <p className={`whitespace-pre-wrap break-words ${more ? "" : "line-clamp-3"}`}>{body}</p>}
+      {showBody && long && <button type="button" className="text-xs underline underline-offset-2" aria-expanded={more} onClick={() => setMore(!more)}>{more ? "Show Less" : "Show More"}</button>}
+      {details.length > 0 && <ChangeDetails details={details} />}
       {r.page && <p className="truncate text-xs text-muted-foreground" title={`${r.page.name} ${r.page.path}`}>Page: {r.page.name} <span className="font-mono">{r.page.path}</span></p>}
       <Button type="button" variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={onView}>
         <Eye className="h-3.5 w-3.5" aria-hidden />{r.page ? "View Page on Preview" : "Open Draft Preview"}
       </Button>
     </li>
+  );
+}
+
+export function ChangeDetails({ details }: { details: string[] }) {
+  const [all, setAll] = useState(false);
+  const shown = all ? details : details.slice(0, 4);
+  return (
+    <div className="space-y-1">
+      <ul className="list-disc space-y-0.5 pl-4 text-xs" aria-label="What Changed">
+        {shown.map((d, i) => <li key={i} className="break-words">{d}</li>)}
+      </ul>
+      {details.length > 4 && (
+        <button type="button" className="text-xs underline underline-offset-2" aria-expanded={all} onClick={() => setAll(!all)}>
+          {all ? "Show fewer" : `Show all ${details.length} changes`}
+        </button>
+      )}
+    </div>
   );
 }
