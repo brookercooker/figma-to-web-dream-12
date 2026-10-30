@@ -126,7 +126,6 @@ function AdminShell() {
   };
   const [objectInfo, setObjectInfo] = useState<ObjectInfo | null>(null);
   // `?editObject=<id>` (Tools > Objects, or the old designer address) opens that object in the editor.
-  const location = useLocation();
   const opened = useRef<string | null>(null);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
