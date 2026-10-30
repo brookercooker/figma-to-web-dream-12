@@ -4408,17 +4408,10 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
 
   // Coded objects are edited in the unified editor; the designer keeps only the conversion into blocks.
   if (object && codedKey && blockModeId !== object.id) return (
-    <div className="mx-auto max-w-xl space-y-4 p-8">
-      <h1 className="font-serif text-2xl">{object.name}</h1>
-      <p className="text-sm text-muted-foreground">This object is built in code. Edit its wording, pictures and links in the object editor, or convert it into blocks.</p>
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={() => { window.location.assign(`/manage/preview?editObject=${encodeURIComponent(object.id)}`); }}>Edit Object</Button>
-        <Button variant="outline" onClick={() => {
-          const existing = parseSections(object.content);
-          setBlockModeId(object.id); setPreview(false); setSections(existing); setImporting(!existing.length); setDirty(false);
-        }}>Convert to Blocks</Button>
-      </div>
-    </div>
+    <CodedObjectPanel name={object.name} id={object.id} onConvert={() => {
+      const existing = parseSections(object.content);
+      setBlockModeId(object.id); setPreview(false); setSections(existing); setImporting(!existing.length); setDirty(false);
+    }} />
   );
 
   return (
@@ -5261,3 +5254,21 @@ function CodedImportProbe({
 
 
 /** Block header buttons that fold into a "…" menu when the header is too narrow. */
+
+/** Coded object in the old designer: edit it in the object editor, or convert it into blocks after a warning. */
+function CodedObjectPanel({ name, id, onConvert }: { name: string; id: string; onConvert: () => void }) {
+  const [asking, setAsking] = useState(false);
+  return (
+    <div className="mx-auto max-w-xl space-y-4 p-8">
+      <h1 className="font-serif text-2xl">{name}</h1>
+      <p className="text-sm text-muted-foreground">This object is built in code. Edit its wording, pictures and links in the object editor, or convert it into blocks.</p>
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => window.location.assign(`/manage/preview?editObject=${encodeURIComponent(id)}`)}>Edit Object</Button>
+        <Button variant="outline" onClick={() => setAsking(true)}>Convert to Blocks (Appearance May Change)</Button>
+      </div>
+      <ConfirmDialog open={asking} onOpenChange={setAsking} title="Convert to Blocks?" confirmLabel="Convert to Blocks" destructive={false}
+        description="The converted version can look different from the original. Visitors will keep seeing the original coded version until the object is switched over."
+        onConfirm={() => { setAsking(false); onConvert(); }} />
+    </div>
+  );
+}
