@@ -22,6 +22,8 @@ import { observeContentSyncState } from "./contentSync";
 
 /** How long Back/Forward/page choice waits for the preview to report the new page before reloading it once. */
 export const NAV_FALLBACK_MS = 3000;
+/** An object open in the editor; `from` decides the back link (page or the Objects list). */
+export interface ObjectOpen { id: string; section?: string; slot?: string; from: "page" | "objects" }
 export type Device = "mobile" | "tablet" | "desktop";
 
 /** A page the person picked in the Pages tab for the chat to work on. */
