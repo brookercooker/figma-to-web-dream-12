@@ -304,7 +304,7 @@ function AdminShell() {
               <div aria-hidden className={cn("h-9 w-px bg-border shrink-0", compact && "hidden")} />
               {!manual && !editing && <SubmitButton compact={compact} />}
               {manual && (
-                <><span role="status" className="max-w-28 shrink-0 text-xs text-muted-foreground">{dirty ? `${Math.max(1, historyControls?.changeCount ?? 0)} unsaved ${Math.max(1, historyControls?.changeCount ?? 0) === 1 ? "change" : "changes"}` : ""}</span>
+                <><span aria-live="polite" className="max-w-28 shrink-0 text-xs text-muted-foreground">{dirty ? `${Math.max(1, historyControls?.changeCount ?? 0)} unsaved ${Math.max(1, historyControls?.changeCount ?? 0) === 1 ? "change" : "changes"}` : ""}</span>
                 <Button type="button" size="sm" variant={dirty ? "default" : "outline"} className="shrink-0 gap-1.5" aria-label="Save Changes" title="Save Changes" disabled={finishing || !dirty} onClick={() => void saveChanges()}>
                   <Save className="h-4 w-4" aria-hidden />{!compact && (finishing ? "Saving…" : "Save Changes")}
                 </Button></>

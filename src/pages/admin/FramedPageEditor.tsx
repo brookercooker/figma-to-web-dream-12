@@ -137,6 +137,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       }
       if (data.type === "edit-error") {
         clearTimeout(timeout); ready.current = false;
+        sectionsRef.current = []; latest.current.onSections?.(null);
         setFailure(typeof data.reason === "string" && data.reason.trim() ? data.reason.trim().slice(0, 200) : "The public page couldn't open this for editing.");
         setStatus("failed"); return;
       }
