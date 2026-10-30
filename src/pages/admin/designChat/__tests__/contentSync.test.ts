@@ -42,4 +42,16 @@ describe("durable content sync", () => {
     await vi.advanceTimersByTimeAsync(4000);
     expect(post).toHaveBeenCalledTimes(2); expect(localStorage.length).toBe(0);
   });
+  it("sends combined change lines and resends them after a busy refusal", async () => {
+    post.mockResolvedValueOnce({ ok: false, data: { busy: true } }).mockResolvedValue({ ok: true });
+    const sync = await import("../contentSync");
+    sync.notifyContentEdited(["Homepage: a"]); sync.notifyContentEdited(["Homepage: a", "About: b"]);
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(post).toHaveBeenLastCalledWith("/content/sync", { changes: ["Homepage: a", "About: b"] });
+    sync.observeContentSyncState(state()); await vi.advanceTimersByTimeAsync(20_000);
+    expect(post).toHaveBeenCalledTimes(2);
+    expect(post).toHaveBeenLastCalledWith("/content/sync", { changes: ["Homepage: a", "About: b"] });
+    sync.notifyContentEdited(); await vi.advanceTimersByTimeAsync(4000);
+    expect(post).toHaveBeenLastCalledWith("/content/sync", {});
+  });
 });
