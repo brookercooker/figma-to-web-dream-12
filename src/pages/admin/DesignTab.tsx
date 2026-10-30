@@ -1,3 +1,4 @@
+import { objectRegistry } from "@/components/objects/registry";
 import { useEditorSlot, type AddKind } from "./designChat/EditorSlot";
 import { notifyContentEdited } from "./designChat/contentSync";
 import { blockChangeLines, inlineChangeLines, mergeChangeLines, quote, type ElementLabel } from "./changeLines";
@@ -176,8 +177,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     const o = objectId ? heldObjects?.[objectId] : undefined;
     return objectId && o ? { objectId, name: o.name, status: o.status, component_key: o.component_key, siteWide: siteWideIds.current.has(objectId), content: o.content, inline_edits: o.inline_edits } : null;
   }, [objectId, heldObjects]);
-  /** Designed objects (no component_key) edit their sections as held blocks; coded objects have none. */
-  const designedObject = !!objectTarget && !objectTarget.component_key;
+  /** Designed objects (not a registered coded component, even if they keep a component_key) edit their sections as held blocks; coded objects have none. */
+  const designedObject = !!objectTarget && !(objectTarget.component_key && objectRegistry[objectTarget.component_key]);
   const orderedList = <T extends { id: string; type: string }>(list: readonly T[]) => (objectId ? [...list] : orderedPageContent(list as never)) as T[];
   const originalContent = useRef<unknown>(null);
   const persistedContent = useRef(false);
@@ -911,7 +912,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     </ol>
     {(() => { const list=orderedPageContent(blocks); const i=list.findIndex(b=>b.id===activeId); const b=list[i]; return !b || isPageContent(b) ? null : <div className="flex flex-wrap gap-1">{blockTools(b,i)}</div>; })()}
     </>}
-    {objectTarget && !objectTarget.component_key && (
+    {designedObject && (
       <p className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
         Each section's layout is under Section Layout when you select it. A few settings are still only in the{" "}
         <a className="underline" href={`/manage/objects/design?object=${objectTarget.objectId}&legacy=1`}>full designer</a>.
