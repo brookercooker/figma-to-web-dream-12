@@ -43,6 +43,8 @@ export interface FramedPageEditorProps {
   fill?: boolean;
   /** Editing one object alone (/__object/<id>): edit-init/update carry scope "object"; page navigation and object clicks are ignored. */
   objectScope?: ObjectEditTarget | null;
+  /** After opening, ask the page frame to scroll to this object (used when coming back from the object editor). */
+  scrollToSlot?: { slot: string | null; objectId: string } | null;
 }
 export default function FramedPageEditor(props: FramedPageEditorProps) {
   // A refreshed signed address must not replace an already open editor. Retry may explicitly adopt it.
@@ -117,7 +119,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         destination.current = frame.current?.contentWindow ?? null;
         capableRef.current = data.capabilities?.heldBlocks === true; setHeldCapable(capableRef.current);
         moveCapableRef.current = data.capabilities?.blockMove === true; setMoveCapable(moveCapableRef.current);
-        clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); restoreFrameScroll(frame.current, latest.current.path); return;
+        clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); restoreFrameScroll(frame.current, latest.current.path); if (latest.current.scrollToSlot) post("scroll-to-slot", { ...latest.current.scrollToSlot }); return;
       }
       if (!ready.current) return;
       if (data.type === "page-scroll") {

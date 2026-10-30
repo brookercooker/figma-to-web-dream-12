@@ -32,6 +32,7 @@ import InlineDestinationPanel from "./InlineDestinationPanel";
 import { withoutPath } from "@/lib/inlineEditCore";
 import type { InlineReports } from "@/components/InlineEditSurface";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
+import { objectEditScope, objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
 import { isPageContent, movePageBlock, orderedPageContent, parsePageContent, type PageContentItem } from "./pageContentOrder";
 type Block = PageContentItem;
@@ -76,7 +77,15 @@ function ToolButton({
   );
 }
 
-export default function DesignTab({ embedded = false, pageId, onNavigate }: { embedded?: boolean; pageId?: string; onNavigate?: (path: string) => void } = {}) {
+export default function DesignTab({ embedded = false, pageId, onNavigate, objectId, returnTo, onObjectInfo }: {
+  embedded?: boolean; pageId?: string; onNavigate?: (path: string) => void;
+  /** Edit this one object alone in the same framed editor (object scope) instead of the page. */
+  objectId?: string;
+  /** Coming back from the object editor: the page frame scrolls to this object. */
+  returnTo?: { slot: string | null; objectId: string } | null;
+  /** Object scope: the opened object's name and kind, for the left-panel header. */
+  onObjectInfo?: (info: ObjectEditTarget & { usedOn: string[] } | null) => void;
+} = {}) {
   const blockCanvasRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -158,19 +167,30 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   const [objectEdits, setObjectEdits] = useState<Record<string, InlineEdits>>({});
   const objectRows = useRef<Record<string, string>>({});
   const [heldObjects, setHeldObjects] = useState<Record<string, HeldObjectData>>();
+  const siteWideIds = useRef(new Set<string>());
+  const objectTarget = useMemo<ObjectEditTarget | null>(() => {
+    const o = objectId ? heldObjects?.[objectId] : undefined;
+    return objectId && o ? { objectId, name: o.name, status: o.status, component_key: o.component_key, siteWide: siteWideIds.current.has(objectId) } : null;
+  }, [objectId, heldObjects]);
   const objectTimers = useRef<Record<string, number>>({});
   /** What each edited element looked like when first touched (scope|path), for plain change lines on save. */
   const elementLabels = useRef<Record<string, ElementLabel>>({});
   const swapNames = useRef<Record<string, string>>({});
   useEffect(() => { elementLabels.current = {}; swapNames.current = {}; }, [selectedId]);
   useEffect(() => {
-    (supabase as any).from("object_registry").select("id,status,name,component_key,content,inline_edits").then(({ data, error }: any) => {
+    (supabase as any).from("object_registry").select("id,status,name,component_key,content,inline_edits,site_wide").then(({ data, error }: any) => {
       if (error) return;
       const snapshots: Record<string, HeldObjectData> = {};
       const edits: Record<string, InlineEdits> = {};
       (data ?? []).forEach((r: any) => {
         snapshots[r.id] = { status: r.status, name: r.name, component_key: r.component_key ?? null, content: r.content, inline_edits: r.inline_edits ?? {} };
-        if (!r.component_key) return;
+        if (r.site_wide) siteWideIds.current.add(r.id);
+        if (!r.component_key) {
+          // Designed objects edit under `object:<id>` when opened on their own.
+          objectRows.current[`object:${r.id}`] = r.id;
+          if (r.inline_edits) edits[`object:${r.id}`] = r.inline_edits;
+          return;
+        }
         objectRows.current[r.component_key] = r.id;
         if (r.inline_edits) edits[r.component_key] = r.inline_edits;
       });
