@@ -126,12 +126,13 @@ function AdminShell() {
   };
   const [objectInfo, setObjectInfo] = useState<ObjectInfo | null>(null);
   // `?editObject=<id>` (Tools > Objects, or the old designer address) opens that object in the editor.
+  const loc = useLocation();
   const opened = useRef<string | null>(null);
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
+    const params = new URLSearchParams(loc.search);
     const id = params.get("editObject");
-    if (!id || opened.current === location.search) return;
-    opened.current = location.search;
+    if (!id || opened.current === loc.search) return;
+    opened.current = loc.search;
     const returnPage = params.get("returnPage");
     void loadManualPages().then((pages) => {
       const page = pages.find((p) => p.id === returnPage) ?? pages.find((p) => p.path === "/") ?? pages[0];
@@ -141,7 +142,7 @@ function AdminShell() {
       designChat.openObject(id, params.get("section") ?? undefined, { from: returnPage && page.id === returnPage ? "page" : "objects" });
       navigate("/manage/preview", { replace: true });
     }).catch(() => toast.error("Couldn't open the object editor. Try again."));
-  }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loc.search]); // eslint-disable-line react-hooks/exhaustive-deps
   const leaveObject = () => {
     const fromObjects = objectOpen?.from === "objects";
     closeObject();
