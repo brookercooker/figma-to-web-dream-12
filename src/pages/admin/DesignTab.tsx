@@ -162,6 +162,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate }: { em
   /** What each edited element looked like when first touched (scope|path), for plain change lines on save. */
   const elementLabels = useRef<Record<string, ElementLabel>>({});
   const swapNames = useRef<Record<string, string>>({});
+  useEffect(() => { elementLabels.current = {}; swapNames.current = {}; }, [selectedId]);
   useEffect(() => {
     (supabase as any).from("object_registry").select("id,status,name,component_key,content,inline_edits").then(({ data, error }: any) => {
       if (error) return;
