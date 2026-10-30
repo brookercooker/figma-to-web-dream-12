@@ -35,6 +35,7 @@ import type { InlineReports } from "@/components/InlineEditSurface";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import { objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";
 import SectionLayoutGroup from "./SectionLayoutGroup";
+import { notReadyObjectNames, saveRow } from "./saveRow";
 import { imageSection, moveSection, sectionLabel, videoSection } from "./objectSectionsEdit";
 import { parseSections, type Section } from "@/components/ObjectSections";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
@@ -626,8 +627,9 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   /** After a save: objects on the page that aren't Ready won't appear in the preview yet. */
   const warnDraftObjects = () => {
     if (objectId) return;
-    const names = editState.current.blocks.flatMap((b: any) => b.type === "object" && heldObjects?.[b.objectId] && heldObjects[b.objectId].status !== "Ready" ? [heldObjects[b.objectId].name] : []);
-    if (names.length) toast.warning(`${names.map(quote).join(", ")} isn't Ready yet, so it won't show in the preview until it's marked Ready.`);
+    void notReadyObjectNames(editState.current.blocks).then((names) => {
+      if (names.length) toast.warning(`${names.map(quote).join(", ")} ${names.length > 1 ? "aren't" : "isn't"} Ready yet, so ${names.length > 1 ? "they won't" : "it won't"} show in the preview until marked Ready.`);
+    }).catch(() => {});
   };
   /** Plain lines for everything this save writes (clean state → current state). */
   const describeSave = () => {
