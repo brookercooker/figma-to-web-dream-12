@@ -36,12 +36,12 @@ describe("object editor protocol", () => {
     const s = setup(); s.receive("edit-ready", {});
     s.receive("edit-navigate", { path: "/about" });
     s.receive("edit-object-click", { objectId: "x", componentKey: "Y", name: "Y", slot: "s" });
-    s.receive("edit-change", { scope: "object:d1", next: { "text:0": "b" } }, "https://evil.example.com");
+    s.receive("edit-change", { scope: "object:d1", next: { "0.1": "b" } }, "https://evil.example.com");
     expect(s.props.onNavigate).not.toHaveBeenCalled();
     expect(s.props.onObjectClick).not.toHaveBeenCalled();
     expect(s.props.onChange).not.toHaveBeenCalled();
-    s.receive("edit-change", { scope: "object:d1", next: { "text:0": "b" } });
-    expect(s.props.onChange).toHaveBeenCalledWith("object:d1", { "text:0": "b" });
+    s.receive("edit-change", { scope: "object:d1", next: { "0.1": "b" } });
+    expect(s.props.onChange).toHaveBeenCalledWith("object:d1", { "0.1": "b" });
   });
   it("page frames ask to scroll back to the object after it closes", () => {
     const s = setup({ objectScope: null, path: "/", scrollToSlot: { slot: null, objectId: "d1" } }); s.receive("edit-ready", {});
