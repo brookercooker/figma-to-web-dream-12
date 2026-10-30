@@ -32,7 +32,7 @@ import InlineDestinationPanel from "./InlineDestinationPanel";
 import { withoutPath } from "@/lib/inlineEditCore";
 import type { InlineReports } from "@/components/InlineEditSurface";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
-import { objectEditScope, objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";
+import { objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
 import { isPageContent, movePageBlock, orderedPageContent, parsePageContent, type PageContentItem } from "./pageContentOrder";
 type Block = PageContentItem;
@@ -188,7 +188,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         if (r.site_wide) siteWideIds.current.add(r.id);
         // Opened on its own, every object edits under `object:<id>`.
         objectRows.current[`object:${r.id}`] = r.id;
-        if (r.inline_edits) edits[`object:${r.id}`] = r.inline_edits;
+        if (r.id === objectId && r.inline_edits) edits[`object:${r.id}`] = r.inline_edits;
         if (!r.component_key) return;
         objectRows.current[r.component_key] = r.id;
         if (r.inline_edits) edits[r.component_key] = r.inline_edits;
@@ -276,6 +276,18 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
 
   const page = useMemo(() => pages.find((p) => p.id === selectedId) ?? null, [pages, selectedId]);
   const surface = usePageEditorSurface(page);
+  // Escape (outside text fields and dialogs) clears the selection, back to the hint.
+  useEffect(() => {
+    if (!embedded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      const t = e.target as HTMLElement | null;
+      if (t?.closest("input,textarea,select,[contenteditable=true],[role=dialog],[role=listbox],[role=menu]")) return;
+      setInlineSel(null); setActiveId("");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [embedded]);
   const infoRef = useRef(onObjectInfo); infoRef.current = onObjectInfo;
   useEffect(() => {
     if (!objectTarget) { infoRef.current?.(null); return; }
