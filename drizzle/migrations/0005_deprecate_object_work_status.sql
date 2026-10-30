@@ -1,0 +1,2 @@
+ALTER TABLE public.object_registry ALTER COLUMN status SET DEFAULT 'Ready';
+COMMENT ON COLUMN public.object_registry.status IS 'DEPRECATED: compatibility value only; all unarchived objects are available regardless of status. Retained with its existing check for older consumers.';
