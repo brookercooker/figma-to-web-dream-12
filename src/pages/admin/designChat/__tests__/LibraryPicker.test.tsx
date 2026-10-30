@@ -22,8 +22,8 @@ vi.mock("../../VideoPickerDialog", () => ({ loadLibraryVideos: async () => [], v
 vi.mock("../../ObjectPickerDialog", async () => {
   const real = await vi.importActual<any>("../../ObjectPickerDialog");
   return { ...real, loadLibraryObjects: async () => [
-    { id: "o1", name: "Hero", component_key: "Hero", labels: [] },
-    { id: "o2", name: "Flyer", component_key: null, labels: [] },
+    { id: "o1", name: "Hero", component_key: "Hero", status: "Draft", labels: [] },
+    { id: "o2", name: "Flyer", component_key: null, status: "Ready", labels: [] },
   ] };
 });
 const labelData = vi.hoisted(() => ({ rows: [{ path: "Rooms/Lobby", color_index: 7 }] }));
