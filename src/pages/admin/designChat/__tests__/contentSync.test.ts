@@ -48,7 +48,7 @@ describe("durable content sync", () => {
     sync.notifyContentEdited(["Homepage: a"]); sync.notifyContentEdited(["Homepage: a", "About: b"]);
     await vi.advanceTimersByTimeAsync(4000);
     expect(post).toHaveBeenLastCalledWith("/content/sync", { changes: ["Homepage: a", "About: b"] });
-    sync.observeContentSyncState(state()); await vi.advanceTimersByTimeAsync(20_000);
+    await vi.advanceTimersByTimeAsync(20_000); sync.observeContentSyncState(state()); await vi.advanceTimersByTimeAsync(0);
     expect(post).toHaveBeenCalledTimes(2);
     expect(post).toHaveBeenLastCalledWith("/content/sync", { changes: ["Homepage: a", "About: b"] });
     sync.notifyContentEdited(); await vi.advanceTimersByTimeAsync(4000);
