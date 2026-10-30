@@ -193,7 +193,7 @@ export function seedPrototypeData() {
     name: key.replace(/([a-z])([A-Z])/g, "$1 $2"),
     component_key: key,
     description: null,
-    status: i % 5 === 0 ? "Draft" : "Ready",
+    status: "Ready",
     intended_pages: i % 3 === 0 ? ["/"] : [],
     labels: i % 2 === 0 ? ["Homepage"] : ["Marketing"],
     archived_at: null,
