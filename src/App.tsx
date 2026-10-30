@@ -36,6 +36,15 @@ const ObjectPreview = lazyRetry(() => import("./pages/admin/ObjectPreview.tsx"))
 const ObjectWorkspace = lazyRetry(() => import("./pages/admin/ObjectWorkspace.tsx"));
 const PageDesignPage = lazyRetry(() => import("./pages/admin/PageDesignPage.tsx"));
 const ObjectDesignPage = lazyRetry(() => import("./pages/admin/ObjectDesignPage.tsx"));
+/** The old designer address opens the object in the unified editor, keeping its parameters; `legacy=1` (settings not yet in the panel) and new objects still use the designer. */
+function ObjectDesignRedirect() {
+  const params = new URLSearchParams(window.location.search);
+  const object = params.get("object");
+  if (!object || params.get("legacy") === "1") return <ObjectDesignPage />;
+  const next = new URLSearchParams({ editObject: object });
+  for (const key of ["returnPage", "section"]) { const v = params.get(key); if (v) next.set(key, v); }
+  return <Navigate to={`/manage/preview?${next}`} replace />;
+}
 const CapturePage = lazyRetry(() => import("./pages/admin/CapturePage.tsx"));
 const DeveloperReviewPage = lazyRetry(() => import("./pages/admin/DeveloperReviewPage.tsx"));
 
@@ -104,7 +113,7 @@ const AppShell = () => {
             <Route path="/manage/pages" element={<AdminGate><AdminIndex /></AdminGate>} />
             <Route path="/manage/design" element={<AdminGate><PageDesignPage /></AdminGate>} />
             <Route path="/manage/objects" element={<AdminGate><AdminIndex /></AdminGate>} />
-            <Route path="/manage/objects/design" element={<AdminGate><ObjectDesignPage /></AdminGate>} />
+            <Route path="/manage/objects/design" element={<AdminGate><ObjectDesignRedirect /></AdminGate>} />
             <Route path="/manage/objects/workspace/:slugId" element={<AdminGate><ObjectWorkspace /></AdminGate>} />
             <Route path="/manage/images" element={<AdminGate><AdminIndex /></AdminGate>} />
             <Route path="/manage/videos" element={<AdminGate><AdminIndex /></AdminGate>} />

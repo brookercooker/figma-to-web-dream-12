@@ -66,7 +66,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   // Section changes reload only frames that cannot draw held blocks themselves.
   const [frameRevision, setFrameRevision] = useState(props.sectionRevision ?? 0);
   useEffect(() => { if (status === "ready" && !heldCapable) setFrameRevision(props.sectionRevision ?? 0); }, [props.sectionRevision, heldCapable, status]);
-  const heldPayload = heldBlocksPayload(props.heldBlocks ?? [], moveCapable, props.heldObjects);
+  const heldPayload = heldBlocksPayload(props.heldBlocks ?? [], moveCapable && !props.objectScope, props.heldObjects);
   const heldInFrame = heldCapable && heldPayload !== null;
   const capableRef = useRef(false);
   const ready = useRef(false);
@@ -85,7 +85,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     const scoped = latest.current.objectScope ? { ...base, ...objectScopePayload(latest.current.objectScope, latest.current.objectEdits) } : base;
     if (!capableRef.current) return scoped;
     // Too large: send an empty list so the frame draws nothing while the local list shows them.
-    return { ...scoped, heldBlocks: heldBlocksPayload(latest.current.heldBlocks ?? [], moveCapableRef.current, latest.current.heldObjects) ?? [], activeBlockId: latest.current.activeBlockId || null };
+    return { ...scoped, heldBlocks: heldBlocksPayload(latest.current.heldBlocks ?? [], moveCapableRef.current && !latest.current.objectScope, latest.current.heldObjects) ?? [], activeBlockId: latest.current.activeBlockId || null };
   };
   const query: EditQuery = (op, scope, key, props) => {
     if (!ready.current || exited.current) return Promise.resolve(null);
@@ -121,7 +121,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         destination.current = frame.current?.contentWindow ?? null;
         capableRef.current = data.capabilities?.heldBlocks === true; setHeldCapable(capableRef.current);
         moveCapableRef.current = data.capabilities?.blockMove === true; setMoveCapable(moveCapableRef.current);
-        clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); restoreFrameScroll(frame.current, latest.current.path); if (latest.current.scrollToSlot) post("scroll-to-slot", { ...latest.current.scrollToSlot }); return;
+        clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); restoreFrameScroll(frame.current, latest.current.path); if (latest.current.scrollToSlot?.slot) post("scroll-to-slot", { slot: latest.current.scrollToSlot.slot }); return;
       }
       if (data.type === "edit-error") {
         clearTimeout(timeout); ready.current = false;
@@ -182,7 +182,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       } else if (data.type === "edit-block-move" && moveCapableRef.current && typeof data.id === "string" && Number.isFinite(data.toIndex)) {
         const blocks = latest.current.heldBlocks ?? [];
         if (blocks.some(b => (b as { id?: unknown })?.id === data.id && (b as { type?: unknown }).type !== "page")) {
-          const count = blocks.length + (blocks.some(b => (b as { type?: unknown }).type === "page") ? 0 : 1);
+          const count = blocks.length + (latest.current.objectScope || blocks.some(b => (b as { type?: unknown }).type === "page") ? 0 : 1);
           latest.current.onBlockMove?.(data.id, Math.max(0, Math.min(count - 1, Math.trunc(data.toIndex))));
         }
       } else if (data.type === "edit-size" && typeof data.height === "number" && Number.isFinite(data.height)) {

@@ -42,6 +42,13 @@ describe("object editor protocol", () => {
     expect(screen.getByText("Object not found")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
+  it("never sends the page-content marker in object scope", () => {
+    const sections = [{ id: "s1", type: "button" }, { id: "s2", type: "free" }];
+    const s = setup({ heldBlocks: sections, onBlockMove: vi.fn() }); s.receive("edit-ready", { capabilities: { objectEditing: true, heldBlocks: true, blockMove: true } });
+    expect(s.sent("edit-init")[0].heldBlocks.map((b: any) => b.id)).toEqual(["s1", "s2"]);
+    s.receive("edit-block-move", { id: "s1", toIndex: 9 });
+    expect(s.props.onBlockMove).toHaveBeenCalledWith("s1", 1);
+  });
   it("ignores page navigation and object clicks, and messages from other origins", () => {
     const s = setup(); s.receive("edit-ready", { capabilities: { objectEditing: true } });
     s.receive("edit-navigate", { path: "/about" });
@@ -54,8 +61,9 @@ describe("object editor protocol", () => {
     expect(s.props.onChange).toHaveBeenCalledWith("object:d1", { "0.1": "b" });
   });
   it("page frames ask to scroll back to the object after it closes", () => {
-    const s = setup({ objectScope: null, path: "/", scrollToSlot: { slot: null, objectId: "d1" } }); s.receive("edit-ready", {});
-    expect(s.sent("scroll-to-slot")[0]).toMatchObject({ objectId: "d1" });
+    const s = setup({ objectScope: null, path: "/", scrollToSlot: { slot: "code:home-about", objectId: "d1" } }); s.receive("edit-ready", {});
+    expect(s.sent("scroll-to-slot")).toEqual([expect.objectContaining({ slot: "code:home-about" })]);
+    expect(s.sent("scroll-to-slot")[0]).not.toHaveProperty("objectId");
     expect(s.sent("edit-init")[0]).not.toHaveProperty("scope");
   });
 });

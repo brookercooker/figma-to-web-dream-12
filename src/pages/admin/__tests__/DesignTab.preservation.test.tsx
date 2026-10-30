@@ -71,7 +71,7 @@ describe("public page save/discard integration", () => {
     const s = await openRemote(true, true);
     s.send("edit-object-click", { objectId: null, componentKey: "Header", name: "Header", slot: "site-header", siteWide: true });
     fireEvent.click(screen.getByRole("button", { name: "Edit Object" }));
-    await waitFor(() => expect(mocks.openObject).toHaveBeenCalledWith("site-header"));
+    await waitFor(() => expect(mocks.openObject).toHaveBeenCalledWith("site-header", undefined, { slot: "site-header" }));
   });
   it.each(["discard", "undo-save", "leave"])("transports a Ready coded-slot copy and cleans it on %s", async action => {
     const s = await openRemote(true, true);

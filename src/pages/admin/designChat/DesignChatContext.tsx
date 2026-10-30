@@ -22,6 +22,8 @@ import { observeContentSyncState } from "./contentSync";
 
 /** How long Back/Forward/page choice waits for the preview to report the new page before reloading it once. */
 export const NAV_FALLBACK_MS = 3000;
+/** An object open in the editor; `from` decides the back link (page or the Objects list). */
+export interface ObjectOpen { id: string; section?: string; slot?: string; from: "page" | "objects" }
 export type Device = "mobile" | "tablet" | "desktop";
 
 /** A page the person picked in the Pages tab for the chat to work on. */
@@ -77,10 +79,10 @@ export type DesignChat = {
   /** Move the preview to an address without changing the working page. */
   showPreviewPath: (path: string) => void;
   /** An object opened from the page editor, shown in its place while editing. */
-  objectOpen: { id: string; section?: string } | null;
+  objectOpen: ObjectOpen | null;
   /** The object the page editor should scroll back to after the object editor closes. */
   returnTo: { slot: string | null; objectId: string } | null;
-  openObject: (id: string, section?: string) => void;
+  openObject: (id: string, section?: string, opts?: { slot?: string; from?: "page" | "objects" }) => void;
   closeObject: () => void;
   /** The address the visitor is on inside the preview (null until the site reports one). */
   previewLocation: { path: string; search: string; notFound?: boolean } | null;
@@ -181,10 +183,13 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const clearWorkingPage = useCallback(() => { dispatch({ type: "clear" }); setObjectOpen(null); }, []);
   const startEditing = useCallback(() => dispatch({ type: "start" }), []);
   const stopEditing = useCallback(() => { dispatch({ type: "stop" }); setObjectOpen(null); }, []);
-  const [objectOpen, setObjectOpen] = useState<{ id: string; section?: string } | null>(null);
-  const openObject = useCallback((id: string, section?: string) => { if (editing) setObjectOpen({ id, section }); }, [editing]);
+  const [objectOpen, setObjectOpen] = useState<ObjectOpen | null>(null);
+  // From Tools > Objects the editor starts in the same tick as editing, so that path doesn't wait for it.
+  const openObject = useCallback((id: string, section?: string, opts?: { slot?: string; from?: "page" | "objects" }) => {
+    if (editing || opts?.from === "objects") setObjectOpen({ id, section, slot: opts?.slot, from: opts?.from ?? "page" });
+  }, [editing]);
   const [returnTo, setReturnTo] = useState<{ slot: string | null; objectId: string } | null>(null);
-  const closeObject = useCallback(() => { if (objectOpen) setReturnTo({ slot: null, objectId: objectOpen.id }); setObjectOpen(null); }, [objectOpen]);
+  const closeObject = useCallback(() => { if (objectOpen) setReturnTo({ slot: objectOpen.slot ?? null, objectId: objectOpen.id }); setObjectOpen(null); }, [objectOpen]);
   useEffect(() => { if (objectOpen) return; const t = setTimeout(() => setReturnTo(null), 5000); return () => clearTimeout(t); }, [objectOpen, returnTo]);
 
   const [previewLocation, setPreviewLocation] = useState<{ path: string; search: string; notFound?: boolean } | null>(null);

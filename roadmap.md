@@ -79,6 +79,7 @@
 - [x] Allow manual editing with waiting requests; persist busy content sync and retry from existing relay status
 - [x] Order components around Page Content with capability-gated marker and validated frame moves; cover readers and tests
 - [x] Object editor in the framed page editor (coded objects, wording/style on designed objects, Save returns to page, thumbnail refresh)
-- [ ] Designed-object sections as held blocks + Section Layout group (blocked: public `/__object` route with objectSections)
-- [ ] Open from Tools > Objects in the new editor; redirect /manage/objects/design (blocked: same)
-- [ ] Rendering-match check, then remove CodedObjectEditor / ObjectDesignPage (blocked: public route live)
+- [x] Designed-object sections as held blocks + Section Layout group
+- [x] Open from Tools > Objects in the new editor; redirect /manage/objects/design
+- [x] Rendering-match check (3/3 match); CodedObjectEditor removed
+- [ ] Move the remaining designer-only settings (LAYOUT_GAPS) into the panel, then remove the standalone designer
