@@ -80,8 +80,8 @@ async function captureOne(c: ThumbCandidate, force = false): Promise<void> {
   if (payload?.error === "route_not_resolved" || payload?.skipped === "route_not_resolved") {
     throw new RouteNotResolvedError(payload.detail);
   }
-  if (payload?.skipped === "object_not_ready") {
-    throw new RouteNotResolvedError("Object is not marked Ready yet — thumbnail skipped.");
+  if (payload?.skipped === "object_not_renderable" || payload?.skipped === "object_not_ready") {
+    throw new RouteNotResolvedError("Object preview is unavailable — keeping the previous thumbnail.");
   }
   if (error) {
     // Screenshot service not configured (missing/placeholder Cloudflare

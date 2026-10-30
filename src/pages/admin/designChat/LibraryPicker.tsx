@@ -73,7 +73,7 @@ async function loadRows(kind: LibraryKind): Promise<Row[]> {
     const type = o.component_key ? "built in code" : "built in the Site Manager";
     return {
       ref: { kind: "object", id: o.id, name: o.name, componentKey: o.component_key, type, thumb: o.thumbnail_url ?? undefined },
-      search: (t) => objectMatches(o, t), labels: o.labels ?? [], note: o.status || type, createdAt: o.createdAt,
+      search: (t) => objectMatches(o, t), labels: o.labels ?? [], note: type, createdAt: o.createdAt,
     };
   });
 }

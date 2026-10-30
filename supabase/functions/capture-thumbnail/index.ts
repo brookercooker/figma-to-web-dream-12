@@ -55,12 +55,12 @@ Deno.serve(async (req) => {
       // being stored as valid thumbnails.
       const { data: objectRow, error: objectErr } = await admin
         .from("object_registry")
-        .select("component_key,status,archived_at")
+        .select("component_key,archived_at")
         .eq("id", body.id)
         .maybeSingle();
       if (objectErr) throw objectErr;
-      if (!objectRow || objectRow.archived_at || objectRow.status !== "Ready" || !objectRow.component_key) {
-        return json({ ok: false, skipped: "object_not_ready", error: "object_not_ready" }, 200);
+      if (!objectRow || objectRow.archived_at || !objectRow.component_key) {
+        return json({ ok: false, skipped: "object_not_renderable", error: "object_not_renderable" }, 200);
       }
       capturePath = `/preview/object/${encodeURIComponent(objectRow.component_key)}`;
     }

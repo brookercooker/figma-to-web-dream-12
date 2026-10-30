@@ -73,12 +73,13 @@ describe("public page save/discard integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit Object" }));
     await waitFor(() => expect(mocks.openObject).toHaveBeenCalledWith("site-header", undefined, { slot: "site-header" }));
   });
-  it.each(["discard", "undo-save", "leave"])("transports a Ready coded-slot copy and cleans it on %s", async action => {
+  it.each(["discard", "undo-save", "leave"])("transports a coded-slot copy without status UI and cleans it on %s", async action => {
     const s = await openRemote(true, true);
     s.send("edit-object-click", { objectId: "categories", componentKey: "Categories", name: "Categories", slot: "code:home-categories" });
     fireEvent.click(await screen.findByRole("button", { name: "Make a Copy for This Page" }));
     await waitFor(() => expect(s.post).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", objectSwaps: { "code:home-categories": { id: "copy", status: "Ready", name: "Categories (Contact)", component_key: "Categories", content: { sections: [] }, inline_edits: { "0": "Original" } } } }), "https://public.example.com"));
     expect(mocks.writes).toHaveBeenCalledWith("object_registry", expect.objectContaining({ status: "Ready" }));
+    expect(screen.queryByText(/^(Draft|Ready|Work Status)$/)).toBeNull();
     if (action === "discard") await act(async () => mocks.discard());
     if (action === "undo-save") { s.send("edit-undo"); await act(async () => mocks.save()); }
     if (action === "leave") s.unmount();

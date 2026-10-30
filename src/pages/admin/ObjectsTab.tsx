@@ -28,8 +28,6 @@ import {
   useArchiveObject,
   useRestoreObject,
   
-  useMarkAsBuilt,
-  useSetObjectStatus,
   useDeleteObjectPermanent,
   type ObjectRegistryRow,
 } from "./useObjectRegistry";
@@ -40,7 +38,6 @@ import TagsPanel from "./TagsPanel";
 import ObjectThumbnail from "./ObjectThumbnail";
 import { requestObjectThumbnail } from "./objectThumbnailCapture";
 import LabelsCell from "./LabelsCell";
-import WorkStatusPopover from "./WorkStatusPopover";
 import { supabase } from "@/prototype/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAutoCaptureThumbnails, regenerateThumbnail, isStale } from "./useThumbnailCapture";
@@ -48,7 +45,6 @@ import { type ObjectUsage } from "./objectUsages";
 import { useObjectPageUsages } from "./useObjectPageUsages";
 import InUseWarning from "./InUseWarning";
 
-type StatusFilter = "all" | "Ready" | "Draft";
 type SortKey = "newest" | "oldest" | "name" | "name_desc";
 type Field = "all" | "name" | "id" | "path" | "description" | "tags";
 const FIELDS: { v: Field; label: string }[] = [
@@ -99,8 +95,6 @@ export default function ObjectsTab() {
   const { data: archived = [] } = useArchivedObjects();
   const archive = useArchiveObject();
   
-  const markBuilt = useMarkAsBuilt();
-  const setObjectStatus = useSetObjectStatus();
   const deletePermanent = useDeleteObjectPermanent();
   const restore = useRestoreObject();
   const [q, setQ] = useState("");
@@ -111,11 +105,9 @@ export default function ObjectsTab() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [creating, setCreating] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [showArchived, setShowArchived] = useState(false);
   const [confirmArchive, setConfirmArchive] = useState<ObjectRegistryRow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ObjectRegistryRow | null>(null);
-  const [confirmSave, setConfirmSave] = useState<ObjectRegistryRow | null>(null);
   const [editReady, setEditReady] = useState<ObjectRegistryRow | null>(null);
   const [copyFrom, setCopyFrom] = useState<ObjectRegistryRow | null>(null);
   const [renameTarget, setRenameTarget] = useState<ObjectRegistryRow | null>(null);
@@ -187,12 +179,12 @@ export default function ObjectsTab() {
     qc.invalidateQueries({ queryKey: ["admin", "object_registry"] });
   };
 
-  // Auto-capture server-side thumbnails for Ready objects. Capture uses the
+  // Auto-capture server-side thumbnails for objects. Capture uses the
   // DB-free preview route so headless screenshots never hit object_registry RLS
   // and accidentally store the public "No object" fallback.
   const captureCandidates = useMemo(() =>
     objects
-      .filter((o) => o.thumbnail_url && o.status === "Ready" && o.component_key && !!objectRegistry[o.component_key])
+      .filter((o) => o.thumbnail_url && o.component_key && !!objectRegistry[o.component_key])
       .map((o) => ({
         kind: "object" as const,
         id: o.id,
@@ -239,10 +231,7 @@ export default function ObjectsTab() {
     const term = deferredQ.trim().toLowerCase();
     const source = isArchivedView ? archived : objects;
     let list = source.filter((o) => {
-      if (!isArchivedView) {
-        if (statusFilter === "Ready" && o.status !== "Ready") return false;
-        if (statusFilter === "Draft" && o.status !== "Draft") return false;
-      }
+
       if (term && !matches(o, term)) return false;
       if (filterTags.length && !filterTags.every((f) => matchesLabelFilter(o.labels, f))) return false;
       if (dateFrom && new Date(o.updated_at) < new Date(dateFrom)) return false;
@@ -262,7 +251,7 @@ export default function ObjectsTab() {
       return sort === "oldest" ? da - db : db - da;
     });
     return list;
-  }, [objects, archived, deferredQ, searchField, filterTags, statusFilter, isArchivedView, sort, timeRange, dateFrom, dateTo]);
+  }, [objects, archived, deferredQ, searchField, filterTags, isArchivedView, sort, timeRange, dateFrom, dateTo]);
 
 
   const doArchive = async (o: ObjectRegistryRow) => {
@@ -286,21 +275,6 @@ export default function ObjectsTab() {
 
   // Simple navigation to the object's edit route (no status change).
   const gotoObject = (o: ObjectRegistryRow) => navigate(`/objects/${o.slug_id}`);
-
-  // Edit button on a row: Ready → ask update-all vs make-a-copy; Draft → just open.
-
-
-
-  const doSave = async (o: ObjectRegistryRow) => {
-    setConfirmSave(null);
-    try {
-      await markBuilt.mutateAsync(o.id);
-      toast.success(`"${o.name}" saved as Ready`);
-    } catch (e: any) {
-      toast.error(e?.message ?? "Save failed");
-    }
-  };
-
 
   const doDeletePermanent = async (o: ObjectRegistryRow) => {
     setConfirmDelete(null);
@@ -364,13 +338,6 @@ export default function ObjectsTab() {
           onDateFromChange={setDateFrom}
           onDateToChange={setDateTo}
           dateFieldLabel="Modified"
-          status={statusFilter}
-          onStatusChange={(v) => setStatusFilter(v as StatusFilter)}
-          statusOptions={[
-            { v: "all", label: "All Statuses" },
-            { v: "Ready", label: "Ready" },
-            { v: "Draft", label: "Draft" },
-          ]}
           showArchived={showArchived}
           onShowArchivedChange={setShowArchived}
           archivedCount={archived.length}
@@ -409,7 +376,6 @@ export default function ObjectsTab() {
               <col style={{ width: 116 }} />
               <col style={{ minWidth: 200 }} />
               <col style={{ width: 110 }} />
-              <col style={{ width: 110 }} />
               <col style={{ width: 150 }} />
               <col style={{ width: 100 }} />
               <col style={{ width: 90 }} />
@@ -431,7 +397,6 @@ export default function ObjectsTab() {
                 </th>
                 <th className="px-3 py-3 text-left">Preview</th>
                 <th className="px-3 py-3 text-left">Name</th>
-                <th className="px-3 py-3 text-center">Status</th>
                 <th className="px-3 py-3 text-left">Used On</th>
                 <th className="px-3 py-3 text-center">Copy</th>
                 <th className="px-3 py-3 text-left">Labels</th>
@@ -444,7 +409,7 @@ export default function ObjectsTab() {
             <tbody>
               {!isLoading && visible.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-3 py-16 text-center text-muted-foreground text-sm">
+                  <td colSpan={10} className="px-3 py-16 text-center text-muted-foreground text-sm">
                     {timeRange === "hour" ? "No objects modified in the last hour."
                     : timeRange === "day" ? "No objects modified in the last 24 hours."
                     : timeRange === "week" ? "No objects modified in the last 7 days."
@@ -459,10 +424,8 @@ export default function ObjectsTab() {
                 const ref = buildObjectRef({
                   id: obj.slug_id,
                   name: obj.name,
-                  status: obj.status,
                   description: obj.description,
                 });
-                const label = obj.status;
                 const isArchivedRow = !!obj.archived_at;
                 const hasComponent = !!obj.component_key && !!objectRegistry[obj.component_key];
                 return (
@@ -486,7 +449,7 @@ export default function ObjectsTab() {
                           else gotoObject(obj);
                         }}
                         className="block rounded hover:ring-2 hover:ring-primary/40 focus:outline-none focus:ring-2 focus:ring-primary"
-                        title={hasComponent ? "Open Larger Preview" : "Open Draft"}
+                        title={hasComponent ? "Open Larger Preview" : "Open Object"}
                       >
                         {hasComponent ? (
                           <div className="w-[96px] h-[60px] rounded border overflow-hidden bg-muted/30">
@@ -494,7 +457,7 @@ export default function ObjectsTab() {
                           </div>
                         ) : (
                           <div className="w-[96px] h-[60px] rounded border border-dashed border-brass/40 bg-brass/5 flex flex-col items-center justify-center text-[10px] text-brass uppercase tracking-wider">
-                            <span>Draft</span>
+                            <span>Object</span>
                             <span className="text-[9px] normal-case tracking-normal text-brass/70">Open →</span>
                           </div>
                         )}
@@ -515,28 +478,6 @@ export default function ObjectsTab() {
                       </div>
                     </td>
                     <td className="px-2 py-3">
-                      <div className="flex flex-col items-center">
-                        <Badge
-                          variant={obj.status === "Ready" ? "default" : "secondary"}
-                          className={
-                            obj.status === "Draft"
-                              ? "bg-amber-400/20 text-amber-800 border border-amber-500/40 hover:bg-amber-400/20"
-                              : "bg-emerald-500/15 text-emerald-700 border border-emerald-500/40 hover:bg-emerald-500/15"
-                          }
-                        >
-                          {label}
-                        </Badge>
-                        <WorkStatusPopover
-                          value={obj.status === "Ready" ? "ready" : "draft"}
-                          onSave={(next) => setObjectStatus.mutateAsync({
-                            id: obj.id,
-                            status: next === "ready" ? "Ready" : "Draft",
-                          })}
-                          disabled={!!obj.archived_at}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-2 py-3">
                       <UsedOnChip
                         usages={usagesForObject(obj)}
                         hasKey={!!obj.component_key}
@@ -548,8 +489,6 @@ export default function ObjectsTab() {
                           reference={ref}
                           id={obj.slug_id}
                           label="Copy Reference"
-                          disabled={obj.status !== "Ready"}
-                          disabledMessage="Save this object as Ready before you can use it on a page."
                         />
                       </div>
                     </td>
@@ -704,34 +643,6 @@ export default function ObjectsTab() {
           destructive
           onConfirm={() => confirmArchive && doArchive(confirmArchive)}
         />
-        <ConfirmDialog
-          open={!!confirmSave}
-          onOpenChange={(o) => { if (!o) setConfirmSave(null); }}
-          title={`Save "${confirmSave?.name ?? ""}" as Ready?`}
-          description={
-            confirmSave && !confirmSave.component_key ? (
-              <div className="space-y-2">
-                <p className="flex items-start gap-2 text-destructive">
-                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span>
-                    <strong>No component is wired up yet.</strong> This object has no{" "}
-                    <code className="font-mono text-xs">component_key</code>, so marking it Ready
-                    will still render a placeholder card.
-                  </span>
-                </p>
-                <p>
-                  Consider building the component first (via a Lovable chat using the Copy Reference),
-                  then saving as Ready. Save anyway?
-                </p>
-              </div>
-            ) : (
-              <>Marking this Ready moves it into the alphabetized Ready list.</>
-            )
-          }
-          confirmLabel={confirmSave && !confirmSave.component_key ? "Save anyway" : "Save as Ready"}
-          destructive={!!(confirmSave && !confirmSave.component_key)}
-          onConfirm={() => confirmSave && doSave(confirmSave)}
-        />
 
         <ConfirmDialog
           open={!!confirmDelete}
@@ -755,11 +666,11 @@ export default function ObjectsTab() {
                     </li>
                   </ul>
                 </div>
-                {confirmDelete.status === "Ready" && confirmDelete.component_key && (
+                {confirmDelete.component_key && (
                   <p className="flex items-start gap-2 text-brass border-l-2 border-brass/60 pl-2 text-xs">
                     <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                     <span>
-                      <strong>Heads up:</strong> this object is <strong>Ready</strong> and its
+                      <strong>Heads up:</strong> this object’s
                       component <code className="font-mono">{confirmDelete.component_key}</code> may
                       still be imported and rendered somewhere in the app code.
                     </span>
@@ -814,10 +725,7 @@ function ObjectPreviewDialog({ obj, onClose }: { obj: ObjectRegistryRow | null; 
   // before the component was registered, silently regenerate on first open
   // so the row thumbnail stops showing a stale "No preview" snapshot.
   useEffect(() => {
-    // Only Ready objects can be captured server-side (the capture function
-    // rejects Draft with 409 object_not_ready), so don't auto-trigger for Draft.
     if (!obj || !entry || regenerating) return;
-    if (obj.status !== "Ready") return;
     if (autoTriedRef.current === obj.id) return;
     const stale = isStale({
       kind: "object",
@@ -843,7 +751,7 @@ function ObjectPreviewDialog({ obj, onClose }: { obj: ObjectRegistryRow | null; 
               <DialogTitle className="truncate">{obj?.name}</DialogTitle>
               <p className="text-xs font-mono text-muted-foreground mt-1 truncate">id: {obj?.slug_id}</p>
             </div>
-            {entry && obj?.status === "Ready" && (
+            {entry && (
               <Button variant="outline" size="sm" onClick={onRegenerate} disabled={regenerating} className="gap-1.5 shrink-0">
                 <RefreshCw className={`w-4 h-4 ${regenerating ? "animate-spin" : ""}`} />
                 Refresh Thumbnail and Preview Images
@@ -857,7 +765,7 @@ function ObjectPreviewDialog({ obj, onClose }: { obj: ObjectRegistryRow | null; 
             <div className="border-2 border-dashed border-brass/40 bg-brass/5 rounded-md p-8 space-y-3">
               <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-brass">
                 <span className="w-2 h-2 rounded-full bg-brass" />
-                Draft — not yet built
+                No component yet
               </div>
               {obj?.description && <p className="text-sm text-foreground/80">{obj.description}</p>}
               <p className="text-xs text-muted-foreground">
@@ -884,9 +792,9 @@ function ObjectPreviewDialog({ obj, onClose }: { obj: ObjectRegistryRow | null; 
 }
 
 /**
- * Prompt shown when the user clicks Edit on a Ready object.
+ * Prompt shown when the user clicks Edit on a shared object.
  * Two paths: Update All (opens the object to edit — publishing updates every
- * location automatically) or Make a Copy (creates a new Draft object).
+ * location automatically) or Make a Copy (creates a new object).
  */
 function EditReadyDialog({
   obj, usages, onClose, onUpdateAll, onMakeCopy,
@@ -949,7 +857,7 @@ function EditReadyDialog({
               >
                 <div className="text-sm font-medium mb-1">Make a Copy</div>
                 <p className="text-xs text-muted-foreground">
-                  Create a new Draft object and edit it independently. Existing pages keep the original.
+                  Create a new object and edit it independently. Existing pages keep the original.
                 </p>
               </button>
             </div>

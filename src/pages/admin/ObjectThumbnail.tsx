@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { SignedThumbImg } from "./signedThumb";
 import { requestObjectThumbnail } from "./objectThumbnailCapture";
 
-/** Saved previews are preferred; missing captures queue once when visible, including Draft and designed objects. */
+/** Saved previews are preferred; missing captures queue once when visible for every object. */
 export default function ObjectThumbnail({ id, storedThumb }: { id: string; storedThumb?: string | null }) {
   const cell = useRef<HTMLDivElement>(null);
   const [captured, setCaptured] = useState<string | null>(null);

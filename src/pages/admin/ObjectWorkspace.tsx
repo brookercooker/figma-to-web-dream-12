@@ -4,7 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/prototype/client";
 import { objectRegistry } from "@/components/objects/registry";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Save, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -15,9 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  useSetObjectStatus,
   type ObjectRegistryRow,
 } from "./useObjectRegistry";
 import { CopyRefButton, buildObjectRef } from "./copyReference";
@@ -29,16 +26,14 @@ import { notifyContentEdited } from "./designChat/contentSync";
  * Full-page workspace for a single object.
  *
  * Purpose: give the user a distraction-free full-size canvas to iterate on
- * one Object with Lovable. When it's finished, "Save" flips status to Built
- * and kicks off a thumbnail/preview capture so the row shows in the list.
+ * one Object with Lovable. "Save" kicks off a thumbnail/preview capture so the row shows in the list.
  */
 export default function ObjectWorkspace() {
   const { slugId } = useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const setStatus = useSetObjectStatus();
+  const [saving, setSaving] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
-  const [chosenStatus, setChosenStatus] = useState<"Draft" | "Ready">("Draft");
 
   const { data: obj, isLoading } = useQuery({
     queryKey: ["admin", "object_registry", "one", slugId],
@@ -75,27 +70,21 @@ export default function ObjectWorkspace() {
     );
   }
 
-  const isReady = obj.status === "Ready";
-  const statusLabel = isReady ? "Ready" : "Draft";
   const ref = buildObjectRef({
     id: obj.slug_id,
     name: obj.name,
-    status: obj.status,
     description: obj.description,
   });
 
   const openSaveDialog = () => {
-    setChosenStatus((obj.status as "Draft" | "Ready") ?? "Draft");
     setSaveOpen(true);
   };
 
   const onConfirmSave = async () => {
+    setSaving(true);
     try {
-      if (chosenStatus !== obj.status) {
-        await setStatus.mutateAsync({ id: obj.id, status: chosenStatus });
-      }
       notifyContentEdited();
-      toast.success(`Saved "${obj.name}" as ${chosenStatus}`);
+      toast.success(`Saved "${obj.name}"`);
       // Fire off thumbnail regeneration only when a component exists; don't block.
       if (obj.component_key) {
         regenerateThumbnail({
@@ -116,7 +105,7 @@ export default function ObjectWorkspace() {
       navigate("/manage/objects");
     } catch (e: any) {
       toast.error(e?.message ?? "Save failed");
-    }
+    } finally { setSaving(false); }
   };
 
   return (
@@ -136,16 +125,6 @@ export default function ObjectWorkspace() {
             </span>
           </div>
 
-          <Badge
-            variant={isReady ? "default" : "secondary"}
-            className={
-              isReady
-                ? "bg-emerald-500/15 text-emerald-700 border border-emerald-500/40 hover:bg-emerald-500/15"
-                : "bg-amber-400/20 text-amber-800 border border-amber-500/40 hover:bg-amber-400/20"
-            }
-          >
-            {statusLabel}
-          </Badge>
 
           <div className="ml-auto flex items-center gap-2">
             <Button asChild variant="outline" size="sm" className="gap-1.5">
@@ -156,7 +135,7 @@ export default function ObjectWorkspace() {
               size="sm"
               className="gap-1.5"
               onClick={openSaveDialog}
-              disabled={setStatus.isPending}
+              disabled={saving}
             >
               <Save className="w-4 h-4" />
               Save…
@@ -197,7 +176,7 @@ export default function ObjectWorkspace() {
                 {obj.name}
               </p>
               <p className="text-sm text-muted-foreground mb-6">
-                Draft object — no component built yet.
+                No component built yet.
               </p>
               <p className="text-sm text-muted-foreground max-w-lg mx-auto">
                 Copy this object&apos;s reference and paste it into a Lovable
@@ -227,64 +206,21 @@ export default function ObjectWorkspace() {
                   Saving stores this object so you can reference it when
                   chatting with Lovable (via <b>Copy Reference</b>).
                 </p>
-                <p>
-                  This does <b>not</b> publish it to your live site. To publish
-                  changes to the live site, click the <b>Publish</b> button
-                  inside Lovable.
-                </p>
               </div>
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <p className="text-sm font-medium">Work Status</p>
-            <p className="text-xs text-muted-foreground">
-              This is just your work-tracking marker for whether the object is
-              finished being built. It is independent of publishing — Draft vs
-              Ready is not the same as live vs not-live.
-            </p>
-            <RadioGroup
-              value={chosenStatus}
-              onValueChange={(v) => setChosenStatus(v as "Draft" | "Ready")}
-              className="gap-2"
-            >
-              <label
-                htmlFor="status-ready"
-                className="flex items-start gap-3 rounded border p-3 cursor-pointer hover:bg-muted/40"
-              >
-                <RadioGroupItem value="Ready" id="status-ready" className="mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium">Mark as Ready</div>
-                  <div className="text-xs text-muted-foreground">
-                    Complete — safe to reference.
-                  </div>
-                </div>
-              </label>
-              <label
-                htmlFor="status-draft"
-                className="flex items-start gap-3 rounded border p-3 cursor-pointer hover:bg-muted/40"
-              >
-                <RadioGroupItem value="Draft" id="status-draft" className="mt-0.5" />
-                <div>
-                  <div className="text-sm font-medium">Keep as Draft</div>
-                  <div className="text-xs text-muted-foreground">
-                    Still being built.
-                  </div>
-                </div>
-              </label>
-            </RadioGroup>
-          </div>
 
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setSaveOpen(false)}
-              disabled={setStatus.isPending}
+              disabled={saving}
             >
               Cancel
             </Button>
-            <Button onClick={onConfirmSave} disabled={setStatus.isPending}>
-              {setStatus.isPending ? "Saving…" : "Save"}
+            <Button onClick={onConfirmSave} disabled={saving}>
+              {saving ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

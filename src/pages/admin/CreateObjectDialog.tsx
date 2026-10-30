@@ -64,7 +64,7 @@ export default function CreateObjectDialog({
       const { data, error } = await (supabase as any).from("object_registry").insert({
         name: name.trim(),
         slug_id: slug,
-        status: "Draft",
+        status: "Ready",
         component_key: null,
         description: "",
         intended_pages: [],
@@ -87,8 +87,7 @@ export default function CreateObjectDialog({
         <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Give your object a name and we'll create it as a Draft — you can
-            build it out next.
+            Give your object a name. You can build it out next.
           </p>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Object Name</label>

@@ -22,8 +22,8 @@ vi.mock("../../VideoPickerDialog", () => ({ loadLibraryVideos: async () => [], v
 vi.mock("../../ObjectPickerDialog", async () => {
   const real = await vi.importActual<any>("../../ObjectPickerDialog");
   return { ...real, loadLibraryObjects: async () => [
-    { id: "o1", name: "Hero", component_key: "Hero", labels: [] },
-    { id: "o2", name: "Flyer", component_key: null, labels: [] },
+    { id: "o1", name: "Hero", component_key: "Hero", status: "Draft", labels: [] },
+    { id: "o2", name: "Flyer", component_key: null, status: "Ready", labels: [] },
   ] };
 });
 const labelData = vi.hoisted(() => ({ rows: [{ path: "Rooms/Lobby", color_index: 7 }] }));
@@ -267,6 +267,14 @@ describe("library picker", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
   const titles = () => cards().map((c) => c.getAttribute("title"));
+  it("makes legacy Draft and Ready objects equally selectable without status tags", async () => {
+    const { onPick } = setup("objects");
+    await screen.findByTitle("Hero");
+    expect(screen.queryByText(/^(Draft|Ready)$/)).toBeNull();
+    fireEvent.click(screen.getByTitle("Hero"));
+    fireEvent.click(screen.getByTitle("Flyer"));
+    expect(onPick.mock.calls.map(([ref]) => ref.id)).toEqual(["o1", "o2"]);
+  });
   const sortTo = (v: string) => fireEvent.change(screen.getByLabelText("Sort"), { target: { value: v } });
   it("Enter on a card retains native keyboard activation for toggling", async () => {
     const { onPick } = setup();

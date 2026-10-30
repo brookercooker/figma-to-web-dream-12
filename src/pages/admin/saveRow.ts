@@ -13,10 +13,3 @@ export async function saveRow(table: "pages" | "object_registry", patch: Record<
   }
 }
 
-/** Names of objects in `blocks` whose saved status isn't Ready (they don't show in the preview yet). */
-export async function notReadyObjectNames(blocks: unknown[]): Promise<string[]> {
-  const ids = [...new Set(blocks.flatMap((b: any) => (b?.type === "object" && b.objectId ? [b.objectId as string] : [])))];
-  if (!ids.length) return [];
-  const { data } = await (supabase as any).from("object_registry").select("id,name,status").in("id", ids);
-  return ((data ?? []) as { name: string; status: string }[]).filter((o) => o.status !== "Ready").map((o) => o.name);
-}

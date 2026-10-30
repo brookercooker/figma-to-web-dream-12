@@ -35,7 +35,7 @@ import type { InlineReports } from "@/components/InlineEditSurface";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import { objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";
 import SectionLayoutGroup from "./SectionLayoutGroup";
-import { notReadyObjectNames, saveRow } from "./saveRow";
+import { saveRow } from "./saveRow";
 import { imageSection, moveSection, sectionLabel, videoSection } from "./objectSectionsEdit";
 import { parseSections, type Section } from "@/components/ObjectSections";
 import FramedPageEditor, { type FramedEditorController } from "./FramedPageEditor";
@@ -613,7 +613,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
       else { wrote = true; persistedObjects.current.add(scope); cleanState.current = { ...cleanState.current, objectEdits: { ...cleanState.current.objectEdits, [scope]: structuredClone(next) } }; if (pendingObjects.current[scope] === next) delete pendingObjects.current[scope]; }
     }
     setTweaksPending(!!pendingInline.current || Object.keys(pendingObjects.current).length > 0);
-    if (wrote) { notifyContentEdited(lines); warnDraftObjects(); }
+    if (wrote) { notifyContentEdited(lines); }
     if (failed) { toast.error(failed); return false; }
     cleanState.current = structuredClone(editState.current);
     resetHistory();
@@ -623,13 +623,6 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     pendingCopies.current.clear();
     return true;
     } finally { savingHistory.current = false; }
-  };
-  /** After a save: objects on the page that aren't Ready won't appear in the preview yet. */
-  const warnDraftObjects = () => {
-    if (objectId) return;
-    void notReadyObjectNames(editState.current.blocks).then((names) => {
-      if (names.length) toast.warning(`${names.map(quote).join(", ")} ${names.length > 1 ? "aren't" : "isn't"} Ready yet, so ${names.length > 1 ? "they won't" : "it won't"} show in the preview until marked Ready.`);
-    }).catch(() => {});
   };
   /** Plain lines for everything this save writes (clean state → current state). */
   const describeSave = () => {

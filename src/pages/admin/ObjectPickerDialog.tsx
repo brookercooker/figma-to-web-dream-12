@@ -12,7 +12,7 @@ export interface ObjectRow { id: string; name: string; status?: string; descript
 export async function loadLibraryObjects(): Promise<ObjectRow[]> {
   const { data } = await (supabase as any)
     .from("object_registry")
-    .select("id,name,status,description,thumbnail_url,component_key,labels,created_at")
+    .select("id,name,description,thumbnail_url,component_key,labels,created_at")
     .is("archived_at", null)
     .order("name", { ascending: true });
   return ((data ?? []) as any[]).map(({ created_at, ...o }) => ({ ...o, createdAt: created_at ?? undefined })) as ObjectRow[];
@@ -64,11 +64,6 @@ export default function ObjectPickerDialog({
               <div className="mb-2 h-28 w-full"><ObjectThumbnail id={o.id} storedThumb={o.thumbnail_url} /></div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium truncate">{o.name}</span>
-                {o.status ? (
-                  <span className="shrink-0 rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
-                    {o.status}
-                  </span>
-                ) : null}
               </div>
               {o.description ? (
                 <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{o.description}</p>

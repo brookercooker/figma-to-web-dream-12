@@ -49,7 +49,7 @@ const TABLE_DEFAULTS: Record<string, () => Row> = {
   }),
   objects: () => ({ tags: [], archived_at: null, status: "Planned", notes: null }),
   object_registry: () => ({
-    labels: [], intended_pages: [], archived_at: null, status: "Draft",
+    labels: [], intended_pages: [], archived_at: null, status: "Ready",
     thumbnail_url: null, preview_url: null,
   }),
   images: () => ({ tags: [], archived_at: null, visibility: "gated" }),
