@@ -795,7 +795,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                       resetAll={resetEdits} />
     </>
   );
-  const blockTools = (b: RenderBlock, i: number) => (
+  const blockTools = (b: RenderBlock, i: number, showActions = true) => (
     <>
                           {b.type === "code" ? <span className="text-xs">{b.name}{b.locked ? " · Built in Code" : ""}</span> : b.type === "object" ? (
                             <>
@@ -889,13 +889,13 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                             </>
                           )}
                           <span className="mx-1 h-5 w-px bg-border" />
-                          {i > 0 && (
+                          {showActions && i > 0 && (
                             <ToolButton title="Move Up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
                           )}
-                          {i < orderedPageContent(blocks).length - 1 && (
+                          {showActions && i < orderedPageContent(blocks).length - 1 && (
                             <ToolButton title="Move Down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
                           )}
-                          <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>
+                          {showActions && <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>}
     </>
   );
 
@@ -953,7 +953,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         <a className="underline" href={`/manage/objects/design?object=${objectTarget.objectId}&legacy=1`}>full designer</a>.
       </p>
     )}
-    {!objectId && frameSections !== null && (() => { const list = orderedPageContent(blocks); const i = list.findIndex(b => b.id === activeId); const b = list[i]; return !b || isPageContent(b) ? null : <div className="flex flex-wrap gap-1">{blockTools(b,i)}</div>; })()}
+    {!objectId && frameSections !== null && (() => { const list = orderedPageContent(blocks); const i = list.findIndex(b => b.id === activeId); const b = list[i]; return !b || isPageContent(b) ? null : <div className="flex flex-wrap gap-1">{blockTools(b,i,false)}</div>; })()}
     <ResetEditsAction name={objectTarget?.name ?? page?.name ?? "this page"} object={!!objectId} onReset={resetEdits} />
   </div>;
 
@@ -1031,7 +1031,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
           objectScope={objectTarget} scrollToSlot={objectId ? null : returnTo ?? null}
           sectionRevision={sectionRevision} heldBlocks={objectId && !designedObject ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
           onSections={setFrameSections}
-          onBlockSelect={(id) => { setActiveId(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setInlineSel(null); }} fill={!deviceStyle}
+          onBlockSelect={(id) => { setActiveId(id); setActiveSection(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setActiveSection(id); setInlineSel(null); }} fill={!deviceStyle}
           onUndo={() => restoreHistory("undo")} onRedo={() => restoreHistory("redo")}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
