@@ -64,18 +64,22 @@ describe("edit-object-click", () => {
 
 describe("object dialogs", () => {
   const props = { pageName: "Homepage", busy: false, onOpen: vi.fn(), onCopy: vi.fn(), onCancel: vi.fn() };
-  it("shared object offers open, copy and cancel with the used-on list", () => {
+  it("object used elsewhere offers Edit Everywhere, copy and cancel, naming the other pages", () => {
     render(<ObjectClickDialog {...props} ask={{ ...click, kind: "shared", usedOn: ["Homepage", "About"] }} />);
     expect(screen.getByRole("heading", { name: "Edit About Us?" })).toBeInTheDocument();
-    expect(screen.getByText(/everywhere it's used: Homepage, About\./)).toBeInTheDocument();
-    expect(screen.getAllByRole("button").filter(b => b.textContent).map(b => b.textContent)).toEqual(["Open in Object Editor", "Make a Copy for This Page", "Cancel", "Close"]);
+    expect(screen.getByText("About Us is also used on About. Edit it everywhere, or make a copy just for Homepage?")).toBeInTheDocument();
+    expect(screen.getAllByRole("button").filter(b => b.textContent).map(b => b.textContent)).toEqual(["Edit Everywhere", "Make a Copy for This Page", "Cancel", "Close"]);
     fireEvent.click(screen.getByRole("button", { name: "Make a Copy for This Page" }));
     expect(props.onCopy).toHaveBeenCalled();
   });
-  it("page-only copy has no copy option", () => {
-    render(<ObjectClickDialog {...props} ask={{ ...click, kind: "copy", usedOn: [] }} />);
-    expect(screen.getByText("This copy is only used on Homepage.")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Make a Copy for This Page" })).toBeNull();
+  it("opens straight away when used only on this page or a page-only copy; asks otherwise", () => {
+    expect(objectClickAction("shared", ["Homepage"], "Homepage")).toBe("open");
+    expect(objectClickAction("shared", [], "Homepage")).toBe("open");
+    expect(objectClickAction("copy", ["Homepage"], "Homepage")).toBe("open");
+    expect(objectClickAction("shared", ["Homepage", "About"], "Homepage")).toBe("ask");
+    expect(objectClickAction("shared", null, "Homepage")).toBe("ask");
+    expect(objectClickAction("site", [], "Homepage")).toBe("ask");
+    expect(otherPagesUsing(["Homepage", "About", "About"], "Homepage")).toEqual(["About"]);
   });
   it("site header warns about the whole site", () => {
     render(<ObjectClickDialog {...props} ask={{ ...click, componentKey: "Header", kind: "site", usedOn: [] }} />);
