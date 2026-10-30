@@ -693,7 +693,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
 
   const stylePanel = (
     <>
-                    {inlineSel && inlineSel.scope !== "page" && (
+                    {inlineSel && inlineSel.scope !== "page" && !objectId && (
                       <p className="mb-4 rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
                         Part of the shared object <span className="font-medium text-foreground">{inlineSel.scope}</span>. Changes apply everywhere it's used.
                       </p>

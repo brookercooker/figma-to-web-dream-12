@@ -78,6 +78,8 @@ export type DesignChat = {
   showPreviewPath: (path: string) => void;
   /** An object opened from the page editor, shown in its place while editing. */
   objectOpen: { id: string; section?: string } | null;
+  /** The object the page editor should scroll back to after the object editor closes. */
+  returnTo: { slot: string | null; objectId: string } | null;
   openObject: (id: string, section?: string) => void;
   closeObject: () => void;
   /** The address the visitor is on inside the preview (null until the site reports one). */
@@ -181,7 +183,9 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const stopEditing = useCallback(() => { dispatch({ type: "stop" }); setObjectOpen(null); }, []);
   const [objectOpen, setObjectOpen] = useState<{ id: string; section?: string } | null>(null);
   const openObject = useCallback((id: string, section?: string) => { if (editing) setObjectOpen({ id, section }); }, [editing]);
-  const closeObject = useCallback(() => setObjectOpen(null), []);
+  const [returnTo, setReturnTo] = useState<{ slot: string | null; objectId: string } | null>(null);
+  const closeObject = useCallback(() => { setObjectOpen((cur) => { if (cur) setReturnTo({ slot: cur.section ?? null, objectId: cur.id }); return null; }); }, []);
+  useEffect(() => { if (objectOpen) return; const t = setTimeout(() => setReturnTo(null), 5000); return () => clearTimeout(t); }, [objectOpen, returnTo]);
 
   const [previewLocation, setPreviewLocation] = useState<{ path: string; search: string; notFound?: boolean } | null>(null);
   const rememberPath = preview.rememberPath;
@@ -243,8 +247,8 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     mode,
     state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
-    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, refs, previewNav, reviewOpen, setReviewOpen, showPreviewPath,
-  }), [reviewOpen, showPreviewPath, mode, refs, previewNav, objectOpen, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
+    editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, returnTo, refs, previewNav, reviewOpen, setReviewOpen, showPreviewPath,
+  }), [reviewOpen, showPreviewPath, mode, refs, previewNav, objectOpen, returnTo, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
   return <Ctx.Provider value={value}><ManifestReceiverFrame />{children}</Ctx.Provider>;
 }
