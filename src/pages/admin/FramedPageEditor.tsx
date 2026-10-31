@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import type { InlineChunk, InlineEdits, InlineReports, InlineSelection } from "@/components/InlineEditSurface";
 import { parseObjectClick, type ObjectClick } from "./objectClick";
 import { clampEditSize, editFrameUrl, editMap, heldBlocksPayload, objectScopePayload, objectSwapPayload, type ObjectEditTarget, trustedEditMessage, type HeldObjectData } from "./framedPageProtocol";
-import { remoteSelection, validSnapshot, type EditQuery, type SelectionSnapshot } from "./remoteSelection";
+import { remoteSelection, validSnapshot, validWordRange, type WordRange, type FormatCommand, type EditQuery, type SelectionSnapshot } from "./remoteSelection";
 import { manualNavigationPath } from "./designChat/manualPageNavigation";
 import { acceptFrameScroll, restoreFrameScroll } from "./designChat/frameScroll";
 import { parseFrameSections, type FrameSection } from "./frameSections";
@@ -78,6 +78,9 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const queries = useRef(new Map<string, { resolve: (value: unknown) => void; timer: ReturnType<typeof setTimeout> }>());
   const sequence = useRef(0);
   const selectionVersion = useRef(0);
+  const rangeCapable = useRef(false);
+  const selectedSnapshot = useRef<SelectionSnapshot | null>(null);
+  const wordRange = useRef<WordRange | null>(null);
   const destination = useRef<Window | null>(null);
   const post = (type: string, payload: Record<string, unknown> = {}) => {
     const current = frame.current?.contentWindow ?? destination.current;
@@ -100,12 +103,21 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       post("edit-query", { id, op, scope, key, ...(props ? { props } : {}) });
     });
   };
+  const selectSnapshot = (snapshot: SelectionSnapshot) => latest.current.onSelect(remoteSelection(snapshot, query, rangeCapable.current ? {
+    range: wordRange.current,
+    format: (command: FormatCommand, value?: string) => {
+      const r = wordRange.current;
+      if (!ready.current || exited.current || !rangeCapable.current || !r || r.collapsed || !r.text || selectedSnapshot.current?.key !== snapshot.key || selectedSnapshot.current?.scope !== snapshot.scope || r.key !== snapshot.key || r.scope !== snapshot.scope) return;
+      post("edit-format", { key: snapshot.key, scope: snapshot.scope, command, ...(value !== undefined ? { value } : {}) });
+    },
+  } : undefined));
   useLayoutEffect(() => {
     if (!origin || !target) { setStatus("failed"); return; }
     ready.current = false; exited.current = false; setStatus("loading"); setFailure(null);
     capableRef.current = false; setHeldCapable(false);
     moveCapableRef.current = false; setMoveCapable(false);
     sectionsCapable.current = false; sectionsRef.current = []; latest.current.onSections?.(null);
+    rangeCapable.current = false; selectedSnapshot.current = null; wordRange.current = null;
     latest.current.onReport?.({});
     destination.current = frame.current?.contentWindow ?? null;
     const timeout = setTimeout(() => setStatus("failed"), 15000);
@@ -133,6 +145,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         capableRef.current = data.capabilities?.heldBlocks === true; setHeldCapable(capableRef.current);
         moveCapableRef.current = data.capabilities?.blockMove === true; setMoveCapable(moveCapableRef.current);
         sectionsCapable.current = data.capabilities?.sectionList === true;
+        rangeCapable.current = data.capabilities?.rangeFormatting === true;
         clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); restoreFrameScroll(frame.current, latest.current.path); if (latest.current.scrollToSlot?.slot) post("scroll-to-slot", { slot: latest.current.scrollToSlot.slot }); return;
       }
       if (data.type === "edit-error") {
@@ -149,12 +162,19 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         acceptFrameScroll(event, frame.current, latest.current.path);
       } else if (data.type === "edit-change" && typeof data.scope === "string" && data.scope) {
         const next = editMap(data.next); if (next) latest.current.onChange(data.scope, next);
+      } else if (data.type === "edit-range" && rangeCapable.current) {
+        const snapshot = selectedSnapshot.current;
+        if (!snapshot || !validWordRange(data) || data.key !== snapshot.key || data.scope !== snapshot.scope) return;
+        wordRange.current = structuredClone({ key: data.key, scope: data.scope, collapsed: data.collapsed, text: data.text, marks: data.marks });
+        selectSnapshot(snapshot);
       } else if (data.type === "edit-select") {
         const version = ++selectionVersion.current;
-        if (data.selection === null) { latest.current.onSelect(null); return; }
+        if (data.selection === null) { selectedSnapshot.current = null; wordRange.current = null; latest.current.onSelect(null); return; }
         if (!validSnapshot(data.selection)) return;
         const snapshot: SelectionSnapshot = structuredClone(data.selection);
-        latest.current.onSelect(remoteSelection(snapshot, query));
+        if (selectedSnapshot.current?.key !== snapshot.key || selectedSnapshot.current?.scope !== snapshot.scope) wordRange.current = null;
+        selectedSnapshot.current = snapshot;
+        selectSnapshot(snapshot);
         // Query only missing read-only data; replies cannot overwrite a later selection.
         if (!snapshot.style || !snapshot.rect) void Promise.all([
           snapshot.style ? Promise.resolve(snapshot.style) : query("computed", snapshot.scope, snapshot.key),
@@ -163,7 +183,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
           if (version !== selectionVersion.current || exited.current) return;
           if (style && typeof style === "object") snapshot.style = style as Record<string, string>;
           if (rect && typeof rect === "object") snapshot.rect = rect as DOMRectInit;
-          latest.current.onSelect(remoteSelection(snapshot, query));
+          selectSnapshot(snapshot);
         });
       } else if (data.type === "edit-reply" && typeof data.id === "string") {
         const pending = queries.current.get(data.id);
