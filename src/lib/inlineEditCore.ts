@@ -164,7 +164,7 @@ function restore(entry: Applied, kinds: Set<Kind>) {
   if (kinds.has("img")) { attribute(el, "src", o.src); attribute(el, "srcset", o.srcset); }
   if (kinds.has("style")) attribute(el, "style", o.style);
   if (kinds.has("placeholder")) attribute(el, "placeholder", o.placeholder);
-  if (kinds.has("hidden")) attribute(el, "hidden", o.hidden);
+  if (kinds.has("hidden")) { attribute(el, "hidden", o.hidden); attribute(el, "style", o.style); }
   if (kinds.has("link")) for (const key of LINK_ATTRIBUTES) attribute(el, key, o.link[key]);
 }
 export function createReplay() {
@@ -269,7 +269,7 @@ export function createReplay() {
         if (img !== undefined) { attribute(el, "src", img); attribute(el, "srcset", null); }
         const placeholder = values.get("placeholder");
         if (placeholder !== undefined) attribute(el, "placeholder", placeholder);
-        if (values.get("hidden") === "1") attribute(el, "hidden", "");
+        if (values.get("hidden") === "1") { attribute(el, "hidden", ""); if (el instanceof HTMLElement) el.style.setProperty("display", "none", "important"); }
         const linkValue = values.get("link");
         if (linkValue !== undefined) {
           const link = JSON.parse(linkValue) as LinkEdit;

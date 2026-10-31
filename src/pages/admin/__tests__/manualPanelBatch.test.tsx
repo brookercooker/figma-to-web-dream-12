@@ -38,7 +38,9 @@ it("hidden image undo redo and discard restore the original without writes", () 
   const original = { blocks: [], inlineEdits: {}, objectEdits: {} }; const hidden = { ...original, inlineEdits: { "hidden:0": "1" } };
   replay.apply(root, original.inlineEdits); history.record(original, hidden, { label: "picture removed" }); replay.apply(root, hidden.inlineEdits);
   expect(img?.hasAttribute("hidden")).toBe(true);
+  expect(img?.getAttribute("style")).toContain("display: none");
   replay.apply(root, history.undo()?.inlineEdits ?? {}); expect(img?.hasAttribute("hidden")).toBe(false);
+  expect(img?.getAttribute("style")).toBeNull();
   replay.apply(root, history.redo()?.inlineEdits ?? {}); expect(img?.hasAttribute("hidden")).toBe(true);
   replay.apply(root, original.inlineEdits); history.reset(); expect(img?.hasAttribute("hidden")).toBe(false);
   expect(withoutPath(hidden.inlineEdits, "0")).toEqual({});
