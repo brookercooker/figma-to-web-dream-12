@@ -32,3 +32,4 @@ Public-altering migrations/bulk changes must call notifyContentEdited or request
 
 ## Verification
 Signed-in 1600x1000 check: Expand first; Account/Tools menus expand and open; Review expands and renders its list. Real public editing/preview connection and catch-up sync unavailable (failed fetch). No page test content was written. Automated regressions cover parsers, link protocols, preserved markup, hidden Undo/Redo/Discard/save and full preview payload/filtering/failure Retry.
+An isolated signed-in display also verified text-box editing preserves bold markup, Material rounded paste stores material:rounded:home and displays its icon, and the 360px panel has no horizontal overflow. This does not substitute for the blocked public-frame end-to-end check.

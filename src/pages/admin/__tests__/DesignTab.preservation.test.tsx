@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
+import { notifyContentEdited } from "../designChat/contentSync";
 
 const mocks = vi.hoisted(() => ({ remote: true, slot: null as HTMLElement | null, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), cleanup: vi.fn(), openObject: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
 vi.mock("../objectUsages", async (importOriginal) => ({ ...await importOriginal<typeof import("../objectUsages")>(), findObjectUsages: () => Promise.resolve([{ name: "Homepage" }, { name: "Contact" }]) }));
@@ -127,6 +128,15 @@ describe("public page save/discard integration", () => {
     s.send("edit-undo"); expect(mocks.hasChanges()).toBe(false); expect(mocks.history.undoLabel).toBe("");
     s.send("edit-redo"); expect(mocks.hasChanges()).toBe(true); expect(s.post.mock.calls.at(-1)?.[0].heldBlocks).toHaveLength(2);
     expect(mocks.writes).not.toHaveBeenCalled();
+  });
+  it("adding an object writes pages.content before announcing the successful save", async () => {
+    const s = await openRemote(true, true); vi.mocked(notifyContentEdited).mockClear();
+    act(() => mocks.add("objects")); fireEvent.click(screen.getByText("Pick Stats"));
+    await act(async () => expect(await mocks.save()).toBe(true));
+    expect(mocks.writes).toHaveBeenCalledWith("pages", { content: [expect.objectContaining({ type: "object", objectId: "stats" })] });
+    expect(notifyContentEdited).toHaveBeenCalledOnce();
+    expect(mocks.writes.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(notifyContentEdited).mock.invocationCallOrder[0]);
+    s.unmount();
   });
   it("frame block moves undo the marker order, failed saves retain history and successful saves reset it", async () => {
     mocks.original.content = [{ id: "video", type: "video", url: "/clip.mp4", align: "left", width: 100 }];
