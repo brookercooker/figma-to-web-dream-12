@@ -75,6 +75,7 @@ export function requestFrameManifest(frame: HTMLIFrameElement): boolean {
   if (frame.hasAttribute("data-site-editor") || new URL(frame.src, window.location.href).searchParams.has("nova-edit")) return false;
   const origin = originOf(frame.src);
   if (!origin || !trustedOrigin(origin) || !frame.contentWindow) return false;
+  try { if (frame.contentWindow.location.origin !== origin) return false; } catch { /* Cross-origin document has loaded. */ }
   frame.contentWindow.postMessage({ source: "nova-manager", type: "request-manifest" }, origin);
   return true;
 }

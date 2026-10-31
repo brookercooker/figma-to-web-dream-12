@@ -91,6 +91,7 @@ export function usePreviewEdits(root: RefObject<HTMLElement>, load = loadPreview
       try {
         const url = new URL(frame.src);
         if (url.protocol !== "https:" || url.origin === window.location.origin || url.searchParams.has("nova-edit")) return;
+        try { if (frame.contentWindow.location.origin !== url.origin) return; } catch { /* Loaded cross-origin frame. */ }
         target = { win: frame.contentWindow, origin: url.origin, path: url.pathname };
         void send(reason);
       } catch { /* Invalid targets never receive data. */ }
