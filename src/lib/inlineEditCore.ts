@@ -2,7 +2,7 @@
 import DOMPurify from "dompurify";
 
 export type InlineEdits = Record<string, string>;
-export type Kind = "html" | "style" | "img" | "icon" | "link" | "placeholder" | "fp";
+export type Kind = "html" | "style" | "img" | "icon" | "link" | "placeholder" | "hidden" | "fp";
 export interface LinkEdit { href?: string; target?: "_blank"; unlinked?: true }
 export interface Fingerprint { v: 1; tag: string; t: string; s?: string }
 export interface ReplayReport {
@@ -16,7 +16,7 @@ export function parseKey(key: string): { kind: Kind; path: string } | null {
   const colon = key.indexOf(":");
   const kind = colon < 0 ? "html" : key.slice(0, colon);
   const path = colon < 0 ? key : key.slice(colon + 1);
-  return ["html", "style", "img", "icon", "link", "placeholder", "fp"].includes(kind) &&
+  return ["html", "style", "img", "icon", "link", "placeholder", "hidden", "fp"].includes(kind) &&
     (colon < 0 || kind !== "html") && PATH.test(path) ? { kind: kind as Kind, path } : null;
 }
 // Properties written by InlineStylePanel, plus the existing surface's reorder controls.
@@ -82,6 +82,10 @@ export function validateEdits(edits: unknown): { ok: InlineEdits; rejected: Repl
       } catch { reason = "Link must be a JSON object"; }
     } else if (parsed.kind === "placeholder") {
       if (value.length > 300 || /[\u0000-\u001f\u007f]/.test(value)) reason = "Placeholder text is too long or contains unsupported characters";
+    } else if (parsed.kind === "hidden") {
+      if (value !== "1") reason = "Hidden edit must be 1";
+    } else if (parsed.kind === "icon" && value.startsWith("material:")) {
+      if (!/^material:(outlined|rounded|sharp):[a-z][a-z0-9_]{0,99}$/.test(value)) reason = "Invalid Material icon";
     } else if (parsed.kind === "fp") {
       try { if (!isFingerprint(JSON.parse(value))) reason = "Invalid fingerprint"; }
       catch { reason = "Invalid fingerprint"; }
@@ -104,7 +108,7 @@ export function fingerprintMatches(saved: Partial<Fingerprint>, current: Fingerp
   return saved.tag === current.tag && (saved.t === undefined || saved.t === current.t) &&
     (saved.s === undefined || saved.s === current.s);
 }
-interface Original { html: string; src: string | null; srcset: string | null; style: string | null; placeholder: string | null; icon: boolean; fp: Fingerprint; link: Record<string, string | null> }
+interface Original { html: string; src: string | null; srcset: string | null; style: string | null; hidden: string | null; placeholder: string | null; icon: boolean; fp: Fingerprint; link: Record<string, string | null> }
 const LINK_ATTRIBUTES = ["href", "target", "rel", "data-inline-link", "data-inline-href", "data-inline-target"];
 // Shared snapshots also let withFingerprints read originals after replay/typing.
 const originals = new WeakMap<Element, Original>();
@@ -112,7 +116,7 @@ function snapshot(el: Element): Original {
   let original = originals.get(el);
   if (!original) {
     original = { html: el.innerHTML, src: el.getAttribute("src"), srcset: el.getAttribute("srcset"),
-      style: el.getAttribute("style"), placeholder: el.getAttribute("placeholder"), icon: !!el.querySelector("svg"), fp: fingerprintOf(el),
+      style: el.getAttribute("style"), hidden: el.getAttribute("hidden"), placeholder: el.getAttribute("placeholder"), icon: !!el.querySelector("svg"), fp: fingerprintOf(el),
       link: Object.fromEntries(LINK_ATTRIBUTES.map((key) => [key, el.getAttribute(key)])) };
     originals.set(el, original);
   }
@@ -160,6 +164,7 @@ function restore(entry: Applied, kinds: Set<Kind>) {
   if (kinds.has("img")) { attribute(el, "src", o.src); attribute(el, "srcset", o.srcset); }
   if (kinds.has("style")) attribute(el, "style", o.style);
   if (kinds.has("placeholder")) attribute(el, "placeholder", o.placeholder);
+  if (kinds.has("hidden")) attribute(el, "hidden", o.hidden);
   if (kinds.has("link")) for (const key of LINK_ATTRIBUTES) attribute(el, key, o.link[key]);
 }
 export function createReplay() {
@@ -216,10 +221,17 @@ export function createReplay() {
           const base = html === undefined ? o.html : clean(html);
           const holder = document.createElement("div"); holder.innerHTML = base;
           if (icon !== undefined) {
-            const svg = holder.querySelector("svg");
+            const svg = holder.querySelector("svg,[data-inline-icon]");
             if (icon === "none") { if (svg) { (svg as SVGElement).style.display = "none"; svg.setAttribute("data-inline-icon", "none"); } }
             else {
-              const markup = opts.iconMarkup?.(icon, svg?.getAttribute("class") ?? "inline-block h-4 w-4 ml-2 align-[-2px]");
+              const material = /^material:(outlined|rounded|sharp):([a-z][a-z0-9_]{0,99})$/.exec(icon);
+              if (material) {
+                const replacement = document.createElement("span");
+                replacement.className = `material-symbols-${material[1]}`;
+                replacement.textContent = material[2]; replacement.setAttribute("data-inline-icon", icon); replacement.setAttribute("aria-hidden", "true");
+                if (svg) svg.replaceWith(replacement); else holder.append(replacement);
+              }
+              const markup = material ? null : opts.iconMarkup?.(icon, svg?.getAttribute("class") ?? "inline-block h-4 w-4 ml-2 align-[-2px]");
               if (markup) {
                 const shell = document.createElement("div"); shell.innerHTML = clean(markup);
                 const replacement = shell.querySelector("svg");
@@ -257,6 +269,7 @@ export function createReplay() {
         if (img !== undefined) { attribute(el, "src", img); attribute(el, "srcset", null); }
         const placeholder = values.get("placeholder");
         if (placeholder !== undefined) attribute(el, "placeholder", placeholder);
+        if (values.get("hidden") === "1") attribute(el, "hidden", "");
         const linkValue = values.get("link");
         if (linkValue !== undefined) {
           const link = JSON.parse(linkValue) as LinkEdit;
