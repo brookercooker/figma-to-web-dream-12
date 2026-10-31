@@ -16,7 +16,7 @@ export interface SelectionSnapshot {
   fingerprint?: Fingerprint;
   link?: { key: string; scope: string; tag?: string; attrs?: Record<string, string | null>; fingerprint?: Fingerprint };
 }
-export type EditQuery = (op: "computed" | "measure" | "scrollTo" | "record", scope: string, key: string, props?: string[]) => Promise<unknown>;
+export type EditQuery = (op: "computed" | "measure" | "scrollTo" | "record", scope: string, key: string, props?: string[] | Record<string, number>) => Promise<unknown>;
 const snapshots = new WeakMap<HTMLElement, SelectionSnapshot>();
 export type FormatCommand = "bold" | "italic" | "underline" | "strike" | "color" | "size" | "weight" | "font" | "clear";
 export interface WordRange { key: string; scope: string; collapsed: boolean; text: string; marks: { bold: boolean; italic: boolean; underline: boolean; strike: boolean; color: string; size: string | number; weight: string | number; font: string } }

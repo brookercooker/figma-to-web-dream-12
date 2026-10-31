@@ -42,7 +42,7 @@ describe("Object picker add button", () => {
   });
 });
 
-import { scaledViewportPlan, MAX_VIRTUAL_HEIGHT } from "../previewScale";
+import { scaledViewportPlan, MAX_VIRTUAL_HEIGHT, deviceViewportHeight } from "../previewScale";
 describe("Scaled viewport plan", () => {
   it("defaults to Tablet when desktop would show below 50%", () => {
     const plan = scaledViewportPlan({ available: 448, height: 967, virtualWidth: 1280, enabled: true, fallbackWidth: 768 });
@@ -54,11 +54,14 @@ describe("Scaled viewport plan", () => {
     expect(plan.width).toBe(1280);
     expect(plan.label).toBe("Showing desktop at 35%; Tablet recommended at this size");
   });
-  it("caps the virtual height at a realistic 800 px desktop", () => {
-    expect(MAX_VIRTUAL_HEIGHT).toBe(800);
+  it("fills the available height (virtual height = available ÷ scale)", () => {
     const plan = scaledViewportPlan({ available: 704, height: 712, virtualWidth: 1280, enabled: true, fallbackWidth: 768 });
     expect(plan.scale).toBeCloseTo(0.55, 2);
-    expect(plan.height).toBe(800);
+    expect(plan.height * plan.scale).toBeCloseTo(712, 0);
+  });
+  it("reports realistic device heights: Desktop 800, Tablet 1024, Phone 844", () => {
+    expect(MAX_VIRTUAL_HEIGHT).toBe(800);
+    expect([deviceViewportHeight(1280), deviceViewportHeight(768), deviceViewportHeight(390)]).toEqual([800, 1024, 844]);
   });
   it("does not scale when it fits", () => {
     expect(scaledViewportPlan({ available: 1400, height: 900, virtualWidth: 1280, enabled: true }).scaled).toBe(false);
