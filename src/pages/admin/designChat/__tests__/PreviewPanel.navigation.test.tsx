@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import PreviewPanel from "../PreviewPanel";
 import PreviewTools from "../PreviewTools";
 import type { DesignChat } from "../DesignChatContext";
+import { rememberScroll } from "../frameScroll";
 
 const context = vi.hoisted(() => ({ chat: null as unknown }));
 vi.mock("../DesignChatContext", () => ({ useDesignChat: () => context.chat }));
@@ -26,6 +27,29 @@ function setup(overrides: Partial<DesignChat> = {}) {
 }
 
 describe("floating preview navigation", () => {
+  it("records Homepage scrolling without a path-bearing ready and restores after bare preview-ready", () => {
+    const { chat, view, rerender, container } = setup({ preview: { frames: [{ id: 1, url: "https://public.example/" }], shownId: 1, loaded: true, finish: vi.fn() } as any });
+    const frame = container.querySelector("iframe"); const win = frame?.contentWindow;
+    if (!win) throw new Error("Missing preview");
+    const post = vi.spyOn(win, "postMessage");
+    act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example", source: win, data: { type: "preview-ready" } })));
+    act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example", source: win, data: { source: "nova-site", type: "page-scroll", path: "/home", y: 1200 } })));
+    chat.editing = true; rerender(view());
+    rememberScroll("/", 1700);
+    chat.editing = false; rerender(view());
+    post.mockClear();
+    act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example", source: win, data: { type: "preview-ready" } })));
+    expect(post).toHaveBeenCalledWith({ source: "nova-manager", type: "restore-scroll", path: "/", y: 1700 }, "https://public.example");
+  });
+  it("records visible page-scroll before readiness while rejecting another page", () => {
+    const { chat, view, rerender, container } = setup({ preview: { frames: [{ id: 1, url: "https://public.example/early-scroll" }], shownId: 1, loaded: true, finish: vi.fn() } as any });
+    const win = container.querySelector("iframe")?.contentWindow;
+    if (!win) throw new Error("Missing preview");
+    const post = vi.spyOn(win, "postMessage");
+    for (const [path, y] of [["/early-scroll", 950], ["/wrong-page", 0]]) act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example", source: win, data: { source: "nova-site", type: "page-scroll", path, y } })));
+    chat.editing = true; rerender(view()); chat.editing = false; rerender(view());
+    expect(post).toHaveBeenCalledWith({ source: "nova-manager", type: "restore-scroll", path: "/early-scroll", y: 950 }, "https://public.example");
+  });
   it("keeps the preview mounted across manual mode and restores the last matching position", () => {
     const { chat, view, rerender, container } = setup({ preview: { frames: [{ id: 1, url: "https://public.example/scroll-check" }], shownId: 1, loaded: true, finish: vi.fn() } as any });
     const frame = container.querySelector("iframe"); const win = frame?.contentWindow;
