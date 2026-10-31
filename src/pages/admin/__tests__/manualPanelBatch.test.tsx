@@ -10,7 +10,10 @@ import { ManualEditHistory, type ManualEditSnapshot } from "../designChat/manual
 import InlineStylePanel from "../InlineStylePanel";
 import { remoteSelection, validSnapshot } from "../remoteSelection";
 import MaterialIconField from "../MaterialIconField";
-beforeEach(() => vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} }));
+beforeEach(() => {
+  vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+  vi.stubGlobal("PointerEvent", MouseEvent);
+});
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe("safe Material paste", () => {
   it.each([
@@ -71,9 +74,9 @@ it("Google icon help opens on hover and keyboard focus, including after pointer 
   const help = screen.getByRole("button", { name: "Google Icon Help" });
   fireEvent.pointerEnter(help);
   expect(screen.getByRole("tooltip")).toHaveTextContent("Find an icon at fonts.google.com/icons");
-  fireEvent.pointerLeave(help); expect(screen.queryByRole("tooltip")).toBeNull();
+  fireEvent.pointerLeave(help, { clientX: 10, clientY: 10 }); expect(screen.queryByRole("tooltip")).toBeNull();
   fireEvent.focus(help); expect(screen.getByRole("tooltip")).toBeInTheDocument();
-  fireEvent.pointerEnter(help); fireEvent.pointerLeave(help); expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  fireEvent.pointerEnter(help); fireEvent.pointerLeave(help, { clientX: 10, clientY: 10 }); expect(screen.getByRole("tooltip")).toBeInTheDocument();
   fireEvent.blur(help); expect(screen.queryByRole("tooltip")).toBeNull();
 });
 it("a frame image selection deletes through scoped edits and supports Undo, Redo and Discard", () => {
