@@ -286,7 +286,7 @@ function AdminShell() {
       <div className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</div>
       <div data-manager-tier={layout.tier} className={cn("flex overflow-hidden bg-background", phone ? "flex-col" : "h-screen flex-row")} style={phone ? { height: "calc(100dvh - var(--kb-inset, 0px))" } : undefined}>
         {/* Right: the top bar and whichever tab is open. */}
-        <div data-picker-area className={cn("flex min-h-0 min-w-0 flex-1 flex-col", phone && phonePane === "side" && "hidden")}>
+        <div data-picker-area className={cn("flex min-h-0 min-w-0 flex-1 flex-col", phone && phonePane === "side" && "flex-none")}>
           <header data-top-bar className={cn("z-30 w-full shrink-0 border-b bg-background", HEADER_HEIGHT_CLASS)}>
             <div ref={rowRef} className="flex h-full w-full items-center gap-1 px-2 sm:gap-3 sm:px-4">
               <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager Sections">
@@ -339,7 +339,7 @@ function AdminShell() {
 
           <ChangeMyPasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
 
-          <div className="relative min-h-0 flex-1">
+          <div className={cn("relative min-h-0 flex-1", phone && phonePane === "side" && "hidden")}>
           <main className={cn("relative h-full overflow-y-auto", tab !== "preview" && phone && "overflow-x-hidden")} style={phone && manual && tab === "preview" && phonePane === "main" ? { paddingBottom: sheet === "peek" ? 52 : sheet === "half" ? "45dvh" : "92dvh" } : undefined}>
             {previewOpened && (
               <div className={tab === "preview" && !editing ? "h-full" : "hidden"}>
