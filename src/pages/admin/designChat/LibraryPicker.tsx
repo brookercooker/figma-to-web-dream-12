@@ -27,15 +27,6 @@ const TITLE = { images: "Pick an Image", videos: "Pick a Video", objects: "Pick 
 
 type Row = { ref: ChatReference; search: (term: string) => boolean; labels: string[]; note?: string; createdAt?: string; visibility?: string; webPath?: string; webUrl?: string; fallbackUrl?: string; originalUrl?: string };
 
-/** Thumbnail-only state: never modifies the reference returned by the picker. */
-function ImageThumbnail({ candidates }: { candidates: string[] }) {
-  const [failedSources, setFailedSources] = useState<Set<string>>(new Set());
-  const src = candidates.find((candidate) => !failedSources.has(candidate));
-  if (!candidates.length) return <span className="absolute inset-0 block h-full w-full animate-pulse bg-muted" />;
-  if (!src) return <span className="absolute inset-0 grid h-full w-full place-items-center px-2 text-center text-xs text-muted-foreground">Preview Unavailable</span>;
-  return <img key={src} src={src} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-contain object-center" onError={() => setFailedSources((s) => new Set([...s, src]))} />;
-}
-
 const byName = (a: Row, b: Row) => a.ref.name.localeCompare(b.ref.name);
 const time = (r: Row) => { const t = r.createdAt ? Date.parse(r.createdAt) : NaN; return Number.isNaN(t) ? null : t; };
 /** Order rows for the chosen sort; undated items go last in both date orders. */

@@ -1,3 +1,4 @@
+import "./pageTables.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { matchesLabelFilter } from "./labelPath";
 import { useNavigate, useSearchParams } from "react-router-dom";

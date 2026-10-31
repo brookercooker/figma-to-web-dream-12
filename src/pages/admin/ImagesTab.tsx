@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { formatBytes } from "@/lib/imageOptimize";
 import { uploadImageFile } from "./captureUpload";
 import { tileSrcCandidates } from "./imageTileSrc";
+import { libraryImageCandidates } from "./imageTileSrc";
+import LibraryImageThumbnail from "./LibraryImageThumbnail";
 import TagsPanel from "./TagsPanel";
 import { Trash2, Search, Archive, ArchiveRestore, AlertTriangle, RefreshCw, Download, Globe, Lock } from "lucide-react";
 import { GATED_BUCKET, clearAssetUrlCache } from "@/lib/assetUrl";
@@ -1094,13 +1096,7 @@ function ImageDetail({ img, tags, allTags, broken, onBroken, usages, onAddTag, o
       ) : kind === "video" ? (
         <video src={img.web_url} controls className="w-full max-h-[70vh] rounded" preload="metadata" />
       ) : (
-        <SmartImage
-          src={img.web_url}
-          fallbackSrc={img.fallback_url}
-          alt={img.alt_text || img.filename}
-          className="w-full max-h-[70vh] object-contain rounded bg-muted/30"
-          onError={onBroken}
-        />
+        <LibraryImageThumbnail candidates={libraryImageCandidates(img)} className="w-full min-h-32 max-h-[70vh] object-contain rounded-lg bg-muted/30" />
       )}
       <div className="text-xs text-muted-foreground break-all">
         ID: <span className="font-mono">{img.slug_id}</span> · {formatDims(img.width, img.height)} · {formatSavings(img.original_bytes, img.web_bytes)}

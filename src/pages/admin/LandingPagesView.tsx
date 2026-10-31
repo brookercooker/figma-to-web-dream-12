@@ -1,3 +1,4 @@
+import "./pageTables.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/prototype/client";
 import { useNavigate } from "react-router-dom";
