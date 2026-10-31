@@ -1,4 +1,7 @@
 # Roadmap — coded object import fidelity
+- [x] Phone-only retained chat pop-out, status button, compact top-bar mode/action menus and drawing return. All 895 tests pass; preview build OK.
+- [x] Browser checks at 390×844 and 360×740: ×/outside/Escape/swipe closing, draft/scroll retention, simulated visualViewport keyboard clearance, visitor controls clear in public-page fixture, drawing attachment and Send stays open with controlled relay.
+- [ ] Verify actual Shop Hot Deals/cart/footer and native keyboard on a real phone: public preview requires a separate login and live design service is unreachable. Saved Playwright specs await missing lovable-agent-playwright-config runner; Python Playwright checks passed.
 - [x] User Management: corrected empty POST to GET; decode real function errors. Signed-in list returns 200 with four users; no secrets or function changes.
 - [x] Same-page scroll: accept bare preview readiness and early validated scroll reports; restore editor again on preview-ready. 36 targeted tests pass; controlled browser frames retain 1250/1850 px in both directions.
 - [ ] Verify current scroll handoff on the hosted Homepage: signed-in Manager cannot reach the design service, so no live public preview loads; controlled browser frames pass.

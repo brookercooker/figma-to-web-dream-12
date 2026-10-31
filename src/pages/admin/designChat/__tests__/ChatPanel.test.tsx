@@ -81,6 +81,24 @@ function messageBox() {
 }
 
 describe("chat sending shortcuts", () => {
+  it("exposes an asynchronous send error even if the phone sheet was closed", async () => {
+    const onAttention = vi.fn();
+    mocks.post.mockResolvedValue({ ok: false, error: "The request could not be sent" });
+    render(<MemoryRouter><ChatPanel onAttention={onAttention} /></MemoryRouter>);
+    fireEvent.change(screen.getByRole("textbox", { name: "Describe a Change" }), { target: { value: "Update the heading" } });
+    fireEvent.click(screen.getByRole("button", { name: /^Send$/ }));
+    await waitFor(() => expect(onAttention).toHaveBeenCalledTimes(1));
+    expect(mocks.post).toHaveBeenCalledWith("/send", { message: "Update the heading", uploadIds: [] });
+  });
+  it("preserves an unsent draft across phone panel reopenings", () => {
+    const view = render(<MemoryRouter><ChatPanel opening={1} /></MemoryRouter>);
+    const input = screen.getByRole("textbox", { name: "Describe a Change" });
+    fireEvent.change(input, { target: { value: "Keep my draft" } });
+    view.rerender(<MemoryRouter><ChatPanel opening={0} /></MemoryRouter>);
+    view.rerender(<MemoryRouter><ChatPanel opening={2} /></MemoryRouter>);
+    expect(input).toHaveValue("Keep my draft"); expect(document.activeElement).toBe(input);
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
   it("uses the shared switch guard before sending from Manual Mode", async () => {
     mocks.editing = true;
     const input = messageBox();

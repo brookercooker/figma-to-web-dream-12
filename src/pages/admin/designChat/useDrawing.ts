@@ -29,6 +29,7 @@ export function useDrawing(o: { device: string; path: string | null }) {
   const setAvailable = useCallback((v: boolean) => { setAvailableState(v); if (!v) cancel(); }, [cancel]);
   const start = useCallback(() => { if (!available) return; setOn(true); setNote(null); }, [available]);
   const toggle = useCallback(() => { if (on) cancel(); else start(); }, [on, cancel, start]);
+  const finish = useCallback(() => setOn(false), []);
   const undo = useCallback(() => setStrokes((s) => s.slice(0, -1)), []);
   const clear = useCallback(() => setStrokes([]), []);
   const add = useCallback((s: Stroke) => {
@@ -79,8 +80,8 @@ export function useDrawing(o: { device: string; path: string | null }) {
   }, []);
 
   return useMemo(
-    () => ({ on, available, setAvailable, strokes, picture, note, capturing, areaRef, start, cancel, toggle, undo, clear, add, setPicture, prepare, pictureSupported: PreviewCamera.supported() }),
-    [on, available, setAvailable, strokes, picture, note, capturing, start, cancel, toggle, undo, clear, add, setPicture, prepare],
+    () => ({ on, available, setAvailable, strokes, picture, note, capturing, areaRef, start, cancel, toggle, finish, undo, clear, add, setPicture, prepare, pictureSupported: PreviewCamera.supported() }),
+    [on, available, setAvailable, strokes, picture, note, capturing, start, cancel, toggle, finish, undo, clear, add, setPicture, prepare],
   );
 }
 

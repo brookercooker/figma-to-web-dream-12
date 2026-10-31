@@ -3,6 +3,15 @@ import { describe, expect, it } from "vitest";
 import { useDrawing } from "../useDrawing";
 
 describe("drawing availability", () => {
+  it("finishes drawing without dropping marks needed by the composer", () => {
+    const { result } = renderHook(() => useDrawing({ device: "mobile", path: "/" }));
+    const stroke = [{ x: 0.1, y: 0.1 }, { x: 0.4, y: 0.4 }];
+    act(() => result.current.setAvailable(true));
+    act(() => { result.current.start(); result.current.add(stroke); });
+    act(() => result.current.finish());
+    expect(result.current.on).toBe(false);
+    expect(result.current.strokes).toEqual([stroke]);
+  });
   it("does not start until the preview is available", () => {
     const { result } = renderHook(() => useDrawing({ device: "desktop", path: "/" }));
     expect(result.current.available).toBe(false);
