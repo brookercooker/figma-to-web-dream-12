@@ -86,7 +86,7 @@ describe("chat sending shortcuts", () => {
     mocks.post.mockResolvedValue({ ok: false, error: "The request could not be sent" });
     render(<MemoryRouter><ChatPanel onAttention={onAttention} /></MemoryRouter>);
     fireEvent.change(screen.getByRole("textbox", { name: "Describe a Change" }), { target: { value: "Update the heading" } });
-    fireEvent.click(screen.getByRole("button", { name: "Send", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Send$/ }));
     await waitFor(() => expect(onAttention).toHaveBeenCalledTimes(1));
     expect(mocks.post).toHaveBeenCalledWith("/send", { message: "Update the heading", uploadIds: [] });
   });
