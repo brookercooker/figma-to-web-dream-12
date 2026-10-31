@@ -464,7 +464,7 @@ function AdminShell() {
             <HeaderActions onExpand={() => setChatCollapsed(false)} />
             <div className={cn("flex-1", chatCollapsed && !manual && "hidden")} />
             {manual && <ManualHistoryControls disabled={finishing} />}
-            {!manual && !chatCollapsed && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded onClick={() => setChatCollapsed(true)}>
+            {!manual && !chatCollapsed && !phone && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded onClick={() => setChatCollapsed(true)}>
               {chatCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </Button>}
           </div>
