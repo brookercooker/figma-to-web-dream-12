@@ -22,6 +22,7 @@ export default function SelectedWording({ sel, edits, onChange }: { sel: InlineS
     };
     resize();
     let width = el.clientWidth;
+    if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(() => { if (el.clientWidth !== width) { width = el.clientWidth; resize(); } });
     observer.observe(el);
     return () => observer.disconnect();

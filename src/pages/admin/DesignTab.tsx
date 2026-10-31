@@ -982,8 +982,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
       {chromeRow("site-header", "Site Header")}
       {orderedPageContent(blocks).map((b,i) => isPageContent(b) ? <li key={b.id} data-section-row={b.id} className="px-2 py-2 text-xs">Page Content</li> : <li key={b.id} data-section-row={b.id} aria-current={activeId === b.id || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeId === b.id ? "bg-accent" : ""}`}>
         <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); if (heldInFrame) { void framedApi.current?.query("scrollTo", "held", b.id); return; } blockCanvasRef.current?.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>{blockLabel(b)}</Button>{b.type === "object" && <span className="text-[10px] text-muted-foreground">Shared</span>}
-        {i > 0 && <ToolButton title="Move Up" onClick={() => move(b.id,-1)}><ArrowUp className="h-4 w-4" /></ToolButton>}
-        {i < orderedPageContent(blocks).length-1 && <ToolButton title="Move Down" onClick={() => move(b.id,1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
+        {i > 0 && <ToolButton title="Move to Top" onClick={() => moveHeldBlock(b.id,0)}><ArrowUp className="h-4 w-4" /></ToolButton>}
+        {i < orderedPageContent(blocks).length-1 && <ToolButton title="Move to Bottom" onClick={() => moveHeldBlock(b.id,orderedPageContent(blocks).length-1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
         <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="h-4 w-4" /></ToolButton>
       </li>)}
       {chromeRow("site-footer", "Site Footer")}
@@ -1075,7 +1075,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         <FramedPageEditor key={objectId ? `object-${objectId}` : `public-${page.id}`} base={draftEmbedUrl()} path={objectId ? objectFramePath(objectId) : page.path} edits={inlineEdits} objectEdits={objectEdits}
           objectScope={objectTarget} scrollToSlot={objectId ? null : returnTo ?? null}
           sectionRevision={sectionRevision} heldBlocks={objectId && !designedObject ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
-          onSections={setFrameSections}
+          onSections={receiveSections}
           onBlockSelect={(id) => { setActiveId(id); setActiveSection(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setActiveSection(id); setInlineSel(null); }} fill={!deviceStyle}
           onUndo={() => restoreHistory("undo")} onRedo={() => restoreHistory("redo")}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
