@@ -194,6 +194,16 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   // In-place editing of a coded page: type over text, click pictures to swap.
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
   const framedApi = useRef<FramedEditorController | null>(null);
+  const sheetSelection = useRef<{ scope: string; key: string } | null>(null);
+  useEffect(() => {
+    // Phone: when the editing sheet opens, scroll the selected element into view above it (existing scrollTo query).
+    const on = (event: Event) => {
+      const sel = sheetSelection.current; const inset = (event as CustomEvent<{ inset: number }>).detail?.inset ?? 0;
+      if (sel) void framedApi.current?.query("scrollTo", sel.scope, sel.key, { bottomInset: Math.round(inset), block: "center" });
+    };
+    window.addEventListener("nova-manager-sheet", on);
+    return () => window.removeEventListener("nova-manager-sheet", on);
+  }, []);
   const [framedReports, setFramedReports] = useState<InlineReports>({});
   const [resetKey, setResetKey] = useState(0);
   // Embedded pages not in the coded list: what loading their code found, and a counter that re-runs the load.
