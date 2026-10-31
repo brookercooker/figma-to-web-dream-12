@@ -337,18 +337,20 @@ export default function InlineStylePanel({
         </div>
       </ToolGroup>
       <ToolGroup title="Position" icon={MoveVertical}>
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="flex flex-wrap items-end gap-x-2 gap-y-3 [&>*]:shrink-0 [&_label]:whitespace-nowrap">
           <ToolField label="Alignment"><ToolSegment className="shrink-0 [&>button]:w-7" onMouseDown={(e) => e.preventDefault()}>
             {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Icon]) => (
               <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a[0].toUpperCase() + a.slice(1)}`} aria-label={`Align ${a[0].toUpperCase() + a.slice(1)}`} onClick={() => set("text-align", a)}><Icon className="h-3.5 w-3.5" /></Button>
             ))}
           </ToolSegment></ToolField>
+          <div className="flex basis-full flex-wrap gap-2 @[360px]:basis-auto">
           <ToolField label="Letter Spacing">
             <div className="relative w-20"><Input aria-label="Letter Spacing (px)" className="h-8 pr-6" type="number" step={0.1} placeholder={spacingPixels(computed.letterSpacing, computed.fontSize) || "0"} value={spacingPixels(style["letter-spacing"], computed.fontSize)} onChange={(e) => set("letter-spacing", px(e.target.value))} /><span className="pointer-events-none absolute right-2 top-2 text-xs text-muted-foreground">px</span></div>
           </ToolField>
           <ToolField label="Line Height">
             <div className="relative w-20"><Input aria-label="Line Height (Multiplier)" className="h-8 pr-6" type="number" step={0.1} min={0.8} placeholder={lineHeightMultiplier(computed.lineHeight, computed.fontSize) || "1.4"} value={lineHeightMultiplier(style["line-height"], computed.fontSize)} onChange={(e) => set("line-height", e.target.value)} /><span className="pointer-events-none absolute right-2 top-2 text-xs text-muted-foreground">×</span></div>
           </ToolField>
+          </div>
         </div>
       </ToolGroup>
       {linkEl && (
