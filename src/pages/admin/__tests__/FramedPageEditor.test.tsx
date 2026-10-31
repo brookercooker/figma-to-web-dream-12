@@ -55,6 +55,18 @@ describe("public edit-frame guards", () => {
   });
 });
 describe("edit-frame protocol", () => {
+  it("routes exact Delete/Backspace messages only for the current image with origin/source guards", () => {
+    const onImageDelete = vi.fn(); const s = setup({ onImageDelete }); s.receive("edit-ready");
+    s.receive("edit-key", { key: "Delete" }); expect(onImageDelete).not.toHaveBeenCalled();
+    s.receive("edit-select", { selection: { key: "0.2", scope: "page", kind: "image", tag: "img", style: {}, rect: {} } });
+    s.receive("edit-key", { key: "Delete" }, "https://wrong.example");
+    s.receive("edit-key", { key: "Delete" }, "https://public.example.com", window);
+    expect(onImageDelete).not.toHaveBeenCalled();
+    s.receive("edit-key", { key: "Delete" }); s.receive("edit-key", { key: "Backspace" });
+    expect(onImageDelete).toHaveBeenCalledTimes(2);
+    s.receive("edit-select", { selection: null }); s.receive("edit-key", { key: "Delete" });
+    expect(onImageDelete).toHaveBeenCalledTimes(2);
+  });
   it("includes swap snapshots on init and update, including saved copies", () => {
     const object = { status: "Ready", name: "Categories (Homepage)", component_key: "Categories", content: { sections: [] }, inline_edits: { "0": "Original" } };
     const s = setup({ objectSwaps: { "code:home-categories": "copy" }, heldObjects: { copy: object } });

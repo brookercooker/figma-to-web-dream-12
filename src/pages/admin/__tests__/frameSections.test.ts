@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { parseFrameSections } from "../frameSections";
 const row = (key: string, kind = "page") => ({ key, name: key, kind, collapsed: false, movable: true, deletable: true });
 describe("frame section list", () => {
+  it("keeps drag handles out of section names", () => {
+    expect(parseFrameSections([{ ...row("about"), name: "⠇ About Us" }])?.[0].name).toBe("About Us");
+  });
   it("pins Header first and Footer last and forbids site mutations", () => {
     expect(parseFrameSections([row("site-footer", "site"), row("Categories", "object"), row("site-header", "site")])).toEqual([
       { ...row("site-header", "site"), movable: false, deletable: false }, row("Categories", "object"), { ...row("site-footer", "site"), movable: false, deletable: false },
