@@ -34,6 +34,7 @@ export default function ChatPanel() {
   const [dragging, setDragging] = useState(false);
   const { hint, setHint } = useHint();
   const textRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { const el = textRef.current; if (el) { el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 150)}px`; } }, [text]);
   const fileRef = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
