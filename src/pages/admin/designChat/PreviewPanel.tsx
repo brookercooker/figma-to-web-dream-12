@@ -8,6 +8,7 @@ import PreviewProgress from "./PreviewProgress";
 import DrawLayer from "./DrawLayer";
 import { usePreviewEdits } from "./previewEdits";
 import { usePreviewScroll } from "./frameScroll";
+import ContentSyncNote from "./ContentSyncNote";
 
 const WIDTH: Record<Device, string> = { mobile: "390px", tablet: "820px", desktop: "100%" };
 
@@ -20,7 +21,7 @@ export default function PreviewPanel() {
   const location = useLocation();
   const [updated, setUpdated] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
-  usePreviewEdits(sectionRef);
+  const previewFailed = usePreviewEdits(sectionRef);
   usePreviewScroll(sectionRef, editing, preview.shownId);
   useEffect(() => {
     if (!preview.completedAt) return;
@@ -37,8 +38,9 @@ export default function PreviewPanel() {
   }, [drawing.setAvailable, visible, pending]);
 
   return (
-    <section ref={sectionRef} className="h-full min-h-0" aria-label="Preview">
-      <div ref={boxRef} className={cn("relative h-full min-h-0 bg-muted flex justify-center", coverFull && "fixed inset-0 z-50 bg-background")}>
+    <section ref={sectionRef} className="flex h-full min-h-0 flex-col" aria-label="Preview">
+      <ContentSyncNote previewFailed={previewFailed} />
+      <div ref={boxRef} className={cn("relative min-h-0 flex-1 bg-muted flex justify-center", coverFull && "fixed inset-0 z-50 bg-background")}>
 
 
         <div ref={drawing.areaRef} className={cn("relative h-full max-w-full overflow-hidden bg-background")}

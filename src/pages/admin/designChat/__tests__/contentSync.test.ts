@@ -6,6 +6,13 @@ const state = (busy = false, status = "idle") => ({ busy, publish: { open: 4, st
 beforeEach(() => { vi.resetModules(); vi.useFakeTimers(); localStorage.clear(); post.mockReset(); });
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); });
 describe("durable content sync", () => {
+  it("shows a failed/blocked sync and Retry resends owed saved content", async () => {
+    post.mockResolvedValueOnce({ ok: true, data: { blocked: true } }).mockResolvedValue({ ok: true });
+    const sync = await import("../contentSync"); sync.notifyContentEdited(); await vi.advanceTimersByTimeAsync(4000);
+    expect(sync.contentSyncFailed()).toBe(true); expect(localStorage.length).toBe(1);
+    sync.retryContentSync(); await vi.advanceTimersByTimeAsync(0);
+    expect(post).toHaveBeenCalledTimes(2); expect(sync.contentSyncFailed()).toBe(false); expect(localStorage.length).toBe(0);
+  });
   it("remembers busy sync and retries only from idle status after 20 seconds", async () => {
     const sync = await import("../contentSync");
     post.mockResolvedValueOnce({ ok: false, data: { busy: true } }).mockResolvedValue({ ok: true });

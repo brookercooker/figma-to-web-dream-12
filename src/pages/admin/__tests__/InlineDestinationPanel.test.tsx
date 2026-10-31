@@ -24,7 +24,7 @@ it.each(["a", "button"])("edits %s without changing its appearance and restores/
   expect(JSON.parse(change.mock.lastCall?.[1]["link:0"])).toEqual({ href: "/lighting" });
   fireEvent.click(screen.getByRole("switch", { name: "Open in New Tab" }));
   expect(JSON.parse(change.mock.lastCall?.[1]["link:0"])).toEqual({ href: "/lighting", target: "_blank" });
-  fireEvent.click(screen.getByRole("button", { name: "Turn Link Off" }));
+  fireEvent.click(screen.getByRole("button", { name: "Remove Link" }));
   expect(el.getAttribute("data-inline-link")).toBe("off"); expect(el.firstChild).toBe(children);
   fireEvent.click(screen.getByRole("button", { name: "Restore Original Link" }));
   expect(change.mock.lastCall?.[1]).toEqual({}); expect(el.getAttribute("href")).toBe(tag === "a" ? "/original" : null);
@@ -40,7 +40,8 @@ it("rejects invalid addresses without saving and applies on blur", () => {
 });
 it.each([["Email", "mailto:staff@example.com", "staff@example.com"], ["Phone", "tel:+15555555555", "+15555555555"]])("provides the %s prefix", (helper, href, input) => {
   const { change } = setup("button"), field = screen.getByRole("textbox", { name: "Link Address" });
-  fireEvent.change(field, { target: { value: input } }); fireEvent.click(screen.getByRole("button", { name: helper }));
-  expect(field).toHaveValue(href); fireEvent.blur(field);
+  fireEvent.focus(field); fireEvent.click(screen.getByRole("button", { name: helper }));
+  fireEvent.change(field, { target: { value: input } });
+  expect(field).toHaveValue(input); fireEvent.blur(field);
   expect(JSON.parse(change.mock.lastCall?.[1]["link:0"]).href).toBe(href);
 });

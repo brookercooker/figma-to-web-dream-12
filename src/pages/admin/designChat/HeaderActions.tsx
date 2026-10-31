@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useDesignChat } from "./DesignChatContext";
 
 /** Relay publish.open is authoritative; chat messages are not a pending-change ledger. */
-export default function HeaderActions() {
+export default function HeaderActions({ onExpand }: { onExpand?: () => void }) {
   const { state, editing, previewLocation, workingPage, reviewOpen, setReviewOpen } = useDesignChat();
   const count = state?.publish?.open ?? 0;
   const copySummary = async () => {
@@ -21,7 +21,7 @@ export default function HeaderActions() {
     <div className="flex max-w-full shrink-0 flex-wrap items-center justify-center gap-1">
       <Tooltip><TooltipTrigger asChild>
         <span tabIndex={editing ? 0 : undefined}>
-          <Button variant={reviewOpen ? "secondary" : "ghost"} size="icon" className="relative h-8 w-8 shrink-0" aria-label={`Review Status${count ? `: ${count} Waiting` : ""}`} aria-pressed={reviewOpen} disabled={editing} onClick={() => setReviewOpen(!reviewOpen)}>
+          <Button variant={reviewOpen ? "secondary" : "ghost"} size="icon" className="relative h-8 w-8 shrink-0" aria-label={`Review Status${count ? `: ${count} Waiting` : ""}`} aria-pressed={reviewOpen} disabled={editing} onClick={() => { onExpand?.(); setReviewOpen(!reviewOpen); }}>
             <ClipboardList className="h-4 w-4" aria-hidden />
             {count > 0 && <span aria-hidden className="absolute -right-1 -top-1 min-w-4 rounded-full bg-review px-1 text-center text-[10px] leading-4 text-review-foreground">{count > 99 ? "99+" : count}</span>}
           </Button>

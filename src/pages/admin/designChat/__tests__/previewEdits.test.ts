@@ -21,30 +21,43 @@ function setup() {
 }
 const ready = (win: Window, origin = ORIGIN) => new MessageEvent("message", { origin, source: win as any, data: { source: "nova-site", type: "preview-ready", path: "/draft" } });
 const payload = { edits: { "0.1.0": "Just tweaking" }, objectEdits: { Header: { "0.0": "Hi" } } };
+const content = { pages: [{ path: "/", content: [], inline_edits: {} }], objects: [] };
+const loadContent = vi.fn().mockResolvedValue(content);
 const flush = () => act(async () => { await Promise.resolve(); await Promise.resolve(); });
 afterEach(() => { document.body.innerHTML = ""; });
 
 describe("Chat Mode preview edits", () => {
+  it("shows load failure, retries and accepts the exact bare preview-ready shape", async () => {
+    const { win, ref } = setup(); const load = vi.fn().mockResolvedValue(payload);
+    const full = vi.fn().mockRejectedValueOnce(new Error("unavailable")).mockResolvedValue(content);
+    const view = renderHook(() => usePreviewEdits(ref as any, load, full));
+    window.dispatchEvent(new MessageEvent("message", { origin: ORIGIN, source: win as any, data: { type: "preview-ready" } })); await flush();
+    expect(view.result.current).toBe(true);
+    window.dispatchEvent(new Event("nova:preview-content-retry")); await flush();
+    expect(view.result.current).toBe(false);
+    expect(win.postMessage).toHaveBeenCalledWith({ source: "nova-manager", type: "preview-content", ...content }, ORIGIN);
+  });
   it("sends the saved edits to the exact origin after preview-ready", async () => {
     const { win, ref } = setup();
     const load = vi.fn().mockResolvedValue(payload);
-    renderHook(() => usePreviewEdits(ref as any, load));
+    renderHook(() => usePreviewEdits(ref as any, load, loadContent));
     window.dispatchEvent(ready(win)); await flush();
     expect(load).toHaveBeenCalledWith("/draft");
     expect(win.postMessage).toHaveBeenCalledWith({ source: "nova-manager", type: "preview-edits", path: "/draft", ...payload }, ORIGIN);
+    expect(win.postMessage).toHaveBeenCalledWith({ source: "nova-manager", type: "preview-content", ...content }, ORIGIN);
   });
   it("sends again after Finish Editing (a successful save)", async () => {
     const { win, ref } = setup();
     const load = vi.fn().mockResolvedValue(payload);
-    renderHook(() => usePreviewEdits(ref as any, load));
+    renderHook(() => usePreviewEdits(ref as any, load, loadContent));
     window.dispatchEvent(ready(win)); await flush();
     window.dispatchEvent(new Event(CONTENT_SAVED)); await flush();
-    expect(win.postMessage).toHaveBeenCalledTimes(2);
+    expect(win.postMessage).toHaveBeenCalledTimes(4);
   });
   it("never sends to a wrong origin or before ready", async () => {
     const { win, ref } = setup();
     const load = vi.fn().mockResolvedValue(payload);
-    renderHook(() => usePreviewEdits(ref as any, load));
+    renderHook(() => usePreviewEdits(ref as any, load, loadContent));
     window.dispatchEvent(new Event(CONTENT_SAVED));
     window.dispatchEvent(ready(win, "https://evil.example.com")); await flush();
     expect(load).not.toHaveBeenCalled();

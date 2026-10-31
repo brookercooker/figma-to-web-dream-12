@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
+import { notifyContentEdited } from "../designChat/contentSync";
 
 const mocks = vi.hoisted(() => ({ remote: true, slot: null as HTMLElement | null, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), cleanup: vi.fn(), openObject: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
 vi.mock("../objectUsages", async (importOriginal) => ({ ...await importOriginal<typeof import("../objectUsages")>(), findObjectUsages: () => Promise.resolve([{ name: "Homepage" }, { name: "Contact" }]) }));
@@ -110,6 +111,16 @@ describe("public page save/discard integration", () => {
     expect(s.post).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", edits: { "placeholder:0": "Name" } }), "https://public.example.com");
     expect(mocks.writes).not.toHaveBeenCalled();
   });
+  it("hidden picture edits undo, redo, save and discard through normal frame updates", async () => {
+    const s = await openRemote(true, true);
+    s.send("edit-change", { scope: "page", next: { "hidden:0": "1" } });
+    expect(mocks.hasChanges()).toBe(true);
+    s.send("edit-undo"); expect(mocks.hasChanges()).toBe(false);
+    s.send("edit-redo"); expect(s.post.mock.calls.at(-1)?.[0].edits).toEqual({ "hidden:0": "1" });
+    await act(async () => expect(await mocks.save()).toBe(true));
+    expect(mocks.writes).toHaveBeenCalledWith("pages", expect.objectContaining({ inline_edits: { "hidden:0": "1" } }));
+    await act(async () => mocks.discard()); expect(mocks.writes.mock.calls.at(-1)?.[1].inline_edits).toEqual({});
+  });
   it.each(["objects", "images", "videos"])("adding %s is one undo step and redo restores it", async kind => {
     const s = await openRemote(true, true);
     act(() => mocks.add(kind)); fireEvent.click(screen.getByText(kind === "objects" ? "Pick Stats" : kind === "images" ? "Pick Image" : "Pick Video"));
@@ -117,6 +128,15 @@ describe("public page save/discard integration", () => {
     s.send("edit-undo"); expect(mocks.hasChanges()).toBe(false); expect(mocks.history.undoLabel).toBe("");
     s.send("edit-redo"); expect(mocks.hasChanges()).toBe(true); expect(s.post.mock.calls.at(-1)?.[0].heldBlocks).toHaveLength(2);
     expect(mocks.writes).not.toHaveBeenCalled();
+  });
+  it("adding an object writes pages.content before announcing the successful save", async () => {
+    const s = await openRemote(true, true); vi.mocked(notifyContentEdited).mockClear();
+    act(() => mocks.add("objects")); fireEvent.click(screen.getByText("Pick Stats"));
+    await act(async () => expect(await mocks.save()).toBe(true));
+    expect(mocks.writes).toHaveBeenCalledWith("pages", { content: [expect.objectContaining({ type: "object", objectId: "stats" })] });
+    expect(notifyContentEdited).toHaveBeenCalledOnce();
+    expect(mocks.writes.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(notifyContentEdited).mock.invocationCallOrder[0]);
+    s.unmount();
   });
   it("frame block moves undo the marker order, failed saves retain history and successful saves reset it", async () => {
     mocks.original.content = [{ id: "video", type: "video", url: "/clip.mp4", align: "left", width: 100 }];
@@ -143,8 +163,8 @@ describe("public page save/discard integration", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Delete Block" })[0]); expect(lastBlocks()).toHaveLength(1);
     expect(mocks.history.redoLabel).toBe(""); s.send("edit-undo"); expect(lastBlocks()[1].id).toBe("video");
     s.send("edit-change", { scope: "page", next: { "style:0": '{"font-size":"32px"}' } });
-    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits on This Page" }));
-    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
     expect(mocks.history.undoLabel).toBe(""); expect(mocks.history.redoLabel).toBe("");
     expect(lastBlocks()[1].width).toBe(100); expect(mocks.writes).not.toHaveBeenCalled();
   });
@@ -153,9 +173,9 @@ describe("public page save/discard integration", () => {
     mocks.original.inline_edits = { "0": "Saved hand edit" };
     const s = await openRemote(true, true);
     s.send("edit-change", { scope: "Header", next: { "0": "Shared edit" } });
-    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits on This Page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
     expect(mocks.writes).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
     expect(mocks.hasChanges()).toBe(true); expect(mocks.history.changeCount).toBe(1);
     expect(s.post.mock.calls.at(-1)?.[0]).toMatchObject({ edits: {}, objectEdits: { Header: { "0": "Shared edit" } } });
     expect(mocks.writes).not.toHaveBeenCalled();

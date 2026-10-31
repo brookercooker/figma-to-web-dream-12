@@ -74,7 +74,9 @@ export function inlineChangeLines(subject: string, before: InlineEdits, after: I
     const parts: string[] = [];
     let wording: string | null = null, link: string | null = null, picture = false, moved = false;
     for (const key of keys) {
-      const kind = parseKey(key)!.kind;
+      const parsed = parseKey(key); if (!parsed) continue;
+      const kind = parsed.kind;
+      if (kind === "hidden") { lines.push(after[key] === "1" ? `Picture removed from ${subject}` : `Picture restored on ${subject}`); continue; }
       if (kind === "html") {
         if (oldText !== newText) wording = newText;
         else parts.push("text formatting");

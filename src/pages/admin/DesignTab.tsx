@@ -611,7 +611,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     }
     for (const [scope, next] of Object.entries(pendingObjects.current)) {
       const id = objectRows.current[scope];
-      if (!id) { delete pendingObjects.current[scope]; continue; }
+      if (!id) { failed = failed ?? "This shared object couldn't be found. Your changes haven't been saved. Try again."; continue; }
       const { error } = await saveRow("object_registry", { inline_edits: next, updated_at: new Date().toISOString() }, id);
       if (error) failed = failed ?? (error.message ?? "Could not save the shared section");
       else { wrote = true; persistedObjects.current.add(scope); cleanState.current = { ...cleanState.current, objectEdits: { ...cleanState.current.objectEdits, [scope]: structuredClone(next) } }; if (pendingObjects.current[scope] === next) delete pendingObjects.current[scope]; }
@@ -626,6 +626,9 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     try { await dropCopies(unused); } catch (error) { toast.error(error instanceof Error ? error.message : "Couldn't remove the unused copies."); return false; }
     pendingCopies.current.clear();
     return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? `Your changes couldn't be saved. ${error.message}` : "Your changes couldn't be saved. You are still in the editor. Try again.");
+      return false;
     } finally { savingHistory.current = false; }
   };
   /** Plain lines for everything this save writes (clean state → current state). */

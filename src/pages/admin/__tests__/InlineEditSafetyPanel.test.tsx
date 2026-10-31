@@ -15,9 +15,9 @@ it("records unchecked fingerprints and requires confirmation for reset all", () 
   const el = document.createElement('h3');
   render(<InlineEditSafetyPanel reports={{page:{applied:[],unchecked:['0.1'],rejected:[],orphaned:[]}}} selection={{scope:'page',key:'0.1',kind:'text',el}} editsFor={() => ({})} discard={discard} record={record} resetAll={resetAll} />);
   fireEvent.click(screen.getByRole('button',{name:'Record Fingerprints'})); expect(record).toHaveBeenCalledOnce();
-  fireEvent.click(screen.getByRole('button',{name:'Reset Element'})); expect(discard).toHaveBeenCalledWith('page','0.1');
-  fireEvent.click(screen.getByRole('button',{name:'Reset All Edits on This Page'})); expect(resetAll).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button',{name:/^Reset All Edits$/})); expect(resetAll).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole('button',{name:'Restore Original'})); expect(discard).toHaveBeenCalledWith('page','0.1');
+  fireEvent.click(screen.getByRole('button',{name:'Restore Original Page'})); expect(resetAll).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button',{name:'Restore Original Page'})); expect(resetAll).toHaveBeenCalledOnce();
 });
 it("labels orphaned link edits and resets all keys at their selected path", () => {
   const discard = vi.fn(), el = document.createElement('a');
@@ -25,5 +25,5 @@ it("labels orphaned link edits and resets all keys at their selected path", () =
   const group = screen.getByRole('button',{name:/Edits That Could Not Be Applied/});
   if (group.getAttribute('aria-expanded') === 'false') fireEvent.click(group);
   expect(screen.getByText('Link')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button',{name:'Reset Element'})); expect(discard).toHaveBeenCalledWith('page','0');
+  fireEvent.click(screen.getByRole('button',{name:'Restore Original'})); expect(discard).toHaveBeenCalledWith('page','0');
 });

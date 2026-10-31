@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fontMenu, inheritedFont, inheritedWeight } from "./designChat/fontOptions";
-import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Strikethrough, ImageIcon, RotateCcw, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, Film, TextCursorInput, icons } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Strikethrough, ImageIcon, RotateCcw, Trash2, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, Film, TextCursorInput, icons } from "lucide-react";
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { LINK_ICONS, readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
 import { remoteSnapshot, remoteFormatting, selectionComputedStyle, type FormatCommand } from "./remoteSelection";
 import SelectionColourPicker from "./SelectionColourPicker";
 import { selectionDescription } from "./selectionDescription";
+import SelectedWording from "./SelectedWording";
+import MaterialIconField from "./MaterialIconField";
 import { SIDES, commonValue, isMixed, setAllSides, setBorderPart, sideValues, type BorderPart, type Side } from "./borderEdit";
 
 const WEIGHTS = [["Light", "300"], ["Regular", "400"], ["Medium", "500"], ["Bold", "700"]] as const;
@@ -29,6 +31,16 @@ export default function InlineStylePanel({
   const range = useRef<Range | null>(null);
   const span = useRef<HTMLSpanElement | null>(null);
   const [localHighlighted, setHighlighted] = useState(false);
+  useEffect(() => {
+    if (sel?.kind !== "image") return;
+    const remove = (event: KeyboardEvent) => {
+      const el = event.target instanceof Element ? event.target : null;
+      if (event.defaultPrevented || !["Delete", "Backspace"].includes(event.key) || el?.closest("input,textarea,select,[contenteditable=true],[role=dialog],[role=alertdialog]")) return;
+      event.preventDefault(); onChange({ ...edits, [`hidden:${sel.key}`]: "1" });
+    };
+    window.addEventListener("keydown", remove);
+    return () => window.removeEventListener("keydown", remove);
+  }, [sel, edits, onChange]);
   useEffect(() => {
     range.current = null; span.current = null; setHighlighted(false);
     if (!sel || sel.kind !== "text") return;
@@ -75,7 +87,7 @@ export default function InlineStylePanel({
   if (sel.kind === "locked") return <div className="space-y-3">
     <ToolHeader icon={SquareDashed} title="Built in Code" />
     <Button variant="outline" size="sm" onClick={() => set("display", "none")}>Delete Element</Button>
-    <Button variant="ghost" size="sm" onClick={reset}>Reset Element</Button>
+    <Button variant="ghost" size="sm" title="Put this item back the way it was built." onClick={reset}>Restore Original</Button>
   </div>;
   const swatches = (cur: string | undefined, pick: (v: string) => void) => <SelectionColourPicker value={cur} onChange={pick} />;
 
@@ -131,6 +143,7 @@ export default function InlineStylePanel({
           <Button variant="outline" size="sm" className="w-full gap-2" onClick={onReplaceImage}>
             <ImageIcon className="w-4 h-4" /> Replace Picture
           </Button>
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-destructive hover:text-destructive" onClick={() => { const next = { ...edits }; if (next[`hidden:${sel.key}`] === "1") delete next[`hidden:${sel.key}`]; else next[`hidden:${sel.key}`] = "1"; onChange(next); }}><Trash2 className="h-4 w-4" />{edits[`hidden:${sel.key}`] === "1" ? "Restore Image" : "Delete Image"}</Button>
           <ToolField label="Fit">
             <ToolSegment className="flex w-full">
               {([["Fill", "cover"], ["Whole picture", "contain"]] as const).map(([l, v]) => (
@@ -284,17 +297,10 @@ export default function InlineStylePanel({
   const sizeNow = marks ? num(String(marks.size)) : num(style["font-size"]) || num(computed.fontSize);
   const weightNow = marks ? String(marks.weight) : style["font-weight"] ?? "";
   const colourNow = marks ? marks.color : style.color || computed.color;
-  const textPreview = (remoteSnapshot(sel.el)?.text ?? sel.el.textContent ?? "").trim().replace(/\s+/g, " ");
-  const tagName = sel.el.tagName.toLowerCase();
-  // A plain button label (no icon or other parts inside) can be retyped here; it saves as the element's wording.
-  const labelEditable = (tagName === "button" || tagName === "a" || sel.el.getAttribute("role") === "button") && sel.el.children.length === 0;
-  const labelNow = edits[sel.key] !== undefined ? (() => { const d = document.createElement("div"); d.innerHTML = edits[sel.key]; return d.textContent ?? ""; })() : textPreview;
-  const setLabel = (v: string) => onChange({ ...edits, [sel.key]: v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") });
-  const placeholderNow = remoteSnapshot(sel.el)?.attrs?.placeholder ?? sel.el.getAttribute("placeholder");
   return (
     <div>
       <ToolHeader icon={Type} {...description}
-        menu={[{ label: "Reset Text Style", icon: RotateCcw, onSelect: reset }]} />
+        menu={[{ label: "Restore Original", icon: RotateCcw, onSelect: reset }]}><SelectedWording sel={sel} edits={edits} onChange={onChange} /></ToolHeader>
       {highlighted ? (
         <div className="pb-3">
           <ToolNote>
@@ -305,30 +311,13 @@ export default function InlineStylePanel({
           </ToolNote>
         </div>
       ) : null}
-      {(labelEditable || typeof placeholderNow === "string") && (
-        <ToolGroup title="Wording" icon={TextCursorInput} defaultOpen>
-          {labelEditable && <ToolField label="Button Label"><Input aria-label="Button Label" value={labelNow} onChange={(e) => setLabel(e.target.value)} /></ToolField>}
-          {typeof placeholderNow === "string" && <>
-            <ToolField label="Placeholder"><Input aria-label="Placeholder" readOnly value={placeholderNow} /></ToolField>
-            <ToolNote>Changing a field's placeholder isn't available yet.</ToolNote>
-          </>}
-        </ToolGroup>
-      )}
       <ToolGroup title="Text" icon={Type} defaultOpen summary={`${fontName} · ${sizeNow}px`}>
         <div data-text-toolbar className="flex items-center gap-1">
           <ToolSegment className="shrink-0 [&>button]:w-6" onMouseDown={(e) => e.preventDefault()}>
             {([["bold", Bold, bold], ["italic", Italic, italic], ["underline", Underline, under], ["strike", Strikethrough, strike]] as const).map(([command, Icon, active]) => <Button key={command} size="icon" variant={active ? "default" : "ghost"} title={command === "strike" ? "Strikethrough" : command[0].toUpperCase() + command.slice(1)} aria-label={command === "strike" ? "Strikethrough" : command[0].toUpperCase() + command.slice(1)} aria-pressed={active} onClick={() => toggleMark(command)}><Icon className="h-3.5 w-3.5" /></Button>)}
           </ToolSegment>
-          <ToolSegment className="shrink-0 [&>button]:w-6" onMouseDown={(e) => e.preventDefault()}>
-            {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Icon]) => (
-              <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a[0].toUpperCase() + a.slice(1)}`} aria-label={`Align ${a[0].toUpperCase() + a.slice(1)}`} onClick={() => set("text-align", a)}><Icon className="h-3.5 w-3.5" /></Button>
-            ))}
-          </ToolSegment>
           <div className="relative w-14 shrink-0"><Input aria-label="Size (px)" className="h-8 px-1 pr-5 text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" type="number" min={8} placeholder={num(computed.fontSize)} value={marks ? sizeNow : num(style["font-size"])} onChange={e => apply("font-size", px(e.target.value))} /><span className="pointer-events-none absolute right-1 top-2 text-[10px] text-muted-foreground">px</span></div>
-          <Select value={weightNow || "inherited"} onValueChange={value => apply("font-weight", value === "inherited" ? "" : value)}>
-            <SelectTrigger aria-label="Weight" className="h-8 min-w-0 flex-1 gap-0 px-1 text-[11px]"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectItem value="inherited">{inheritedWeight(computed.fontWeight)}</SelectItem>{weightNow && !WEIGHTS.some(([, v]) => v === weightNow) && <SelectItem value={weightNow}>{inheritedWeight(weightNow)}</SelectItem>}{WEIGHTS.filter(([l, v]) => l !== inheritedWeight(computed.fontWeight) || weightNow === v).map(([l, v]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
-          </Select>
+          <SelectionColourPicker value={colourNow} onChange={v => apply("color", v)} />
         </div>
         <div className="flex items-center gap-2">
           <Select value={fontValue || "inherited"} onValueChange={value => apply("font-family", value === "inherited" ? "" : value)}>
@@ -339,38 +328,47 @@ export default function InlineStylePanel({
               {fontMenu(inherited.name).others.map(([name, family]) => <SelectItem key={family} value={family} style={{ fontFamily: family }}>{name}</SelectItem>)}
             </SelectContent>
           </Select>
-          <SelectionColourPicker value={colourNow} onChange={v => apply("color", v)} />
+          <Select value={weightNow || "inherited"} onValueChange={value => apply("font-weight", value === "inherited" ? "" : value)}>
+            <SelectTrigger aria-label="Weight" className="h-8 w-28 min-w-0 gap-0 px-1 text-[11px]"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="inherited">{inheritedWeight(computed.fontWeight)}</SelectItem>{weightNow && !WEIGHTS.some(([, v]) => v === weightNow) && <SelectItem value={weightNow}>{inheritedWeight(weightNow)}</SelectItem>}{WEIGHTS.filter(([l, v]) => l !== inheritedWeight(computed.fontWeight) || weightNow === v).map(([l, v]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
+          </Select>
         </div>
       </ToolGroup>
-      <ToolGroup title="Spacing" icon={MoveVertical}>
-        <ToolGrid>
+      <ToolGroup title="Position" icon={MoveVertical}>
+        <div className="flex flex-wrap items-end gap-2">
+          <ToolField label="Alignment"><ToolSegment className="shrink-0 [&>button]:w-7" onMouseDown={(e) => e.preventDefault()}>
+            {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Icon]) => (
+              <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a[0].toUpperCase() + a.slice(1)}`} aria-label={`Align ${a[0].toUpperCase() + a.slice(1)}`} onClick={() => set("text-align", a)}><Icon className="h-3.5 w-3.5" /></Button>
+            ))}
+          </ToolSegment></ToolField>
           <ToolField label="Letter Spacing">
-            <Input type="number" step={0.05} placeholder="0" value={num(style["letter-spacing"])} onChange={(e) => apply("letter-spacing", e.target.value ? `${e.target.value}em` : "")} />
+            <Input className="h-8 w-20" type="number" step={0.05} placeholder="0" value={num(style["letter-spacing"])} onChange={(e) => apply("letter-spacing", e.target.value ? `${e.target.value}em` : "")} />
           </ToolField>
           <ToolField label="Line Height">
-            <Input type="number" step={0.1} min={0.8} placeholder={(parseFloat(computed.lineHeight) / parseFloat(computed.fontSize) || 1.4).toFixed(1)} value={style["line-height"] ?? ""} onChange={(e) => apply("line-height", e.target.value)} />
+            <Input className="h-8 w-20" type="number" step={0.1} min={0.8} placeholder={(parseFloat(computed.lineHeight) / parseFloat(computed.fontSize) || 1.4).toFixed(1)} value={style["line-height"] ?? ""} onChange={(e) => apply("line-height", e.target.value)} />
           </ToolField>
-        </ToolGrid>
+        </div>
       </ToolGroup>
       {linkEl && (
         <ToolGroup title="Icon" icon={Smile}>
+          <MaterialIconField value={iconNow} onChange={value => onChange({ ...edits, [`icon:${sel.key}`]: value })} />
           <div className="grid grid-cols-6 gap-1">
-            <button type="button" title="No icon" aria-pressed={iconNow === "none"}
+            <Button variant="outline" size="icon" type="button" title="No Icon" aria-pressed={iconNow === "none"}
               onClick={() => onChange({ ...edits, [`icon:${sel.key}`]: "none" })}
-              className={`flex h-8 items-center justify-center rounded border text-[10px] ${iconNow === "none" ? "ring-2 ring-ring" : ""}`}>None</button>
+              className={`flex h-8 items-center justify-center rounded border text-[10px] ${iconNow === "none" ? "ring-2 ring-ring" : ""}`}>None</Button>
             {LINK_ICONS.map((n) => {
               const I = icons[n as keyof typeof icons];
               return (
-                <button key={n} type="button" title={n.replace(/([a-z])([A-Z])/g, "$1 $2")} aria-pressed={iconNow === n}
+                <Button variant="outline" size="icon" key={n} type="button" title={n.replace(/([a-z])([A-Z])/g, "$1 $2")} aria-pressed={iconNow === n}
                   onClick={() => onChange({ ...edits, [`icon:${sel.key}`]: n })}
                   className={`flex h-8 items-center justify-center rounded border hover:bg-muted ${iconNow === n ? "ring-2 ring-ring" : ""}`}>
                   <I className="h-4 w-4" />
-                </button>
+                </Button>
               );
             })}
           </div>
           {iconNow && (
-            <button type="button" className="text-xs underline text-muted-foreground" onClick={() => { const o = { ...edits }; delete o[`icon:${sel.key}`]; onChange(o); }}>Use Original Icon</button>
+            <Button variant="link" size="sm" className="text-xs underline text-muted-foreground" onClick={() => { const o = { ...edits }; delete o[`icon:${sel.key}`]; onChange(o); }}>Use Original Icon</Button>
           )}
         </ToolGroup>
       )}
@@ -396,7 +394,7 @@ function BorderControls({ style, computed, side, swatches, reset, write }: {
   const width = value("width"), bstyle = value("style"), colour = value("color");
   return (
     <div>
-      <ToolHeader icon={SquareDashed} title="Border" menu={[{ label: "Reset Element", icon: RotateCcw, onSelect: reset }]} />
+      <ToolHeader icon={SquareDashed} title="Border" menu={[{ label: "Restore Original", icon: RotateCcw, onSelect: reset }]} />
       <ToolGroup title="Border" icon={SquareDashed} defaultOpen>
         <ToolSegment className="flex w-full">
           {([["All Sides", "all"], ["Individual Sides", "individual"]] as const).map(([l, v]) => (

@@ -359,9 +359,10 @@ function AdminShell() {
           aria-label={manual ? "Manual Mode" : "Chat"}
         >
           <div data-chat-header className={cn("flex shrink-0", HEADER_HEIGHT_CLASS, " items-center gap-2 border-b bg-background px-3", chatCollapsed && !manual && "h-auto flex-wrap px-1.5 py-2 lg:flex-col lg:flex-nowrap")}>
-              <DropdownMenu>
+            {chatCollapsed && !manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Expand Chat" title="Expand Chat" aria-expanded={false} onClick={() => setChatCollapsed(false)}><PanelLeftOpen className="h-4 w-4" /></Button>}
+              <DropdownMenu onOpenChange={open => { if (open) setChatCollapsed(false); }}>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="w-9 shrink-0 gap-2 px-0" aria-label="Account Menu">
+                  <Button variant="ghost" size="sm" className="w-9 shrink-0 gap-2 px-0" aria-label="Account Menu" onClick={() => setChatCollapsed(false)}>
                     <UserCircle2 className="w-5 h-5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -387,10 +388,10 @@ function AdminShell() {
                 </DropdownMenuContent>
               </DropdownMenu>
             <TooltipProvider delayDuration={200}>
-              <DropdownMenu>
+              <DropdownMenu onOpenChange={open => { if (open) setChatCollapsed(false); }}>
                 <Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild>
                   <Button variant={tab === "pages" ? "secondary" : "ghost"} size="icon" className="h-8 w-8 shrink-0"
-                    aria-label="Tools" aria-pressed={tab === "pages"} aria-current={tab === "pages" ? "page" : undefined}>
+                    aria-label="Tools" aria-pressed={tab === "pages"} aria-current={tab === "pages" ? "page" : undefined} onClick={() => setChatCollapsed(false)}>
                     <Wrench className="h-4 w-4" aria-hidden />
                   </Button>
                 </DropdownMenuTrigger></TooltipTrigger><TooltipContent>Tools</TooltipContent></Tooltip>
@@ -405,10 +406,10 @@ function AdminShell() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </TooltipProvider>
-            <HeaderActions />
+            <HeaderActions onExpand={() => setChatCollapsed(false)} />
             <div className={cn("flex-1", chatCollapsed && !manual && "hidden")} />
             {manual && <ManualHistoryControls disabled={finishing} />}
-            {!manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={chatCollapsed ? "Expand Chat" : "Collapse Chat"} title={chatCollapsed ? "Expand Chat" : "Collapse Chat"} aria-expanded={!chatCollapsed} onClick={() => setChatCollapsed(!chatCollapsed)}>
+            {!manual && !chatCollapsed && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded onClick={() => setChatCollapsed(true)}>
               {chatCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </Button>}
           </div>
@@ -423,7 +424,7 @@ function AdminShell() {
                   ? <ObjectEditorHeader info={objectInfo} backLabel={objectOpen.from === "objects" ? "Back to Objects" : `Back to ${workingPage.name}`} disabled={finishing} onLeave={leaveObject} />
                   : <ManualPageSwitcher navigation={pageNavigation} />}
                 <div className="flex flex-wrap gap-1.5">
-                  <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" disabled={finishing || !dirty} onClick={discardEditing}><Trash2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
+                  <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" title="Undo everything since you last saved." disabled={finishing || !dirty} onClick={discardEditing}><Trash2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
                 </div>
               </div>
               <div ref={setSlot} aria-label="Page Editing Options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
