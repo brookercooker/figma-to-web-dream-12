@@ -105,6 +105,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
     try {
       const res = await fetch(EMBED_FN, {
         method: "POST",
+        signal: AbortSignal.timeout(5000),
         headers: { "Content-Type": "application/json", ...(SUPABASE_KEY ? { Authorization: `Bearer ${SUPABASE_KEY}`, apikey: SUPABASE_KEY } : {}) },
         body: JSON.stringify({ parent_origin: window.location.origin }),
       });
