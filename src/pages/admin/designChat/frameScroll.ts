@@ -41,14 +41,15 @@ export function usePreviewScroll(root: RefObject<HTMLElement>, editing: boolean,
       try { origin = new URL(frame.src).origin; } catch { return; }
       if (origin !== event.origin || origin === window.location.origin) return;
       const d = event.data;
-      if (d?.source !== "nova-site") return;
-      const path = scrollPath(d.path);
+      // The public preview also announces readiness without source/path fields.
+      if (d?.source !== "nova-site" && !(d?.type === "preview-ready" && d.source === undefined)) return;
+      const path = scrollPath(d.path ?? (d.type === "preview-ready" ? framePaths.get(frame) ?? new URL(frame.src).pathname : undefined));
       if (!path) return;
       if (d.type === "preview-ready" || d.type === "location") {
         framePaths.set(frame, path);
         if (!editing) restoreFrameScroll(frame, path);
-      } else if (!editing && frame.dataset.previewShown === "true" && d.type === "page-scroll" && framePaths.get(frame) === path) {
-        acceptFrameScroll(event, frame, path);
+      } else if (!editing && frame.dataset.previewShown === "true" && d.type === "page-scroll" && (framePaths.get(frame) ?? scrollPath(new URL(frame.src).pathname)) === path) {
+        if (acceptFrameScroll(event, frame, path)) framePaths.set(frame, path);
       }
     };
     window.addEventListener("message", receive);

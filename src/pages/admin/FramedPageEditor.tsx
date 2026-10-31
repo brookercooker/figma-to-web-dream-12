@@ -160,7 +160,9 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         setStatus("failed"); return;
       }
       if (!ready.current) return;
-      if (data.type === "edit-sections" && sectionsCapable.current) {
+      if (data.type === "preview-ready" && (!data.path || data.path === latest.current.path || (data.path === "/" && latest.current.path === "/home"))) {
+        restoreFrameScroll(frame.current, latest.current.path);
+      } else if (data.type === "edit-sections" && sectionsCapable.current) {
         const sections = parseFrameSections(data.sections);
         if (sections) { sectionsRef.current = sections; if (!latest.current.objectScope) rememberFrameObjects(latest.current.path, sections); latest.current.onSections?.(sections); }
       } else if (data.type === "page-scroll") {
