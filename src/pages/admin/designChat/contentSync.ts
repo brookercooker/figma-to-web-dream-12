@@ -17,8 +17,22 @@ let inFlight = false;
 let nextRetry = 0;
 let deadline = Date.now() + SYNC_RETRY_WINDOW_MS;
 let latestState: RelayState | null = null;
+let syncFailed = false;
+let expiry: ReturnType<typeof setTimeout> | undefined;
 export const contentSyncBusy = (s: RelayState | null) => !!s && (s.busy || s.publish?.status === "reviewing" || !!s.approval);
 export const contentSyncDeferred = () => !!owed?.deferred;
+export const contentSyncFailed = () => syncFailed;
+export function retryContentSync() {
+  window.dispatchEvent(new Event("nova:preview-content-retry"));
+  if (!owed) return;
+  deadline = Date.now() + SYNC_RETRY_WINDOW_MS; nextRetry = 0; syncFailed = false;
+  if (owed) owed.deferred = false;
+  persist(); schedule(0); armExpiry();
+}
+function armExpiry() {
+  clearTimeout(expiry);
+  expiry = setTimeout(() => { if (owed) { syncFailed = true; persist(); } }, Math.max(0, deadline - Date.now()));
+}
 function persist() {
   try { if (owed) localStorage.setItem(STORAGE_KEY, JSON.stringify(owed)); else localStorage.removeItem(STORAGE_KEY); } catch { /* Memory retry still works when storage is unavailable. */ }
   window.dispatchEvent(new Event(CONTENT_SYNC_CHANGED));
@@ -35,6 +49,7 @@ async function run() {
   try {
     const result = await postToHelper("/content/sync", changes.length ? { changes } : {});
     if (result.ok) {
+      syncFailed = false;
       if (owed?.version === version) owed = null;
       persist();
       // The relay explains anything it left out (for example an archived object).
@@ -44,10 +59,11 @@ async function run() {
       notes.forEach((w) => toast.warning(w));
     } else if (result.data?.busy === true && owed) {
       owed.deferred = true; persist();
+    } else { syncFailed = true; persist();
     }
     // Any unsuccessful sync remains owed, including a temporary outage.
     // Existing status observations drive retries, never another status poller.
-  } catch { /* Retain owed sync for the next status or page load. */ }
+  } catch { syncFailed = true; persist(); }
   finally { inFlight = false; }
 }
 /** Called with the status already read by useHelperState; no extra relay reads. */
@@ -62,6 +78,7 @@ export function notifyContentEdited(changes?: string[]) {
   const merged = mergeChangeLines(owed?.changes, changes);
   owed = { version: Math.max(Date.now(), (owed?.version ?? 0) + 1), deferred: owed?.deferred ?? false, ...(merged.length ? { changes: merged } : {}) };
   deadline = Date.now() + SYNC_RETRY_WINDOW_MS;
+  syncFailed = false; armExpiry();
   persist();
   schedule(owed.deferred ? Math.max(0, nextRetry - Date.now()) : 4000);
 }
