@@ -56,7 +56,7 @@ export default function ObjectPickerDialog({
           <DialogTitle>{onPickMany ? "Add Objects" : "Add an Object"}</DialogTitle>
         </DialogHeader>
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search objects" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
           {filtered.map((o) => (
             <Button variant="ghost"
               key={o.id}
@@ -78,9 +78,14 @@ export default function ObjectPickerDialog({
         </div>
         {onPickMany && <div className="flex items-center justify-between gap-2 border-t pt-3">
           <Button type="button" variant="ghost" size="sm" disabled={!selected.size} onClick={() => setSelected(new Set())}>Deselect All</Button>
-          <Button type="button" disabled={!selected.size} onClick={() => onPickMany(items.filter(o => selected.has(o.id)).map(({ id, name }) => ({ id, name })))}>Add {selected.size} {selected.size === 1 ? "Object" : "Objects"}</Button>
+          <Button type="button" disabled={!selected.size} onClick={() => onPickMany(items.filter(o => selected.has(o.id)).map(({ id, name }) => ({ id, name })))}>{objectAddLabel(selected.size)}</Button>
         </div>}
       </TopDropContent>
     </Dialog>
   );
+}
+
+/** The picker's add button: a hint until something is picked, then the count. */
+export function objectAddLabel(count: number): string {
+  return count ? `Add ${count} ${count === 1 ? "Object" : "Objects"}` : "Select objects to add";
 }

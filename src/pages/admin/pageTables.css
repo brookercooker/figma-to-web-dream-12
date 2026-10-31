@@ -18,3 +18,19 @@
   .manager-page-table :is(th,td):nth-child(2), .manager-landing-table :is(th,td):nth-child(5) { display: none; }
   .manager-page-table :is(th,td) { padding-left: 4px; padding-right: 4px; }
 }
+/* Phones and small tablets: each page becomes a card (thumbnail, name and path, status, actions). Same markup and actions. */
+@media (max-width: 767px) {
+  .manager-page-table thead { display: none; }
+  .manager-page-table, .manager-page-table tbody { display: block; width: 100%; }
+  .manager-page-table tbody { display: grid; gap: 8px; }
+  .manager-page-table tr { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 10px; border: 1px solid hsl(var(--border)); border-radius: 0.5rem; }
+  .manager-page-table tr > td { display: block; width: auto !important; position: static !important; padding: 0 !important; background: transparent !important; border: 0; }
+  .manager-page-table tr > td[colspan] { width: 100% !important; }
+  .manager-page-table :is(th,td):nth-child(2) { display: block !important; flex: 0 0 auto; }
+  .manager-page-table td:nth-child(3) { flex: 1 1 140px; min-width: 0; }
+  .manager-page-table td:nth-child(3) button { white-space: normal; }
+  .manager-static-table td:nth-child(5), .manager-static-table td:nth-child(6), .manager-static-table td:nth-child(7),
+  .manager-landing-table td:nth-child(6), .manager-landing-table td:nth-child(7), .manager-landing-table td:nth-child(8) { display: none !important; }
+  .manager-page-table td:nth-last-child(-n+3) { margin-left: auto; }
+  .manager-page-table td:nth-last-child(-n+3) ~ td { margin-left: 0; }
+}

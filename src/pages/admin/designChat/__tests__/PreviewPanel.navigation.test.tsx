@@ -40,8 +40,16 @@ describe("floating preview navigation", () => {
     expect(container.querySelector("iframe")).toBe(frame);
     expect(post).toHaveBeenCalledWith({ source: "nova-manager", type: "restore-scroll", path: "/scroll-check", y: 800 }, "https://public.example");
   });
-  it("keeps the existing history callbacks and disabled states", () => {
-    const { chat, view, rerender } = setup();
+  it("never draws Back/Forward over the site", () => {
+    setup();
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Forward" })).toBeNull();
+  });
+  it("puts Back/Forward in the toolbar with the existing callbacks and disabled states", () => {
+    const { chat } = setup();
+    cleanup();
+    const view = () => <PreviewTools showViewControls navOnly />;
+    const { rerender } = render(view());
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     fireEvent.click(screen.getByRole("button", { name: "Forward" }));
     expect(chat.previewNav?.back).toHaveBeenCalledTimes(1);
@@ -51,46 +59,9 @@ describe("floating preview navigation", () => {
     expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Forward" })).toBeDisabled();
   });
-
-  for (const device of ["mobile", "tablet", "desktop"] as const) {
-    for (const coverFull of [false, true]) {
-      it(`anchors inside the ${device} frame in ${coverFull ? "fallback" : "native"} full screen without intercepting the page`, () => {
-        const { chat } = setup({ device, inFull: true, coverFull });
-        const back = screen.getByRole("button", { name: "Back" });
-        expect(back.parentElement?.parentElement).toBe(chat.drawing.areaRef.current);
-        expect(back.parentElement).toHaveClass("pointer-events-none", "absolute", "left-2", "top-2");
-        expect(back).toHaveClass("pointer-events-auto");
-        expect(screen.getByRole("button", { name: "Forward" })).toHaveClass("pointer-events-auto");
-      });
-    }
-  }
-
-  it("hides navigation during drawing, capture and manual editing", () => {
-    const { chat, view, rerender } = setup();
-    chat.drawing.on = true;
-    rerender(view());
+  it("hides toolbar navigation while editing by hand", () => {
+    setup({ editing: true }); cleanup();
+    render(<PreviewTools showViewControls navOnly />);
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
-    chat.drawing.on = false;
-    chat.drawing.capturing = true;
-    rerender(view());
-    expect(screen.queryByRole("button", { name: "Forward" })).toBeNull();
-    chat.drawing.capturing = false;
-    chat.editing = true;
-    rerender(view());
-    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
-    chat.editing = false;
-    rerender(view());
-    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
   });
-
-  for (const tight of [false, true]) {
-    it(`removes navigation from the ${tight ? "compact" : "normal"} top bar`, () => {
-      setup();
-      cleanup();
-      render(<PreviewTools showViewControls tight={tight} />);
-      expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
-      expect(screen.queryByRole("button", { name: "Forward" })).toBeNull();
-      expect(screen.getByRole("button", { name: "Full Screen" })).toBeInTheDocument();
-    });
-  }
 });

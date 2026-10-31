@@ -34,6 +34,7 @@ export default function ChatPanel() {
   const [dragging, setDragging] = useState(false);
   const { hint, setHint } = useHint();
   const textRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { const el = textRef.current; if (el) { el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 150)}px`; } }, [text]);
   const fileRef = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -264,7 +265,9 @@ export default function ChatPanel() {
           }}
           placeholder="Describe the change you want, for example: add a contact section with an email address and phone number"
           aria-label="Describe a Change"
-          className="min-h-[210px] max-h-[50vh] resize-none overflow-y-auto leading-snug"
+          rows={2}
+          onInput={(e) => { const el = e.currentTarget; el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 6 * 22 + 18)}px`; }}
+          className="min-h-[62px] max-h-[150px] resize-none overflow-y-auto leading-snug"
         />
 
         <div className="flex flex-wrap items-center gap-2.5">
@@ -293,7 +296,7 @@ export default function ChatPanel() {
               <Mic className="h-4 w-4" />
             </Button>
           )}
-          {(offline || hint.text) && <span role="status" className={cn("flex-1 min-w-0 text-xs", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>
+          {(offline || hint.text) && <span role="status" className={cn("flex-1 min-w-0 text-xs max-[1279px]:order-last max-[1279px]:basis-full", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>
             {offline ? "Can't reach the design service right now. It will keep trying." : hint.text}
           </span>}
           <Button type="submit" disabled={busy || offline || attachments.uploading} className="ml-auto gap-2">
