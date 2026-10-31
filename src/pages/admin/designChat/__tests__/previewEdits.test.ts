@@ -27,6 +27,23 @@ const flush = () => act(async () => { await Promise.resolve(); await Promise.res
 afterEach(() => { document.body.innerHTML = ""; });
 
 describe("Chat Mode preview edits", () => {
+  it("does not send on a premature load event whose recipient is still the Manager origin", async () => {
+    const { win, ref, frame } = setup();
+    Object.defineProperty(win, "location", { value: { origin: window.location.origin } });
+    renderHook(() => usePreviewEdits(ref as any, vi.fn().mockResolvedValue(payload), loadContent));
+    previewContentLoaded(frame); await flush();
+    expect(win.postMessage).not.toHaveBeenCalled();
+  });
+  it("does not post legacy edits to an old origin after the frame src changes during the read", async () => {
+    const { win, ref, frame } = setup();
+    let resolve: (value: typeof payload) => void = () => {};
+    const pending = new Promise<typeof payload>(r => { resolve = r; });
+    renderHook(() => usePreviewEdits(ref as any, () => pending, loadContent));
+    window.dispatchEvent(ready(win)); await flush();
+    frame.src = "https://different.example/draft";
+    resolve(payload); await flush();
+    expect((win.postMessage as any).mock.calls.filter(([m]: any[]) => m.type === "preview-edits")).toHaveLength(0);
+  });
   it("replies to every ready, reload and mode/page refresh with the saved Spotlight snapshot and reason", async () => {
     const { win, ref, frame } = setup();
     const objectId = "dfff040f-a387-494d-af9d-cc10e3955b8e";

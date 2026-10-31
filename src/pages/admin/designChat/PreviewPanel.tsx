@@ -21,12 +21,13 @@ export default function PreviewPanel() {
   const location = useLocation();
   const [updated, setUpdated] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const loadedFrames = useRef(new WeakSet<HTMLIFrameElement>());
   const previewFailed = usePreviewEdits(sectionRef);
   const frameAddresses = preview.frames.map(f => `${f.id}:${f.url}`).join("|");
   useEffect(() => {
     // The Chat frame stays mounted while editing; refresh it even when returning causes no load event.
     for (const frame of sectionRef.current?.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview]") ?? []) {
-      previewContentLoaded(frame, "mode-or-page-change");
+      if (loadedFrames.current.has(frame)) previewContentLoaded(frame, "mode-or-page-change");
     }
   }, [editing, location.pathname, preview.shownId, frameAddresses]);
   usePreviewScroll(sectionRef, editing, preview.shownId);
@@ -60,7 +61,12 @@ export default function PreviewPanel() {
               title={f.id === preview.shownId || preview.shownId === 0 ? "Design Preview" : "Design Preview (Loading)"}
               referrerPolicy="origin"
               data-preview-shown={f.id === preview.shownId || preview.shownId === 0 ? "true" : "false"}
-              onLoad={event => { preview.finish(f.id); previewContentLoaded(event.currentTarget); }}
+              onLoad={event => {
+                const frame = event.currentTarget;
+                // about:blank and redirected auth screens are not the public page, even though src still names it.
+                try { if (frame.contentWindow?.location.origin !== new URL(frame.src).origin) return; } catch { /* Cross-origin public document. */ }
+                loadedFrames.current.add(frame); preview.finish(f.id); previewContentLoaded(frame);
+              }}
               className={cn("absolute inset-0 h-full w-full border-0 bg-background transition-opacity duration-300 motion-reduce:transition-none", pending && "opacity-[0.58]", f.id !== preview.shownId && preview.shownId !== 0 && "invisible")}
             />
           ))}
@@ -89,7 +95,7 @@ export default function PreviewPanel() {
             </div>
           </div>
         )}
-        {!preview.loaded && preview.error && <div role="alert" className="absolute inset-0 grid place-items-center bg-background p-6 text-center text-sm text-muted-foreground">{preview.error}</div>}
+        {preview.error && <div role="alert" className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-background p-6 text-center text-sm text-muted-foreground">{preview.error}<Button type="button" variant="outline" onClick={preview.retry}>Retry</Button></div>}
         {updated && visible && !pending && <div role="status" className="pointer-events-none absolute right-3 top-3 z-30 rounded-full border bg-background px-3 py-1.5 text-xs shadow-sm">Your Preview Is Updated</div>}
         {pending && preview.progressStage && <PreviewProgress stage={preview.progressStage} elapsedMs={preview.elapsedMs} />}
 

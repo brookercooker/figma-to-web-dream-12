@@ -57,6 +57,9 @@ export function usePreviewEdits(root: RefObject<HTMLElement>, load = loadPreview
     let seq = 0;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const currentFrame = (t: PreviewTarget) => [...(root.current?.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview]") ?? [])].find(f => {
+      try { return f.contentWindow === t.win && new URL(f.src).origin === t.origin; } catch { return false; }
+    });
     const send = async (reason: string) => {
       const t = target; if (!t) return;
       const id = ++seq;
@@ -65,13 +68,13 @@ export function usePreviewEdits(root: RefObject<HTMLElement>, load = loadPreview
         const content = await loadContent();
         if (cancelled || id !== seq || target !== t) return;
         // A frame removed/swapped while reading must never receive saved content.
-        const current = [...(root.current?.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview]") ?? [])].find(f => f.contentWindow === t.win && new URL(f.src).origin === t.origin);
+        const current = currentFrame(t);
         if (!current) return;
-        t.win.postMessage({ source: "nova-manager", type: "preview-content", ...content }, t.origin);
+        t.win.postMessage({ source: "nova-manager", type: "preview-content", ...content }, new URL(current.src).origin);
         console.debug('[preview] sent snapshot', content.pages.length, content.objects.length, reason);
         setFailed(false);
         // Older frames retain the existing inline-only bridge as a compatibility message.
-        try { const payload = await load(t.path); if (!cancelled && id === seq && target === t) postPreviewEdits(t, payload); } catch { /* Full saved content already arrived. */ }
+        try { const payload = await load(t.path); if (!cancelled && id === seq && target === t && currentFrame(t)) postPreviewEdits(t, payload); } catch { /* Full saved content already arrived. */ }
       } catch {
         if (cancelled || id !== seq) return;
         setFailed(true); timer = setTimeout(() => void send("retry"), 20_000);
@@ -88,6 +91,7 @@ export function usePreviewEdits(root: RefObject<HTMLElement>, load = loadPreview
       try {
         const url = new URL(frame.src);
         if (url.protocol !== "https:" || url.origin === window.location.origin || url.searchParams.has("nova-edit")) return;
+        try { if (frame.contentWindow.location.origin !== url.origin) return; } catch { /* Loaded cross-origin frame. */ }
         target = { win: frame.contentWindow, origin: url.origin, path: url.pathname };
         void send(reason);
       } catch { /* Invalid targets never receive data. */ }
