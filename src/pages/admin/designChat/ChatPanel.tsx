@@ -264,7 +264,9 @@ export default function ChatPanel() {
           }}
           placeholder="Describe the change you want, for example: add a contact section with an email address and phone number"
           aria-label="Describe a Change"
-          className="min-h-[210px] max-h-[50vh] resize-none overflow-y-auto leading-snug"
+          rows={2}
+          onInput={(e) => { const el = e.currentTarget; el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 6 * 22 + 18)}px`; }}
+          className="min-h-[62px] max-h-[150px] resize-none overflow-y-auto leading-snug"
         />
 
         <div className="flex flex-wrap items-center gap-2.5">
