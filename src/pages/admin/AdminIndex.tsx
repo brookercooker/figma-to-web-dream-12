@@ -286,7 +286,7 @@ function AdminShell() {
       <div className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</div>
       <div data-manager-tier={layout.tier} className={cn("flex overflow-hidden bg-background", phone ? "h-dvh flex-col" : "h-screen flex-row")}>
         {/* Right: the top bar and whichever tab is open. */}
-        <div data-picker-area className={cn("flex min-h-0 min-w-0 flex-1 flex-col", phone && phonePane === "side" && !(manual && tab === "preview" && false) && "hidden")}>
+        <div data-picker-area className={cn("flex min-h-0 min-w-0 flex-1 flex-col", phone && phonePane === "side" && "hidden")}>
           <header data-top-bar className={cn("z-30 w-full shrink-0 border-b bg-background", HEADER_HEIGHT_CLASS)}>
             <div ref={rowRef} className="flex h-full w-full items-center gap-1 px-2 sm:gap-3 sm:px-4">
               <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager Sections">
@@ -513,5 +513,32 @@ function AdminShell() {
         onConfirm={() => { setConfirmDiscard(false); doDiscard(); }}
       />
     </>
+  );
+}
+
+/** Phone toolbar overflow: preview size, full screen and the published site. */
+function PhoneMoreMenu({ showView }: { showView: boolean }) {
+  const { device, setDevice, toggleFull, state } = useDesignChat();
+  return (
+    <MoreMenu>
+      <MoreMenuTrigger asChild>
+        <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="More Options" title="More Options"><MoreHorizontal className="h-4 w-4" /></Button>
+      </MoreMenuTrigger>
+      <MoreMenuContent align="end">
+        {showView && (
+          <>
+            <MoreMenuLabel>Preview Size</MoreMenuLabel>
+            {([["mobile", "Phone", Smartphone], ["tablet", "Tablet", Tablet], ["desktop", "Desktop", Monitor]] as const).map(([value, label, Icon]) => (
+              <MoreMenuItem key={value} onClick={() => setDevice(value as Device)} aria-checked={device === value} className={device === value ? "font-semibold" : undefined}>
+                <Icon className="mr-2 h-4 w-4" aria-hidden />{label}
+              </MoreMenuItem>
+            ))}
+            <MoreMenuSeparator />
+            <MoreMenuItem onClick={toggleFull}><Maximize2 className="mr-2 h-4 w-4" aria-hidden />Full Screen</MoreMenuItem>
+          </>
+        )}
+        {state?.liveUrl && <MoreMenuItem asChild><a href={state.liveUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4" aria-hidden />Open in New Tab</a></MoreMenuItem>}
+      </MoreMenuContent>
+    </MoreMenu>
   );
 }
