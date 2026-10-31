@@ -1,4 +1,6 @@
 # Roadmap — coded object import fidelity
+- [ ] Phone-only chat pop-out, corner status button, top-bar actions and drawing return; preserve larger layouts and manual sheets.
+- [ ] Check 390×844 and 360×740 opening/closing, retained drafts, keyboard clearance and visitor control clearance.
 - [x] User Management: corrected empty POST to GET; decode real function errors. Signed-in list returns 200 with four users; no secrets or function changes.
 - [x] Same-page scroll: accept bare preview readiness and early validated scroll reports; restore editor again on preview-ready. 36 targeted tests pass; controlled browser frames retain 1250/1850 px in both directions.
 - [ ] Verify current scroll handoff on the hosted Homepage: signed-in Manager cannot reach the design service, so no live public preview loads; controlled browser frames pass.
