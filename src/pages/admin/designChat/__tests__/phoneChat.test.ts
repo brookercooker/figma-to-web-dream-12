@@ -5,6 +5,22 @@ import type { RelayState } from "../helper";
 
 const idle: RelayState = { busy: false, job: null, history: [], previewVersion: 1 };
 describe("phone-only chat presentation", () => {
+  it("baselines asynchronously loaded old errors and approvals without opening or marking unread", () => {
+    const old = { ...idle, history: [{ role: "error" as const, text: "Transaction conflict", ts: 100 }], approval: { id: "old", createdAt: 99 } as RelayState["approval"] };
+    const { result, rerender } = renderHook(({ state }) => usePhoneChat(true, false, state), { initialProps: { state: null as RelayState | null } });
+    rerender({ state: old });
+    expect(result.current.open).toBe(false); expect(result.current.unread).toBe(false);
+    rerender({ state: { ...old, history: [{ ...old.history[0], text: "Old error, refreshed" }] } });
+    expect(result.current.open).toBe(false); expect(result.current.unread).toBe(false);
+    rerender({ state: { ...old, history: [...old.history, { role: "error", text: "New error", ts: 101 }] } });
+    expect(result.current.open).toBe(true);
+  });
+  it("does not mark older history added later as unread", () => {
+    const state = { ...idle, history: [{ role: "assistant" as const, text: "Latest", ts: 100 }] };
+    const { result, rerender } = renderHook(({ state }) => usePhoneChat(true, false, state), { initialProps: { state } });
+    rerender({ state: { ...state, history: [{ role: "assistant", text: "Older", ts: 90 }, ...state.history] } });
+    expect(result.current.unread).toBe(false); expect(result.current.open).toBe(false);
+  });
   it("does not auto-open at tablet widths or during manual editing", () => {
     const state = { ...idle, history: [{ role: "error" as const, text: "Try again", ts: 1 }] };
     const { result, rerender } = renderHook(({ phone, manual }) => usePhoneChat(phone, manual, state), { initialProps: { phone: false, manual: false } });
