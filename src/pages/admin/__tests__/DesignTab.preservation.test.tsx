@@ -143,8 +143,8 @@ describe("public page save/discard integration", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Delete Block" })[0]); expect(lastBlocks()).toHaveLength(1);
     expect(mocks.history.redoLabel).toBe(""); s.send("edit-undo"); expect(lastBlocks()[1].id).toBe("video");
     s.send("edit-change", { scope: "page", next: { "style:0": '{"font-size":"32px"}' } });
-    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits on This Page" }));
-    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
     expect(mocks.history.undoLabel).toBe(""); expect(mocks.history.redoLabel).toBe("");
     expect(lastBlocks()[1].width).toBe(100); expect(mocks.writes).not.toHaveBeenCalled();
   });
@@ -153,9 +153,9 @@ describe("public page save/discard integration", () => {
     mocks.original.inline_edits = { "0": "Saved hand edit" };
     const s = await openRemote(true, true);
     s.send("edit-change", { scope: "Header", next: { "0": "Shared edit" } });
-    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits on This Page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
     expect(mocks.writes).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Reset All Edits" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
     expect(mocks.hasChanges()).toBe(true); expect(mocks.history.changeCount).toBe(1);
     expect(s.post.mock.calls.at(-1)?.[0]).toMatchObject({ edits: {}, objectEdits: { Header: { "0": "Shared edit" } } });
     expect(mocks.writes).not.toHaveBeenCalled();
