@@ -205,6 +205,15 @@ function AdminShell() {
     window.addEventListener("message", on);
     return () => window.removeEventListener("message", on);
   }, [phone, manual]);
+  useEffect(() => {
+    if (!phone || !manual || sheet === "peek") return;
+    // After the sheet settles, ask the page to bring the selected element into view above it.
+    const t = window.setTimeout(() => {
+      const el = document.querySelector<HTMLElement>("[data-side-panel]");
+      window.dispatchEvent(new CustomEvent("nova-manager-sheet", { detail: { inset: el?.getBoundingClientRect().height ?? 0 } }));
+    }, 260);
+    return () => window.clearTimeout(t);
+  }, [phone, manual, sheet]);
   const sheetDrag = useRef<{ y: number; start: "peek" | "half" | "full" } | null>(null);
   const [panelWidth, setPanelWidth] = useState<number>(() => { try { return Number(localStorage.getItem(PANEL_WIDTH_KEY)) || 320; } catch { return 320; } });
   const resizing = useRef<{ x: number; w: number } | null>(null);

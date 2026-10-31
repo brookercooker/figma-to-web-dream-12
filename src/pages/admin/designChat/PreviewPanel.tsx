@@ -22,6 +22,10 @@ export default function PreviewPanel() {
   const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing, editing } = useDesignChat();
   const location = useLocation();
   const [updated, setUpdated] = useState(false);
+  // Desktop is the starting size; only a later choice of Desktop counts as the person asking for it on a narrow screen.
+  const firstDevice = useRef(device);
+  const [desktopChosen, setDesktopChosen] = useState(false);
+  useEffect(() => { if (device !== firstDevice.current) { firstDevice.current = "" as Device; setDesktopChosen(device === "desktop"); } }, [device]);
   const sectionRef = useRef<HTMLElement>(null);
   const loadedFrames = useRef(new WeakSet<HTMLIFrameElement>());
   const previewFailed = usePreviewEdits(sectionRef);
@@ -55,7 +59,7 @@ export default function PreviewPanel() {
 
         <div ref={drawing.areaRef} className={cn("relative h-full max-w-full overflow-hidden bg-background")}
           style={{ width: WIDTH[device] }}>
-          <ScaledViewport className="h-full" enabled={device !== "desktop" || window.innerWidth >= 640} virtualWidth={device === "desktop" ? DESKTOP_VIRTUAL_WIDTH : parseInt(WIDTH[device])} what={device === "desktop" ? "desktop" : device === "tablet" ? "tablet" : "phone"}>
+          <ScaledViewport className="h-full" enabled={device !== "desktop" || window.innerWidth >= 640} virtualWidth={device === "desktop" ? DESKTOP_VIRTUAL_WIDTH : parseInt(WIDTH[device])} what={device === "desktop" ? "desktop" : device === "tablet" ? "tablet" : "phone"} fallbackWidth={device === "desktop" ? 768 : undefined} explicit={desktopChosen}>
           {preview.frames.map((f) => (
             <iframe
               key={f.id}

@@ -194,10 +194,23 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   // In-place editing of a coded page: type over text, click pictures to swap.
   const [inlineEdits, setInlineEdits] = useState<InlineEdits>({});
   const framedApi = useRef<FramedEditorController | null>(null);
+  const sheetSelection = useRef<{ scope: string; key: string } | null>(null);
+  useEffect(() => {
+    // Phone: when the editing sheet opens, scroll the selected element into view above it (existing scrollTo query).
+    const on = (event: Event) => {
+      // The frame already ends at the sheet's top edge (the page area shrinks by the sheet height), so the frame's own
+      // scrollTo lands the element above the sheet without a new message field.
+      const sel = sheetSelection.current; void event;
+      if (sel) void framedApi.current?.query("scrollTo", sel.scope, sel.key);
+    };
+    window.addEventListener("nova-manager-sheet", on);
+    return () => window.removeEventListener("nova-manager-sheet", on);
+  }, []);
   const [framedReports, setFramedReports] = useState<InlineReports>({});
   const [resetKey, setResetKey] = useState(0);
   // Embedded pages not in the coded list: what loading their code found, and a counter that re-runs the load.
   const [inlineSel, setInlineSel] = useState<InlineSelection | null>(null);
+  sheetSelection.current = inlineSel ? { scope: inlineSel.scope, key: inlineSel.key } : null;
   const [foldedChunks, setFoldedChunks] = useState<Set<string>>(new Set());
   // Edits on shared objects, keyed by object; saved on the object so every page shows them.
   const [objectEdits, setObjectEdits] = useState<Record<string, InlineEdits>>({});
@@ -1087,7 +1100,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     {page && surface !== "loading" && <EmbeddedBox chat={embedded ? chat : null}>
       <div ref={blockCanvasRef} className={`relative isolate h-full w-full ${heldInFrame && !deviceStyle ? "overflow-hidden" : "overflow-y-auto"} bg-background`} style={deviceStyle}>
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
-        <ScaledViewport virtualWidth={DESKTOP_VIRTUAL_WIDTH} enabled={embedded && heldInFrame && !deviceStyle && window.innerWidth >= 640}>
+        <ScaledViewport virtualWidth={DESKTOP_VIRTUAL_WIDTH} fallbackWidth={768} fill={embedded && heldInFrame && !deviceStyle} enabled={window.innerWidth >= 640}>
         <FramedPageEditor key={objectId ? `object-${objectId}` : `public-${page.id}`} base={draftEmbedUrl()} path={objectId ? objectFramePath(objectId) : page.path} edits={inlineEdits} objectEdits={objectEdits}
           objectScope={objectTarget} scrollToSlot={objectId ? null : returnTo ?? null}
           sectionRevision={sectionRevision} heldBlocks={objectId && !designedObject ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}

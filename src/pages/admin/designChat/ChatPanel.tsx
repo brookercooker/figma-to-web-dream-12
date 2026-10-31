@@ -34,7 +34,6 @@ export default function ChatPanel() {
   const [dragging, setDragging] = useState(false);
   const { hint, setHint } = useHint();
   const textRef = useRef<HTMLTextAreaElement>(null);
-  useEffect(() => { const el = textRef.current; if (el) { el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 150)}px`; } }, [text]);
   const fileRef = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -67,8 +66,17 @@ export default function ChatPanel() {
   // Keep the newest message in view, unless the person has scrolled up to read.
   const onScroll = () => {
     const el = logRef.current;
-    if (el) stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    // A hidden log (phone Preview tab) reports zero height; that is not the person scrolling up.
+    if (el && el.clientHeight > 0) stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
   };
+  // Showing the log again (phone Chat tab) or resizing it keeps the newest message in view.
+  useEffect(() => {
+    const el = logRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => { if (el.clientHeight > 0 && stick.current) el.scrollTop = el.scrollHeight; });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   useLayoutEffect(() => {
     const el = logRef.current;
     if (el && stick.current) el.scrollTop = el.scrollHeight;
@@ -79,7 +87,7 @@ export default function ChatPanel() {
     const el = textRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight + 2, Math.round(window.innerHeight * 0.5))}px`;
+    el.style.height = `${Math.min(el.scrollHeight + 2, 150)}px`;
   }, [text]);
 
   const send = async () => {
@@ -266,7 +274,6 @@ export default function ChatPanel() {
           placeholder="Describe the change you want, for example: add a contact section with an email address and phone number"
           aria-label="Describe a Change"
           rows={2}
-          onInput={(e) => { const el = e.currentTarget; el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 6 * 22 + 18)}px`; }}
           className="min-h-[62px] max-h-[150px] resize-none overflow-y-auto leading-snug"
         />
 

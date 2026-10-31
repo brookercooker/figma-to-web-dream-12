@@ -22,6 +22,21 @@ for (const size of SIZES) {
       expect(sideways).toBe(false);
     });
 
+    test("the preview frame fills the page area in both modes", async ({ page }) => {
+      await page.goto("/manage/preview");
+      const chatFrame = page.locator("iframe[data-site-preview][data-preview-shown=true]").first();
+      await expect(chatFrame).toBeVisible();
+      if (size.name === "phone") expect((await chatFrame.boundingBox())!.height).toBeGreaterThan(500);
+      if (size.name === "phone") await page.getByRole("button", { name: "Chat", exact: true }).click();
+      await page.getByRole("radio", { name: "Manual Edit Mode" }).click();
+      const chooser = page.getByRole("dialog");
+      if (await chooser.count()) await chooser.getByText("Homepage", { exact: true }).click();
+      if (size.name === "phone") await page.getByRole("button", { name: "Page", exact: true }).click();
+      const editFrame = page.locator("[data-scaled-viewport] iframe").last();
+      await expect(editFrame).toBeVisible();
+      if (size.name === "phone") expect((await editFrame.boundingBox())!.height).toBeGreaterThan(500);
+    });
+
     test("Pages shows pages without sideways scroll", async ({ page }) => {
       await page.goto("/manage/pages");
       await expect(page.locator(".manager-static-table tbody tr").first()).toBeVisible();
