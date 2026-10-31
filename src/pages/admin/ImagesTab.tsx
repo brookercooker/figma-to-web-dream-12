@@ -870,7 +870,7 @@ export default function ImagesTab() {
           const gated = (img as any).visibility === "gated";
           const signedThumb = img.web_path ? thumbUrls[img.web_path] : undefined;
           const local = localPreviews[img.id];
-          const candidates = tileSrcCandidates({ gated, thumb: signedThumb, local, webUrl: img.web_url });
+          const candidates = tileSrcCandidates({ gated, thumb: signedThumb, local, webUrl: img.web_url, fallbackUrl: img.fallback_url, originalUrl: img.original_url });
           const thumb = candidates.find((src) => !(failedTileSources[img.id] ?? []).includes(src)) ?? null;
           const broken = brokenIds.has(img.id);
           const isJustAdded = justAddedIds.includes(img.id);

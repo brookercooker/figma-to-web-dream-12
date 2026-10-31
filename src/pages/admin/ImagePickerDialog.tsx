@@ -6,29 +6,33 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/prototype/client";
 import { leafOf, matchesLabelFilter } from "./labelPath";
 import { useLabelsForScope } from "./useAllLabels";
+import { libraryImageCandidates } from "./imageTileSrc";
+import LibraryImageThumbnail from "./LibraryImageThumbnail";
 
 
 
 interface Choice { url: string; alt: string }
-export interface LibraryImage extends Choice { id?: string; name?: string; labels: string[]; createdAt?: string; visibility?: string; webPath?: string; webUrl?: string }
+export interface LibraryImage extends Choice { id?: string; name?: string; labels: string[]; createdAt?: string; visibility?: string; webPath?: string; webUrl?: string; fallbackUrl?: string; originalUrl?: string }
 
 /** The image library as the page editor uses it: `url` is exactly what an image block stores. */
-export async function loadLibraryImages(limit = 120): Promise<LibraryImage[]> {
+export async function loadLibraryImages(limit = 2000): Promise<LibraryImage[]> {
   const { data } = await (supabase as any)
     .from("images")
-    .select("id,filename,web_path,web_url,alt_text,tags,created_at,visibility")
+    .select("id,filename,web_path,web_url,fallback_url,original_url,alt_text,tags,created_at,visibility")
     .is("archived_at", null)
     .limit(limit);
   return (data ?? []).map((row: any) => ({
     id: row.id,
     name: row.filename || row.alt_text || "",
-    url: (supabase as any).storage.from("images-web").getPublicUrl(row.web_path).data.publicUrl,
+    url: libraryImageCandidates(row)[0] ?? "",
     alt: row.alt_text || row.filename || "",
     labels: Array.isArray(row.tags) ? row.tags.filter(Boolean) : [],
     createdAt: row.created_at ?? undefined,
     visibility: row.visibility,
     webPath: row.web_path,
     webUrl: row.web_url,
+    fallbackUrl: row.fallback_url,
+    originalUrl: row.original_url,
   }));
 }
 
@@ -53,6 +57,7 @@ export default function ImagePickerDialog({
   const [q, setQ] = useState("");
   const [url, setUrl] = useState("");
   const [label, setLabel] = useState("");
+  const [usable, setUsable] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!open) return;
@@ -153,12 +158,13 @@ export default function ImagePickerDialog({
         <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-4 flex-1 min-h-0 auto-rows-max content-start overflow-y-auto overscroll-contain pr-2">
           {filtered.map((it) => (
             <button
-              key={it.url}
-              onClick={() => { onPick(it); onOpenChange(false); }}
+              key={it.id ?? it.url}
+              type="button"
+              onClick={() => { onPick({ ...it, url: usable[it.id ?? it.url] ?? it.url }); onOpenChange(false); }}
               className="group rounded-lg overflow-hidden border hover:border-primary transition-colors text-left"
               title={it.labels.length ? `${it.alt} — ${it.labels.join(", ")}` : it.alt}
             >
-              <img src={it.url} alt={it.alt} className="w-full aspect-[4/3] object-cover bg-muted" loading="lazy" />
+              <LibraryImageThumbnail candidates={libraryImageCandidates({ web_url: it.webUrl ?? it.url, fallback_url: it.fallbackUrl, original_url: it.originalUrl })} className="w-full aspect-[4/3] object-cover bg-muted" onSource={url => setUsable(previous => previous[it.id ?? it.url] === url ? previous : { ...previous, [it.id ?? it.url]: url })} />
               {it.labels.length > 0 && (
                 <span className="block truncate px-1.5 py-1 text-[10px] text-muted-foreground">
                   {it.labels.join(" · ")}
