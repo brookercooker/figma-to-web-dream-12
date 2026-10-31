@@ -19,6 +19,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
       await page.getByRole("button", { name: "Back to page", exact: true }).click({ position: { x: 20, y: 60 } });
       await open.click(); await page.keyboard.press("Escape"); await expect(open).toBeVisible();
       await open.click();
+      await page.waitForTimeout(250);
       const handle = await page.locator("[data-chat-handle]").boundingBox();
       if (!handle) throw new Error("Missing sheet handle");
       await page.mouse.move(handle.x + 30, handle.y + 8); await page.mouse.down();

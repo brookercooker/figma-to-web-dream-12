@@ -195,7 +195,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
       </div>
 
       <form
-        className={cn("shrink-0 border-t p-3 flex flex-col gap-2", editing && "[&>*:not(:last-child)]:hidden", dragging && "outline-2 outline-dashed outline-primary -outline-offset-4 bg-muted")}
+        className={cn("border-t p-3 flex flex-col gap-2", editing && "[&>*:not(:last-child)]:hidden", dragging && "outline-2 outline-dashed outline-primary -outline-offset-4 bg-muted")}
         autoComplete="off"
         onSubmit={(e) => { e.preventDefault(); send(); }}
         onDragEnter={(e) => { if (hasFiles(e)) { e.preventDefault(); dragDepth.current++; setDragging(true); } }}

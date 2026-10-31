@@ -309,7 +309,7 @@ body:has(:is([role="dialog"], [role="alertdialog"]):not([data-state="closed"]):n
   .nova-phone-chat-preview { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
   .nova-phone-chat-sheet { bottom: var(--kb-inset, 0px); height: min(85dvh, calc(100dvh - var(--kb-inset, 0px) - 56px)); padding-bottom: env(safe-area-inset-bottom); box-shadow: var(--nova-chat-shadow); }
   .nova-phone-chat-sheet textarea { font-size: 16px; }
-  .nova-phone-chat-sheet form { max-height: 60%; overflow-y: auto; }
+  .nova-phone-chat-sheet form { flex-shrink: 0; max-height: 60%; overflow-y: auto; }
   .nova-phone-chat-sheet[data-open="true"] { animation: nova-chat-rise .2s ease-out; }
   @keyframes nova-chat-rise { from { transform: translateY(100%); } to { transform: translateY(0); } }
 }

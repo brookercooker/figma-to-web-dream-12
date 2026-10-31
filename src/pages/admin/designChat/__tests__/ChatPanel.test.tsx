@@ -81,6 +81,15 @@ function messageBox() {
 }
 
 describe("chat sending shortcuts", () => {
+  it("exposes an asynchronous send error even if the phone sheet was closed", async () => {
+    const onAttention = vi.fn();
+    mocks.post.mockResolvedValue({ ok: false, error: "The request could not be sent" });
+    render(<MemoryRouter><ChatPanel onAttention={onAttention} /></MemoryRouter>);
+    fireEvent.change(screen.getByRole("textbox", { name: "Describe a Change" }), { target: { value: "Update the heading" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send", exact: true }));
+    await waitFor(() => expect(onAttention).toHaveBeenCalledTimes(1));
+    expect(mocks.post).toHaveBeenCalledWith("/send", { message: "Update the heading", uploadIds: [] });
+  });
   it("preserves an unsent draft across phone panel reopenings", () => {
     const view = render(<MemoryRouter><ChatPanel opening={1} /></MemoryRouter>);
     const input = screen.getByRole("textbox", { name: "Describe a Change" });
