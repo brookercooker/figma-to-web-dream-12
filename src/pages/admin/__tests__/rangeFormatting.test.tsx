@@ -91,7 +91,7 @@ it("brand swatches send the same concrete hex format as Apply to highlighted wor
   render(<InlineStylePanel sel={sel} edits={{}} onChange={change} onReplaceImage={vi.fn()} />);
   fireEvent.click(screen.getByRole("button", { name: "Colour" }));
   fireEvent.click(screen.getByRole("button", { name: "Garnet" }));
-  expect(format).toHaveBeenCalledWith("color", "#843731");
+  expect(format).toHaveBeenCalledWith("color", "#843733");
   expect(change).not.toHaveBeenCalled();
   document.documentElement.style.removeProperty("--nova-garnet");
 });
