@@ -198,8 +198,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   useEffect(() => {
     // Phone: when the editing sheet opens, scroll the selected element into view above it (existing scrollTo query).
     const on = (event: Event) => {
-      const sel = sheetSelection.current; const inset = (event as CustomEvent<{ inset: number }>).detail?.inset ?? 0;
-      if (sel) void framedApi.current?.query("scrollTo", sel.scope, sel.key, { bottomInset: Math.round(inset), block: "center" });
+      // The frame already ends at the sheet's top edge (the page area shrinks by the sheet height), so the frame's own
+      // scrollTo lands the element above the sheet without a new message field.
+      const sel = sheetSelection.current; void event;
+      if (sel) void framedApi.current?.query("scrollTo", sel.scope, sel.key);
     };
     window.addEventListener("nova-manager-sheet", on);
     return () => window.removeEventListener("nova-manager-sheet", on);
@@ -208,6 +210,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const [resetKey, setResetKey] = useState(0);
   // Embedded pages not in the coded list: what loading their code found, and a counter that re-runs the load.
   const [inlineSel, setInlineSel] = useState<InlineSelection | null>(null);
+  sheetSelection.current = inlineSel ? { scope: inlineSel.scope, key: inlineSel.key } : null;
   const [foldedChunks, setFoldedChunks] = useState<Set<string>>(new Set());
   // Edits on shared objects, keyed by object; saved on the object so every page shows them.
   const [objectEdits, setObjectEdits] = useState<Record<string, InlineEdits>>({});
