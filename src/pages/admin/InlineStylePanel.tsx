@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { fontMenu, inheritedFont, inheritedWeight } from "./designChat/fontOptions";
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Strikethrough, ImageIcon, RotateCcw, Trash2, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, Film, TextCursorInput, icons } from "lucide-react";
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
+import { selectedImageDelete } from "./selectedImageEdit";
 import { LINK_ICONS, readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
 import { remoteSnapshot, remoteFormatting, selectionComputedStyle, type FormatCommand } from "./remoteSelection";
 import SelectionColourPicker from "./SelectionColourPicker";
@@ -144,7 +145,7 @@ export default function InlineStylePanel({
           <Button variant="outline" size="sm" className="w-full gap-2" onClick={onReplaceImage}>
             <ImageIcon className="w-4 h-4" /> Replace Picture
           </Button>
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-destructive hover:text-destructive" onClick={() => { const next = { ...edits }; if (next[`hidden:${sel.key}`] === "1") delete next[`hidden:${sel.key}`]; else next[`hidden:${sel.key}`] = "1"; onChange(next); }}><Trash2 className="h-4 w-4" />{edits[`hidden:${sel.key}`] === "1" ? "Restore Image" : "Delete Image"}</Button>
+          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-destructive hover:text-destructive" onClick={() => { const next = selectedImageDelete(sel, edits, edits[`hidden:${sel.key}`] === "1"); if (next) onChange(next); }}><Trash2 className="h-4 w-4" />{edits[`hidden:${sel.key}`] === "1" ? "Restore Image" : "Delete Image"}</Button>
           <ToolField label="Fit">
             <ToolSegment className="flex w-full">
               {([["Fill", "cover"], ["Whole picture", "contain"]] as const).map(([l, v]) => (

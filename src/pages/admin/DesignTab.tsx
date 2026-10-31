@@ -24,6 +24,7 @@ import PageBlocks, { BlockView, newId, type Block as RenderBlock, type BlockAlig
 
 import SharedObjectNotice from "./SharedObjectNotice";
 import Header from "@/components/Header";
+import { selectedImageDelete } from "./selectedImageEdit";
 import Footer from "@/components/Footer";
 import { type InsertType } from "./InsertGap";
 import { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineScope, type InlineSelection } from "@/components/InlineEditSurface";
@@ -1091,7 +1092,11 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
           onBlockSelect={(id) => { setActiveId(id); setActiveSection(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setActiveSection(id); setInlineSel(null); }} fill={!deviceStyle}
           onUndo={() => restoreHistory("undo")} onRedo={() => restoreHistory("redo")}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
-          onChange={(scope, next) => changeScope(scope, next, true)} onSelect={setInlineSel}
+          onImageDelete={() => { if (!inlineSel) return; const next = selectedImageDelete(inlineSel, scopeEdits(inlineSel.scope)); if (next) changeScope(inlineSel.scope, next); }}
+          onChange={(scope, next) => changeScope(scope, next, true)} onSelect={selection => {
+            if (!objectId && selection?.scope === "Footer") { setInlineSel(null); askObject({ objectId: objectRows.current.Footer ?? null, componentKey: "Footer", name: "Site Footer", slot: "site-footer", siteWide: true }); }
+            else setInlineSel(selection);
+          }}
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
           onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} onNavigate={objectId ? undefined : onNavigate}
           onObjectClick={objectId ? undefined : askObject} objectSwaps={swaps} />

@@ -40,6 +40,7 @@ export interface FramedPageEditorProps {
   objectSwaps?: Record<string, string>;
   onUndo?: () => void;
   onRedo?: () => void;
+  onImageDelete?: () => void;
   /** True while this frame draws the held blocks itself, so the caller hides its local list. */
   onHeldInFrame?: (inFrame: boolean) => void;
   /** Fill the editing area (one scroll inside the frame) when the frame draws held sections. */
@@ -209,6 +210,8 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         latest.current.onUndo?.();
       } else if (data.type === "edit-redo") {
         latest.current.onRedo?.();
+      } else if (data.type === "edit-key" && (data.key === "Delete" || data.key === "Backspace") && selectedSnapshot.current?.kind === "image") {
+        latest.current.onImageDelete?.();
       } else if (latest.current.objectScope && (data.type === "edit-object-click" || data.type === "edit-navigate")) {
         return; // Not meaningful while one object is open on its own.
       } else if (data.type === "edit-object-click") {
