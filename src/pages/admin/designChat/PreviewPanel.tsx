@@ -22,6 +22,13 @@ export default function PreviewPanel() {
   const [updated, setUpdated] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const previewFailed = usePreviewEdits(sectionRef);
+  const frameAddresses = preview.frames.map(f => `${f.id}:${f.url}`).join("|");
+  useEffect(() => {
+    // The Chat frame stays mounted while editing; refresh it even when returning causes no load event.
+    for (const frame of sectionRef.current?.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview]") ?? []) {
+      previewContentLoaded(frame, "mode-or-page-change");
+    }
+  }, [editing, location.pathname, preview.shownId, frameAddresses]);
   usePreviewScroll(sectionRef, editing, preview.shownId);
   useEffect(() => {
     if (!preview.completedAt) return;

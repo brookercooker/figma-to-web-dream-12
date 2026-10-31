@@ -7,8 +7,8 @@ import type { InlineEdits } from "@/lib/inlineEditCore";
 import { loadPreviewContent, type PreviewContent } from "./previewContent";
 export const PREVIEW_CONTENT_RETRY = "nova:preview-content-retry";
 const PREVIEW_LOADED = "nova:preview-content-loaded";
-export function previewContentLoaded(frame: HTMLIFrameElement) {
-  window.dispatchEvent(new CustomEvent(PREVIEW_LOADED, { detail: frame }));
+export function previewContentLoaded(frame: HTMLIFrameElement, reason = "iframe-load") {
+  window.dispatchEvent(new CustomEvent(PREVIEW_LOADED, { detail: { frame, reason } }));
 }
 
 export interface PreviewTarget { win: Window; origin: string; path: string }
@@ -57,7 +57,7 @@ export function usePreviewEdits(root: RefObject<HTMLElement>, load = loadPreview
     let seq = 0;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const send = async () => {
+    const send = async (reason: string) => {
       const t = target; if (!t) return;
       const id = ++seq;
       clearTimeout(timer);
@@ -68,27 +68,28 @@ export function usePreviewEdits(root: RefObject<HTMLElement>, load = loadPreview
         const current = [...(root.current?.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview]") ?? [])].find(f => f.contentWindow === t.win && new URL(f.src).origin === t.origin);
         if (!current) return;
         t.win.postMessage({ source: "nova-manager", type: "preview-content", ...content }, t.origin);
+        console.debug('[preview] sent snapshot', content.pages.length, content.objects.length, reason);
         setFailed(false);
         // Older frames retain the existing inline-only bridge as a compatibility message.
         try { const payload = await load(t.path); if (!cancelled && id === seq && target === t) postPreviewEdits(t, payload); } catch { /* Full saved content already arrived. */ }
       } catch {
         if (cancelled || id !== seq) return;
-        setFailed(true); timer = setTimeout(() => void send(), 20_000);
+        setFailed(true); timer = setTimeout(() => void send("retry"), 20_000);
       }
     };
     const onMessage = (event: MessageEvent) => {
       const sender = previewSender(event, root.current);
-      if (sender) { target = sender; void send(); }
+      if (sender) { target = sender; void send("preview-ready"); }
     };
-    const onSaved = () => { if (target) void send(); };
+    const onSaved = (event: Event) => { if (target) void send(event.type === CONTENT_SAVED ? "content-saved" : "retry"); };
     const onLoaded = (event: Event) => {
-      const frame = (event as CustomEvent<HTMLIFrameElement>).detail;
+      const { frame, reason } = (event as CustomEvent<{ frame: HTMLIFrameElement; reason: string }>).detail ?? {};
       if (!(frame instanceof HTMLIFrameElement) || !root.current?.contains(frame) || !frame.matches("iframe[data-site-preview]") || !frame.contentWindow) return;
       try {
         const url = new URL(frame.src);
         if (url.protocol !== "https:" || url.origin === window.location.origin || url.searchParams.has("nova-edit")) return;
         target = { win: frame.contentWindow, origin: url.origin, path: url.pathname };
-        void send();
+        void send(reason);
       } catch { /* Invalid targets never receive data. */ }
     };
     window.addEventListener("message", onMessage);

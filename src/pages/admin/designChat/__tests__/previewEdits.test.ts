@@ -27,6 +27,24 @@ const flush = () => act(async () => { await Promise.resolve(); await Promise.res
 afterEach(() => { document.body.innerHTML = ""; });
 
 describe("Chat Mode preview edits", () => {
+  it("replies to every ready, reload and mode/page refresh with the saved Spotlight snapshot and reason", async () => {
+    const { win, ref, frame } = setup();
+    const objectId = "dfff040f-a387-494d-af9d-cc10e3955b8e";
+    const full = { pages: [{ path: "/draft", content: [{ id: "44b108d1-5266-4d39-b37c-ff4c7319c9b0", type: "object", objectId }], inline_edits: {} }], objects: [{ id: objectId, name: "Example Fixture Spotlight", component_key: "ExampleFixtureSpotlight", content: [], inline_edits: {}, site_wide: false }] };
+    const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
+    const read = vi.fn().mockResolvedValue(full);
+    renderHook(() => usePreviewEdits(ref as any, vi.fn().mockResolvedValue(payload), read));
+    for (let i = 0; i < 3; i++) { window.dispatchEvent(ready(win)); await flush(); }
+    previewContentLoaded(frame); await flush();
+    previewContentLoaded(frame, "mode-or-page-change"); await flush();
+    previewContentLoaded(frame, "mode-or-page-change"); await flush();
+    const snapshots = (win.postMessage as any).mock.calls.filter(([m]: any[]) => m.type === "preview-content");
+    expect(snapshots).toHaveLength(6);
+    for (const call of snapshots) expect(call).toEqual([{ source: "nova-manager", type: "preview-content", ...full }, ORIGIN]);
+    expect(read).toHaveBeenCalledTimes(6);
+    expect(debug.mock.calls).toEqual(["preview-ready", "preview-ready", "preview-ready", "iframe-load", "mode-or-page-change", "mode-or-page-change"].map(reason => ["[preview] sent snapshot", 1, 1, reason]));
+    debug.mockRestore();
+  });
   it("sends saved content for /draft on load without any preview-ready message and resends after save", async () => {
     const { win, ref, frame } = setup();
     const full = { pages: [{ path: "/draft", content: [{ id: "spotlight", type: "object", objectId: "fixture" }], inline_edits: {} }], objects: [{ id: "fixture", name: "Example Fixture Spotlight", component_key: null, content: [], inline_edits: {}, site_wide: false }] };
