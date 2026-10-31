@@ -4,9 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDesignChat } from "./DesignChatContext";
+import { useState } from "react";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /** Relay publish.open is authoritative; chat messages are not a pending-change ledger. */
-export default function HeaderActions({ onExpand }: { onExpand?: () => void }) {
+export default function HeaderActions({ onExpand, menuItems = false }: { onExpand?: () => void; menuItems?: boolean }) {
+  const [helpOpen, setHelpOpen] = useState(false);
   const { state, editing, previewLocation, workingPage, reviewOpen, setReviewOpen } = useDesignChat();
   const count = state?.publish?.open ?? 0;
   const copySummary = async () => {
@@ -17,6 +21,11 @@ export default function HeaderActions({ onExpand }: { onExpand?: () => void }) {
       toast.success("Problem summary copied. Share it with the site owner.");
     } catch { toast.error("The summary couldn't be copied. Try again."); }
   };
+  if (menuItems) return <>
+    <DropdownMenuItem disabled={editing} onClick={() => { onExpand?.(); setReviewOpen(!reviewOpen); }}><ClipboardList className="mr-2 h-4 w-4" />Review Status{count > 0 && <span className="ml-auto rounded-full bg-review px-1.5 text-xs text-review-foreground">{count}</span>}</DropdownMenuItem>
+    <DropdownMenuItem onSelect={e => { e.preventDefault(); setHelpOpen(true); }}><CircleHelp className="mr-2 h-4 w-4" />Help</DropdownMenuItem>
+    <Dialog open={helpOpen} onOpenChange={setHelpOpen}><DialogContent><DialogHeader><DialogTitle>Help</DialogTitle></DialogHeader><p className="text-sm">Describe a change in chat, or choose Edit to change the page by hand. Save Changes saves your edits. Review Status lists changes waiting for review.</p><Button variant="outline" onClick={() => void copySummary()}><Copy className="h-4 w-4" />Copy Problem Summary</Button></DialogContent></Dialog>
+  </>;
   return <TooltipProvider delayDuration={200}>
     <div className="flex max-w-full shrink-0 flex-wrap items-center justify-center gap-1">
       <Tooltip><TooltipTrigger asChild>

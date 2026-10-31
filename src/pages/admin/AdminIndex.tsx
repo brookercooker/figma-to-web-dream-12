@@ -35,6 +35,8 @@ import { useManagerLayout, useKeyboardInset, clampPanelWidth, PANEL_WIDTH_KEY } 
 import { DropdownMenu as MoreMenu, DropdownMenuContent as MoreMenuContent, DropdownMenuItem as MoreMenuItem, DropdownMenuTrigger as MoreMenuTrigger, DropdownMenuSeparator as MoreMenuSeparator, DropdownMenuLabel as MoreMenuLabel } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Maximize2, Monitor, Smartphone, Tablet, ExternalLink, MessageSquare, ListTree, LayoutTemplate } from "lucide-react";
 import type { Device } from "./designChat/DesignChatContext";
+import { usePhoneChat } from "./designChat/phoneChat";
+import { PhoneChatButton, PhoneChatHeader } from "./designChat/PhoneChatChrome";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -93,7 +95,7 @@ function AdminShell() {
     previousMode.current = mode;
     setAnnouncement(manual ? "Manual Edit Mode. You are editing by hand." : "Chat Mode. Claude makes the changes.");
     if (manual) editingHeaderRef.current?.focus();
-    else requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Describe a Change"]')?.focus());
+    else if (window.innerWidth >= 640) requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Describe a Change"]')?.focus());
   }, [mode, manual]);
   const { setSlot, saveAll, discardAll, hasChanges, requestAdd, historyControls } = useEditorSlot();
   // Saves the editor's held changes, then leaves edit mode; on a failed save it stays in edit mode.
@@ -193,6 +195,19 @@ function AdminShell() {
   const layout = useManagerLayout();
   const phone = layout.phone;
   useKeyboardInset();
+  const phoneChat = usePhoneChat(phone, manual, designChat.state, designChat.preview?.completedAt);
+  const openPhoneChat = () => { setChatCollapsed(false); phoneChat.show(); };
+  const drawFromPhoneChat = () => {
+    phoneChat.close();
+    // Let the keyboard close before measuring the drawing canvas.
+    window.setTimeout(() => designChat.drawing.start(), 250);
+  };
+  useEffect(() => {
+    if (!phone) return;
+    const done = () => openPhoneChat();
+    window.addEventListener("nova-phone-drawing-done", done);
+    return () => window.removeEventListener("nova-phone-drawing-done", done);
+  }, [phone]);
   // Phone shows one pane at a time: "main" (Preview / Page / the open tool) or "side" (Chat / Sections).
   const [phonePane, setPhonePane] = useState<"main" | "side">("main");
   // Phone Manual Edit: the editing menu is a bottom sheet over the page (0 = only its handle, 45% default, 92% tall).
@@ -218,7 +233,7 @@ function AdminShell() {
   const [panelWidth, setPanelWidth] = useState<number>(() => { try { return Number(localStorage.getItem(PANEL_WIDTH_KEY)) || 320; } catch { return 320; } });
   const resizing = useRef<{ x: number; w: number } | null>(null);
   const sidePanelWidth = layout.tier === "wide" ? undefined : clampPanelWidth(panelWidth, layout.tier);
-  const reviewShown = designChat.reviewOpen && !manual && !chatCollapsed;
+  const reviewShown = designChat.reviewOpen && !manual && (phone || !chatCollapsed);
   useEffect(() => {
     try { localStorage.setItem("siteManager:chatCollapsed", String(chatCollapsed)); } catch { /* no storage: ignore */ }
   }, [chatCollapsed]);
@@ -295,7 +310,7 @@ function AdminShell() {
       <div className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</div>
       <div data-manager-tier={layout.tier} className={cn("flex overflow-hidden bg-background", phone ? "flex-col" : "h-screen flex-row")} style={phone ? { height: "calc(100dvh - var(--kb-inset, 0px))" } : undefined}>
         {/* Right: the top bar and whichever tab is open. */}
-        <div data-picker-area className={cn("flex min-h-0 min-w-0 flex-1 flex-col", phone && phonePane === "side" && "flex-none")}>
+        <div data-picker-area className={cn("flex min-h-0 min-w-0 flex-1 flex-col", phone && manual && phonePane === "side" && "flex-none")}>
           <header data-top-bar className={cn("z-30 w-full shrink-0 border-b bg-background", HEADER_HEIGHT_CLASS)}>
             <div ref={rowRef} className="flex h-full w-full items-center gap-1 px-2 sm:gap-3 sm:px-4">
               <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager Sections">
@@ -333,25 +348,26 @@ function AdminShell() {
                 })}
               </nav>
 
+              {phone && <ModeToggle compact onChat={() => { setPhonePane("main"); }} />}
               {phone ? <PreviewTools showViewControls={tab === "preview"} navOnly /> : <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />}
 
               <div aria-hidden className={cn("h-9 w-px bg-border shrink-0", compact && "hidden")} />
-              {!manual && !editing && <SubmitButton compact={compact} />}
+              {!phone && !manual && !editing && <SubmitButton compact={compact} />}
               {manual && (
                 <Button type="button" size="sm" data-save-changes variant={dirty ? "default" : "outline"} className="shrink-0 gap-1.5" aria-label="Save Changes" title="Save Changes" disabled={finishing || !dirty} onClick={() => void saveChanges()}>
                   <Save className="h-4 w-4" aria-hidden />{finishing ? "Saving…" : layout.labels && !compact ? "Save Changes" : "Save"}
                 </Button>
               )}
-              {phone && <PhoneMoreMenu showView={tab === "preview"} />}
+              {phone && <PhoneMoreMenu showView={tab === "preview"} isAdmin={isAdmin} onPassword={() => setPwOpen(true)} onReview={openPhoneChat} />}
             </div>
           </header>
 
           <ChangeMyPasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
 
-          <div className={cn("relative min-h-0 flex-1", phone && phonePane === "side" && "hidden")}>
+          <div className={cn("relative min-h-0 flex-1", phone && manual && phonePane === "side" && "hidden")}>
           <main className={cn("relative h-full overflow-y-auto", tab !== "preview" && phone && "overflow-x-hidden")} style={phone && manual && tab === "preview" && phonePane === "main" ? { paddingBottom: sheet === "peek" ? 52 : sheet === "half" ? "45dvh" : "92dvh" } : undefined}>
             {previewOpened && (
-              <div className={tab === "preview" && !editing ? "h-full" : "hidden"}>
+              <div className={cn(tab === "preview" && !editing ? "h-full" : "hidden", phone && !manual && "nova-phone-chat-preview")}>
                 <Suspense fallback={null}>
                   <PreviewTab />
                 </Suspense>
@@ -383,6 +399,8 @@ function AdminShell() {
           </div>
         </div>
 
+        {phone && !manual && phoneChat.open && <Button type="button" variant="ghost" aria-label="Back to page" className="fixed inset-0 z-40 h-auto w-full rounded-none bg-foreground/30 hover:bg-foreground/30" onClick={phoneChat.close} />}
+
         {/* Left: the chat column, on every tab, with its own header (account and collapse).
             Collapsed, it shrinks to a thin rail with an expand button; the chat stays mounted (hidden) so typed text and attachments survive. */}
         <aside
@@ -390,7 +408,7 @@ function AdminShell() {
           className={cn(
             "flex shrink-0 flex-col",
             phone
-              ? phonePane === "side" ? "min-h-0 flex-1" : manual && tab === "preview" ? "fixed inset-x-0 z-40 rounded-t-xl border-t bg-background shadow-[0_-8px_24px_-12px_hsl(var(--foreground)/0.25)] transition-[height] duration-200 motion-reduce:transition-none" : "hidden"
+              ? !manual ? cn("nova-phone-chat-sheet fixed inset-x-0 z-50 min-h-0 rounded-t-xl border-t bg-background", !phoneChat.open && "hidden") : phonePane === "side" ? "min-h-0 flex-1" : manual && tab === "preview" ? "fixed inset-x-0 z-40 rounded-t-xl border-t bg-background shadow-[0_-8px_24px_-12px_hsl(var(--foreground)/0.25)] transition-[height] duration-200 motion-reduce:transition-none" : "hidden"
               : "relative order-first h-screen border-r transition-[width] duration-200",
             !phone && (chatCollapsed && !manual ? "w-12" : sidePanelWidth ? "" : "w-[clamp(320px,26vw,400px)]"),
           )}
@@ -398,7 +416,9 @@ function AdminShell() {
             ? { bottom: "calc(56px + env(safe-area-inset-bottom))", height: sheet === "peek" ? 52 : sheet === "half" ? "45dvh" : "calc(92dvh - 56px)" }
             : !phone && !(chatCollapsed && !manual) && sidePanelWidth ? { width: sidePanelWidth } : undefined}
           aria-label={manual ? "Manual Mode" : "Chat"}
+          data-open={phoneChat.open}
         >
+          {phone && !manual && <PhoneChatHeader onClose={phoneChat.close} review={reviewShown} onChat={() => designChat.setReviewOpen(false)} />}
           {phone && phonePane === "main" && manual && tab === "preview" && (
             <button type="button" aria-label={sheet === "peek" ? "Show Editing Menu" : sheet === "half" ? "Expand Editing Menu" : "Shrink Editing Menu"}
               className="flex h-6 w-full shrink-0 touch-none items-center justify-center"
@@ -422,7 +442,7 @@ function AdminShell() {
               onPointerMove={e => { const r = resizing.current; if (r) setPanelWidth(clampPanelWidth(r.w + e.clientX - r.x, layout.tier)); }}
               onPointerUp={() => { if (!resizing.current) return; resizing.current = null; setPanelWidth(w => { const c = clampPanelWidth(w, layout.tier); try { localStorage.setItem(PANEL_WIDTH_KEY, String(c)); } catch { /* ignore */ } return c; }); }} />
           )}
-          <div data-chat-header className={cn("flex shrink-0", HEADER_HEIGHT_CLASS, " items-center gap-2 border-b bg-background px-3", chatCollapsed && !manual && "h-auto flex-col flex-nowrap px-1.5 py-2", phone && phonePane === "main" && "hidden")}>
+          <div data-chat-header className={cn("flex shrink-0", HEADER_HEIGHT_CLASS, " items-center gap-2 border-b bg-background px-3", chatCollapsed && !manual && "h-auto flex-col flex-nowrap px-1.5 py-2", phone && (!manual || phonePane === "main") && "hidden")}>
             {chatCollapsed && !manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Expand Chat" title="Expand Chat" aria-expanded={false} onClick={() => setChatCollapsed(false)}><PanelLeftOpen className="h-4 w-4" /></Button>}
               <DropdownMenu onOpenChange={open => { if (open) setChatCollapsed(false); }}>
                 <DropdownMenuTrigger asChild>
@@ -478,7 +498,7 @@ function AdminShell() {
             </Button>}
           </div>
           {phone && phonePane === "main" && manual && tab === "preview" && sheet === "peek" && <p className="px-3 pb-2 text-xs text-muted-foreground">Tap something on the page to edit it.</p>}
-          {!reviewShown && !(phone && phonePane === "main") && <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />}
+          {!phone && !reviewShown && <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />}
           <ContentSyncNote />
           {reviewShown && <ReviewChangesView onShowPreview={() => { if (tab !== "preview") navigate("/manage/preview"); }} />}
           {manual && workingPage && (
@@ -496,10 +516,11 @@ function AdminShell() {
             </div>
           )}
           <div hidden={manual || (chatCollapsed && !phone) || reviewShown} className={cn("min-h-0 flex-1", (manual || (chatCollapsed && !phone) || reviewShown) && "hidden")} aria-hidden={manual || (chatCollapsed && !phone) || reviewShown}>
-            <ChatPanel />
+            <ChatPanel opening={phone && phoneChat.open && !reviewShown ? phoneChat.opening : 0} onDraw={phone ? drawFromPhoneChat : undefined} />
           </div>
         </aside>
-        {phone && (
+        {phone && !manual && !phoneChat.open && !designChat.drawing?.on && <PhoneChatButton working={phoneChat.working} unread={phoneChat.unread} onOpen={openPhoneChat} />}
+        {phone && manual && (
           <nav aria-label="Panes" className="grid shrink-0 grid-cols-2 border-t bg-background pb-[env(safe-area-inset-bottom)]" style={{ height: "calc(56px + env(safe-area-inset-bottom))" }}>
             {([
               ["main", manual && tab === "preview" ? "Page" : tab === "preview" ? "Preview" : TABS.find(t => t.key === tab)?.label ?? (tab === "pages" ? "Pages" : "Page"), tab === "preview" ? LayoutTemplate : (TABS.find(t => t.key === tab)?.Icon ?? FileText)],
@@ -526,14 +547,26 @@ function AdminShell() {
 }
 
 /** Phone toolbar overflow: preview size, full screen and the published site. */
-function PhoneMoreMenu({ showView }: { showView: boolean }) {
-  const { device, setDevice, toggleFull, state } = useDesignChat();
+function PhoneMoreMenu({ showView, isAdmin, onPassword, onReview }: { showView: boolean; isAdmin: boolean; onPassword: () => void; onReview: () => void }) {
+  const { device, setDevice, toggleFull, state, editing } = useDesignChat();
+  const navigate = useNavigate();
+  const count = state?.publish?.open ?? 0;
   return (
     <MoreMenu>
       <MoreMenuTrigger asChild>
-        <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label="More Options" title="More Options"><MoreHorizontal className="h-4 w-4" /></Button>
+        <Button type="button" variant="ghost" size="icon" className="relative h-9 w-9 shrink-0" aria-label={`More Options${count ? `: ${count} Waiting` : ""}`} title="More Options"><MoreHorizontal className="h-4 w-4" />{count > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-review px-1 text-[10px] text-review-foreground">{count > 99 ? "99+" : count}</span>}</Button>
       </MoreMenuTrigger>
       <MoreMenuContent align="end">
+        <MoreMenuLabel>Account</MoreMenuLabel>
+        {isAdmin && <><MoreMenuItem onClick={() => navigate("/admin/users")}><Shield className="mr-2 h-4 w-4" />User Management</MoreMenuItem><MoreMenuItem onClick={() => navigate("/manage/developer")}><Code className="mr-2 h-4 w-4" />Developer Review</MoreMenuItem></>}
+        <MoreMenuItem onClick={onPassword}><KeyRound className="mr-2 h-4 w-4" />Change Password</MoreMenuItem>
+        <MoreMenuItem onClick={() => supabase.auth.signOut()}><LogOut className="mr-2 h-4 w-4" />Sign Out</MoreMenuItem>
+        <MoreMenuSeparator /><MoreMenuLabel>Tools</MoreMenuLabel>
+        <MoreMenuItem onClick={() => navigate("/manage/pages")}><FileText className="mr-2 h-4 w-4" />Pages</MoreMenuItem>
+        <MoreMenuItem onClick={() => navigate("/manage/capture")}><Camera className="mr-2 h-4 w-4" />Capture</MoreMenuItem>
+        <HeaderActions menuItems onExpand={onReview} />
+        {!editing && <div className="px-2 py-1"><SubmitButton /></div>}
+        <MoreMenuSeparator />
         {showView && (
           <>
             <MoreMenuLabel>Preview Size</MoreMenuLabel>
