@@ -164,7 +164,6 @@ export default function InlineStylePanel({
 
   if (sel.kind === "input") {
     const pKey = `placeholder:${sel.key}`;
-    const label = (remoteSnapshot(sel.el)?.attrs?.label ?? "").trim();
     const original = remoteSnapshot(sel.el)?.attrs?.placeholder ?? sel.el.getAttribute("placeholder") ?? "";
     const value = edits[pKey] ?? original;
     const setPlaceholder = (v: string) => {
