@@ -35,8 +35,8 @@ export default function HeaderActions({ onExpand }: { onExpand?: () => void }) {
           <h2 className="font-sans text-sm font-semibold">Help</h2>
           <ul className="list-disc space-y-2 pl-4 text-sm">
             <li>In Chat Mode, describe what you want changed. In Manual Edit Mode, change text, pictures and links yourself.</li>
-            <li>To add a section, open Manual Edit Mode and choose an Object, Image or Video under Add to This Page.</li>
-            <li>Discard Changes restores the page to how it was when you opened the editor.</li>
+            <li>In Manual Edit Mode, open Objects in the top bar, pick objects, then choose Add N Objects. Pictures and videos are also in the top bar.</li>
+            <li>Discard Changes means undo everything since you last saved.</li>
             <li>Save Changes (top right) saves your hand edits and returns to Chat Mode. The Review Status button lists the changes waiting for review.</li>
             <li>If something looks wrong, pause and share a problem summary with the site owner before submitting.</li>
           </ul>

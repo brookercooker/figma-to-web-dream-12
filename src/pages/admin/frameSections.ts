@@ -20,9 +20,10 @@ export function parseFrameSections(value: unknown): FrameSection[] | null {
     keys.add(row.key);
     // Object names may arrive with shared-object or brand metadata prepended.
     // Keep that metadata out of the label; the list already renders a Shared tag.
+    const plainName = row.name.replace(/^[\s⠇⠿⋮☰]+/, "");
     const name = row.kind === "object" || row.objectId
-      ? row.name.replace(/^(?:.*?\s·\s)?Shared object(?:: | · )/i, "")
-      : row.name;
+      ? plainName.replace(/^(?:.*?\s·\s)?Shared object(?:: | · )/i, "")
+      : plainName;
     out.push({ key: row.key, name, kind: row.kind, ...(row.objectId ? { objectId: row.objectId } : {}),
       collapsed: row.collapsed, movable: row.kind !== "site" && row.movable, deletable: row.kind !== "site" && row.deletable });
   }

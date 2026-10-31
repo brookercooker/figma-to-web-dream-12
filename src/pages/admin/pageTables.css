@@ -1,0 +1,20 @@
+.manager-page-table-area { container-type: inline-size; container-name: page-table; }
+.manager-page-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.manager-page-table th, .manager-page-table td { min-width: 0; }
+.manager-page-table th:first-child, .manager-page-table td:first-child { width: 32px; }
+.manager-page-table th:nth-child(2), .manager-page-table td:nth-child(2) { width: 116px; }
+.manager-page-table th:nth-child(4), .manager-page-table td:nth-child(4) { width: 96px; }
+.manager-page-table th:nth-last-child(-n+3), .manager-page-table td:nth-last-child(-n+3) { width: 40px; position: sticky; background: hsl(var(--background)); z-index: 1; }
+.manager-page-table th:last-child, .manager-page-table td:last-child { right: 0; }
+.manager-page-table th:nth-last-child(2), .manager-page-table td:nth-last-child(2) { right: 40px; }
+.manager-page-table th:nth-last-child(3), .manager-page-table td:nth-last-child(3) { right: 80px; }
+.manager-page-table td:nth-child(3) button { white-space: normal; overflow-wrap: anywhere; }
+@container page-table (max-width: 1100px) {
+  .manager-static-table :is(th,td):nth-child(5), .manager-static-table :is(th,td):nth-child(6), .manager-static-table :is(th,td):nth-child(7),
+  .manager-landing-table :is(th,td):nth-child(6), .manager-landing-table :is(th,td):nth-child(7), .manager-landing-table :is(th,td):nth-child(8) { display: none; }
+  .manager-landing-table :is(th,td):nth-child(5) { width: 120px; }
+}
+@container page-table (max-width: 700px) {
+  .manager-page-table :is(th,td):nth-child(2), .manager-landing-table :is(th,td):nth-child(5) { display: none; }
+  .manager-page-table :is(th,td) { padding-left: 4px; padding-right: 4px; }
+}

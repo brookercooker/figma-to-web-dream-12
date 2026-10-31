@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { formatBytes } from "@/lib/imageOptimize";
 import { uploadImageFile } from "./captureUpload";
 import { tileSrcCandidates } from "./imageTileSrc";
+import { libraryImageCandidates } from "./imageTileSrc";
+import LibraryImageThumbnail from "./LibraryImageThumbnail";
 import TagsPanel from "./TagsPanel";
 import { Trash2, Search, Archive, ArchiveRestore, AlertTriangle, RefreshCw, Download, Globe, Lock } from "lucide-react";
 import { GATED_BUCKET, clearAssetUrlCache } from "@/lib/assetUrl";
@@ -30,7 +32,6 @@ import InUseWarning from "./InUseWarning";
 import UsedOnChip, { UsedOnList } from "./UsedOnChip";
 import type { AssetUsage } from "./assetUsages";
 import { toAbsoluteUrl } from "@/lib/absoluteUrl";
-import { SmartImage } from "@/components/SmartImage";
 
 function formatDims(w?: number | null, h?: number | null) {
   return w && h ? `${w} × ${h}` : "—";
@@ -870,7 +871,7 @@ export default function ImagesTab() {
           const gated = (img as any).visibility === "gated";
           const signedThumb = img.web_path ? thumbUrls[img.web_path] : undefined;
           const local = localPreviews[img.id];
-          const candidates = tileSrcCandidates({ gated, thumb: signedThumb, local, webUrl: img.web_url });
+          const candidates = tileSrcCandidates({ gated, thumb: signedThumb, local, webUrl: img.web_url, fallbackUrl: img.fallback_url, originalUrl: img.original_url });
           const thumb = candidates.find((src) => !(failedTileSources[img.id] ?? []).includes(src)) ?? null;
           const broken = brokenIds.has(img.id);
           const isJustAdded = justAddedIds.includes(img.id);
@@ -935,19 +936,6 @@ export default function ImagesTab() {
               </div>
               {(() => {
                 const kind = assetKind(img.filename || img.web_url);
-                if (broken && kind === "image") {
-                  return (
-                    <div
-                      onClick={() => setDetail(img)}
-                      className="w-full aspect-square flex flex-col items-center justify-center bg-destructive/10 text-destructive text-[10px] text-center p-2 cursor-pointer gap-1"
-                      title="Image failed to load"
-                    >
-                      <AlertTriangle className="w-6 h-6" />
-                      <div className="font-medium">Broken Asset</div>
-                      <div className="opacity-70">image failed to load</div>
-                    </div>
-                  );
-                }
                 if (kind === "video") {
                   return (
                     <video
@@ -958,12 +946,11 @@ export default function ImagesTab() {
                     />
                   );
                 }
-                if (thumb === null) {
-                  return <div onClick={() => setDetail(img)} className="w-full aspect-square animate-pulse bg-muted cursor-pointer" />;
-                }
+                if (thumb === null) return <div onClick={() => setDetail(img)} className="w-full aspect-square cursor-pointer"><LibraryImageThumbnail candidates={[]} className="h-full w-full" /></div>;
                 return (
-                  <img key={thumb} src={thumb} alt={img.alt_text || img.filename}
+                  <img key={thumb} src={thumb} alt=""
                     onClick={() => setDetail(img)}
+                    onLoad={() => { if (broken) setBrokenIds(previous => { const next = new Set(previous); next.delete(img.id); return next; }); }}
                     onError={() => {
                       const failed = [...(failedTileSources[img.id] ?? []), thumb];
                       setFailedTileSources((current) => ({ ...current, [img.id]: failed }));
@@ -1085,22 +1072,10 @@ function ImageDetail({ img, tags, allTags, broken, onBroken, usages, onAddTag, o
   return (
     <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] gap-6 overflow-y-auto px-6 py-5">
       <div className="space-y-3 min-w-0">
-      {broken && kind === "image" ? (
-        <div className="mx-auto flex flex-col items-center justify-center gap-2 border border-destructive/60 bg-destructive/10 text-destructive rounded p-6 text-sm">
-          <AlertTriangle className="w-8 h-8" />
-          <div className="font-medium">⚠ Broken asset — image failed to load</div>
-          <div className="text-xs opacity-80 break-all text-center">{img.web_url}</div>
-        </div>
-      ) : kind === "video" ? (
+      {kind === "video" ? (
         <video src={img.web_url} controls className="w-full max-h-[70vh] rounded" preload="metadata" />
       ) : (
-        <SmartImage
-          src={img.web_url}
-          fallbackSrc={img.fallback_url}
-          alt={img.alt_text || img.filename}
-          className="w-full max-h-[70vh] object-contain rounded bg-muted/30"
-          onError={onBroken}
-        />
+        <LibraryImageThumbnail candidates={libraryImageCandidates(img)} className="w-full min-h-32 max-h-[70vh] object-contain rounded-lg bg-muted/30" />
       )}
       <div className="text-xs text-muted-foreground break-all">
         ID: <span className="font-mono">{img.slug_id}</span> · {formatDims(img.width, img.height)} · {formatSavings(img.original_bytes, img.web_bytes)}

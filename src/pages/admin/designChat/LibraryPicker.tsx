@@ -17,6 +17,7 @@ import { GATED_BUCKET } from "@/lib/assetUrl";
 import { useImageThumbnails } from "../useAdminData";
 import { tileSrcCandidates } from "../imageTileSrc";
 import ObjectThumbnail from "../ObjectThumbnail";
+import LibraryImageThumbnail from "../LibraryImageThumbnail";
 
 export type LibraryKind = "images" | "videos" | "objects";
 const PAGE = 60;
@@ -24,16 +25,7 @@ const NOUN = { images: "images", videos: "videos", objects: "objects" } as const
 const FULL = { images: "Images", videos: "Videos", objects: "Objects" } as const;
 const TITLE = { images: "Pick an Image", videos: "Pick a Video", objects: "Pick an Object" } as const;
 
-type Row = { ref: ChatReference; search: (term: string) => boolean; labels: string[]; note?: string; createdAt?: string; visibility?: string; webPath?: string; webUrl?: string };
-
-/** Thumbnail-only state: never modifies the reference returned by the picker. */
-function ImageThumbnail({ candidates }: { candidates: string[] }) {
-  const [failedSources, setFailedSources] = useState<Set<string>>(new Set());
-  const src = candidates.find((candidate) => !failedSources.has(candidate));
-  if (!candidates.length) return <span className="absolute inset-0 block h-full w-full animate-pulse bg-muted" />;
-  if (!src) return <span className="absolute inset-0 grid h-full w-full place-items-center px-2 text-center text-xs text-muted-foreground">Preview Unavailable</span>;
-  return <img key={src} src={src} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-contain object-center" onError={() => setFailedSources((s) => new Set([...s, src]))} />;
-}
+type Row = { ref: ChatReference; search: (term: string) => boolean; labels: string[]; note?: string; createdAt?: string; visibility?: string; webPath?: string; webUrl?: string; fallbackUrl?: string; originalUrl?: string };
 
 const byName = (a: Row, b: Row) => a.ref.name.localeCompare(b.ref.name);
 const time = (r: Row) => { const t = r.createdAt ? Date.parse(r.createdAt) : NaN; return Number.isNaN(t) ? null : t; };
@@ -60,7 +52,7 @@ async function loadRows(kind: LibraryKind): Promise<Row[]> {
     return (await loadLibraryImages(2000)).map((i, n) => ({
       ref: { kind: "image", id: i.id ?? i.url ?? String(n), name: i.name || i.alt || "Untitled image", url: i.url, labels: i.labels, thumb: i.url },
       search: (t) => imageMatches(i, t), labels: i.labels, createdAt: i.createdAt,
-      visibility: i.visibility, webPath: i.webPath, webUrl: i.webUrl,
+      visibility: i.visibility, webPath: i.webPath, webUrl: i.webUrl, fallbackUrl: i.fallbackUrl, originalUrl: i.originalUrl,
     }));
   }
   if (kind === "videos") {
@@ -209,10 +201,11 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
               <div className="grid grid-cols-2 gap-3">
                 {shown.map((r) => (
                   <LibraryCard key={r.ref.id} item={r.ref} labels={r.labels} note={r.note} selected={addedIds.has(r.ref.id)} FallbackIcon={FallbackIcon} colorOf={colorOf} onPick={() => onPick(r.ref)}
-                    thumbnail={kind === "images" ? <ImageThumbnail candidates={tileSrcCandidates({
+                    thumbnail={kind === "images" ? <LibraryImageThumbnail className="absolute inset-0 h-full w-full object-contain object-center" candidates={tileSrcCandidates({
                       gated: r.visibility === "gated",
                       thumb: r.webPath ? (r.visibility === "gated" ? gatedThumbs : publicThumbs)[r.webPath] : undefined,
                       webUrl: r.webUrl ?? (r.ref.kind === "image" ? r.ref.url : ""),
+                      fallbackUrl: r.fallbackUrl, originalUrl: r.originalUrl,
                     })} /> : r.ref.kind === "object" ? <ObjectThumbnail id={r.ref.id} storedThumb={r.ref.thumb} /> : undefined} />
                 ))}
               </div>

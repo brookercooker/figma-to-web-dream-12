@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { pickTileSrc, tileSrcCandidates } from "../imageTileSrc";
+import { libraryImageCandidates, pickTileSrc, tileSrcCandidates } from "../imageTileSrc";
 
 describe("pickTileSrc", () => {
+  it("uses stored web, fallback and original URLs without synthesizing storage paths", () => {
+    expect(libraryImageCandidates({ web_url: "/__l5e/assets-v1/photo.webp", fallback_url: "/fallback.jpg", original_url: "/original.jpg" })).toEqual(["/__l5e/assets-v1/photo.webp", "/fallback.jpg", "/original.jpg"]);
+    expect(tileSrcCandidates({ webUrl: "/web", fallbackUrl: "/fallback", originalUrl: "/original" })).toEqual(["/web", "/fallback", "/original"]);
+  });
   const webUrl = "https://example.com/private/image.webp";
   it("uses a signed thumbnail for a gated image", () => {
     expect(pickTileSrc({ gated: true, thumb: "signed-thumb", webUrl })).toBe("signed-thumb");
