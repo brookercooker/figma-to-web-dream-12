@@ -30,6 +30,7 @@ import ManualHistoryControls from "./designChat/ManualHistoryControls";
 import { manualHistoryShortcut } from "./designChat/manualEditHistory";
 import { loadManualPages, workingPageFrom } from "./designChat/pageSelection";
 import { referenceKey } from "./designChat/references";
+import { useManagerTitle } from "./useManagerTitle";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -177,6 +178,7 @@ function AdminShell() {
     if (seg === "preview" || seg === "objects" || seg === "images" || seg === "videos") return seg as TabKey;
     return "pages";
   }, [location.pathname]);
+  useManagerTitle(tab.charAt(0).toUpperCase() + tab.slice(1));
   const [isAdmin, setIsAdmin] = useState(false);
   const [email, setEmail] = useState<string>("");
   const [pwOpen, setPwOpen] = useState(false);

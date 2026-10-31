@@ -474,20 +474,8 @@ export default function LandingPagesView() {
         </SelectionBar>
 
 
-        <div className="w-full overflow-x-auto">
-          <table className="w-full text-sm border-collapse table-fixed min-w-[1030px]">
-            <colgroup>
-              <col style={{ width: 40 }} />
-              <col style={{ width: 116 }} />
-              <col style={{ minWidth: 200 }} />
-              <col style={{ width: 110 }} />
-              <col style={{ width: 130 }} />
-              <col style={{ width: 150 }} />
-              <col style={{ width: 100 }} />
-              <col style={{ width: 90 }} />
-              <col style={{ width: 48 }} />
-              <col style={{ width: 48 }} />
-            </colgroup>
+        <div className="manager-page-table-area w-full min-w-0">
+          <table className="manager-page-table manager-landing-table text-sm">
             <thead>
               <tr className="border-b bg-muted/30">
                 <th className="px-3 py-2"></th>
