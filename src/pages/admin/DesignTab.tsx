@@ -1087,7 +1087,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     {page && surface !== "loading" && <EmbeddedBox chat={embedded ? chat : null}>
       <div ref={blockCanvasRef} className={`relative isolate h-full w-full ${heldInFrame && !deviceStyle ? "overflow-hidden" : "overflow-y-auto"} bg-background`} style={deviceStyle}>
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
-        <ScaledViewport virtualWidth={DESKTOP_VIRTUAL_WIDTH} enabled={embedded && heldInFrame && !deviceStyle && window.innerWidth >= 640}>
+        <ScaledViewport virtualWidth={DESKTOP_VIRTUAL_WIDTH} fallbackWidth={768} fill={embedded && heldInFrame && !deviceStyle} enabled={window.innerWidth >= 640}>
         <FramedPageEditor key={objectId ? `object-${objectId}` : `public-${page.id}`} base={draftEmbedUrl()} path={objectId ? objectFramePath(objectId) : page.path} edits={inlineEdits} objectEdits={objectEdits}
           objectScope={objectTarget} scrollToSlot={objectId ? null : returnTo ?? null}
           sectionRevision={sectionRevision} heldBlocks={objectId && !designedObject ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
