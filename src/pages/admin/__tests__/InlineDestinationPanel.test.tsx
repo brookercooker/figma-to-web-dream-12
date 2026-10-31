@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import InlineDestinationPanel from "../InlineDestinationPanel";
 import { createReplay, type InlineEdits } from "@/lib/inlineEditCore";
 import type { InlineSelection } from "@/components/InlineEditSurface";
-afterEach(cleanup);
+beforeEach(() => vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} }));
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 function setup(tag = "a", submit?: () => void) {
   const root = document.createElement("section"), el = document.createElement(tag);
   if (tag === "a") el.setAttribute("href", "/original");

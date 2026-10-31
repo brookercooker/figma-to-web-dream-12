@@ -1,16 +1,17 @@
 import { useState } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { parseMaterialIcon } from "../materialIcon";
 import { detectLinkKind, linkAddress } from "../linkKind";
 import { replaceWording, wordingText } from "../textWording";
 import { createReplay, validateEdits, withoutPath } from "@/lib/inlineEditCore";
 import { inlineChangeLines } from "../changeLines";
-import { ManualEditHistory } from "../designChat/manualEditHistory";
+import { ManualEditHistory, type ManualEditSnapshot } from "../designChat/manualEditHistory";
 import InlineStylePanel from "../InlineStylePanel";
 import { remoteSelection, validSnapshot } from "../remoteSelection";
 import MaterialIconField from "../MaterialIconField";
-afterEach(cleanup);
+beforeEach(() => vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} }));
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe("safe Material paste", () => {
   it.each([
     ["home", "outlined", "home"], ["arrow_forward", "outlined", "arrow_forward"], ["123", "outlined", "123"],
@@ -78,9 +79,9 @@ it("Google icon help opens on hover and keyboard focus, including after pointer 
 it("a frame image selection deletes through scoped edits and supports Undo, Redo and Discard", () => {
   const sel = remoteSelection({ key: "0.1", scope: "page", kind: "image", tag: "img", context: { role: "image", section: "Categories" }, attrs: { src: "/light.jpg" } });
   const history = new ManualEditHistory(); const original = { blocks: [], inlineEdits: {}, objectEdits: {} };
-  let current = original;
+  let current: ManualEditSnapshot = original;
   const view = render(<InlineStylePanel sel={sel} edits={current.inlineEdits} onChange={next => {
-    const after = { ...current, inlineEdits: next }; history.record(current, after); current = after;
+    const after = { ...current, inlineEdits: next }; history.record(current, after, { label: "picture removed" }); current = after;
   }} onReplaceImage={vi.fn()} />);
   fireEvent.click(screen.getByRole("button", { name: "Delete Image" }));
   expect(current.inlineEdits).toEqual({ "hidden:0.1": "1" });
@@ -88,5 +89,5 @@ it("a frame image selection deletes through scoped edits and supports Undo, Redo
   current = history.redo() ?? current; expect(current.inlineEdits).toEqual({ "hidden:0.1": "1" });
   current = original; history.reset();
   view.rerender(<InlineStylePanel sel={sel} edits={current.inlineEdits} onChange={vi.fn()} onReplaceImage={vi.fn()} />);
-  expect(screen.getByRole("button", { name: "Delete Image" })).toBeInTheDocument(); expect(history.canUndo).toBe(false);
+  expect(screen.getByRole("button", { name: "Delete Image" })).toBeInTheDocument(); expect(history.undo()).toBeNull();
 });
