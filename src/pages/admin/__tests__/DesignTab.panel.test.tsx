@@ -38,6 +38,23 @@ it("footer text selection asks to edit the site-wide Footer without writing", as
   send("edit-select", { selection: { key: "0", scope: "Footer", kind: "text", tag: "p", text: "Contact us", style: {}, rect: {} } });
   expect(screen.getByRole("heading", { name: "Edit the Site Footer?" })).toBeInTheDocument();
 });
+it("frame image Delete enters local history and Undo/Redo/Discard restore it without saving", async () => {
+  render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
+  const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+  const source = frame.contentWindow;
+  if (!source || !mocks.slot) throw new Error("Missing frame");
+  const post = vi.spyOn(source, "postMessage").mockImplementation(() => {});
+  const send = (type: string, payload = {}) => act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", type, ...payload } })));
+  send("edit-ready", { capabilities: { heldBlocks: true } });
+  send("edit-select", { selection: { key: "0.2", scope: "page", kind: "image", tag: "img", style: {}, rect: {} } });
+  send("edit-key", { key: "Delete" });
+  expect(mocks.hasChanges()).toBe(true);
+  expect(post.mock.calls.filter(([m]) => m.type === "edit-update").at(-1)?.[0].edits).toEqual({ "hidden:0.2": "1" });
+  act(() => mocks.history.undo()); expect(mocks.hasChanges()).toBe(false);
+  act(() => mocks.history.redo()); expect(mocks.hasChanges()).toBe(true);
+  await act(async () => { await mocks.discard(); });
+  expect(mocks.hasChanges()).toBe(false);
+});
 it("replaces the hint with one options panel through repeated frame selections", async () => {
   render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
   const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
