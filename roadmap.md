@@ -1,4 +1,6 @@
 # Roadmap — coded object import fidelity
+- [ ] Diagnose and fix User Management's actual function failure and expose its returned error.
+- [ ] Preserve same-page scroll in both mode-switch directions; verify trusted readiness restoration.
 - [x] Fix library image candidates/fallbacks, frame image Delete, section confirmation names, page table fit, Manager title protection, Help copy and footer text editing. All 877 tests pass. Signed-in 1440px tables have no horizontal overflow and titles remain fixed; image failures use neutral placeholders. No saved page edits.
 - [ ] Verify all hosted library images and public image-key/footer-click flows: localhost asset delivery fails for the sampled library images; public frame access still shows Lovable login. Exact messages, Undo/Redo/Discard and footer confirmation pass regression tests.
 - [x] Fix Chat frame origin to the public site, exact-origin snapshot guards, bounded address fetch, offline page navigation and retained scroll/navigation/drawing protocols. Signed-in Ask Claude targets public /draft; no postMessage origin warnings; no saved content changed. 868 tests pass plus final 14 focused regressions.
