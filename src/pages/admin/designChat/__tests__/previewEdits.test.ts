@@ -27,6 +27,13 @@ const flush = () => act(async () => { await Promise.resolve(); await Promise.res
 afterEach(() => { document.body.innerHTML = ""; });
 
 describe("Chat Mode preview edits", () => {
+  it("does not send on a premature load event whose recipient is still the Manager origin", async () => {
+    const { win, ref, frame } = setup();
+    Object.defineProperty(win, "location", { value: { origin: window.location.origin } });
+    renderHook(() => usePreviewEdits(ref as any, vi.fn().mockResolvedValue(payload), loadContent));
+    previewContentLoaded(frame); await flush();
+    expect(win.postMessage).not.toHaveBeenCalled();
+  });
   it("does not post legacy edits to an old origin after the frame src changes during the read", async () => {
     const { win, ref, frame } = setup();
     let resolve: (value: typeof payload) => void = () => {};
