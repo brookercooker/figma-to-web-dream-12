@@ -117,7 +117,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
       setFrames((fs) => [...fs, { id, url: publicPreviewPage(base, remembered.current ?? pathRef.current) }]);
       swapTimers.current[id] = setTimeout(() => { if (alive.current) setError("The live preview couldn't load. Try again."); }, SWAP_TIMEOUT_MS);
       const expires = new Date(data.expires_at).getTime();
-      const wait = Number.isFinite(expires) ? Math.max(30_000, expires - Date.now() - REFRESH_MARGIN_MS) : 30 * 60_000;
+      const wait = Number.isFinite(expires) ? Math.min(2_147_483_647, Math.max(30_000, expires - Date.now() - REFRESH_MARGIN_MS)) : 30 * 60_000;
       expiry.current = setTimeout(loadPreview, wait);
     } catch (e) {
       if (alive.current && shown.current === 0) {
