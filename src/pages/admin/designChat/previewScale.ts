@@ -48,6 +48,14 @@ export function scaledViewportPlan({ available, height, virtualWidth, enabled, f
     }
   }
   if (scale >= 0.995) return { ...none, label: width !== virtualWidth ? label : null };
-  const virtualHeight = Math.min(height / scale, MAX_VIRTUAL_HEIGHT);
+  // Fill the area; the realistic device height is sent to the frame separately (preview-viewport) to clamp 100vh sections.
+  const virtualHeight = height / scale;
   return { scaled: true, width, height: virtualHeight, scale, label };
+}
+
+/** Realistic viewport height for a virtual device width: Desktop 800, Tablet 1024, Phone 844. */
+export function deviceViewportHeight(width: number): number {
+  if (width >= 1024) return MAX_VIRTUAL_HEIGHT;
+  if (width >= 640) return 1024;
+  return 844;
 }

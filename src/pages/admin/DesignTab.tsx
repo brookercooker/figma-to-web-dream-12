@@ -90,6 +90,9 @@ function ToolButton({
   );
 }
 
+/** Height of the frame's sticky section bar (about 40 px), kept clear when scrolling a selection into view. */
+const SECTION_BAR_INSET = 48;
+
 export default function DesignTab({ embedded = false, pageId, onNavigate, objectId, returnTo, onObjectInfo }: {
   embedded?: boolean; pageId?: string; onNavigate?: (path: string) => void;
   /** Edit this one object alone in the same framed editor (object scope) instead of the page. */
@@ -198,10 +201,9 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   useEffect(() => {
     // Phone: when the editing sheet opens, scroll the selected element into view above it (existing scrollTo query).
     const on = (event: Event) => {
-      // The frame already ends at the sheet's top edge (the page area shrinks by the sheet height), so the frame's own
-      // scrollTo lands the element above the sheet without a new message field.
+      // The frame already ends at the sheet's top edge; topInset keeps the element clear of its sticky section bar.
       const sel = sheetSelection.current; void event;
-      if (sel) void framedApi.current?.query("scrollTo", sel.scope, sel.key);
+      if (sel) void framedApi.current?.query("scrollTo", sel.scope, sel.key, { topInset: SECTION_BAR_INSET });
     };
     window.addEventListener("nova-manager-sheet", on);
     return () => window.removeEventListener("nova-manager-sheet", on);
