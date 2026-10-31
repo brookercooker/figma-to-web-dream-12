@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Phone follow-ups: ignore historical attention/unread, remove outside preview band, honour Manual Edit device choice, and fit all four libraries to content width; verify focused tests and phone/tablet browser layouts.
 - [x] Phone-only retained chat pop-out, status button, compact top-bar mode/action menus and drawing return. All 895 tests pass; preview build OK.
 - [x] Browser checks at 390×844 and 360×740: ×/outside/Escape/swipe closing, draft/scroll retention, simulated visualViewport keyboard clearance, visitor controls clear in public-page fixture, drawing attachment and Send stays open with controlled relay.
 - [ ] Verify actual Shop Hot Deals/cart/footer and native keyboard on a real phone: public preview requires a separate login and live design service is unreachable. Saved Playwright specs await missing lovable-agent-playwright-config runner; Python Playwright checks passed.
