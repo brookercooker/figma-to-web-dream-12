@@ -11,8 +11,8 @@ export function PhoneChatButton({ working, unread, onOpen }: { working: boolean;
 }
 export function PhoneChatHeader({ onClose, review, onChat }: { onClose: () => void; review: boolean; onChat: () => void }) {
   const start = useRef<number | null>(null);
-  return <div className="shrink-0 border-b" onPointerDown={e => { start.current = e.clientY; e.currentTarget.setPointerCapture(e.pointerId); }} onPointerUp={e => { if (start.current !== null && e.clientY - start.current > 60) onClose(); start.current = null; }}>
-    <div className="flex h-5 touch-none items-center justify-center" aria-hidden><span className="h-1 w-10 rounded-full bg-muted-foreground/40" /></div>
+  return <div className="shrink-0 border-b">
+    <div data-chat-handle className="flex h-5 touch-none items-center justify-center" aria-hidden onPointerDown={e => { start.current = e.clientY; e.currentTarget.setPointerCapture(e.pointerId); }} onPointerUp={e => { if (start.current !== null && e.clientY - start.current > 60) onClose(); start.current = null; }}><span className="h-1 w-10 rounded-full bg-muted-foreground/40" /></div>
     <div className="flex h-10 items-center gap-2 px-3 pb-2">
       <span className="flex-1 text-sm font-medium">{review ? "Review Status" : "Chat"}</span>
       {review && <Button variant="ghost" size="sm" onClick={onChat}>Back to Chat</Button>}
