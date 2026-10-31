@@ -2,6 +2,11 @@ import { describe, expect, it } from "vitest";
 import { inlineEditAction, ManualEditHistory, manualHistoryShortcut, type ManualEditSnapshot } from "../designChat/manualEditHistory";
 const initial = (): ManualEditSnapshot => ({ blocks: [], inlineEdits: {}, objectEdits: {} });
 describe("local edit history", () => {
+  it("never records a fingerprint-only failed formatting step", () => {
+    const h = new ManualEditHistory(); const a = initial();
+    expect(h.record(a, { ...a, inlineEdits: { "fp:0": "metadata" } }, { label: "style change" })).toBe(false);
+    expect(h.changeCount).toBe(0); expect(h.undo()).toBeNull();
+  });
   it("counts merged undo steps consistently through undo, redo and save/reset", () => {
     const h = new ManualEditHistory(); const a = initial(); const b = { ...a, inlineEdits: { "0": "a" } }; const c = { ...a, inlineEdits: { "0": "ab" } };
     expect(h.changeCount).toBe(0);

@@ -11,6 +11,7 @@ import SelectionColourPicker from "./SelectionColourPicker";
 import { selectionDescription } from "./selectionDescription";
 import SelectedWording from "./SelectedWording";
 import MaterialIconField from "./MaterialIconField";
+import { spacingPixels, lineHeightMultiplier } from "./textUnits";
 import { SIDES, commonValue, isMixed, setAllSides, setBorderPart, sideValues, type BorderPart, type Side } from "./borderEdit";
 
 const WEIGHTS = [["Light", "300"], ["Regular", "400"], ["Medium", "500"], ["Bold", "700"]] as const;
@@ -342,10 +343,10 @@ export default function InlineStylePanel({
             ))}
           </ToolSegment></ToolField>
           <ToolField label="Letter Spacing">
-            <Input className="h-8 w-20" type="number" step={0.05} placeholder="0" value={num(style["letter-spacing"])} onChange={(e) => apply("letter-spacing", e.target.value ? `${e.target.value}em` : "")} />
+            <div className="relative w-20"><Input aria-label="Letter Spacing (px)" className="h-8 pr-6" type="number" step={0.1} placeholder={spacingPixels(computed.letterSpacing, computed.fontSize) || "0"} value={spacingPixels(style["letter-spacing"], computed.fontSize)} onChange={(e) => set("letter-spacing", px(e.target.value))} /><span className="pointer-events-none absolute right-2 top-2 text-xs text-muted-foreground">px</span></div>
           </ToolField>
           <ToolField label="Line Height">
-            <Input className="h-8 w-20" type="number" step={0.1} min={0.8} placeholder={(parseFloat(computed.lineHeight) / parseFloat(computed.fontSize) || 1.4).toFixed(1)} value={style["line-height"] ?? ""} onChange={(e) => apply("line-height", e.target.value)} />
+            <div className="relative w-20"><Input aria-label="Line Height (Multiplier)" className="h-8 pr-6" type="number" step={0.1} min={0.8} placeholder={lineHeightMultiplier(computed.lineHeight, computed.fontSize) || "1.4"} value={lineHeightMultiplier(style["line-height"], computed.fontSize)} onChange={(e) => set("line-height", e.target.value)} /><span className="pointer-events-none absolute right-2 top-2 text-xs text-muted-foreground">×</span></div>
           </ToolField>
         </div>
       </ToolGroup>

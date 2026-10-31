@@ -51,6 +51,8 @@ import ConfirmDialog from "./ConfirmDialog";
 import ResetEditsAction from "./ResetEditsAction";
 import type { FrameSection } from "./frameSections";
 import { findObjectUsages } from "./objectUsages";
+import { frameObjectPaths } from "./frameObjectUsages";
+import { pageKey } from "./designChat/registerPage";
 import { cleanupObjectCopies } from "./objectCopyCleanup";
 import { Save as SaveIcon, Trash2 as TrashIcon, Pencil as PencilIcon } from "lucide-react";
 import { inlineEditAction, ManualEditHistory, sameEditState, type EditAction, type ManualEditSnapshot } from "./designChat/manualEditHistory";
@@ -132,6 +134,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   // Batch a held section change with exactly one explicit public-frame reload.
   const changeBlocks = (next: Block[] | ((current: Block[]) => Block[]), label = "changed a section", mergeKey?: string) => {
     const result = typeof next === "function" ? next(editState.current.blocks) : next;
+    if (sameEditState(result, editState.current.blocks)) return;
+    updateSectionRows(result);
     recordEdit({ blocks: result }, { label, mergeKey });
     setBlocks(result);
     setSectionRevision((revision) => revision + 1);
@@ -141,6 +145,25 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const [heldInFrame, setHeldInFrame] = useState(false);
   const [frameSections, setFrameSections] = useState<FrameSection[] | null>(null);
   const [activeSection, setActiveSection] = useState("");
+  const [removeAsk, setRemoveAsk] = useState<{ name: string; confirm: () => void } | null>(null);
+  const sectionTemplates = useRef(new Map<string, FrameSection>());
+  const receiveSections = (sections: FrameSection[] | null) => {
+    if (sections) sections.forEach(section => sectionTemplates.current.set(section.key, section));
+    setFrameSections(sections);
+  };
+  const updateSectionRows = (next: Block[]) => {
+    const oldHeld = new Set([...editState.current.blocks, ...next].map(b => b.id));
+    setFrameSections(previous => {
+      if (!previous) return previous;
+      const fixed = previous.filter(section => !oldHeld.has(section.key));
+      const rows = (list: Block[]) => list.filter(b => !isPageContent(b)).map(b => sectionTemplates.current.get(b.id) ?? { key: b.id, name: b.type === "object" ? b.name ?? "Object" : b.type === "heading" || b.type === "text" ? b.text : b.type, kind: "held" as const, collapsed: false, movable: true, deletable: true, ...(b.type === "object" ? { objectId: b.objectId } : {}) });
+      if (objectId) return [...fixed.filter(s => s.kind === "site" && s.key === "site-header"), ...rows(next), ...fixed.filter(s => s.kind !== "site"), ...fixed.filter(s => s.kind === "site" && s.key !== "site-header")];
+      const ordered = orderedPageContent(next);
+      const marker = ordered.findIndex(isPageContent);
+      const header = fixed.filter(s => s.key === "site-header"), footer = fixed.filter(s => s.key === "site-footer");
+      return [...header, ...rows(ordered.slice(0, marker)), ...fixed.filter(s => s.key !== "site-header" && s.key !== "site-footer"), ...rows(ordered.slice(marker + 1)), ...footer];
+    });
+  };
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -215,6 +238,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     });
   }, []);
   const changeScope = (scope: InlineScope, next: InlineEdits, remote = false) => {
+    // Fingerprints alone must not turn a rejected/no-op frame command into an Undo step.
+    const meaningful = (map: InlineEdits) => Object.fromEntries(Object.entries(map).filter(([key]) => !key.startsWith("fp:")));
+    const previous = scope === "page" ? editState.current.inlineEdits : editState.current.objectEdits[scope] ?? {};
+    if (sameEditState(meaningful(previous), meaningful(next)) && !Object.keys(next).some(key => key.startsWith("fp:") && previous[key] !== next[key])) return;
     remote = remote || !!(inlineSel && remoteSnapshot(inlineSel.el));
     const snapshot = inlineSel && remoteSnapshot(inlineSel.el);
     if (inlineSel) {
@@ -305,8 +332,14 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const infoRef = useRef(onObjectInfo); infoRef.current = onObjectInfo;
   useEffect(() => {
     if (!objectTarget) { infoRef.current?.(null); return; }
-    const usedOn = objectTarget.siteWide ? [] : pages.filter((p) => JSON.stringify([p.content ?? null, p.inline_edits ?? null]).includes(objectTarget.objectId)).map((p) => p.name);
-    infoRef.current?.({ ...objectTarget, usedOn });
+    let cancelled = false;
+    const fromSaved = pages.filter((p) => JSON.stringify([p.content ?? null, p.inline_edits ?? null]).includes(objectTarget.objectId)).map((p) => p.name);
+    const paths = frameObjectPaths(objectTarget.objectId);
+    const observed = paths.map(path => pages.find(p => pageKey(p.path) === path)?.name ?? path);
+    const publish = (site: string[]) => { if (!cancelled) infoRef.current?.({ ...objectTarget, usedOn: [...new Set([...fromSaved, ...observed, ...site])] }); };
+    publish([]);
+    if (!objectTarget.siteWide && objectTarget.component_key) void findObjectUsages(objectTarget.component_key).then(usages => publish(usages.map(u => u.name))).catch(() => {});
+    return () => { cancelled = true; };
   }, [objectTarget, pages]);
   const framed = surface === "framed";
   useEffect(() => {
@@ -503,9 +536,20 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     setActiveId(id); setInlineSel(null);
   };
 
-  const remove = (id: string) => {
+  const removeNow = (id: string) => {
     if (id === "page-content") return;
+    const block = editState.current.blocks.find(b => b.id === id);
+    if (!block) return;
+    const name = frameSections?.find(s => s.key === id)?.name ?? (block.type === "object" ? block.name ?? "Object" : block.type === "heading" || block.type === "text" ? block.text : block.type);
     changeBlocks((prev) => { const next = prev.filter(b => b.id !== id); return isPageContent(next[0]) ? next.slice(1) : next; }, "removed a section");
+    setFrameSections(prev => prev?.filter(s => s.key !== id) ?? null);
+    toast(`${name} removed.`, { action: { label: "Undo", onClick: () => historyHandlers.current.undo() } });
+  };
+  const remove = (id: string) => {
+    const block = editState.current.blocks.find(b => b.id === id);
+    if (!block || isPageContent(block)) return;
+    const name = frameSections?.find(s => s.key === id)?.name ?? (block.type === "object" ? block.name ?? "Object" : block.type === "heading" || block.type === "text" ? block.text : block.type);
+    setRemoveAsk({ name, confirm: () => removeNow(id) });
   };
   const moveHeldBlock = (id: string, to: number) => {
     const block = editState.current.blocks.find(b => b.id === id);
@@ -654,6 +698,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     const snapshot = history.current[kind]();
     if (!snapshot) return;
     const blockChange = !sameEditState(editState.current.blocks, snapshot.blocks);
+    if (blockChange) updateSectionRows(snapshot.blocks);
     editState.current = snapshot;
     setBlocks(snapshot.blocks); setInlineEdits(snapshot.inlineEdits); setObjectEdits(snapshot.objectEdits);
     pendingSave.current = sameEditState(snapshot.blocks, cleanState.current.blocks) ? null : { pageId: selectedId, snapshot: snapshot.blocks };
@@ -765,8 +810,15 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     if (section.kind === "site" || (action === "delete" ? !section.deletable : !section.movable)) return;
     // Held sections remain Manager-owned; code sections report their resulting inline edits back.
     if (blocks.some(b => b.id === section.key)) {
-      if (action === "delete") remove(section.key); else move(section.key, action === "up" ? -1 : 1);
-    } else framedApi.current?.sectionAction?.(section.key, action);
+      if (action === "delete") remove(section.key);
+      else if (!objectId) moveHeldBlock(section.key, action === "up" ? 0 : orderedList(blocks).length - 1);
+      else move(section.key, action === "up" ? -1 : 1);
+    } else if (action === "delete") setRemoveAsk({ name: section.name, confirm: () => {
+      framedApi.current?.sectionAction?.(section.key, "delete");
+      setFrameSections(previous => previous?.filter(s => s.key !== section.key) ?? null);
+      toast(`${section.name} removed.`, { action: { label: "Undo", onClick: () => historyHandlers.current.undo() } });
+    } });
+    else framedApi.current?.sectionAction?.(section.key, action);
   }
   const stylePanel = (
     <>
@@ -893,10 +945,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                           )}
                           <span className="mx-1 h-5 w-px bg-border" />
                           {showActions && i > 0 && (
-                            <ToolButton title="Move Up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
+                            <ToolButton title={objectId ? "Move Up" : "Move to Top"} onClick={() => objectId ? move(b.id, -1) : moveHeldBlock(b.id, 0)}><ArrowUp className="w-4 h-4" /></ToolButton>
                           )}
                           {showActions && i < orderedPageContent(blocks).length - 1 && (
-                            <ToolButton title="Move Down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                            <ToolButton title={objectId ? "Move Down" : "Move to Bottom"} onClick={() => objectId ? move(b.id, 1) : moveHeldBlock(b.id, orderedPageContent(blocks).length - 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
                           )}
                           {showActions && <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>}
     </>
@@ -915,9 +967,9 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         {frameSections.map((section, i) => <li key={section.key} data-section-row={section.key} aria-current={activeSection === section.key || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeSection === section.key ? "bg-accent" : ""}`}>
           {section.collapsed && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label="Collapsed" />}
           <Button variant="ghost" size="sm" className="h-auto min-w-0 flex-1 justify-start whitespace-normal text-left" onClick={() => { setActiveSection(section.key); setActiveId(blocks.some(b => b.id === section.key) ? section.key : ""); setInlineSel(null); framedApi.current?.scrollToSection?.(section.key); }}>{section.name}</Button>
-          {(section.kind === "object" || section.objectId) && <span className="text-[10px] text-muted-foreground">Shared</span>}
-          {section.movable && i > 0 && frameSections[i-1].kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title="Move Up" aria-label="Move Up" onClick={() => sectionAction(section, "up")}><ArrowUp className="h-3.5 w-3.5" /></Button>}
-          {section.movable && i < frameSections.length-1 && frameSections[i+1].kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title="Move Down" aria-label="Move Down" onClick={() => sectionAction(section, "down")}><ArrowDown className="h-3.5 w-3.5" /></Button>}
+          {!objectId && (section.kind === "object" || section.objectId) && <span className="text-[10px] text-muted-foreground">Shared</span>}
+          {section.movable && i > 0 && frameSections[i-1].kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title={!objectId && blocks.some(b => b.id === section.key) ? "Move to Top" : "Move Up"} aria-label={!objectId && blocks.some(b => b.id === section.key) ? "Move to Top" : "Move Up"} onClick={() => sectionAction(section, "up")}><ArrowUp className="h-3.5 w-3.5" /></Button>}
+          {section.movable && i < frameSections.length-1 && frameSections[i+1].kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title={!objectId && blocks.some(b => b.id === section.key) ? "Move to Bottom" : "Move Down"} aria-label={!objectId && blocks.some(b => b.id === section.key) ? "Move to Bottom" : "Move Down"} onClick={() => sectionAction(section, "down")}><ArrowDown className="h-3.5 w-3.5" /></Button>}
           {section.deletable && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title="Delete Section" aria-label="Delete Section" onClick={() => sectionAction(section, "delete")}><Trash2 className="h-3.5 w-3.5" /></Button>}
         </li>)}
       </ol>
@@ -942,8 +994,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
       {chromeRow("site-header", "Site Header")}
       {orderedPageContent(blocks).map((b,i) => isPageContent(b) ? <li key={b.id} data-section-row={b.id} className="px-2 py-2 text-xs">Page Content</li> : <li key={b.id} data-section-row={b.id} aria-current={activeId === b.id || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeId === b.id ? "bg-accent" : ""}`}>
         <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); if (heldInFrame) { void framedApi.current?.query("scrollTo", "held", b.id); return; } blockCanvasRef.current?.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>{blockLabel(b)}</Button>{b.type === "object" && <span className="text-[10px] text-muted-foreground">Shared</span>}
-        {i > 0 && <ToolButton title="Move Up" onClick={() => move(b.id,-1)}><ArrowUp className="h-4 w-4" /></ToolButton>}
-        {i < orderedPageContent(blocks).length-1 && <ToolButton title="Move Down" onClick={() => move(b.id,1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
+        {i > 0 && <ToolButton title="Move to Top" onClick={() => moveHeldBlock(b.id,0)}><ArrowUp className="h-4 w-4" /></ToolButton>}
+        {i < orderedPageContent(blocks).length-1 && <ToolButton title="Move to Bottom" onClick={() => moveHeldBlock(b.id,orderedPageContent(blocks).length-1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
         <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="h-4 w-4" /></ToolButton>
       </li>)}
       {chromeRow("site-footer", "Site Footer")}
@@ -978,9 +1030,11 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     if (kind === "copy" && click.objectId) { openObjectEditor(click.objectId, click.slot); return; }
     // Every page that uses it: saved page content and swaps, plus code placements in the public manifest.
     const fromPages = pages.filter((p) => click.objectId && JSON.stringify([p.content ?? null, p.inline_edits ?? null]).includes(click.objectId)).map((p) => p.name);
-    const fromSite = click.componentKey ? findObjectUsages(click.componentKey).then((u) => u.map((x) => x.name)).catch(() => null) : Promise.resolve([] as string[]);
+    const key = click.componentKey ?? (click.objectId ? heldObjects?.[click.objectId]?.component_key : null);
+    const observed = click.objectId ? frameObjectPaths(click.objectId).map(path => pages.find(p => pageKey(p.path) === path)?.name ?? path) : [];
+    const fromSite = key ? findObjectUsages(key).then((u) => u.map((x) => x.name)).catch(() => null) : Promise.resolve(null);
     void fromSite.then((site) => {
-      const usedOn = site === null && !fromPages.some((n) => n !== here) ? null : [...new Set([...(site ?? []), ...fromPages, here].filter(Boolean))];
+      const usedOn = site === null && ![...fromPages, ...observed].some((n) => n !== here) ? null : [...new Set([...(site ?? []), ...fromPages, ...observed, here].filter(Boolean))];
       if (objectClickAction(kind, usedOn, here) === "open" && click.objectId) openObjectEditor(click.objectId, click.slot);
       else setObjectAsk({ ...click, kind, usedOn });
     });
@@ -1033,7 +1087,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         <FramedPageEditor key={objectId ? `object-${objectId}` : `public-${page.id}`} base={draftEmbedUrl()} path={objectId ? objectFramePath(objectId) : page.path} edits={inlineEdits} objectEdits={objectEdits}
           objectScope={objectTarget} scrollToSlot={objectId ? null : returnTo ?? null}
           sectionRevision={sectionRevision} heldBlocks={objectId && !designedObject ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
-          onSections={setFrameSections}
+          onSections={receiveSections}
           onBlockSelect={(id) => { setActiveId(id); setActiveSection(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setActiveSection(id); setInlineSel(null); }} fill={!deviceStyle}
           onUndo={() => restoreHistory("undo")} onRedo={() => restoreHistory("redo")}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
@@ -1080,6 +1134,12 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
       />
       <ObjectPickerDialog
         open={!!objectFor}
+        onPickMany={objectFor === "new" ? choices => {
+          const additions: ObjectBlock[] = choices.map(({ id, name }) => ({ id: newId(), type: "object", objectId: id, name, align: "left" }));
+          if (!additions.length) return;
+          changeBlocks([...editState.current.blocks, ...additions], `added ${additions.length} objects`);
+          setActiveId(additions.at(-1)?.id ?? ""); setObjectFor(null); setObjectAt(null);
+        } : undefined}
         onOpenChange={(v) => { if (!v) { setObjectFor(null); setObjectAt(null); } }}
         onPick={({ id, name }) => {
           if (objectFor === "new") {
@@ -1092,6 +1152,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
           setObjectAt(null);
         }}
       />
+      <ConfirmDialog open={!!removeAsk} onOpenChange={open => { if (!open) setRemoveAsk(null); }} title={`Remove ${removeAsk?.name ?? "This Section"}?`} description="The section will be removed from this page. You can undo it before saving." confirmLabel="Delete Section" onConfirm={() => { const ask = removeAsk; setRemoveAsk(null); ask?.confirm(); }} />
       <VideoPickerDialog
         open={!!videoFor}
         onOpenChange={(v) => { if (!v) { setVideoFor(null); setVideoAt(null); } }}

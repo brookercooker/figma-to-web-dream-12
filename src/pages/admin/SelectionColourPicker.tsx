@@ -3,14 +3,19 @@ import { Palette } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { SELECTION_PALETTE, paletteColour, selectionColourDisplay } from "./selectionColourDisplay";
+import { SELECTION_PALETTE, paletteColour, selectionColourDisplay, colourRgb } from "./selectionColourDisplay";
 
 export const validHexColour = (value: string) => /^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(value);
 export default function SelectionColourPicker({ value, onChange }: { value?: string; onChange: (value: string) => void }) {
   const [open, setOpen] = useState(false);
   const [hex, setHex] = useState("");
   const display = selectionColourDisplay(value);
-  const pick = (colour: string) => { onChange(colour); setOpen(false); };
+  // Resolve Manager-only CSS tokens before crossing into the public frame.
+  const pick = (colour: string) => {
+    const rgb = colourRgb(colour);
+    onChange(rgb ? `#${rgb.map(v => Math.round(v).toString(16).padStart(2, "0")).join("")}` : colour);
+    setOpen(false);
+  };
   return <Popover open={open} onOpenChange={next => { setOpen(next); if (next) setHex(display.hex); }}>
     <PopoverTrigger asChild><Button variant="outline" size="icon" className="h-8 w-8 shrink-0" aria-label="Colour" title={`Colour · ${display.name}`} onMouseDown={e => e.preventDefault()}>
       {value ? <span className="h-4 w-4 rounded-sm border" style={{ backgroundColor: value }} /> : <Palette className="h-4 w-4" />}

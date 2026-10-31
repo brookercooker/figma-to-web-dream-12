@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useDesignChat, type Device } from "./DesignChatContext";
 import PreviewProgress from "./PreviewProgress";
 import DrawLayer from "./DrawLayer";
-import { usePreviewEdits } from "./previewEdits";
+import { usePreviewEdits, previewContentLoaded } from "./previewEdits";
 import { usePreviewScroll } from "./frameScroll";
 import ContentSyncNote from "./ContentSyncNote";
 
@@ -53,7 +53,7 @@ export default function PreviewPanel() {
               title={f.id === preview.shownId || preview.shownId === 0 ? "Design Preview" : "Design Preview (Loading)"}
               referrerPolicy="origin"
               data-preview-shown={f.id === preview.shownId || preview.shownId === 0 ? "true" : "false"}
-              onLoad={() => preview.finish(f.id)}
+              onLoad={event => { preview.finish(f.id); previewContentLoaded(event.currentTarget); }}
               className={cn("absolute inset-0 h-full w-full border-0 bg-background transition-opacity duration-300 motion-reduce:transition-none", pending && "opacity-[0.58]", f.id !== preview.shownId && preview.shownId !== 0 && "invisible")}
             />
           ))}

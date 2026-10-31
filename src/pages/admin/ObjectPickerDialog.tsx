@@ -27,18 +27,21 @@ export function objectMatches(o: ObjectRow, term: string) {
 
 /** Pick a saved object to place on a page. */
 export default function ObjectPickerDialog({
-  open, onOpenChange, onPick,
+  open, onOpenChange, onPick, onPickMany,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onPick: (choice: { id: string; name: string }) => void;
+  onPickMany?: (choices: { id: string; name: string }[]) => void;
 }) {
   const [items, setItems] = useState<ObjectRow[]>([]);
   const [q, setQ] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!open) return;
     setQ("");
+    setSelected(new Set());
     void loadLibraryObjects().then(setItems);
   }, [open]);
 
@@ -50,7 +53,7 @@ export default function ObjectPickerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <TopDropContent className="gap-4 p-6 overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add an Object</DialogTitle>
+          <DialogTitle>{onPickMany ? "Add Objects" : "Add an Object"}</DialogTitle>
         </DialogHeader>
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search objects" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
@@ -58,8 +61,9 @@ export default function ObjectPickerDialog({
             <Button variant="ghost"
               key={o.id}
               type="button"
-              onClick={() => onPick({ id: o.id, name: o.name })}
-              className="h-auto flex-col items-stretch rounded-lg border p-3 text-left transition-colors hover:bg-muted/60"
+              aria-pressed={onPickMany ? selected.has(o.id) : undefined}
+              onClick={() => onPickMany ? setSelected(prev => { const next = new Set(prev); if (next.has(o.id)) next.delete(o.id); else next.add(o.id); return next; }) : onPick({ id: o.id, name: o.name })}
+              className={`h-auto flex-col items-stretch rounded-lg border p-3 text-left transition-colors hover:bg-muted/60 ${selected.has(o.id) ? "ring-2 ring-primary bg-accent" : ""}`}
             >
               <div className="mb-2 h-28 w-full"><ObjectThumbnail id={o.id} storedThumb={o.thumbnail_url} /></div>
               <div className="flex items-center gap-2">
@@ -72,6 +76,10 @@ export default function ObjectPickerDialog({
           ))}
           {!filtered.length && <p className="p-3 text-sm text-muted-foreground">No objects found.</p>}
         </div>
+        {onPickMany && <div className="flex items-center justify-between gap-2 border-t pt-3">
+          <Button type="button" variant="ghost" size="sm" disabled={!selected.size} onClick={() => setSelected(new Set())}>Deselect All</Button>
+          <Button type="button" disabled={!selected.size} onClick={() => onPickMany(items.filter(o => selected.has(o.id)).map(({ id, name }) => ({ id, name })))}>Add {selected.size} {selected.size === 1 ? "Object" : "Objects"}</Button>
+        </div>}
       </TopDropContent>
     </Dialog>
   );

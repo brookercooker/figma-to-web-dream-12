@@ -7,6 +7,7 @@ import { remoteSelection, validSnapshot, validWordRange, type WordRange, type Fo
 import { manualNavigationPath } from "./designChat/manualPageNavigation";
 import { acceptFrameScroll, restoreFrameScroll } from "./designChat/frameScroll";
 import { parseFrameSections, type FrameSection } from "./frameSections";
+import { rememberFrameObjects } from "./frameObjectUsages";
 
 export interface FramedEditorController { exit: () => void; query: EditQuery; scrollToSlot?: (slot: string) => void; scrollToSection?: (key: string) => void; sectionAction?: (key: string, action: "up" | "down" | "delete") => void }
 export interface FramedPageEditorProps {
@@ -82,6 +83,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const selectedSnapshot = useRef<SelectionSnapshot | null>(null);
   const wordRange = useRef<WordRange | null>(null);
   const destination = useRef<Window | null>(null);
+  const sentState = useRef("");
   const post = (type: string, payload: Record<string, unknown> = {}) => {
     const current = frame.current?.contentWindow ?? destination.current;
     destination.current = current;
@@ -146,7 +148,9 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         moveCapableRef.current = data.capabilities?.blockMove === true; setMoveCapable(moveCapableRef.current);
         sectionsCapable.current = data.capabilities?.sectionList === true;
         rangeCapable.current = data.capabilities?.rangeFormatting === true;
-        clearTimeout(timeout); ready.current = true; setStatus("ready"); post("edit-init", state()); restoreFrameScroll(frame.current, latest.current.path); if (latest.current.scrollToSlot?.slot) post("scroll-to-slot", { slot: latest.current.scrollToSlot.slot }); return;
+        clearTimeout(timeout); ready.current = true; setStatus("ready");
+        const initial = state(); sentState.current = JSON.stringify(initial); post("edit-init", initial);
+        restoreFrameScroll(frame.current, latest.current.path); if (latest.current.scrollToSlot?.slot) post("scroll-to-slot", { slot: latest.current.scrollToSlot.slot }); return;
       }
       if (data.type === "edit-error") {
         clearTimeout(timeout); ready.current = false;
@@ -157,7 +161,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       if (!ready.current) return;
       if (data.type === "edit-sections" && sectionsCapable.current) {
         const sections = parseFrameSections(data.sections);
-        if (sections) { sectionsRef.current = sections; latest.current.onSections?.(sections); }
+        if (sections) { sectionsRef.current = sections; if (!latest.current.objectScope) rememberFrameObjects(latest.current.path, sections); latest.current.onSections?.(sections); }
       } else if (data.type === "page-scroll") {
         acceptFrameScroll(event, frame.current, latest.current.path);
       } else if (data.type === "edit-change" && typeof data.scope === "string" && data.scope) {
@@ -230,7 +234,12 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     window.addEventListener("message", receive);
     return () => { clearTimeout(timeout); exit(); window.removeEventListener("message", receive); if (props.apiRef) props.apiRef.current = null; };
   }, [target, attempt, frameRevision]); // Only section actions on frames without heldBlocks reload; everything else travels through edit-update.
-  useEffect(() => { if (ready.current && !exited.current) post("edit-update", state()); }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.heldObjects, props.activeBlockId, props.objectSwaps, props.objectScope, heldCapable, moveCapable]);
+  useEffect(() => {
+    if (!ready.current || exited.current) return;
+    const next = state(), serialized = JSON.stringify(next);
+    if (serialized === sentState.current) return;
+    sentState.current = serialized; post("edit-update", next);
+  }, [props.edits, props.objectEdits, props.collapsed, props.selectedKey, props.heldBlocks, props.heldObjects, props.activeBlockId, props.objectSwaps, props.objectScope, heldCapable, moveCapable]);
   useEffect(() => { latest.current.onHeldInFrame?.(heldInFrame); }, [heldInFrame]);
   useEffect(() => { setSized(false); }, [target, attempt, frameRevision]);
   // Capable frames fill the canvas so their own scroll is the only one; edit-size still wins once received.

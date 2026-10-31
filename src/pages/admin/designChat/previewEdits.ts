@@ -6,6 +6,10 @@ import { homeAliases } from "./registerPage";
 import type { InlineEdits } from "@/lib/inlineEditCore";
 import { loadPreviewContent, type PreviewContent } from "./previewContent";
 export const PREVIEW_CONTENT_RETRY = "nova:preview-content-retry";
+const PREVIEW_LOADED = "nova:preview-content-loaded";
+export function previewContentLoaded(frame: HTMLIFrameElement) {
+  window.dispatchEvent(new CustomEvent(PREVIEW_LOADED, { detail: frame }));
+}
 
 export interface PreviewTarget { win: Window; origin: string; path: string }
 
@@ -77,10 +81,21 @@ export function usePreviewEdits(root: RefObject<HTMLElement>, load = loadPreview
       if (sender) { target = sender; void send(); }
     };
     const onSaved = () => { if (target) void send(); };
+    const onLoaded = (event: Event) => {
+      const frame = (event as CustomEvent<HTMLIFrameElement>).detail;
+      if (!(frame instanceof HTMLIFrameElement) || !root.current?.contains(frame) || !frame.matches("iframe[data-site-preview]") || !frame.contentWindow) return;
+      try {
+        const url = new URL(frame.src);
+        if (url.protocol !== "https:" || url.origin === window.location.origin || url.searchParams.has("nova-edit")) return;
+        target = { win: frame.contentWindow, origin: url.origin, path: url.pathname };
+        void send();
+      } catch { /* Invalid targets never receive data. */ }
+    };
     window.addEventListener("message", onMessage);
+    window.addEventListener(PREVIEW_LOADED, onLoaded);
     window.addEventListener(CONTENT_SAVED, onSaved);
     window.addEventListener(PREVIEW_CONTENT_RETRY, onSaved);
-    return () => { cancelled = true; ++seq; clearTimeout(timer); window.removeEventListener("message", onMessage); window.removeEventListener(CONTENT_SAVED, onSaved); window.removeEventListener(PREVIEW_CONTENT_RETRY, onSaved); };
+    return () => { cancelled = true; ++seq; clearTimeout(timer); window.removeEventListener("message", onMessage); window.removeEventListener(PREVIEW_LOADED, onLoaded); window.removeEventListener(CONTENT_SAVED, onSaved); window.removeEventListener(PREVIEW_CONTENT_RETRY, onSaved); };
   }, [root, load, loadContent]);
   return failed;
 }
