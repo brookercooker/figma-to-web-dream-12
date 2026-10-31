@@ -121,7 +121,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
       const wait = Number.isFinite(expires) ? Math.min(2_147_483_647, Math.max(30_000, expires - Date.now() - REFRESH_MARGIN_MS)) : 30 * 60_000;
       expiry.current = setTimeout(loadPreview, wait);
     } catch (e) {
-      if (alive.current && shown.current === 0) {
+      if (alive.current) {
         try {
           const base = publicPreviewBase(null);
           setManifestBase(base);

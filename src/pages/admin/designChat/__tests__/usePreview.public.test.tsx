@@ -21,7 +21,10 @@ describe("Chat public frames", () => {
   it("still loads the public page when the old Manager embed service is unavailable", async () => {
     vi.stubEnv("VITE_PUBLIC_SITE_URL", "https://public.example");
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("unavailable")));
-    const view = renderHook(() => usePreview(null, "/draft"));
+    const view = renderHook(({ path }) => usePreview(null, path), { initialProps: { path: "/draft" } });
     await waitFor(() => expect(view.result.current.frames[0]?.url).toBe("https://public.example/draft"));
+    act(() => view.result.current.finish(1));
+    view.rerender({ path: "/landing/new" });
+    await waitFor(() => expect(view.result.current.frames[1]?.url).toBe("https://public.example/landing/new"));
   });
 });
