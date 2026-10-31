@@ -8,7 +8,7 @@ const DOC = `<body style="margin:0"><div style="height:300px"></div><button id="
 for (const scale of [0.35, 0.55, 1]) {
   test(`click lines up at ${Math.round(scale * 100)}%`, async ({ page }) => {
     await page.setViewportSize({ width: 1400, height: 900 });
-    await page.setContent(`<div style="width:${1280 * scale}px;height:${800 * scale}px;overflow:hidden;position:relative">
+    await page.setContent(`<style>body{margin:0}</style><div style="width:${1280 * scale}px;height:${800 * scale}px;overflow:hidden;position:relative">
       <div style="width:1280px;height:800px;transform:scale(${scale});transform-origin:top left"><iframe id="f" style="width:100%;height:100%;border:0"></iframe></div></div>
       <script>window.hits=[];addEventListener('message',e=>hits.push(e.data))</script>`);
     await page.evaluate((doc) => { (document.getElementById("f") as HTMLIFrameElement).srcdoc = doc; }, DOC);
