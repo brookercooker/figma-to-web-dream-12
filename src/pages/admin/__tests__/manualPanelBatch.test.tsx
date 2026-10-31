@@ -12,7 +12,7 @@ import { remoteSelection } from "../remoteSelection";
 afterEach(cleanup);
 describe("safe Material paste", () => {
   it.each([
-    ["home", "outlined", "home"], ["arrow_forward", "outlined", "arrow_forward"],
+    ["home", "outlined", "home"], ["arrow_forward", "outlined", "arrow_forward"], ["123", "outlined", "123"],
     ['<span class="material-symbols-outlined">home</span>', "outlined", "home"],
     ['<span class="material-symbols-rounded">home</span>', "rounded", "home"],
     ['<span class="material-symbols-sharp">home</span>', "sharp", "home"],
@@ -20,7 +20,7 @@ describe("safe Material paste", () => {
     ['<span class="material-icons-round">home</span>', "rounded", "home"],
     ['<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"><span class="material-symbols-outlined">home</span>', "outlined", "home"],
   ])("accepts %s", (input, style, name) => expect(parseMaterialIcon(input)).toEqual({ style, name, value: `material:${style}:${name}` }));
-  it.each(["Home", "two words", "home()", "home-foo", "123", '<script>alert(1)</script><span class="material-symbols-outlined">home</span>', '<span class="material-symbols-outlined" onclick="bad()">home</span>', '<img src=x onerror=bad()>', '<span>home</span>'])("rejects %s", input => expect(parseMaterialIcon(input)).toBeNull());
+  it.each(["Home", "two words", "home()", "home-foo", '<script>alert(1)</script><span class="material-symbols-outlined">home</span>', '<span class="material-symbols-outlined" onclick="bad()">home</span>', '<img src=x onerror=bad()>', '<span>home</span>'])("rejects %s", input => expect(parseMaterialIcon(input)).toBeNull());
 });
 it.each([["mailto:staff@example.com", "email"], ["tel:+1555", "phone"], ["/team", "page"], ["https://example.com", "web"]])("detects %s", (href, kind) => expect(detectLinkKind(href)).toBe(kind));
 it("stores email and phone protocols once", () => { expect(linkAddress("email", "mailto:a@b.com")).toBe("mailto:a@b.com"); expect(linkAddress("phone", "+1 555")).toBe("tel:+1555"); });

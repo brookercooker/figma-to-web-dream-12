@@ -19,6 +19,6 @@ export function parseMaterialIcon(input: string): { style: MaterialStyle; name: 
     style = /(?:rounded|round)$/.test(cls) ? "rounded" : /sharp$/.test(cls) ? "sharp" : "outlined";
     name = (el.textContent ?? "").trim();
   }
-  if (!/^[a-z][a-z0-9_]*$/.test(name) || name.length > 100) return null;
+  if (!/^[a-z0-9_]+$/.test(name) || name.length > 100) return null;
   return { style, name, value: `material:${style}:${name}` };
 }

@@ -626,6 +626,9 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     try { await dropCopies(unused); } catch (error) { toast.error(error instanceof Error ? error.message : "Couldn't remove the unused copies."); return false; }
     pendingCopies.current.clear();
     return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? `Your changes couldn't be saved. ${error.message}` : "Your changes couldn't be saved. You are still in the editor. Try again.");
+      return false;
     } finally { savingHistory.current = false; }
   };
   /** Plain lines for everything this save writes (clean state → current state). */

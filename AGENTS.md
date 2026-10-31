@@ -33,7 +33,7 @@
 - Relay consumers share throttled useHelperState; contentSync debt persists per relay, retries from existing status every 20s for 30m per load, and coalesces saves by generation.
 
 - Preview progress derives from relay job/checking/build signals with monotonic per-job stages and original elapsed time; retain the old frame and notify only when a detected build frame actually loads, never from a timeout, plan, failure, review or manual editing; helper polling remains unchanged.
-- The Chat Mode preview is sent `preview-edits` (page inline_edits + object inline_edits) on `preview-ready` and after every CONTENT_SAVED event, only to the exact origin/contentWindow of a preview frame; it never reloads, because the public draft package does not read the live database.
+- The Chat Mode preview receives `preview-content` with all Ready/nonarchived visitor pages and every nonarchived object on trusted preview-ready and CONTENT_SAVED, followed by legacy preview-edits; exact origin/window and sequence guards prevent stale delivery, while read/sync failures expose Retry because packaged content can lag saved data.
 - Framed-page safety counts come only from the frame's validated `edit-applied` reports (cleared on every frame load) and Record Fingerprints uses `edit-query op:"record"`; never show local or stale counts for framed pages.
 - The top bar and the left-panel header share HEADER_HEIGHT_CLASS (designChat/layout.ts) with border-b on the same element, so their bottom borders always align.
 - Placeholder, video src/poster/title edits need a new attribute edit kind in the verbatim-shared inlineEditCore; until both projects add it, the panel shows those values read-only rather than writing keys the public replay would reject.

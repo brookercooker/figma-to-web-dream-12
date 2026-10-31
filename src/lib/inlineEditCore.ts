@@ -85,7 +85,7 @@ export function validateEdits(edits: unknown): { ok: InlineEdits; rejected: Repl
     } else if (parsed.kind === "hidden") {
       if (value !== "1") reason = "Hidden edit must be 1";
     } else if (parsed.kind === "icon" && value.startsWith("material:")) {
-      if (!/^material:(outlined|rounded|sharp):[a-z][a-z0-9_]{0,99}$/.test(value)) reason = "Invalid Material icon";
+      if (!/^material:(outlined|rounded|sharp):[a-z0-9_]{1,100}$/.test(value)) reason = "Invalid Material icon";
     } else if (parsed.kind === "fp") {
       try { if (!isFingerprint(JSON.parse(value))) reason = "Invalid fingerprint"; }
       catch { reason = "Invalid fingerprint"; }
@@ -224,7 +224,7 @@ export function createReplay() {
             const svg = holder.querySelector("svg,[data-inline-icon]");
             if (icon === "none") { if (svg) { (svg as SVGElement).style.display = "none"; svg.setAttribute("data-inline-icon", "none"); } }
             else {
-              const material = /^material:(outlined|rounded|sharp):([a-z][a-z0-9_]{0,99})$/.exec(icon);
+              const material = /^material:(outlined|rounded|sharp):([a-z0-9_]{1,100})$/.exec(icon);
               if (material) {
                 const replacement = document.createElement("span");
                 replacement.className = `material-symbols-${material[1]}`;
