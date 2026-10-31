@@ -7,6 +7,7 @@ import { remoteSelection, validSnapshot, validWordRange, type WordRange, type Fo
 import { manualNavigationPath } from "./designChat/manualPageNavigation";
 import { acceptFrameScroll, restoreFrameScroll } from "./designChat/frameScroll";
 import { parseFrameSections, type FrameSection } from "./frameSections";
+import { rememberFrameObjects } from "./frameObjectUsages";
 
 export interface FramedEditorController { exit: () => void; query: EditQuery; scrollToSlot?: (slot: string) => void; scrollToSection?: (key: string) => void; sectionAction?: (key: string, action: "up" | "down" | "delete") => void }
 export interface FramedPageEditorProps {
@@ -157,7 +158,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       if (!ready.current) return;
       if (data.type === "edit-sections" && sectionsCapable.current) {
         const sections = parseFrameSections(data.sections);
-        if (sections) { sectionsRef.current = sections; latest.current.onSections?.(sections); }
+        if (sections) { sectionsRef.current = sections; if (!latest.current.objectScope) rememberFrameObjects(latest.current.path, sections); latest.current.onSections?.(sections); }
       } else if (data.type === "page-scroll") {
         acceptFrameScroll(event, frame.current, latest.current.path);
       } else if (data.type === "edit-change" && typeof data.scope === "string" && data.scope) {

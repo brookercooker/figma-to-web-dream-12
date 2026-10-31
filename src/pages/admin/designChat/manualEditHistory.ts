@@ -25,6 +25,8 @@ export class ManualEditHistory {
   reset() { this.undoSteps = []; this.redoSteps = []; }
   record(before: ManualEditSnapshot, after: ManualEditSnapshot, action: EditAction, time = Date.now()) {
     if (sameEditState(before, after)) return false;
+    const withoutMetadata = (state: ManualEditSnapshot) => ({ ...state, inlineEdits: Object.fromEntries(Object.entries(state.inlineEdits).filter(([key]) => !key.startsWith("fp:"))), objectEdits: Object.fromEntries(Object.entries(state.objectEdits).map(([scope, edits]) => [scope, Object.fromEntries(Object.entries(edits).filter(([key]) => !key.startsWith("fp:"))])) });
+    if (sameEditState(withoutMetadata(before), withoutMetadata(after))) return false;
     const last = this.undoSteps.at(-1);
     const merge = !this.redoSteps.length && action.mergeKey && last?.action.mergeKey === action.mergeKey && time - last.time <= 1000;
     if (merge && last) { last.after = structuredClone(after); last.time = time; }

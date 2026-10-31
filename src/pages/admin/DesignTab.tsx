@@ -51,7 +51,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import ResetEditsAction from "./ResetEditsAction";
 import type { FrameSection } from "./frameSections";
 import { findObjectUsages } from "./objectUsages";
-import { frameObjectPaths, rememberFrameObjects } from "./frameObjectUsages";
+import { frameObjectPaths } from "./frameObjectUsages";
 import { pageKey } from "./designChat/registerPage";
 import { cleanupObjectCopies } from "./objectCopyCleanup";
 import { Save as SaveIcon, Trash2 as TrashIcon, Pencil as PencilIcon } from "lucide-react";
@@ -135,6 +135,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const changeBlocks = (next: Block[] | ((current: Block[]) => Block[]), label = "changed a section", mergeKey?: string) => {
     const result = typeof next === "function" ? next(editState.current.blocks) : next;
     if (sameEditState(result, editState.current.blocks)) return;
+    updateSectionRows(result);
     recordEdit({ blocks: result }, { label, mergeKey });
     setBlocks(result);
     setSectionRevision((revision) => revision + 1);
@@ -144,6 +145,24 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const [heldInFrame, setHeldInFrame] = useState(false);
   const [frameSections, setFrameSections] = useState<FrameSection[] | null>(null);
   const [activeSection, setActiveSection] = useState("");
+  const sectionTemplates = useRef(new Map<string, FrameSection>());
+  const receiveSections = (sections: FrameSection[] | null) => {
+    if (sections) sections.forEach(section => sectionTemplates.current.set(section.key, section));
+    setFrameSections(sections);
+  };
+  const updateSectionRows = (next: Block[]) => {
+    const oldHeld = new Set([...editState.current.blocks, ...next].map(b => b.id));
+    setFrameSections(previous => {
+      if (!previous) return previous;
+      const fixed = previous.filter(section => !oldHeld.has(section.key));
+      const rows = (list: Block[]) => list.filter(b => !isPageContent(b)).map(b => sectionTemplates.current.get(b.id) ?? { key: b.id, name: b.type === "object" ? b.name ?? "Object" : b.type === "heading" || b.type === "text" ? b.text : b.type, kind: "held" as const, collapsed: false, movable: true, deletable: true, ...(b.type === "object" ? { objectId: b.objectId } : {}) });
+      if (objectId) return [...fixed.filter(s => s.kind === "site" && s.key === "site-header"), ...rows(next), ...fixed.filter(s => s.kind !== "site"), ...fixed.filter(s => s.kind === "site" && s.key !== "site-header")];
+      const ordered = orderedPageContent(next);
+      const marker = ordered.findIndex(isPageContent);
+      const header = fixed.filter(s => s.key === "site-header"), footer = fixed.filter(s => s.key === "site-footer");
+      return [...header, ...rows(ordered.slice(0, marker)), ...fixed.filter(s => s.key !== "site-header" && s.key !== "site-footer"), ...rows(ordered.slice(marker + 1)), ...footer];
+    });
+  };
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -672,6 +691,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     const snapshot = history.current[kind]();
     if (!snapshot) return;
     const blockChange = !sameEditState(editState.current.blocks, snapshot.blocks);
+    if (blockChange) updateSectionRows(snapshot.blocks);
     editState.current = snapshot;
     setBlocks(snapshot.blocks); setInlineEdits(snapshot.inlineEdits); setObjectEdits(snapshot.objectEdits);
     pendingSave.current = sameEditState(snapshot.blocks, cleanState.current.blocks) ? null : { pageId: selectedId, snapshot: snapshot.blocks };
