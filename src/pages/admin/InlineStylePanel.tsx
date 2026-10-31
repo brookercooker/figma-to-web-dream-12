@@ -3,15 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fontMenu, inheritedFont, inheritedWeight } from "./designChat/fontOptions";
-import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, CaseUpper, ImageIcon, RotateCcw, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, Film, TextCursorInput, icons } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Strikethrough, ImageIcon, RotateCcw, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, Film, TextCursorInput, icons } from "lucide-react";
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { LINK_ICONS, readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
-import { remoteSnapshot, selectionComputedStyle } from "./remoteSelection";
+import { remoteSnapshot, remoteFormatting, selectionComputedStyle, type FormatCommand } from "./remoteSelection";
+import SelectionColourPicker from "./SelectionColourPicker";
+import { selectionDescription } from "./selectionDescription";
 import { SIDES, commonValue, isMixed, setAllSides, setBorderPart, sideValues, type BorderPart, type Side } from "./borderEdit";
 
-const COLOURS = [
-  ["Ink", "ink"], ["Stone", "stone"], ["Garnet", "garnet"], ["Tan", "brass"], ["White", "cream"],
-] as const;
 const WEIGHTS = [["Light", "300"], ["Regular", "400"], ["Medium", "500"], ["Bold", "700"]] as const;
 
 
@@ -29,7 +28,7 @@ export default function InlineStylePanel({
   // Words highlighted inside the selected text: style changes then apply to just those words.
   const range = useRef<Range | null>(null);
   const span = useRef<HTMLSpanElement | null>(null);
-  const [highlighted, setHighlighted] = useState(false);
+  const [localHighlighted, setHighlighted] = useState(false);
   useEffect(() => {
     range.current = null; span.current = null; setHighlighted(false);
     if (!sel || sel.kind !== "text") return;
@@ -55,6 +54,10 @@ export default function InlineStylePanel({
   }
   const style = readStyle(edits, sel.key);
   const computed = selectionComputedStyle(sel.el);
+  const words = remoteFormatting(sel.el);
+  const marks = words?.range && !words.range.collapsed && words.range.text ? words.range.marks : null;
+  const highlighted = !!marks || localHighlighted;
+  const description = selectionDescription(sel);
   const set = (prop: string, value: string) => {
     const next = { ...style };
     if (value) next[prop] = value; else delete next[prop];
@@ -74,20 +77,7 @@ export default function InlineStylePanel({
     <Button variant="outline" size="sm" onClick={() => set("display", "none")}>Delete Element</Button>
     <Button variant="ghost" size="sm" onClick={reset}>Reset Element</Button>
   </div>;
-  const swatches = (cur: string | undefined, pick: (v: string) => void, keepFocus = false) => (
-    <div className="flex gap-2">
-      {COLOURS.map(([l, c]) => {
-        const v = `hsl(var(--nova-${c}))`;
-        return (
-          <button key={c} type="button" title={l} aria-label={l} aria-pressed={cur === v}
-            onMouseDown={keepFocus ? (e) => e.preventDefault() : undefined}
-            onClick={() => pick(v)}
-            className={`h-7 w-7 rounded-full border ${cur === v ? "ring-2 ring-ring ring-offset-2" : ""}`}
-            style={{ background: v }} />
-        );
-      })}
-    </div>
-  );
+  const swatches = (cur: string | undefined, pick: (v: string) => void) => <SelectionColourPicker value={cur} onChange={pick} />;
 
   if (sel.kind === "divider" && sel.side) {
     return <BorderControls key={sel.key} style={style} computed={selectionComputedStyle(sel.el)} side={sel.side}
@@ -136,7 +126,7 @@ export default function InlineStylePanel({
   if (sel.kind === "image") {
     return (
       <div>
-        <ToolHeader icon={ImageIcon} title="Picture" menu={[{ label: "Reset Picture Size", icon: RotateCcw, onSelect: reset }]} />
+        <ToolHeader icon={ImageIcon} {...description} menu={[{ label: "Reset Picture Size", icon: RotateCcw, onSelect: reset }]} />
         <ToolGroup title="Picture" icon={ImageIcon} defaultOpen>
           <Button variant="outline" size="sm" className="w-full gap-2" onClick={onReplaceImage}>
             <ImageIcon className="w-4 h-4" /> Replace Picture
@@ -184,7 +174,7 @@ export default function InlineStylePanel({
     };
     return (
       <div>
-        <ToolHeader icon={TextCursorInput} title={label ? `Form Field: ${label}` : "Form Field"} />
+        <ToolHeader icon={TextCursorInput} {...description} />
         <ToolGroup title="Wording" icon={TextCursorInput} defaultOpen>
           <ToolField label="Placeholder Text">
             <Input aria-label="Placeholder Text" maxLength={300} value={value} onChange={(e) => setPlaceholder(e.target.value)} />
@@ -212,7 +202,7 @@ export default function InlineStylePanel({
     };
     return (
       <div>
-        <ToolHeader icon={Film} title="Video" subtitle={attr("title") || undefined} menu={[{ label: "Reset Video Size", icon: RotateCcw, onSelect: reset }]} />
+        <ToolHeader icon={Film} {...description} menu={[{ label: "Reset Video Size", icon: RotateCcw, onSelect: reset }]} />
         <ToolGroup title="Size" icon={Maximize2} defaultOpen>
           <ToolGrid>
             <ToolField label="Width (px)">
@@ -250,6 +240,8 @@ export default function InlineStylePanel({
 
   /** Apply to highlighted words if any, otherwise to the whole text. */
   const apply = (prop: string, value: string) => {
+    const commands: Record<string, FormatCommand> = { "font-weight": "weight", "font-style": "italic", "text-decoration": "underline", color: "color", "font-size": "size", "font-family": "font" };
+    if (marks && commands[prop]) { words?.format(commands[prop], value); return; }
     const r = range.current;
     if (!r || !sel.el.contains(r.commonAncestorContainer)) return set(prop, value);
     let s = span.current;
@@ -264,6 +256,7 @@ export default function InlineStylePanel({
     sel.el.dispatchEvent(new Event("input", { bubbles: true }));
   };
   const clearWords = () => {
+    if (marks) { words?.format("clear"); return; }
     const r = range.current;
     if (!r) return;
     const text = r.extractContents().textContent ?? "";
@@ -274,15 +267,25 @@ export default function InlineStylePanel({
   const hs = highlighted && span.current ? span.current.style : null;
   const linkEl = sel.el.closest("a,button") ?? (sel.el.querySelector("svg") ? sel.el : null);
   const iconNow = edits[`icon:${sel.key}`] ?? "";
-  const bold = hs ? parseInt(hs.fontWeight) >= 600 : parseInt(style["font-weight"] ?? computed.fontWeight) >= 600;
-  const italic = hs ? hs.fontStyle === "italic" : (style["font-style"] ?? computed.fontStyle) === "italic";
-  const upper = hs ? hs.textTransform === "uppercase" : (style["text-transform"] ?? computed.textTransform) === "uppercase";
-  const under = hs ? hs.textDecoration.includes("underline") : (style["text-decoration"] ?? computed.textDecorationLine).includes("underline");
+  const bold = marks?.bold ?? (hs ? parseInt(hs.fontWeight) >= 600 : parseInt(style["font-weight"] ?? computed.fontWeight) >= 600);
+  const italic = marks?.italic ?? (hs ? hs.fontStyle === "italic" : (style["font-style"] ?? computed.fontStyle) === "italic");
+  const decoration = hs ? hs.textDecoration : style["text-decoration"] ?? computed.textDecorationLine;
+  const under = marks?.underline ?? decoration.includes("underline");
+  const strike = marks?.strike ?? decoration.includes("line-through");
+  const toggleMark = (command: "bold" | "italic" | "underline" | "strike") => {
+    if (marks) { words?.format(command); return; }
+    if (command === "bold") apply("font-weight", bold ? "400" : "700");
+    else if (command === "italic") highlighted ? apply("font-style", italic ? "normal" : "italic") : toggle("font-style", "italic", italic);
+    else { const active = new Set(decoration.split(/\s+/).filter(v => v && v !== "none")); const mark = command === "strike" ? "line-through" : "underline"; if (active.has(mark)) active.delete(mark); else active.add(mark); apply("text-decoration", [...active].join(" ") || "none"); }
+  };
   const align = style["text-align"] ?? computed.textAlign;
   const inherited = inheritedFont(computed.fontFamily, sel.el.tagName);
-  const fontName = style["font-family"] ? inheritedFont(style["font-family"], sel.el.tagName).name : inherited.name;
-  const sizeNow = num(style["font-size"]) || num(computed.fontSize);
-  const textPreview = (sel.el.textContent ?? "").trim().replace(/\s+/g, " ");
+  const fontValue = marks ? marks.font : style["font-family"] || "";
+  const fontName = fontValue ? inheritedFont(fontValue, sel.el.tagName).name : inherited.name;
+  const sizeNow = marks ? num(String(marks.size)) : num(style["font-size"]) || num(computed.fontSize);
+  const weightNow = marks ? String(marks.weight) : style["font-weight"] ?? "";
+  const colourNow = marks ? marks.color : style.color || computed.color;
+  const textPreview = (remoteSnapshot(sel.el)?.text ?? sel.el.textContent ?? "").trim().replace(/\s+/g, " ");
   const tagName = sel.el.tagName.toLowerCase();
   // A plain button label (no icon or other parts inside) can be retyped here; it saves as the element's wording.
   const labelEditable = (tagName === "button" || tagName === "a" || sel.el.getAttribute("role") === "button") && sel.el.children.length === 0;
@@ -291,15 +294,14 @@ export default function InlineStylePanel({
   const placeholderNow = remoteSnapshot(sel.el)?.attrs?.placeholder ?? sel.el.getAttribute("placeholder");
   return (
     <div>
-      <ToolHeader icon={Type} title="Text" subtitle={textPreview.length > 40 ? `${textPreview.slice(0, 40)}…` : textPreview || undefined}
+      <ToolHeader icon={Type} {...description}
         menu={[{ label: "Reset Text Style", icon: RotateCcw, onSelect: reset }]} />
-      {remoteSnapshot(sel.el) && <ToolNote>Text styles apply to the whole selected element. Highlighted-word formatting isn't available through this page connection.</ToolNote>}
       {highlighted ? (
         <div className="pb-3">
           <ToolNote>
             <span className="flex items-center justify-between gap-2">
               <span>Changes apply to the highlighted words only.</span>
-              <button type="button" className="underline" onMouseDown={(e) => e.preventDefault()} onClick={clearWords} title="Remove styles from these words"><Eraser className="inline h-3.5 w-3.5" /> Clear</button>
+              <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" aria-label="Clear Word Formatting" onMouseDown={(e) => e.preventDefault()} onClick={clearWords} title="Clear Word Formatting"><Eraser className="h-3.5 w-3.5" /></Button>
             </span>
           </ToolNote>
         </div>

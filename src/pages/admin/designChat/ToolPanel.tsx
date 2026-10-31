@@ -10,14 +10,14 @@ import { cn } from "@/lib/utils";
 
 export type ToolMenuItem = { label: string; icon?: LucideIcon; onSelect: () => void; destructive?: boolean };
 
-export function ToolHeader({ icon: Icon, title, subtitle, menu }: {
-  icon?: LucideIcon; title: string; subtitle?: string; menu?: ToolMenuItem[];
+export function ToolHeader({ icon: Icon, title, subtitle, thumbnail, menu }: {
+  icon?: LucideIcon; title: string; subtitle?: string; thumbnail?: string; menu?: ToolMenuItem[];
 }) {
   return (
     <div className="flex items-center gap-2 pb-3">
-      {Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
+      {thumbnail ? <img src={thumbnail} alt="" className="h-9 w-9 shrink-0 rounded-lg object-cover" /> : Icon && <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />}
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium leading-tight">{title}</p>
+        <p className="break-words text-sm font-medium leading-tight">{title}</p>
         {subtitle && <p className="truncate text-xs text-muted-foreground" title={subtitle}>{subtitle}</p>}
       </div>
       {menu && menu.length > 0 && (
