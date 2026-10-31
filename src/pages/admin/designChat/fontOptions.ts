@@ -7,7 +7,9 @@ export const EDITOR_FONTS = [
 export function inheritedFont(family: string | undefined, tag: string) {
   const fallback = /^H[1-6]$/i.test(tag) ? EDITOR_FONTS[0][1] : EDITOR_FONTS[1][1];
   const value = family?.trim() || fallback;
-  return { family: value, name: value.split(",")[0].trim().replace(/^['"]|['"]$/g, "") };
+  const first = value.split(",")[0].trim().replace(/^['"]|['"]$/g, "");
+  const known = EDITOR_FONTS.find(([name, stack]) => name.toLowerCase() === first.toLowerCase() || stack.split(",")[0].replace(/^['"]|['"]$/g, "").toLowerCase() === first.toLowerCase());
+  return { family: value, name: known?.[0] ?? first };
 }
 export function inheritedWeight(weight: string | undefined): string {
   const value = weight?.trim().toLowerCase();
