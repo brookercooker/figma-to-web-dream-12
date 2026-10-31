@@ -316,43 +316,32 @@ export default function InlineStylePanel({
         </ToolGroup>
       )}
       <ToolGroup title="Text" icon={Type} defaultOpen summary={`${fontName} · ${sizeNow}px`}>
-        <div className="flex flex-wrap gap-2">
-          <ToolSegment onMouseDown={(e) => e.preventDefault()}>
-            <Button size="icon" variant={bold ? "default" : "ghost"} title="Bold" onClick={() => apply("font-weight", bold ? "400" : "700")}><Bold className="w-4 h-4" /></Button>
-            <Button size="icon" variant={italic ? "default" : "ghost"} title="Italic" onClick={() => (highlighted ? apply("font-style", italic ? "normal" : "italic") : toggle("font-style", "italic", italic))}><Italic className="w-4 h-4" /></Button>
-            <Button size="icon" variant={under ? "default" : "ghost"} title="Underline" onClick={() => apply("text-decoration", under ? "none" : "underline")}><Underline className="w-4 h-4" /></Button>
-            <Button size="icon" variant={upper ? "default" : "ghost"} title="Capitals" onClick={() => apply("text-transform", upper ? "none" : "uppercase")}><CaseUpper className="w-4 h-4" /></Button>
+        <div data-text-toolbar className="flex items-center gap-1">
+          <ToolSegment className="shrink-0 [&>button]:w-6" onMouseDown={(e) => e.preventDefault()}>
+            {([["bold", Bold, bold], ["italic", Italic, italic], ["underline", Underline, under], ["strike", Strikethrough, strike]] as const).map(([command, Icon, active]) => <Button key={command} size="icon" variant={active ? "default" : "ghost"} title={command === "strike" ? "Strikethrough" : command[0].toUpperCase() + command.slice(1)} aria-label={command === "strike" ? "Strikethrough" : command[0].toUpperCase() + command.slice(1)} aria-pressed={active} onClick={() => toggleMark(command)}><Icon className="h-3.5 w-3.5" /></Button>)}
           </ToolSegment>
-          <ToolSegment onMouseDown={(e) => e.preventDefault()}>
+          <ToolSegment className="shrink-0 [&>button]:w-6" onMouseDown={(e) => e.preventDefault()}>
             {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Icon]) => (
-              <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a}`} onClick={() => set("text-align", a)}><Icon className="w-4 h-4" /></Button>
+              <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a[0].toUpperCase() + a.slice(1)}`} aria-label={`Align ${a[0].toUpperCase() + a.slice(1)}`} onClick={() => set("text-align", a)}><Icon className="h-3.5 w-3.5" /></Button>
             ))}
           </ToolSegment>
+          <div className="relative w-14 shrink-0"><Input aria-label="Size (px)" className="h-8 px-1 pr-5 text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" type="number" min={8} placeholder={num(computed.fontSize)} value={marks ? sizeNow : num(style["font-size"])} onChange={e => apply("font-size", px(e.target.value))} /><span className="pointer-events-none absolute right-1 top-2 text-[10px] text-muted-foreground">px</span></div>
+          <Select value={weightNow || "inherited"} onValueChange={value => apply("font-weight", value === "inherited" ? "" : value)}>
+            <SelectTrigger aria-label="Weight" className="h-8 min-w-0 flex-1 gap-0 px-1 text-[11px]"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="inherited">{inheritedWeight(computed.fontWeight)}</SelectItem>{weightNow && !WEIGHTS.some(([, v]) => v === weightNow) && <SelectItem value={weightNow}>{inheritedWeight(weightNow)}</SelectItem>}{WEIGHTS.filter(([l, v]) => l !== inheritedWeight(computed.fontWeight) || weightNow === v).map(([l, v]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
+          </Select>
         </div>
-        <ToolField label="Font">
-          <Select value={style["font-family"] || "inherited"} onValueChange={value => apply("font-family", value === "inherited" ? "" : value)}>
-            <SelectTrigger aria-label="Font" style={{ fontFamily: style["font-family"] || inherited.family }}><SelectValue>{fontName}</SelectValue></SelectTrigger>
+        <div className="flex items-center gap-2">
+          <Select value={fontValue || "inherited"} onValueChange={value => apply("font-family", value === "inherited" ? "" : value)}>
+            <SelectTrigger className="h-8 min-w-0 flex-1" aria-label="Font" style={{ fontFamily: fontValue || inherited.family }}><SelectValue>{fontName}</SelectValue></SelectTrigger>
             <SelectContent>
               <SelectItem value="inherited" style={{ fontFamily: inherited.family }}>{inherited.name}</SelectItem>
-              {style["font-family"] && !fontMenu(inherited.name).others.some(([, value]) => value === style["font-family"]) && <SelectItem value={style["font-family"]} style={{ fontFamily: style["font-family"] }}>{fontName}</SelectItem>}
+              {fontValue && !fontMenu(inherited.name).others.some(([, value]) => value === fontValue) && <SelectItem value={fontValue} style={{ fontFamily: fontValue }}>{fontName}</SelectItem>}
               {fontMenu(inherited.name).others.map(([name, family]) => <SelectItem key={family} value={family} style={{ fontFamily: family }}>{name}</SelectItem>)}
             </SelectContent>
           </Select>
-        </ToolField>
-        <ToolGrid>
-          <ToolField label="Size (px)">
-            <Input type="number" min={8} placeholder={num(computed.fontSize)} value={num(style["font-size"])} onChange={(e) => apply("font-size", px(e.target.value))} />
-          </ToolField>
-          <ToolField label="Weight">
-            <select className="h-10 w-full rounded-md border bg-background px-2 text-sm" value={style["font-weight"] ?? ""} onChange={(e) => apply("font-weight", e.target.value)}>
-              <option value="">{inheritedWeight(computed.fontWeight)}</option>
-              {WEIGHTS.filter(([l, v]) => l !== inheritedWeight(computed.fontWeight) || style["font-weight"] === v).map(([l, v]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          </ToolField>
-        </ToolGrid>
-      </ToolGroup>
-      <ToolGroup title="Colour" icon={Palette} defaultOpen>
-        {swatches(style.color, (v) => apply("color", highlighted ? v : style.color === v ? "" : v), true)}
+          <SelectionColourPicker value={colourNow} onChange={v => apply("color", v)} />
+        </div>
       </ToolGroup>
       <ToolGroup title="Spacing" icon={MoveVertical}>
         <ToolGrid>
