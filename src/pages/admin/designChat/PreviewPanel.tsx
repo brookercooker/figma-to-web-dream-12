@@ -55,7 +55,7 @@ export default function PreviewPanel() {
 
         <div ref={drawing.areaRef} className={cn("relative h-full max-w-full overflow-hidden bg-background")}
           style={{ width: WIDTH[device] }}>
-          <ScaledViewport virtualWidth={device === "desktop" ? DESKTOP_VIRTUAL_WIDTH : parseInt(WIDTH[device])} what={device === "desktop" ? "desktop" : device === "tablet" ? "tablet" : "phone"}>
+          <ScaledViewport enabled={device !== "desktop" || window.innerWidth >= 640} virtualWidth={device === "desktop" ? DESKTOP_VIRTUAL_WIDTH : parseInt(WIDTH[device])} what={device === "desktop" ? "desktop" : device === "tablet" ? "tablet" : "phone"}>
           {preview.frames.map((f) => (
             <iframe
               key={f.id}
