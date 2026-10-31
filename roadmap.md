@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Fix Chat frame origin to the public site; verify /draft Spotlight and absence of postMessage origin warnings without changing saved content.
 - [x] Refresh Chat snapshots on every ready, load and mode/page transition with count/reason debug logs; verified saved Ready /draft contains Spotlight object dfff040f-a387-494d-af9d-cc10e3955b8e with component_key ExampleFixtureSpotlight. Public rendering still awaits reachable frame.
 - [x] Brooklyn ten-item Manager fixes: resolved word colours/no-op history, px spacing/line-height, coded object usage, object-only Shared tags, multi-add picker, top/bottom moves, confirmed immediate removal/Undo, proactive preview content, eight-line text box and deduplicated frame updates. 859 tests pass; signed-in 1440px picker/Delete/Undo clean-state checks passed without saves.
 - [ ] Verify Spotlight on /draft in real Chat preview and real public word formatting/section latency: design service returns Failed to fetch, zero Chat iframes; Homepage editor says Couldn't reach the public page. Public parent-origin handler is in the separate site project; no change made there.

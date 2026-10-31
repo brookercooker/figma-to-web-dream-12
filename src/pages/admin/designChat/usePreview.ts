@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { EMBED_FN, SUPABASE_KEY, type RelayState } from "./helper";
-import { withPath } from "./logic";
+import { publicPreviewBase, publicPreviewPage } from "./publicPreviewUrl";
 import { setManifestBase, resetSiteManifestCache, isSafePublicFrameUrl } from "../siteManifest";
 import { previewExcluded, previewStage, type PreviewStage } from "./previewProgress";
 import { syncManifestPages } from "../manifestPageSync";
@@ -20,7 +20,7 @@ const AFTER_BUILD_MS = [4000, 10000, 20000]; // after the helper sees the new bu
 const CLEAR_AT_MS = 10000; // the message clears with the reload this long after the new build is seen
 const UPDATING_FALLBACK_MS = 70000; // longest the message stays when no new build is reported (a rebuild shows within about 50 s)
 const REFRESH_MARGIN_MS = 5 * 60 * 1000; // ask for a new preview address this long before the old one expires
-const SWAP_TIMEOUT_MS = 20000; // show a copy even if its load event never comes
+const SWAP_TIMEOUT_MS = 10000; // Fail visibly rather than claim an unconfirmed public frame loaded.
 
 type Frame = { id: number; url: string };
 
@@ -109,17 +109,26 @@ export function usePreview(state: RelayState | null, path: string | null = null,
         body: JSON.stringify({ parent_origin: window.location.origin }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.embed_url) throw new Error(data.error || "Couldn't load the preview.");
-      if (!isSafePublicFrameUrl(data.embed_url)) throw new Error("Couldn't load the preview.");
+      const base = publicPreviewBase(res.ok ? data.embed_url : null);
+      if (!isSafePublicFrameUrl(base)) throw new Error("Couldn't load the preview.");
       if (!alive.current) return;
-      setManifestBase(data.embed_url);
+      setManifestBase(base);
       const id = ++seq.current;
-      setFrames((fs) => [...fs, { id, url: withPath(data.embed_url, remembered.current ?? pathRef.current) }]);
-      swapTimers.current[id] = setTimeout(() => finish(id, false), SWAP_TIMEOUT_MS);
-      const wait = Math.max(30_000, new Date(data.expires_at).getTime() - Date.now() - REFRESH_MARGIN_MS);
+      setFrames((fs) => [...fs, { id, url: publicPreviewPage(base, remembered.current ?? pathRef.current) }]);
+      swapTimers.current[id] = setTimeout(() => { if (alive.current) setError("The live preview couldn't load. Try again."); }, SWAP_TIMEOUT_MS);
+      const expires = new Date(data.expires_at).getTime();
+      const wait = Number.isFinite(expires) ? Math.max(30_000, expires - Date.now() - REFRESH_MARGIN_MS) : 30 * 60_000;
       expiry.current = setTimeout(loadPreview, wait);
     } catch (e) {
-      if (alive.current && shown.current === 0) setError(e instanceof Error ? e.message : "Couldn't load the preview.");
+      if (alive.current && shown.current === 0) {
+        try {
+          const base = publicPreviewBase(null);
+          setManifestBase(base);
+          const id = ++seq.current;
+          setFrames(fs => [...fs, { id, url: publicPreviewPage(base, remembered.current ?? pathRef.current) }]);
+          swapTimers.current[id] = setTimeout(() => { if (alive.current) setError("The live preview couldn't load. Try again."); }, SWAP_TIMEOUT_MS);
+        } catch { setError(e instanceof Error ? e.message : "Couldn't load the preview."); }
+      }
     } finally {
       loading.current = false;
       if (reloadAfter.current && alive.current) { reloadAfter.current = false; void loadPreview(); }
