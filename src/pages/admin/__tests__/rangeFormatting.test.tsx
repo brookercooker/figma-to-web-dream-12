@@ -30,7 +30,7 @@ it("opens the selection with the exact public payload and keeps it selected when
   send({ ...publicRange, key: "0.1" });
   expect(select).toHaveBeenCalledTimes(2);
   render(<InlineStylePanel sel={updated} edits={{}} onChange={vi.fn()} onReplaceImage={vi.fn()} />);
-  expect(screen.getByRole("button", { name: "Italic", exact: true })).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("button", { name: /^Italic$/ })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByLabelText("Size (px)")).toHaveValue(88);
   expect(screen.getByRole("combobox", { name: "Font" })).toHaveTextContent("Cormorant Garamond");
 });
