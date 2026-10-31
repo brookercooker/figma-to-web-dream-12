@@ -95,7 +95,7 @@ export default function PreviewPanel() {
             </div>
           </div>
         )}
-        {!preview.loaded && preview.error && <div role="alert" className="absolute inset-0 grid place-items-center bg-background p-6 text-center text-sm text-muted-foreground">{preview.error}</div>}
+        {preview.error && <div role="alert" className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-background p-6 text-center text-sm text-muted-foreground">{preview.error}<Button type="button" variant="outline" onClick={preview.retry}>Retry</Button></div>}
         {updated && visible && !pending && <div role="status" className="pointer-events-none absolute right-3 top-3 z-30 rounded-full border bg-background px-3 py-1.5 text-xs shadow-sm">Your Preview Is Updated</div>}
         {pending && preview.progressStage && <PreviewProgress stage={preview.progressStage} elapsedMs={preview.elapsedMs} />}
 

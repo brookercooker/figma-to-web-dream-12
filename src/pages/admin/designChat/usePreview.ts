@@ -225,6 +225,6 @@ export function usePreview(state: RelayState | null, path: string | null = null,
     if (!previewExcluded(state)) return;
     buildFrame.current = null; setBuildDetected(false); hideUpdating();
   }, [state, hideUpdating]);
-  return { frames, shownId, loaded, updating, error, finish, lastReloadAt, rememberPath,
+  return { frames, shownId, loaded, updating, error, finish, retry: loadPreview, lastReloadAt, rememberPath,
     progressStage, elapsedMs: Math.max(0, clock - (updateStart.current ?? clock)), completedAt };
 }
