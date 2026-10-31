@@ -343,7 +343,7 @@ export default function InlineStylePanel({
               <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a[0].toUpperCase() + a.slice(1)}`} aria-label={`Align ${a[0].toUpperCase() + a.slice(1)}`} onClick={() => set("text-align", a)}><Icon className="h-3.5 w-3.5" /></Button>
             ))}
           </ToolSegment></ToolField>
-          <div className="flex basis-full flex-wrap gap-2 @[360px]:basis-auto">
+          <div className="flex basis-full flex-wrap gap-2">
           <ToolField label="Letter Spacing">
             <div className="relative w-20"><Input aria-label="Letter Spacing (px)" className="h-8 pr-6" type="number" step={0.1} placeholder={spacingPixels(computed.letterSpacing, computed.fontSize) || "0"} value={spacingPixels(style["letter-spacing"], computed.fontSize)} onChange={(e) => set("letter-spacing", px(e.target.value))} /><span className="pointer-events-none absolute right-2 top-2 text-xs text-muted-foreground">px</span></div>
           </ToolField>
