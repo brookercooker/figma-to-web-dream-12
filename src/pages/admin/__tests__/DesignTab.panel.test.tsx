@@ -1,4 +1,4 @@
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
@@ -45,7 +45,7 @@ it("replaces the hint with one options panel through repeated frame selections",
   select("0");
   expect(hintCount()).toBe(0);
   expect(slot.querySelectorAll('[aria-label="Font"]')).toHaveLength(1);
-  expect(slot.querySelector('option[value=""]')?.textContent).toBe("Regular");
+  expect(within(slot).getByRole("combobox", { name: "Weight" })).toHaveTextContent("Regular");
   const selectedChildren = slot.querySelector(".space-y-4.p-3")?.childElementCount;
   send(null);
   expect(hintCount()).toBe(1);
@@ -53,7 +53,30 @@ it("replaces the hint with one options panel through repeated frame selections",
   select("0"); select("1"); select("0");
   expect(hintCount()).toBe(0);
   expect(slot.querySelectorAll('[aria-label="Font"]')).toHaveLength(1);
-  expect(slot.querySelectorAll('button[aria-expanded]')).toHaveLength(5);
   expect(Array.from(slot.querySelectorAll('button[aria-expanded]')).filter(el => el.textContent?.trim() === "Text")).toHaveLength(1);
   expect(slot.querySelector(".space-y-4.p-3")?.childElementCount).toBe(selectedChildren);
+});
+it("highlighted-word results enter unsaved history and Undo/Redo without database writes", async () => {
+  render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
+  const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+  const source = frame.contentWindow;
+  if (!source || !mocks.slot) throw new Error("Missing editor");
+  const post = vi.spyOn(source, "postMessage").mockImplementation(() => {});
+  const send = (type: string, payload = {}) => act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", type, ...payload } })));
+  send("edit-ready", { capabilities: { heldBlocks: true, rangeFormatting: true } });
+  send("edit-select", { selection: { key: "0", scope: "page", kind: "text", tag: "h1", text: "Light transforms everything.", context: "Heading · Light transforms everything. section", rect: { width: 600, height: 48 }, style: { fontWeight: "400", fontSize: "40px", textDecorationLine: "none" } } });
+  send("edit-range", { key: "0", scope: "page", collapsed: false, text: "transforms", marks: { bold: false, italic: true, underline: false, strike: false, color: "#853732", size: "20px", weight: "400", font: "Figtree" } });
+  expect(within(mocks.slot).getByRole("button", { name: "Italic" })).toHaveAttribute("aria-pressed", "true");
+  expect(within(mocks.slot).getByRole("spinbutton", { name: "Size (px)" })).toHaveValue(20);
+  fireEvent.click(within(mocks.slot).getByRole("button", { name: "Bold" }));
+  expect(post).toHaveBeenCalledWith({ source: "nova-manager", type: "edit-format", key: "0", scope: "page", command: "bold" }, "https://public.example.com");
+  const next = { "0": "Light <strong>transforms</strong> everything." };
+  send("edit-change", { scope: "page", next });
+  expect(mocks.hasChanges()).toBe(true);
+  act(() => mocks.history.undo());
+  expect(mocks.hasChanges()).toBe(false);
+  expect(post.mock.calls.filter(([m]) => m.type === "edit-update").at(-1)?.[0].edits).toEqual({});
+  act(() => mocks.history.redo());
+  expect(mocks.hasChanges()).toBe(true);
+  expect(post.mock.calls.filter(([m]) => m.type === "edit-update").at(-1)?.[0].edits).toEqual(next);
 });
