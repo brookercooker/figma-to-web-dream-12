@@ -9,8 +9,9 @@ import { useModeSwitch } from "./ModeSwitchContext";
 import { registerPreviewPage } from "./usePreviewPage";
 import { workingPageFrom } from "./pageSelection";
 import ModePageChooser from "./ModePageChooser";
+import { Button } from "@/components/ui/button";
 
-export default function ModeToggle({ collapsed = false, onChat }: { collapsed?: boolean; onChat: () => void }) {
+export default function ModeToggle({ collapsed = false, onChat, compact = false }: { collapsed?: boolean; onChat: () => void; compact?: boolean }) {
   const chat = useDesignChat();
   const { mode, selectPage, startEditing } = chat;
   const latest = useRef(chat);
@@ -56,7 +57,7 @@ export default function ModeToggle({ collapsed = false, onChat }: { collapsed?: 
     else await enter();
   };
   return <>
-    <ToggleGroup type="single" value={mode} onValueChange={(next) => void change(next)} aria-label="Editing Mode" data-mode-switch
+    {compact ? <Button type="button" variant={mode === "manual" ? "secondary" : "outline"} size="sm" className="shrink-0 gap-1 px-2 text-xs" data-mode-switch aria-pressed={mode === "manual"} onClick={() => void change(mode === "manual" ? "chat" : "manual")}><Pencil className="h-4 w-4" aria-hidden />{mode === "manual" ? "Done Editing" : "Edit"}</Button> : <ToggleGroup type="single" value={mode} onValueChange={(next) => void change(next)} aria-label="Editing Mode" data-mode-switch
       className={cn("shrink-0 gap-1 border-b bg-background p-2", collapsed ? "flex-col" : "grid w-full grid-cols-2")}>
       {([{ value: "chat", label: "Chat Mode", Icon: MessageSquare }, { value: "manual", label: "Manual Edit Mode", Icon: Pencil }] as const).map(({ value, label, Icon }) => <ToggleGroupItem key={value} value={value} aria-label={label} title={label}
         onKeyDown={(event) => {
@@ -71,7 +72,7 @@ export default function ModeToggle({ collapsed = false, onChat }: { collapsed?: 
           "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:hover:bg-primary data-[state=on]:hover:text-primary-foreground data-[state=on]:font-semibold")}>
         <Icon className="h-4 w-4 shrink-0" aria-hidden />{!collapsed && <span>{label}</span>}
       </ToggleGroupItem>)}
-    </ToggleGroup>
+    </ToggleGroup>}
     <ModePageChooser open={chooser} onOpenChange={setChooser} onChoose={(page) => { setChooser(false); void enter(page); }} />
   </>;
 }

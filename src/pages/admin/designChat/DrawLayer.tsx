@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDesignChat } from "./DesignChatContext";
 import { MAX_STROKES, MIN_STROKE_PX, addPoint, lengthPx, paintStrokes, thin, type Stroke } from "./drawing";
+import { useManagerLayout } from "./useManagerLayout";
 
 /**
  * The pencil: a see-through sheet over the preview to draw on (ring something, underline a word, draw an arrow to where it
@@ -11,6 +12,7 @@ import { MAX_STROKES, MIN_STROKE_PX, addPoint, lengthPx, paintStrokes, thin, typ
  * over what they were drawn on. The drawing is sent with the next request.
  */
 export default function DrawLayer() {
+  const { phone } = useManagerLayout();
   const { drawing, state } = useDesignChat();
   const { strokes, add, undo, clear, cancel, picture, pictureSupported, setPicture, note, capturing } = drawing;
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -125,6 +127,7 @@ export default function DrawLayer() {
           <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={cancel} aria-label="Stop drawing and remove the marks" title="Stop drawing and remove the marks (Esc)">
             <X className="h-4 w-4" />
           </Button>
+          {phone && <Button type="button" size="sm" className="h-8" onClick={() => { drawing.finish(); window.dispatchEvent(new Event("nova-phone-drawing-done")); }}>Attach Drawing</Button>}
         </div>
         <p className={cn("pointer-events-none max-w-[min(100%,26rem)] rounded-md bg-background/90 px-2 py-1 text-xs text-muted-foreground shadow-sm", unsupported && "text-destructive")}>
           {unsupported

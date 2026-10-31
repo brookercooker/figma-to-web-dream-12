@@ -60,6 +60,7 @@
     --nova-review: 159.0566 71.6216% 29.0196%;
     --nova-review-hover: 160.2198 75.2066% 23.7255%;
     --nova-review-foreground: 0 0% 100%;
+    --nova-chat-shadow: 0 4px 20px hsl(var(--foreground) / .22);
   }
 
   .dark {
@@ -302,3 +303,14 @@ body:has(:is([role="dialog"], [role="alertdialog"]):not([data-state="closed"]):n
 .inline-edit-surface [data-inline-drop-item="after-y"] { box-shadow: 0 3px 0 hsl(var(--ring)); }
 .inline-edit-surface [data-inline-drop-item="before-x"] { box-shadow: -3px 0 0 hsl(var(--ring)); }
 .inline-edit-surface [data-inline-drop-item="after-x"] { box-shadow: 3px 0 0 hsl(var(--ring)); }
+
+@media (max-width: 639px) {
+  .nova-phone-chat-button { right: calc(16px + env(safe-area-inset-right)); bottom: calc(16px + env(safe-area-inset-bottom)); box-shadow: var(--nova-chat-shadow); }
+  .nova-phone-chat-preview { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .nova-phone-chat-sheet { bottom: var(--kb-inset, 0px); height: min(85dvh, calc(100dvh - var(--kb-inset, 0px) - 56px)); padding-bottom: env(safe-area-inset-bottom); box-shadow: var(--nova-chat-shadow); }
+  .nova-phone-chat-sheet textarea { font-size: 16px; }
+  .nova-phone-chat-sheet form { max-height: 60%; overflow-y: auto; }
+  .nova-phone-chat-sheet[data-open="true"] { animation: nova-chat-rise .2s ease-out; }
+  @keyframes nova-chat-rise { from { transform: translateY(100%); } to { transform: translateY(0); } }
+}
+@media (prefers-reduced-motion: reduce) { .nova-phone-chat-sheet[data-open="true"] { animation: none; } }

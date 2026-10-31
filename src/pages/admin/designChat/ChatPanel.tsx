@@ -26,7 +26,7 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * The chat, always on the right of the Site Manager: what was said, the live "working on it" line, problems the person can
  * fix, the page they picked to work on, and the box to type in.
  */
-export default function ChatPanel() {
+export default function ChatPanel({ opening = 0, onDraw }: { opening?: number; onDraw?: () => void } = {}) {
   const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs } = useDesignChat();
   const modeSwitch = useModeSwitch();
   const [text, setText] = useState("");
@@ -40,6 +40,12 @@ export default function ChatPanel() {
   const dragDepth = useRef(0);
   const valueRef = useRef("");
   valueRef.current = text;
+  useLayoutEffect(() => {
+    if (!opening) return;
+    stick.current = true;
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+    textRef.current?.focus({ preventScroll: true });
+  }, [opening]);
 
   const attachments = useAttachments(state?.uploads, setHint);
   // A library item was picked in the top bar: put the cursor in the box so the person can say what to do with it.
@@ -187,7 +193,7 @@ export default function ChatPanel() {
       </div>
 
       <form
-        className={cn("border-t p-3 flex flex-col gap-2", editing && "[&>*:not(:last-child)]:hidden", dragging && "outline-2 outline-dashed outline-primary -outline-offset-4 bg-muted")}
+        className={cn("shrink-0 border-t p-3 flex flex-col gap-2", editing && "[&>*:not(:last-child)]:hidden", dragging && "outline-2 outline-dashed outline-primary -outline-offset-4 bg-muted")}
         autoComplete="off"
         onSubmit={(e) => { e.preventDefault(); send(); }}
         onDragEnter={(e) => { if (hasFiles(e)) { e.preventDefault(); dragDepth.current++; setDragging(true); } }}
@@ -291,7 +297,7 @@ export default function ChatPanel() {
             <Paperclip className="h-4 w-4" />
           </Button>
           <Button type="button" variant={drawing.on ? "default" : "outline"} size="icon" className="rounded-full shrink-0"
-            onClick={drawing.toggle} disabled={!drawing.available || !preview.loaded || editing} aria-pressed={drawing.on}
+            onClick={onDraw ?? drawing.toggle} disabled={!drawing.available || !preview.loaded || editing} aria-pressed={drawing.on}
             aria-label={drawing.on ? "Stop drawing and remove the marks" : "Draw on the preview"}
             title={editing ? "Drawing isn't available while editing a page" : !drawing.available ? "Open the Preview tab to draw on it" : drawing.on ? "Stop drawing and remove the marks" : "Draw on the preview"}>
             <Pencil className="h-4 w-4" />
