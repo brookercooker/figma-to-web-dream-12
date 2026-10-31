@@ -145,6 +145,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const [heldInFrame, setHeldInFrame] = useState(false);
   const [frameSections, setFrameSections] = useState<FrameSection[] | null>(null);
   const [activeSection, setActiveSection] = useState("");
+  const [removeAsk, setRemoveAsk] = useState<{ name: string; confirm: () => void } | null>(null);
   const sectionTemplates = useRef(new Map<string, FrameSection>());
   const receiveSections = (sections: FrameSection[] | null) => {
     if (sections) sections.forEach(section => sectionTemplates.current.set(section.key, section));
@@ -535,7 +536,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     setActiveId(id); setInlineSel(null);
   };
 
-  const remove = (id: string) => {
+  const removeNow = (id: string) => {
     if (id === "page-content") return;
     const block = editState.current.blocks.find(b => b.id === id);
     if (!block) return;
@@ -543,6 +544,12 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     changeBlocks((prev) => { const next = prev.filter(b => b.id !== id); return isPageContent(next[0]) ? next.slice(1) : next; }, "removed a section");
     setFrameSections(prev => prev?.filter(s => s.key !== id) ?? null);
     toast(`${name} removed.`, { action: { label: "Undo", onClick: () => historyHandlers.current.undo() } });
+  };
+  const remove = (id: string) => {
+    const block = editState.current.blocks.find(b => b.id === id);
+    if (!block || isPageContent(block)) return;
+    const name = frameSections?.find(s => s.key === id)?.name ?? (block.type === "object" ? block.name ?? "Object" : block.type === "heading" || block.type === "text" ? block.text : block.type);
+    setRemoveAsk({ name, confirm: () => removeNow(id) });
   };
   const moveHeldBlock = (id: string, to: number) => {
     const block = editState.current.blocks.find(b => b.id === id);
@@ -806,7 +813,12 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
       if (action === "delete") remove(section.key);
       else if (!objectId) moveHeldBlock(section.key, action === "up" ? 0 : orderedList(blocks).length - 1);
       else move(section.key, action === "up" ? -1 : 1);
-    } else framedApi.current?.sectionAction?.(section.key, action);
+    } else if (action === "delete") setRemoveAsk({ name: section.name, confirm: () => {
+      framedApi.current?.sectionAction?.(section.key, "delete");
+      setFrameSections(previous => previous?.filter(s => s.key !== section.key) ?? null);
+      toast(`${section.name} removed.`, { action: { label: "Undo", onClick: () => historyHandlers.current.undo() } });
+    } });
+    else framedApi.current?.sectionAction?.(section.key, action);
   }
   const stylePanel = (
     <>
@@ -1140,6 +1152,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
           setObjectAt(null);
         }}
       />
+      <ConfirmDialog open={!!removeAsk} onOpenChange={open => { if (!open) setRemoveAsk(null); }} title={`Remove ${removeAsk?.name ?? "This Section"}?`} description="The section will be removed from this page. You can undo it before saving." confirmLabel="Delete Section" onConfirm={() => { const ask = removeAsk; setRemoveAsk(null); ask?.confirm(); }} />
       <VideoPickerDialog
         open={!!videoFor}
         onOpenChange={(v) => { if (!v) { setVideoFor(null); setVideoAt(null); } }}
