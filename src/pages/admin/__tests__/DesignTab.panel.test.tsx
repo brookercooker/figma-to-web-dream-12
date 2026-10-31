@@ -27,6 +27,17 @@ beforeEach(() => {
   vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
 });
 afterEach(() => { cleanup(); mocks.slot?.remove(); mocks.slot = null; vi.unstubAllGlobals(); });
+it("footer text selection asks to edit the site-wide Footer without writing", async () => {
+  render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
+  const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+  const source = frame.contentWindow;
+  if (!source) throw new Error("Missing frame");
+  vi.spyOn(source, "postMessage").mockImplementation(() => {});
+  const send = (type: string, payload = {}) => act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", type, ...payload } })));
+  send("edit-ready");
+  send("edit-select", { selection: { key: "0", scope: "Footer", kind: "text", tag: "p", text: "Contact us", style: {}, rect: {} } });
+  expect(screen.getByRole("heading", { name: "Edit the Site Footer?" })).toBeInTheDocument();
+});
 it("replaces the hint with one options panel through repeated frame selections", async () => {
   render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
   const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
