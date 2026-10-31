@@ -43,6 +43,19 @@ describe("held blocks payload", () => {
   it("clamps edit-size", () => { expect(clampEditSize(10)).toBe(400); expect(clampEditSize(99999)).toBe(20000); expect(clampEditSize(1500)).toBe(1500); });
 });
 describe("held blocks handshake", () => {
+  it("keeps one frame and one listener through twenty section moves and undos", () => {
+    const add = vi.spyOn(window, "addEventListener"), remove = vi.spyOn(window, "removeEventListener");
+    const s = setup(); s.receive("edit-ready", { capabilities: { heldBlocks: true, blockMove: true } });
+    const original = s.frame();
+    const listenerCount = add.mock.calls.filter(([type]) => type === "message").length;
+    const removals = remove.mock.calls.filter(([type]) => type === "message").length;
+    for (let i = 1; i <= 20; i++) s.rerender(<FramedPageEditor {...s.props} heldBlocks={i % 2 ? [...blocks].reverse() : blocks} sectionRevision={i} />);
+    expect(s.frame()).toBe(original);
+    expect(add.mock.calls.filter(([type]) => type === "message")).toHaveLength(listenerCount);
+    expect(remove.mock.calls.filter(([type]) => type === "message")).toHaveLength(removals);
+    expect(s.sent("edit-update").at(-1).heldBlocks).toEqual([{ id: "page-content", type: "page" }, ...blocks]);
+    add.mockRestore(); remove.mockRestore();
+  });
   it("accepts section lists only from a capable ready exact-origin/window frame and clears on navigation", () => {
     const onSections = vi.fn(); const apiRef = { current: null as import("../FramedPageEditor").FramedEditorController | null };
     const s = setup({ onSections, apiRef });

@@ -84,3 +84,21 @@ it("colour selection supports custom valid hex and inheritance", () => {
   fireEvent.change(screen.getByLabelText("Custom Colour (Hex)"), { target: { value: "#abc123" } }); fireEvent.click(screen.getByRole("button", { name: "Apply" })); expect(change).toHaveBeenLastCalledWith("#abc123");
   fireEvent.click(screen.getByRole("button", { name: "Colour" })); fireEvent.click(screen.getByRole("button", { name: "Default" })); expect(change).toHaveBeenLastCalledWith("");
 });
+it("brand swatches send the same concrete hex format as Apply to highlighted words, without optimistic edits", () => {
+  document.documentElement.style.setProperty("--nova-garnet", "3 44% 36%");
+  const format = vi.fn(), change = vi.fn();
+  const sel = remoteSelection(snapshot, undefined, { range: { key: snapshot.key, scope: snapshot.scope, collapsed: false, text: "transforms", marks }, format });
+  render(<InlineStylePanel sel={sel} edits={{}} onChange={change} onReplaceImage={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "Colour" }));
+  fireEvent.click(screen.getByRole("button", { name: "Garnet" }));
+  expect(format).toHaveBeenCalledWith("color", "#843731");
+  expect(change).not.toHaveBeenCalled();
+  document.documentElement.style.removeProperty("--nova-garnet");
+});
+it("letter spacing entered as 4 writes 4px and line height writes a multiplier", () => {
+  const change = vi.fn(); render(<InlineStylePanel sel={remoteSelection(snapshot)} edits={{}} onChange={change} onReplaceImage={vi.fn()} />);
+  fireEvent.change(screen.getByLabelText("Letter Spacing (px)"), { target: { value: "4" } });
+  expect(change).toHaveBeenLastCalledWith({ "style:0": JSON.stringify({ "letter-spacing": "4px" }) });
+  fireEvent.change(screen.getByLabelText("Line Height (Multiplier)"), { target: { value: "1.5" } });
+  expect(change).toHaveBeenLastCalledWith({ "style:0": JSON.stringify({ "line-height": "1.5" }) });
+});
