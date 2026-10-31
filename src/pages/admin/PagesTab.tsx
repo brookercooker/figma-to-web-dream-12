@@ -1,4 +1,3 @@
-import { SlidersHorizontal } from "lucide-react";
 import "./pageTables.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { matchesLabelFilter } from "./labelPath";
@@ -92,7 +91,6 @@ export default function PagesTab() {
   };
   const [pages, setPages] = useState<Page[]>([]);
   const [q, setQ] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [searchField, setSearchField] = useState<Field>("all");
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [pageTypeFilter, setPageTypeFilter] = useState<PageType | "all">("all");

@@ -3,10 +3,10 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
-const mocks = vi.hoisted(() => ({ remote: true, slot: null as HTMLElement | null, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
+const mocks = vi.hoisted(() => ({ chat: null as any, remote: true, slot: null as HTMLElement | null, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
 vi.mock("../siteManifest", async (importOriginal) => ({ ...await importOriginal<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.reject(new Error("fixture")), manifestHasPage: () => mocks.remote, draftEmbedUrl: () => "https://public.example.com/?embed=fixture" }));
 vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: mocks.slot, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: (cb: any) => mocks.hasChanges = cb, registerHistory: (cb: any) => mocks.history = cb, registerAdd: (cb: any) => mocks.add = cb }) }));
-vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => null }));
+vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => mocks.chat }));
 vi.mock("../designChat/contentSync", () => ({ notifyContentEdited: vi.fn() }));
 vi.mock("@/prototype/client", () => ({ supabase: { from: (table: string) => {
   const data = table === "pages" ? [{ id: "contact", path: mocks.path, name: "Contact", updated_at: "original-date", ...mocks.original }, { id: "about", path: "/about", name: "About", updated_at: "about-date", content: [{ id: "about-image", type: "image", url: "/about.jpg", align: "left", width: 100 }], inline_edits: {} }] : [];
@@ -22,11 +22,38 @@ vi.mock("../CreatePageDialog", () => ({ default: () => null }));
 vi.mock("../TagsPanel", () => ({ default: () => null }));
 vi.mock("../PageMiniPreview", () => ({ default: () => null }));
 beforeEach(() => {
+  mocks.chat = null;
   mocks.slot = document.createElement("div"); document.body.appendChild(mocks.slot);
   mocks.original.content = null; mocks.original.inline_edits = {};
   vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
 });
 afterEach(() => { cleanup(); mocks.slot?.remove(); mocks.slot = null; vi.unstubAllGlobals(); });
+it.each([["mobile", 390], ["tablet", 768], ["desktop", 1280]])("Manual Edit uses the chosen %s viewport without replacing the frame", async (device, width) => {
+  mocks.chat = { device, drawing: {}, startEditing: vi.fn() };
+  let virtualWidth = 0;
+  vi.stubGlobal("ResizeObserver", class {
+    constructor(private measure: () => void) {}
+    observe(el: HTMLElement) {
+      if (el.hasAttribute("data-scaled-viewport")) {
+        Object.defineProperty(el, "clientWidth", { configurable: true, value: device === "desktop" ? 900 : 300 });
+        Object.defineProperty(el, "clientHeight", { configurable: true, value: 700 });
+        this.measure();
+      }
+    }
+    disconnect() {}
+  });
+  const view = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
+  const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+  const source = frame.contentWindow;
+  if (!source) throw new Error("Missing frame");
+  vi.spyOn(source, "postMessage").mockImplementation(() => {});
+  act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", type: "edit-ready", capabilities: { heldBlocks: true } } })));
+  virtualWidth = Number(view.container.querySelector("[data-scaled-viewport]")?.getAttribute("data-virtual-width"));
+  expect(virtualWidth).toBe(width);
+  mocks.chat = { ...mocks.chat, device: "tablet" };
+  view.rerender(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
+  expect(screen.getByTitle("Public Page Editor")).toBe(frame);
+});
 it("footer text selection asks to edit the site-wide Footer without writing", async () => {
   render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
   const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;

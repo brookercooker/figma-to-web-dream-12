@@ -15,9 +15,6 @@ export function phoneChatSignals(state: RelayState | null) {
     approvalTimestamp: state?.approval?.createdAt ?? 0,
     approvalId: state?.approval?.id ?? "",
     problems: JSON.stringify(problems),
-    activity: last ? JSON.stringify([entries.length, last.role, last.ts, last.text]) : "",
-    attention: JSON.stringify([state?.approval?.id ?? "", error ? [error.ts, error.text] : null, problems ?? null]),
-    urgent: Boolean(state?.approval || error || problems),
     working: isWorking(state) || Boolean(state?.busy),
   };
 }
@@ -49,7 +46,7 @@ export function usePhoneChat(phone: boolean, manual: boolean, state: RelayState 
     const newError = signals.errorTimestamp > after;
     const newApproval = Boolean(signals.approvalId && signals.approvalId !== prior.approvalId && signals.approvalTimestamp > baseline.current);
     const newProblem = signals.problems !== "null" && signals.problems !== prior.problems;
-    const newLive = completedAt > prior.completedAt && prior.completedAt > 0;
+    const newLive = completedAt > prior.completedAt;
     if ((newReply || newApproval || newProblem || newLive) && !open) setUnread(true);
     if (newError || newApproval || newProblem) { attentionCallback.current?.(); show(); }
   }, [phone, manual, state, signals.newest, signals.replyTimestamp, signals.errorTimestamp, signals.approvalId, signals.approvalTimestamp, signals.problems, completedAt]);
