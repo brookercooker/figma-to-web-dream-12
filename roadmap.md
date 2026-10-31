@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Urgent selection regression: accept public structured context, preserve selection during word-range updates, display RGB colours/full font stacks, exact-payload tests and signed-in real-frame check.
 - [x] Streamline Manual Edit controls, add trusted highlighted-word formatting and selection context; all 798 tests pass, preview build OK, signed-in 308px one-row toolbar and colour popover checked with an isolated frame fixture without writes. Real public range formatting awaits available design service/public capability.
 - [x] Polish Manual Edit sections, unsaved counts and confirmed bottom reset actions; 787 tests pass and preview build OK. Signed-in clean controls and Experiment reset confirmation verified without writes; public frame unavailable.
 - [ ] Verify full real section list and coded section move/delete commands against the public frame: design service unavailable; public handler agreement needed for edit-section-move/delete (docs/manual-panel-polish.md).
