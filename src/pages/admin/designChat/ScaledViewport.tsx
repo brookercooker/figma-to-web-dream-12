@@ -23,8 +23,8 @@ export default function ScaledViewport({ virtualWidth, enabled = true, what = "d
   const scale = enabled ? fitScale(size.w, virtualWidth) : 1;
   const label = enabled ? scaleLabel(scale, what) : null;
   return (
-    <div ref={outer} data-scaled-viewport className={cn("relative h-full w-full overflow-hidden", className)}>
-      <div data-scale={scale.toFixed(3)} style={scale < 1 ? { width: virtualWidth, height: size.h / scale, transform: `scale(${scale})`, transformOrigin: "top left" } : { width: "100%", height: "100%" }}
+    <div ref={outer} data-scaled-viewport className={cn("relative w-full", enabled && "h-full overflow-hidden", className)}>
+      <div data-scale={scale.toFixed(3)} style={scale < 1 ? { width: virtualWidth, height: size.h / scale, transform: `scale(${scale})`, transformOrigin: "top left" } : enabled ? { width: "100%", height: "100%" } : undefined}
         className="relative">
         {children}
       </div>

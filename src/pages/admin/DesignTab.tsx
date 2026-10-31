@@ -1,4 +1,6 @@
 import { objectRegistry } from "@/components/objects/registry";
+import ScaledViewport from "./designChat/ScaledViewport";
+import { DESKTOP_VIRTUAL_WIDTH } from "./designChat/previewScale";
 import { useEditorSlot, type AddKind } from "./designChat/EditorSlot";
 import { notifyContentEdited } from "./designChat/contentSync";
 import { blockChangeLines, inlineChangeLines, mergeChangeLines, quote, type ElementLabel } from "./changeLines";
@@ -1085,6 +1087,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     {page && surface !== "loading" && <EmbeddedBox chat={embedded ? chat : null}>
       <div ref={blockCanvasRef} className={`relative isolate h-full w-full ${heldInFrame && !deviceStyle ? "overflow-hidden" : "overflow-y-auto"} bg-background`} style={deviceStyle}>
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
+        <ScaledViewport virtualWidth={DESKTOP_VIRTUAL_WIDTH} enabled={embedded && heldInFrame && !deviceStyle}>
         <FramedPageEditor key={objectId ? `object-${objectId}` : `public-${page.id}`} base={draftEmbedUrl()} path={objectId ? objectFramePath(objectId) : page.path} edits={inlineEdits} objectEdits={objectEdits}
           objectScope={objectTarget} scrollToSlot={objectId ? null : returnTo ?? null}
           sectionRevision={sectionRevision} heldBlocks={objectId && !designedObject ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
@@ -1100,6 +1103,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
           onToggle={k => setFoldedChunks(cur => { const next = new Set(cur); if (next.has(k)) next.delete(k); else next.add(k); return next; })}
           onReorder={reorderChunks} onOpenObject={openInlineObject} onReport={setFramedReports} onNavigate={objectId ? undefined : onNavigate}
           onObjectClick={objectId ? undefined : askObject} objectSwaps={swaps} />
+        </ScaledViewport>
         {/* Held sections: full pane width, selected (never played or opened) until saved into the public page. */}
         {!heldInFrame && !objectId && <div data-held-sections className="w-full">
           {blocks.filter((b): b is RenderBlock => !isPageContent(b)).map((b)=><section key={b.id} data-page-block={b.id} data-active={activeId === b.id || undefined}
