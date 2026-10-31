@@ -160,7 +160,9 @@ describe("public page save/discard integration", () => {
     s.send("edit-redo"); expect(lastBlocks()[1].width).toBe(50);
     fireEvent.click(screen.getByRole("button", { name: "Replace Video" })); fireEvent.click(screen.getByRole("button", { name: "Pick Video" }));
     expect(lastBlocks()[1].url).toBe("/held.mp4"); s.send("edit-undo"); expect(lastBlocks()[1].url).toBe("/original.mp4");
-    fireEvent.click(screen.getAllByRole("button", { name: "Delete Block" })[0]); expect(lastBlocks()).toHaveLength(1);
+    fireEvent.click(screen.getAllByRole("button", { name: "Delete Block" })[0]);
+    expect(lastBlocks()).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Delete Section" })); expect(lastBlocks()).toHaveLength(1);
     expect(mocks.history.redoLabel).toBe(""); s.send("edit-undo"); expect(lastBlocks()[1].id).toBe("video");
     s.send("edit-change", { scope: "page", next: { "style:0": '{"font-size":"32px"}' } });
     fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
@@ -206,6 +208,12 @@ describe("public page save/discard integration", () => {
     for (const key of ["site-header", "site-footer"]) expect(mocks.slot.querySelector(`[data-section-row="${key}"]`)?.querySelectorAll("button")).toHaveLength(1);
     const deletion = mocks.slot.querySelector('[data-section-row="stats"] button[aria-label="Delete Section"]'); if (!deletion) throw new Error("Missing delete");
     fireEvent.click(deletion); expect(mocks.writes).not.toHaveBeenCalled();
+    expect(mocks.slot.querySelector('[data-section-row="stats"]')).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Delete Section" }));
+    expect(mocks.slot.querySelector('[data-section-row="stats"]')).toBeNull();
+    send("edit-undo"); expect(mocks.slot.querySelector('[data-section-row="stats"]')).not.toBeNull();
+    send("edit-redo"); expect(mocks.slot.querySelector('[data-section-row="stats"]')).toBeNull();
+    expect(frame).toBe(screen.getByTitle("Public Page Editor"));
     await act(async () => mocks.save()); expect(mocks.writes).toHaveBeenCalledWith("pages", { content: [] });
   });
   it("passes existing positional edits unchanged on init and saves only the held map", async () => {
@@ -287,7 +295,7 @@ describe("public page save/discard integration", () => {
     expect(order()).toEqual(["first", "second"]);
     const list = s.container.querySelector("ol");
     if (!list) throw new Error("Missing Sections list");
-    const down = list.querySelector('[aria-label="Move Down"]');
+    const down = list.querySelector('[aria-label="Move to Bottom"]');
     if (!down) throw new Error("Missing reorder control");
     fireEvent.click(down);
     await waitFor(() => expect(order()).toEqual(["second", "first"]));
@@ -303,6 +311,7 @@ describe("public page save/discard integration", () => {
     expect(s.container.querySelector('[data-page-block="first"] figure')?.className).toContain("w-1/2");
     const deletes = list.querySelectorAll('[aria-label="Delete Block"]');
     fireEvent.click(deletes[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Delete Section" }));
     await waitFor(() => expect(order()).toEqual(["first"]));
     stubReloadedFrame();
     expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Site Header", "Page Content", "Image", "Site Footer"]);

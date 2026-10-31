@@ -945,10 +945,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                           )}
                           <span className="mx-1 h-5 w-px bg-border" />
                           {showActions && i > 0 && (
-                            <ToolButton title="Move Up" onClick={() => move(b.id, -1)}><ArrowUp className="w-4 h-4" /></ToolButton>
+                            <ToolButton title={objectId ? "Move Up" : "Move to Top"} onClick={() => objectId ? move(b.id, -1) : moveHeldBlock(b.id, 0)}><ArrowUp className="w-4 h-4" /></ToolButton>
                           )}
                           {showActions && i < orderedPageContent(blocks).length - 1 && (
-                            <ToolButton title="Move Down" onClick={() => move(b.id, 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
+                            <ToolButton title={objectId ? "Move Down" : "Move to Bottom"} onClick={() => objectId ? move(b.id, 1) : moveHeldBlock(b.id, orderedPageContent(blocks).length - 1)}><ArrowDown className="w-4 h-4" /></ToolButton>
                           )}
                           {showActions && <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="w-4 h-4" /></ToolButton>}
     </>
