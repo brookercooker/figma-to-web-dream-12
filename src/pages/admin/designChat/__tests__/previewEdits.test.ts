@@ -27,6 +27,16 @@ const flush = () => act(async () => { await Promise.resolve(); await Promise.res
 afterEach(() => { document.body.innerHTML = ""; });
 
 describe("Chat Mode preview edits", () => {
+  it("shows load failure, retries and accepts the exact bare preview-ready shape", async () => {
+    const { win, ref } = setup(); const load = vi.fn().mockResolvedValue(payload);
+    const full = vi.fn().mockRejectedValueOnce(new Error("unavailable")).mockResolvedValue(content);
+    const view = renderHook(() => usePreviewEdits(ref as any, load, full));
+    window.dispatchEvent(new MessageEvent("message", { origin: ORIGIN, source: win as any, data: { type: "preview-ready" } })); await flush();
+    expect(view.result.current).toBe(true);
+    window.dispatchEvent(new Event("nova:preview-content-retry")); await flush();
+    expect(view.result.current).toBe(false);
+    expect(win.postMessage).toHaveBeenCalledWith({ source: "nova-manager", type: "preview-content", ...content }, ORIGIN);
+  });
   it("sends the saved edits to the exact origin after preview-ready", async () => {
     const { win, ref } = setup();
     const load = vi.fn().mockResolvedValue(payload);

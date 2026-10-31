@@ -66,7 +66,7 @@ it("highlighted-word results enter unsaved history and Undo/Redo without databas
   send("edit-ready", { capabilities: { heldBlocks: true, rangeFormatting: true } });
   send("edit-select", { selection: { key: "0.0.2.0", scope: "page", kind: "text", tag: "h1", text: "Light transforms everything.", context: { section: "Light transforms everything.", role: "heading" }, html: 'Light<br><span class="italic">…' } });
   send("edit-range", { key: "0.0.2.0", scope: "page", collapsed: false, text: "transforms", marks: { bold: false, italic: true, underline: false, strike: false, color: "rgb(255, 255, 255)", size: "88px", weight: "300", font: '"Cormorant Garamond", …' } });
-  expect(within(mocks.slot).getByText("“Light transforms everything.”")).toBeInTheDocument();
+  expect(within(mocks.slot).getByRole("textbox", { name: "Selected Text" })).toHaveValue("Light transforms everything.");
   expect(within(mocks.slot).getByText("Heading · Light transforms everything. section")).toBeInTheDocument();
   expect(within(mocks.slot).getByRole("button", { name: "Italic" })).toHaveAttribute("aria-pressed", "true");
   expect(within(mocks.slot).getByRole("spinbutton", { name: "Size (px)" })).toHaveValue(88);

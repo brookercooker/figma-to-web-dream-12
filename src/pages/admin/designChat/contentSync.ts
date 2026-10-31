@@ -48,7 +48,7 @@ async function run() {
   inFlight = true; nextRetry = Date.now() + SYNC_RETRY_MS;
   try {
     const result = await postToHelper("/content/sync", changes.length ? { changes } : {});
-    if (result.ok) {
+    if (result.ok && result.data?.ok !== false && !result.data?.blocked && !result.data?.busy) {
       syncFailed = false;
       if (owed?.version === version) owed = null;
       persist();
@@ -69,6 +69,7 @@ async function run() {
 /** Called with the status already read by useHelperState; no extra relay reads. */
 export function observeContentSyncState(state: RelayState | null) {
   latestState = state;
+  if (owed && !expiry) armExpiry();
   if (state && owed && !timer && !inFlight && !contentSyncBusy(state) && Date.now() >= nextRetry && Date.now() <= deadline) void run();
 }
 /** Preview wording updates immediately; relay sync is coalesced and remembered across loads.

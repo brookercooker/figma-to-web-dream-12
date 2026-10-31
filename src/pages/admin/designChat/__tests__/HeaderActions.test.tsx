@@ -12,6 +12,12 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 describe("Left-header actions", () => {
+  it("expands the collapsed column before opening Review Status", () => {
+    m.reviewOpen = false; const expand = vi.fn(); render(<HeaderActions onExpand={expand} />);
+    fireEvent.click(screen.getByRole("button", { name: "Review Status: 2 Waiting" }));
+    expect(expand).toHaveBeenCalledOnce(); expect(m.setReviewOpen).toHaveBeenCalledWith(true);
+    expect(expand.mock.invocationCallOrder[0]).toBeLessThan(m.setReviewOpen.mock.invocationCallOrder[0]);
+  });
   it("toggles the review view from the count button", () => {
     const view = render(<HeaderActions />);
     fireEvent.click(screen.getByRole("button", { name: "Review Status: 2 Waiting" }));

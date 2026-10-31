@@ -110,6 +110,16 @@ describe("public page save/discard integration", () => {
     expect(s.post).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", edits: { "placeholder:0": "Name" } }), "https://public.example.com");
     expect(mocks.writes).not.toHaveBeenCalled();
   });
+  it("hidden picture edits undo, redo, save and discard through normal frame updates", async () => {
+    const s = await openRemote(true, true);
+    s.send("edit-change", { scope: "page", next: { "hidden:0": "1" } });
+    expect(mocks.hasChanges()).toBe(true);
+    s.send("edit-undo"); expect(mocks.hasChanges()).toBe(false);
+    s.send("edit-redo"); expect(s.post.mock.calls.at(-1)?.[0].edits).toEqual({ "hidden:0": "1" });
+    await act(async () => expect(await mocks.save()).toBe(true));
+    expect(mocks.writes).toHaveBeenCalledWith("pages", expect.objectContaining({ inline_edits: { "hidden:0": "1" } }));
+    await act(async () => mocks.discard()); expect(mocks.writes.mock.calls.at(-1)?.[1].inline_edits).toEqual({});
+  });
   it.each(["objects", "images", "videos"])("adding %s is one undo step and redo restores it", async kind => {
     const s = await openRemote(true, true);
     act(() => mocks.add(kind)); fireEvent.click(screen.getByText(kind === "objects" ? "Pick Stats" : kind === "images" ? "Pick Image" : "Pick Video"));

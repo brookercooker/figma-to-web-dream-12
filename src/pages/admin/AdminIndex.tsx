@@ -360,7 +360,7 @@ function AdminShell() {
         >
           <div data-chat-header className={cn("flex shrink-0", HEADER_HEIGHT_CLASS, " items-center gap-2 border-b bg-background px-3", chatCollapsed && !manual && "h-auto flex-wrap px-1.5 py-2 lg:flex-col lg:flex-nowrap")}>
             {chatCollapsed && !manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Expand Chat" title="Expand Chat" aria-expanded={false} onClick={() => setChatCollapsed(false)}><PanelLeftOpen className="h-4 w-4" /></Button>}
-              <DropdownMenu>
+              <DropdownMenu onOpenChange={open => { if (open) setChatCollapsed(false); }}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="w-9 shrink-0 gap-2 px-0" aria-label="Account Menu" onClick={() => setChatCollapsed(false)}>
                     <UserCircle2 className="w-5 h-5" />
@@ -388,7 +388,7 @@ function AdminShell() {
                 </DropdownMenuContent>
               </DropdownMenu>
             <TooltipProvider delayDuration={200}>
-              <DropdownMenu>
+              <DropdownMenu onOpenChange={open => { if (open) setChatCollapsed(false); }}>
                 <Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild>
                   <Button variant={tab === "pages" ? "secondary" : "ghost"} size="icon" className="h-8 w-8 shrink-0"
                     aria-label="Tools" aria-pressed={tab === "pages"} aria-current={tab === "pages" ? "page" : undefined} onClick={() => setChatCollapsed(false)}>
