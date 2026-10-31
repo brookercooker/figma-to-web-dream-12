@@ -16,7 +16,8 @@ export function phoneChatSignals(state: RelayState | null) {
   };
 }
 
-export function usePhoneChat(phone: boolean, manual: boolean, state: RelayState | null, completedAt = 0) {
+export function usePhoneChat(phone: boolean, manual: boolean, state: RelayState | null, completedAt = 0, onAttention?: () => void) {
+  const attentionCallback = useRef(onAttention); attentionCallback.current = onAttention;
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(false);
   const [opening, setOpening] = useState(0);
@@ -34,7 +35,7 @@ export function usePhoneChat(phone: boolean, manual: boolean, state: RelayState 
     seen.current = { activity: signals.activity, attention: signals.attention, completedAt };
     const changed = prior && (prior.activity !== signals.activity || prior.completedAt !== completedAt);
     if (changed && !open) setUnread(true);
-    if (signals.urgent && (!prior || prior.attention !== signals.attention)) show();
+    if (signals.urgent && (!prior || prior.attention !== signals.attention)) { attentionCallback.current?.(); show(); }
   }, [phone, manual, signals.activity, signals.attention, signals.urgent, completedAt]);
   useEffect(() => {
     if (!phone || !open) return;

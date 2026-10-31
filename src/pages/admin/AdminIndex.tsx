@@ -195,7 +195,7 @@ function AdminShell() {
   const layout = useManagerLayout();
   const phone = layout.phone;
   useKeyboardInset();
-  const phoneChat = usePhoneChat(phone, manual, designChat.state, designChat.preview?.completedAt);
+  const phoneChat = usePhoneChat(phone, manual, designChat.state, designChat.preview?.completedAt, () => designChat.setReviewOpen(false));
   const openPhoneChat = () => { setChatCollapsed(false); phoneChat.show(); };
   const drawFromPhoneChat = () => {
     phoneChat.close();
@@ -516,7 +516,7 @@ function AdminShell() {
             </div>
           )}
           <div hidden={manual || (chatCollapsed && !phone) || reviewShown} className={cn("min-h-0 flex-1", (manual || (chatCollapsed && !phone) || reviewShown) && "hidden")} aria-hidden={manual || (chatCollapsed && !phone) || reviewShown}>
-            <ChatPanel opening={phone && phoneChat.open && !reviewShown ? phoneChat.opening : 0} onDraw={phone ? drawFromPhoneChat : undefined} />
+            <ChatPanel opening={phone && phoneChat.open && !reviewShown ? phoneChat.opening : 0} onDraw={phone ? drawFromPhoneChat : undefined} onAttention={phone ? () => { designChat.setReviewOpen(false); openPhoneChat(); } : undefined} />
           </div>
         </aside>
         {phone && !manual && !phoneChat.open && !designChat.drawing?.on && <PhoneChatButton working={phoneChat.working} unread={phoneChat.unread} onOpen={openPhoneChat} />}

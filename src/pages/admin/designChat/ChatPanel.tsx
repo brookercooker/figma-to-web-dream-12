@@ -26,13 +26,15 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * The chat, always on the right of the Site Manager: what was said, the live "working on it" line, problems the person can
  * fix, the page they picked to work on, and the box to type in.
  */
-export default function ChatPanel({ opening = 0, onDraw }: { opening?: number; onDraw?: () => void } = {}) {
+export default function ChatPanel({ opening = 0, onDraw, onAttention }: { opening?: number; onDraw?: () => void; onAttention?: () => void } = {}) {
   const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs } = useDesignChat();
   const modeSwitch = useModeSwitch();
   const [text, setText] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [dragging, setDragging] = useState(false);
   const { hint, setHint } = useHint();
+  const attentionCallback = useRef(onAttention); attentionCallback.current = onAttention;
+  useEffect(() => { if (hint.bad && hint.text) attentionCallback.current?.(); }, [hint.bad, hint.text]);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);

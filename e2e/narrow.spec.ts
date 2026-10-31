@@ -13,7 +13,7 @@ for (const size of SIZES) {
 
     test("chat Send is visible and the page never scrolls sideways", async ({ page }) => {
       await page.goto("/manage/preview");
-      if (size.name === "phone") await page.getByRole("button", { name: "Chat", exact: true }).click();
+      if (size.name === "phone") await page.getByRole("button", { name: "Open chat", exact: true }).click();
       const box = page.getByRole("textbox", { name: "Describe a Change" });
       await box.fill(Array.from({ length: 8 }, (_, i) => `line ${i}`).join("\n"));
       const send = page.getByRole("button", { name: "Send" });
@@ -26,15 +26,17 @@ for (const size of SIZES) {
       await page.goto("/manage/preview");
       const chatFrame = page.locator("iframe[data-site-preview][data-preview-shown=true]").first();
       await expect(chatFrame).toBeVisible();
-      if (size.name === "phone") expect((await chatFrame.boundingBox())!.height).toBeGreaterThan(500);
-      if (size.name === "phone") await page.getByRole("button", { name: "Chat", exact: true }).click();
-      await page.getByRole("radio", { name: "Manual Edit Mode" }).click();
+      if (size.name === "phone") {
+        const bounds = await chatFrame.boundingBox();
+        expect(bounds?.height ?? 0).toBeGreaterThan(500);
+        await page.getByRole("button", { name: "Edit", exact: true }).click();
+      } else await page.getByRole("radio", { name: "Manual Edit Mode" }).click();
       const chooser = page.getByRole("dialog");
       if (await chooser.count()) await chooser.getByText("Homepage", { exact: true }).click();
       if (size.name === "phone") await page.getByRole("button", { name: "Page", exact: true }).click();
       const editFrame = page.locator("[data-scaled-viewport] iframe").last();
       await expect(editFrame).toBeVisible();
-      if (size.name === "phone") expect((await editFrame.boundingBox())!.height).toBeGreaterThan(500);
+      if (size.name === "phone") expect((await editFrame.boundingBox())?.height ?? 0).toBeGreaterThan(500);
     });
 
     test("Pages shows pages without sideways scroll", async ({ page }) => {
@@ -50,8 +52,8 @@ for (const size of SIZES) {
 
     test("Manual Edit keeps Save visible and the editing menu reachable", async ({ page }) => {
       await page.goto("/manage/preview");
-      if (size.name === "phone") await page.getByRole("button", { name: "Chat", exact: true }).click();
-      await page.getByRole("radio", { name: /Manual Edit/ }).click();
+      if (size.name === "phone") await page.getByRole("button", { name: "Edit", exact: true }).click();
+      else await page.getByRole("radio", { name: /Manual Edit/ }).click();
       await expect(page.locator("[data-save-changes]")).toBeVisible();
       await expect(page.locator("[data-save-changes]")).toContainText("Save");
       if (size.name === "phone") {
