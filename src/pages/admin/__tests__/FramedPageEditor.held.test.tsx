@@ -2,6 +2,7 @@ import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import FramedPageEditor, { type FramedPageEditorProps } from "../FramedPageEditor";
 import { clampEditSize, heldBlocksPayload, stripHeldObjects } from "../framedPageProtocol";
+import { rememberScroll } from "../designChat/frameScroll";
 
 afterEach(() => cleanup());
 const blocks = [{ id: "a", type: "text", html: "A" }, { id: "b", type: "text", html: "B" }];
@@ -43,6 +44,19 @@ describe("held blocks payload", () => {
   it("clamps edit-size", () => { expect(clampEditSize(10)).toBe(400); expect(clampEditSize(99999)).toBe(20000); expect(clampEditSize(1500)).toBe(1500); });
 });
 describe("held blocks handshake", () => {
+  it("restores Chat's same-page position again when the editor's preview becomes ready", () => {
+    rememberScroll("/scroll-handoff", 1250);
+    const s = setup({ path: "/scroll-handoff" });
+    s.receive("preview-ready", { path: "/scroll-handoff" });
+    expect(s.sent("restore-scroll")).toHaveLength(0);
+    s.receive("edit-ready", { capabilities: { heldBlocks: true } });
+    s.send.mockClear();
+    s.receive("preview-ready", { path: "/other-page" });
+    s.receive("preview-ready", { path: "/scroll-handoff" }, "https://evil.example");
+    expect(s.sent("restore-scroll")).toHaveLength(0);
+    s.receive("preview-ready", { path: "/scroll-handoff" });
+    expect(s.sent("restore-scroll")).toEqual([{ source: "nova-manager", type: "restore-scroll", path: "/scroll-handoff", y: 1250 }]);
+  });
   it("keeps one frame and one listener through twenty section moves and undos", () => {
     const add = vi.spyOn(window, "addEventListener"), remove = vi.spyOn(window, "removeEventListener");
     const s = setup(); s.receive("edit-ready", { capabilities: { heldBlocks: true, blockMove: true } });

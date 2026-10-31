@@ -39,5 +39,6 @@
 - Placeholder, video src/poster/title edits need a new attribute edit kind in the verbatim-shared inlineEditCore; until both projects add it, the panel shows those values read-only rather than writing keys the public replay would reject.
 - Preview Back/Forward/page choice post `preview-navigate` to the ready exact-origin preview frame; one src-change fallback if not ready or no location within NAV_FALLBACK_MS — instant, no reload loops.
 - frameScroll records validated page-scroll per normalized path and sends restore-scroll on readiness, frame swap and mode return; hidden previews cannot overwrite editor positions. Build/page navigation cancels superseded preview timers to avoid redundant reloads.
+- User Management uses GET for user lists and POST for actions, and decodes function error responses centrally so failed requests explain their actual cause.
 - Image deletion merges public usage with saved page/object references, confirms single/bulk actions and reuses the five-second deferred delete; remove correct bucket files before rows and stop on storage failure.
 - Subdirectories have their own AGENTS.md (e.g. src/pages/admin); read it before changing files there.

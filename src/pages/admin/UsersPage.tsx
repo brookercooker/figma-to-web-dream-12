@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { supabase } from "@/prototype/client";
+import { callAdminUsers } from "./adminUsers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,14 +30,6 @@ interface AdminUser {
   last_sign_in_at: string | null;
   is_admin: boolean;
   is_user: boolean;
-}
-
-// PROTOTYPE MODE — no network call; the in-memory client answers directly.
-async function callAdminUsers(body?: unknown) {
-  const { data, error } = await supabase.functions.invoke("admin-users", { body });
-  if (error) throw new Error(error.message || "User management failed");
-  if (data?.error) throw new Error(data.error);
-  return data;
 }
 
 export default function UsersPage() {
