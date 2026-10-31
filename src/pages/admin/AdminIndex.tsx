@@ -31,6 +31,10 @@ import { manualHistoryShortcut } from "./designChat/manualEditHistory";
 import { loadManualPages, workingPageFrom } from "./designChat/pageSelection";
 import { referenceKey } from "./designChat/references";
 import { useManagerTitle } from "./useManagerTitle";
+import { useManagerLayout, useKeyboardInset, clampPanelWidth, PANEL_WIDTH_KEY } from "./designChat/useManagerLayout";
+import { DropdownMenu as MoreMenu, DropdownMenuContent as MoreMenuContent, DropdownMenuItem as MoreMenuItem, DropdownMenuTrigger as MoreMenuTrigger, DropdownMenuSeparator as MoreMenuSeparator, DropdownMenuLabel as MoreMenuLabel } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Maximize2, Monitor, Smartphone, Tablet, ExternalLink, MessageSquare, ListTree, LayoutTemplate } from "lucide-react";
+import type { Device } from "./designChat/DesignChatContext";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -186,6 +190,25 @@ function AdminShell() {
   const [chatCollapsed, setChatCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem("siteManager:chatCollapsed") === "true"; } catch { return false; }
   });
+  const layout = useManagerLayout();
+  const phone = layout.phone;
+  useKeyboardInset();
+  // Phone shows one pane at a time: "main" (Preview / Page / the open tool) or "side" (Chat / Sections).
+  const [phonePane, setPhonePane] = useState<"main" | "side">("main");
+  // Phone Manual Edit: the editing menu is a bottom sheet over the page (0 = only its handle, 45% default, 92% tall).
+  const [sheet, setSheet] = useState<"peek" | "half" | "full">("peek");
+  useEffect(() => { if (!manual) setSheet("peek"); }, [manual]);
+  useEffect(() => {
+    if (!phone || !manual) return;
+    // A selection inside the page opens the sheet; the frame's messages are only read, never answered here.
+    const on = (event: MessageEvent) => { const d = event.data; if (d && typeof d === "object" && (d.type === "edit-select" || d.type === "edit-block-select")) setSheet(v => v === "peek" ? "half" : v); };
+    window.addEventListener("message", on);
+    return () => window.removeEventListener("message", on);
+  }, [phone, manual]);
+  const sheetDrag = useRef<{ y: number; start: "peek" | "half" | "full" } | null>(null);
+  const [panelWidth, setPanelWidth] = useState<number>(() => { try { return Number(localStorage.getItem(PANEL_WIDTH_KEY)) || 320; } catch { return 320; } });
+  const resizing = useRef<{ x: number; w: number } | null>(null);
+  const sidePanelWidth = layout.tier === "wide" ? undefined : clampPanelWidth(panelWidth, layout.tier);
   const reviewShown = designChat.reviewOpen && !manual && !chatCollapsed;
   useEffect(() => {
     try { localStorage.setItem("siteManager:chatCollapsed", String(chatCollapsed)); } catch { /* no storage: ignore */ }
@@ -261,9 +284,9 @@ function AdminShell() {
   return (
     <>
       <div className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</div>
-      <div className="flex h-screen flex-col overflow-hidden bg-background lg:flex-row">
+      <div data-manager-tier={layout.tier} className={cn("flex overflow-hidden bg-background", phone ? "h-dvh flex-col" : "h-screen flex-row")}>
         {/* Right: the top bar and whichever tab is open. */}
-        <div data-picker-area className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div data-picker-area className={cn("flex min-h-0 min-w-0 flex-1 flex-col", phone && phonePane === "side" && !(manual && tab === "preview" && false) && "hidden")}>
           <header data-top-bar className={cn("z-30 w-full shrink-0 border-b bg-background", HEADER_HEIGHT_CLASS)}>
             <div ref={rowRef} className="flex h-full w-full items-center gap-1 px-2 sm:gap-3 sm:px-4">
               <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager Sections">
@@ -274,7 +297,7 @@ function AdminShell() {
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "bg-transparent text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
                   }`;
-                  const showLabel = !compact || (active && squeeze < 3);
+                  const showLabel = layout.labels && (!compact || (active && squeeze < 3));
                   // On the Preview, Objects, Images and Videos pick an item for the chat; on a management tab, or while editing by hand, they navigate.
                   if (!editing && tab === "preview" && (key === "objects" || key === "images" || key === "videos")) return (
                     <LibraryPicker key={key} kind={key} label={label} Icon={Icon} active={active} showLabel={showLabel} className={className}
@@ -301,23 +324,23 @@ function AdminShell() {
                 })}
               </nav>
 
-              <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />
+              {phone ? <PreviewTools showViewControls={tab === "preview"} navOnly /> : <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />}
 
               <div aria-hidden className={cn("h-9 w-px bg-border shrink-0", compact && "hidden")} />
               {!manual && !editing && <SubmitButton compact={compact} />}
               {manual && (
-                <Button type="button" size="sm" variant={dirty ? "default" : "outline"} className="shrink-0 gap-1.5" aria-label="Save Changes" title="Save Changes" disabled={finishing || !dirty} onClick={() => void saveChanges()}>
-                  <Save className="h-4 w-4" aria-hidden />{!compact && (finishing ? "Saving…" : "Save Changes")}
+                <Button type="button" size="sm" data-save-changes variant={dirty ? "default" : "outline"} className="shrink-0 gap-1.5" aria-label="Save Changes" title="Save Changes" disabled={finishing || !dirty} onClick={() => void saveChanges()}>
+                  <Save className="h-4 w-4" aria-hidden />{finishing ? "Saving…" : layout.labels && !compact ? "Save Changes" : "Save"}
                 </Button>
               )}
-
+              {phone && <PhoneMoreMenu showView={tab === "preview"} />}
             </div>
           </header>
 
           <ChangeMyPasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
 
           <div className="relative min-h-0 flex-1">
-          <main className="relative h-full overflow-y-auto">
+          <main className={cn("relative h-full overflow-y-auto", tab !== "preview" && phone && "overflow-x-hidden")} style={phone && manual && tab === "preview" && phonePane === "main" ? { paddingBottom: sheet === "peek" ? 52 : sheet === "half" ? "45dvh" : "92dvh" } : undefined}>
             {previewOpened && (
               <div className={tab === "preview" && !editing ? "h-full" : "hidden"}>
                 <Suspense fallback={null}>
@@ -337,7 +360,7 @@ function AdminShell() {
               </div>
             )}
             {tab !== "preview" && (
-              <div className="w-full px-6 py-6">
+              <div className={cn("w-full", phone ? "px-3 py-4" : "px-6 py-6")}>
                 <Suspense fallback={<TabSkeleton />}>
                   {tab === "pages" && <PagesTab />}
                   {tab === "objects" && <ObjectsTab />}
@@ -354,13 +377,43 @@ function AdminShell() {
         {/* Left: the chat column, on every tab, with its own header (account and collapse).
             Collapsed, it shrinks to a thin rail with an expand button; the chat stays mounted (hidden) so typed text and attachments survive. */}
         <aside
+          data-side-panel
           className={cn(
-            "flex shrink-0 flex-col border-t lg:order-first lg:h-screen lg:border-r lg:border-t-0 lg:transition-[width] lg:duration-200",
-            chatCollapsed && !manual ? "h-auto lg:w-12" : "h-[45vh] lg:w-[clamp(320px,26vw,400px)]",
+            "flex shrink-0 flex-col",
+            phone
+              ? phonePane === "side" ? "min-h-0 flex-1" : manual && tab === "preview" ? "fixed inset-x-0 z-40 rounded-t-xl border-t bg-background shadow-[0_-8px_24px_-12px_hsl(var(--foreground)/0.25)] transition-[height] duration-200 motion-reduce:transition-none" : "hidden"
+              : "relative order-first h-screen border-r transition-[width] duration-200",
+            !phone && (chatCollapsed && !manual ? "w-12" : sidePanelWidth ? "" : "w-[clamp(320px,26vw,400px)]"),
           )}
+          style={phone && phonePane === "main" && manual && tab === "preview"
+            ? { bottom: "calc(56px + env(safe-area-inset-bottom))", height: sheet === "peek" ? 52 : sheet === "half" ? "45dvh" : "calc(92dvh - 56px)" }
+            : !phone && !(chatCollapsed && !manual) && sidePanelWidth ? { width: sidePanelWidth } : undefined}
           aria-label={manual ? "Manual Mode" : "Chat"}
         >
-          <div data-chat-header className={cn("flex shrink-0", HEADER_HEIGHT_CLASS, " items-center gap-2 border-b bg-background px-3", chatCollapsed && !manual && "h-auto flex-wrap px-1.5 py-2 lg:flex-col lg:flex-nowrap")}>
+          {phone && phonePane === "main" && manual && tab === "preview" && (
+            <button type="button" aria-label={sheet === "peek" ? "Show Editing Menu" : sheet === "half" ? "Expand Editing Menu" : "Shrink Editing Menu"}
+              className="flex h-6 w-full shrink-0 touch-none items-center justify-center"
+              onClick={() => setSheet(v => v === "peek" ? "half" : v === "half" ? "full" : "peek")}
+              onPointerDown={e => { sheetDrag.current = { y: e.clientY, start: sheet }; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); }}
+              onPointerUp={e => {
+                const d = sheetDrag.current; sheetDrag.current = null;
+                if (!d || Math.abs(e.clientY - d.y) < 24) return;
+                const order = ["peek", "half", "full"] as const; const i = order.indexOf(d.start);
+                setSheet(order[Math.max(0, Math.min(2, i + (e.clientY < d.y ? 1 : -1)))]);
+                e.preventDefault();
+              }}>
+              <span aria-hidden className="h-1.5 w-10 rounded-full bg-muted-foreground/40" />
+            </button>
+          )}
+          {!phone && !(chatCollapsed && !manual) && layout.tier !== "wide" && (
+            <div role="separator" aria-orientation="vertical" aria-label="Resize Panel" tabIndex={0}
+              className="absolute inset-y-0 -right-1 z-30 w-2 cursor-col-resize hover:bg-border focus-visible:bg-ring"
+              onKeyDown={e => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") { const w = clampPanelWidth((sidePanelWidth ?? 320) + (e.key === "ArrowRight" ? 16 : -16), layout.tier); setPanelWidth(w); try { localStorage.setItem(PANEL_WIDTH_KEY, String(w)); } catch { /* ignore */ } } }}
+              onPointerDown={e => { resizing.current = { x: e.clientX, w: sidePanelWidth ?? 320 }; e.currentTarget.setPointerCapture(e.pointerId); }}
+              onPointerMove={e => { const r = resizing.current; if (r) setPanelWidth(clampPanelWidth(r.w + e.clientX - r.x, layout.tier)); }}
+              onPointerUp={() => { if (!resizing.current) return; resizing.current = null; setPanelWidth(w => { const c = clampPanelWidth(w, layout.tier); try { localStorage.setItem(PANEL_WIDTH_KEY, String(c)); } catch { /* ignore */ } return c; }); }} />
+          )}
+          <div data-chat-header className={cn("flex shrink-0", HEADER_HEIGHT_CLASS, " items-center gap-2 border-b bg-background px-3", chatCollapsed && !manual && "h-auto flex-col flex-nowrap px-1.5 py-2", phone && phonePane === "main" && "hidden")}>
             {chatCollapsed && !manual && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Expand Chat" title="Expand Chat" aria-expanded={false} onClick={() => setChatCollapsed(false)}><PanelLeftOpen className="h-4 w-4" /></Button>}
               <DropdownMenu onOpenChange={open => { if (open) setChatCollapsed(false); }}>
                 <DropdownMenuTrigger asChild>
@@ -415,12 +468,13 @@ function AdminShell() {
               {chatCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </Button>}
           </div>
-          {!reviewShown && <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />}
+          {phone && phonePane === "main" && manual && tab === "preview" && sheet === "peek" && <p className="px-3 pb-2 text-xs text-muted-foreground">Tap something on the page to edit it.</p>}
+          {!reviewShown && !(phone && phonePane === "main") && <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />}
           <ContentSyncNote />
           {reviewShown && <ReviewChangesView onShowPreview={() => { if (tab !== "preview") navigate("/manage/preview"); }} />}
           {manual && workingPage && (
             <div className="flex min-h-0 flex-1 flex-col">
-              <div ref={editingHeaderRef} tabIndex={-1} className="flex shrink-0 flex-col gap-2 border-b px-3 py-3">
+              <div ref={editingHeaderRef} tabIndex={-1} className={cn("flex shrink-0 flex-col gap-2 border-b px-3 py-3", phone && phonePane === "main" && "hidden")}>
                 {designChat.state?.busy && <p role="status" className="flex items-center gap-1.5 text-xs font-medium"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />Claude Is Still Working on a Change</p>}
                 {objectOpen
                   ? <ObjectEditorHeader info={objectInfo} backLabel={objectOpen.from === "objects" ? "Back to Objects" : `Back to ${workingPage.name}`} disabled={finishing} onLeave={leaveObject} />
@@ -432,10 +486,23 @@ function AdminShell() {
               <div ref={setSlot} aria-label="Page Editing Options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
             </div>
           )}
-          <div hidden={manual || chatCollapsed || reviewShown} className={cn("min-h-0 flex-1", (manual || chatCollapsed || reviewShown) && "hidden")} aria-hidden={manual || chatCollapsed || reviewShown}>
+          <div hidden={manual || (chatCollapsed && !phone) || reviewShown} className={cn("min-h-0 flex-1", (manual || (chatCollapsed && !phone) || reviewShown) && "hidden")} aria-hidden={manual || (chatCollapsed && !phone) || reviewShown}>
             <ChatPanel />
           </div>
         </aside>
+        {phone && (
+          <nav aria-label="Panes" className="grid shrink-0 grid-cols-2 border-t bg-background pb-[env(safe-area-inset-bottom)]" style={{ height: "calc(56px + env(safe-area-inset-bottom))" }}>
+            {([
+              ["main", manual && tab === "preview" ? "Page" : tab === "preview" ? "Preview" : TABS.find(t => t.key === tab)?.label ?? "Page", tab === "preview" ? LayoutTemplate : (TABS.find(t => t.key === tab)?.Icon ?? FileText)],
+              ["side", manual ? "Sections" : "Chat", manual ? ListTree : MessageSquare],
+            ] as const).map(([key, label, Icon]) => (
+              <button key={key} type="button" aria-pressed={phonePane === key} onClick={() => { setPhonePane(key); if (key === "side") setChatCollapsed(false); }}
+                className={cn("flex flex-col items-center justify-center gap-0.5 text-xs font-medium", phonePane === key ? "text-foreground" : "text-muted-foreground")}>
+                <Icon className="h-5 w-5" aria-hidden />{label}
+              </button>
+            ))}
+          </nav>
+        )}
       </div>
       <ConfirmDialog
         open={confirmDiscard}
