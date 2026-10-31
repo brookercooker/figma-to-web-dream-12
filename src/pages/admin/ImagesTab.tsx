@@ -12,6 +12,7 @@ import { tileSrcCandidates } from "./imageTileSrc";
 import { libraryImageCandidates } from "./imageTileSrc";
 import LibraryImageThumbnail from "./LibraryImageThumbnail";
 import TagsPanel from "./TagsPanel";
+import LibraryLabels from "./LibraryLabels";
 import { Trash2, Search, Archive, ArchiveRestore, AlertTriangle, RefreshCw, Download, Globe, Lock } from "lucide-react";
 import { GATED_BUCKET, clearAssetUrlCache } from "@/lib/assetUrl";
 import { downloadOriginalImage, downloadImagesAsZip } from "./downloadAssets";
@@ -639,8 +640,8 @@ export default function ImagesTab() {
 
 
   return (
-    <div className="flex gap-4 items-start">
-      <TagsPanel
+    <div className="nova-library-layout flex gap-4 items-start">
+      <LibraryLabels><TagsPanel
         scope="images"
         usageCounts={usageCounts}
         activeFilters={filterTags}
@@ -652,9 +653,9 @@ export default function ImagesTab() {
         itemLabel="images"
         filteredCount={filtered.length}
         onSelectAllFiltered={() => setSelected(new Set(filtered.map((i) => i.id)))}
-      />
+      /></LibraryLabels>
 
-      <div className="flex-1 min-w-0 space-y-3">
+      <div className="nova-library-content flex-1 min-w-0 space-y-3">
       <div
         onDrop={onDrop}
         onDragEnter={onDragEnter}
@@ -700,7 +701,7 @@ export default function ImagesTab() {
         </div>
       )}
 
-      <div className="flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
+      <div className="nova-library-search flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
         <div className="flex items-center pl-4 pr-2 text-muted-foreground">
           <Search className="w-5 h-5" />
         </div>
@@ -862,7 +863,7 @@ export default function ImagesTab() {
 
 
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+      <div className="nova-library-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
         {imagesLoading && Array.from({ length: 12 }).map((_, i) => (
           <div key={`sk-${i}`} className="aspect-square bg-muted animate-pulse rounded border" />
         ))}
@@ -901,7 +902,7 @@ export default function ImagesTab() {
                 if (e.target.checked) n.add(img.id); else n.delete(img.id);
                 setSelected(n);
               }} className="absolute top-1 left-1 z-10" />
-              <div className="absolute top-1 right-1 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="nova-library-actions absolute top-1 right-1 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 {img.archived_at ? (
                   <button
                     onClick={(e) => { e.stopPropagation(); unarchiveImages([img.id]); }}
@@ -978,10 +979,10 @@ export default function ImagesTab() {
                   </div>
                 </div>
               )}
-              <div className="p-1 text-[10px] truncate" title={`Uploaded ${new Date(img.created_at).toLocaleString()}`}>
+              <div className="nova-library-caption p-1 text-[10px] truncate" title={`Uploaded ${new Date(img.created_at).toLocaleString()}`}>
                 <div className="flex items-center gap-1 truncate">
                   {broken && <AlertTriangle className="w-3 h-3 text-destructive shrink-0" />}
-                  <span className="truncate">{img.filename}</span>
+                  <span className="nova-library-name truncate">{img.filename}</span>
                 </div>
                 <div className="flex items-center justify-between gap-1">
                   <span className="text-muted-foreground truncate">{formatRelative(img.created_at)}</span>
