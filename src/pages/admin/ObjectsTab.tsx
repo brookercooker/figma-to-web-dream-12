@@ -35,6 +35,7 @@ import { objectRegistry } from "@/components/objects/registry";
 import CreateObjectDialog from "./CreateObjectDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import TagsPanel from "./TagsPanel";
+import LibraryLabels from "./LibraryLabels";
 import ObjectThumbnail from "./ObjectThumbnail";
 import { requestObjectThumbnail } from "./objectThumbnailCapture";
 import LabelsCell from "./LabelsCell";
@@ -287,8 +288,8 @@ export default function ObjectsTab() {
   };
 
   return (
-    <div className="flex gap-4 items-start">
-      <TagsPanel
+    <div className="nova-library-layout flex gap-4 items-start">
+      <LibraryLabels><TagsPanel
         scope="objects"
         usageCounts={usageCounts}
         activeFilters={filterTags}
@@ -298,9 +299,9 @@ export default function ObjectsTab() {
         selectedIds={[...selected]}
         onApplyTag={applyTagToObjects}
         itemLabel="objects"
-      />
-      <div className="flex-1 min-w-0 space-y-3">
-        <div className="flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
+      /></LibraryLabels>
+      <div className="nova-library-content flex-1 min-w-0 space-y-3">
+        <div className="nova-library-search flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
           <div className="flex items-center pl-4 pr-2 text-muted-foreground">
             <Search className="w-5 h-5" />
           </div>
@@ -370,7 +371,7 @@ export default function ObjectsTab() {
 
 
         <div className="w-full overflow-x-auto">
-          <table className="w-full text-sm border-collapse table-fixed min-w-[1012px]">
+          <table className="nova-object-table w-full text-sm border-collapse table-fixed min-w-[1012px]">
             <colgroup>
               <col style={{ width: 40 }} />
               <col style={{ width: 116 }} />

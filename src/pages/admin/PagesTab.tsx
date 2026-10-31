@@ -1,4 +1,3 @@
-import { SlidersHorizontal } from "lucide-react";
 import "./pageTables.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { matchesLabelFilter } from "./labelPath";
@@ -10,6 +9,7 @@ import { toast } from "sonner";
 import PageMiniPreview from "./PageMiniPreview";
 import ListPager, { usePager } from "./ListPager";
 import TagsPanel from "./TagsPanel";
+import LibraryLabels from "./LibraryLabels";
 import InlineEdit from "./InlineEdit";
 import ConfirmDialog from "./ConfirmDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
@@ -91,7 +91,6 @@ export default function PagesTab() {
   };
   const [pages, setPages] = useState<Page[]>([]);
   const [q, setQ] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [searchField, setSearchField] = useState<Field>("all");
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [pageTypeFilter, setPageTypeFilter] = useState<PageType | "all">("all");
@@ -373,7 +372,7 @@ export default function PagesTab() {
   const pager = usePager(filtered.length);
   return (
     <div className="space-y-4">
-      <div className="inline-flex rounded-lg border p-1 bg-muted/30">
+      <div className="nova-library-tabs inline-flex rounded-lg border p-1 bg-muted/30">
         <button onClick={() => setView("static")}
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium ${view==="static"?"bg-background shadow-sm":"text-muted-foreground"}`}>
           <FileText className="w-3.5 h-3.5" /> Static Pages
@@ -393,9 +392,8 @@ export default function PagesTab() {
     ) : view === "landing" ? (
       <LandingPagesView />
     ) : (
-    <div className="flex gap-4 items-start">
-      <div data-labels-panel data-open={filterOpen || undefined} className="shrink-0 max-md:hidden max-md:data-[open]:fixed max-md:data-[open]:inset-0 max-md:data-[open]:z-50 max-md:data-[open]:block max-md:data-[open]:overflow-y-auto max-md:data-[open]:bg-background max-md:data-[open]:p-4">
-        {filterOpen && <div className="mb-3 flex items-center justify-between md:hidden"><span className="text-base font-semibold">Filter</span><Button type="button" size="sm" onClick={() => setFilterOpen(false)}>Done</Button></div>}
+    <div className="nova-library-layout flex gap-4 items-start">
+      <LibraryLabels>
       <TagsPanel
         scope="static"
         usageCounts={usageCounts}
@@ -409,12 +407,11 @@ export default function PagesTab() {
         filteredCount={filtered.length}
         onSelectAllFiltered={() => setSelected(new Set(filtered.map((p) => p.id)))}
       />
-      </div>
+      </LibraryLabels>
 
 
-      <div className="flex-1 min-w-0 space-y-3">
-      <Button type="button" variant="outline" size="sm" className="gap-1.5 md:hidden" onClick={() => setFilterOpen(true)}><SlidersHorizontal className="h-4 w-4" aria-hidden />Filter</Button>
-      <div className="flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
+      <div className="nova-library-content flex-1 min-w-0 space-y-3">
+      <div className="nova-library-search flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
         <div className="flex items-center pl-4 pr-2 text-muted-foreground">
           <Search className="w-5 h-5" />
         </div>

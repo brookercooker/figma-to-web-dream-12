@@ -70,7 +70,7 @@ export default function FilterBar({
 
       <div className="h-6 w-px bg-border mx-1" aria-hidden="true" />
 
-      <div className="flex items-center gap-1.5" role="group" aria-label={`${dateFieldLabel} range`}>
+      <div className="nova-library-filter-group flex items-center gap-1.5" role="group" aria-label={`${dateFieldLabel} range`}>
         <span className="text-xs font-medium text-muted-foreground">Show</span>
 
         {RANGE_CHIPS.map((c) => {

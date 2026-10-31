@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { useDesignChatOptional } from "./DesignChatContext";
 
-const EMBED_WIDTH: Record<"mobile" | "tablet" | "desktop", string> = { mobile: "390px", tablet: "820px", desktop: "100%" };
+const EMBED_WIDTH: Record<"mobile" | "tablet" | "desktop", string> = { mobile: "390px", tablet: "768px", desktop: "100%" };
 
 /** Embedded editors: the box the Site Manager's size buttons and Full screen act on. Without the chat: just the children. */
 export default function EmbeddedBox({ chat, children }: { chat: ReturnType<typeof useDesignChatOptional>; children: ReactNode }) {

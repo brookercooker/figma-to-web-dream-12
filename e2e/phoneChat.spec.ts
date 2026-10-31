@@ -26,9 +26,9 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }
       await page.mouse.move(handle.x + 30, handle.y + 100); await page.mouse.up();
       await expect(open).toBeVisible();
       await expect(preview).toBeVisible();
-      const bounds = await preview.boundingBox(); const button = await open.boundingBox();
+      const bounds = await preview.boundingBox();
       expect(bounds?.height ?? 0).toBeGreaterThan(500);
-      expect((bounds?.y ?? 0) + (bounds?.height ?? 0)).toBeLessThanOrEqual(button?.y ?? 0);
+      expect((bounds?.y ?? 0) + (bounds?.height ?? 0)).toBeCloseTo(viewport.height, 0);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     });
   });

@@ -475,9 +475,18 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const grabRef = useRef({ x: 0, y: 0 });
   const dropRef = useRef<{ id: string; before: boolean } | null>(null);
   const [localDevice, setDevice] = useState<Device>("desktop");
-  // Embedded, the Site Manager's size buttons size the wrapper around the editor; inside it everything fills at full width.
+  // Embedded, use the same virtual device width as Chat; transform the frame as a whole.
   const chat = useDesignChatOptional();
   const device: Device = embedded ? "desktop" : localDevice;
+  const previewDevice = chat?.device ?? "desktop";
+  const firstPreviewDevice = useRef(previewDevice);
+  const [desktopChosen, setDesktopChosen] = useState(false);
+  useEffect(() => {
+    if (previewDevice !== firstPreviewDevice.current) {
+      firstPreviewDevice.current = previewDevice;
+      setDesktopChosen(previewDevice === "desktop");
+    }
+  }, [previewDevice]);
   const deviceStyle = !embedded && DEVICE_WIDTH[device] ? { width: DEVICE_WIDTH[device], maxWidth: "100%", margin: "0 auto" } : undefined;
   useEffect(() => {
     if (!dragId) return;
@@ -1102,7 +1111,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     {page && surface !== "loading" && <EmbeddedBox chat={embedded ? chat : null}>
       <div ref={blockCanvasRef} className={`relative isolate h-full w-full ${heldInFrame && !deviceStyle ? "overflow-hidden" : "overflow-y-auto"} bg-background`} style={deviceStyle}>
         {!embedded && <div className="flex gap-2">{addButtons}</div>}
-        <ScaledViewport virtualWidth={DESKTOP_VIRTUAL_WIDTH} fallbackWidth={768} fill={embedded && heldInFrame && !deviceStyle} enabled={window.innerWidth >= 640}>
+        <ScaledViewport virtualWidth={previewDevice === "mobile" ? 390 : previewDevice === "tablet" ? 768 : DESKTOP_VIRTUAL_WIDTH} what={previewDevice === "mobile" ? "phone" : previewDevice} fallbackWidth={previewDevice === "desktop" ? 768 : undefined} explicit={desktopChosen} fill={embedded && heldInFrame && !deviceStyle} enabled={previewDevice !== "desktop" || window.innerWidth >= 640}>
         <FramedPageEditor key={objectId ? `object-${objectId}` : `public-${page.id}`} base={draftEmbedUrl()} path={objectId ? objectFramePath(objectId) : page.path} edits={inlineEdits} objectEdits={objectEdits}
           objectScope={objectTarget} scrollToSlot={objectId ? null : returnTo ?? null}
           sectionRevision={sectionRevision} heldBlocks={objectId && !designedObject ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}

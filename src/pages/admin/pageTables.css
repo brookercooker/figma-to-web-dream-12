@@ -19,7 +19,7 @@
   .manager-page-table :is(th,td) { padding-left: 4px; padding-right: 4px; }
 }
 /* Phones and small tablets: each page becomes a card (thumbnail, name and path, status, actions). Same markup and actions. */
-@media (max-width: 767px) {
+@container page-table (max-width: 719px) {
   .manager-page-table thead { display: none; }
   .manager-page-table, .manager-page-table tbody { display: block; width: 100%; }
   .manager-page-table tbody { display: grid; gap: 8px; }

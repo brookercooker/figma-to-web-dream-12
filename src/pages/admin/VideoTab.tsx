@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { formatBytes } from "@/lib/imageOptimize";
 import TagsPanel from "./TagsPanel";
+import LibraryLabels from "./LibraryLabels";
 import {
   Copy, Trash2, Search, Archive, ArchiveRestore, RefreshCw, Link as LinkIcon,
   Play, Youtube, Video as VideoIcon, Download, Lock, Globe,
@@ -664,8 +665,8 @@ export default function VideoTab() {
     v.source_type === "upload" ? (v.storage_url ?? "") : (v.external_url ?? "");
 
   return (
-    <div className="flex gap-4 items-start">
-      <TagsPanel
+    <div className="nova-library-layout flex gap-4 items-start">
+      <LibraryLabels><TagsPanel
         scope="videos"
         usageCounts={usageCounts}
         activeFilters={filterTags}
@@ -677,9 +678,9 @@ export default function VideoTab() {
         itemLabel="videos"
         filteredCount={filtered.length}
         onSelectAllFiltered={() => setSelected(new Set(filtered.map((v) => v.id)))}
-      />
+      /></LibraryLabels>
 
-      <div className="flex-1 min-w-0 space-y-3">
+      <div className="nova-library-content flex-1 min-w-0 space-y-3">
         <div
           onDrop={onDrop}
           onDragEnter={onDragEnter}
@@ -707,7 +708,7 @@ export default function VideoTab() {
         </div>
 
         {/* External link add row */}
-        <div className="flex items-stretch gap-2">
+        <div className="nova-library-url flex items-stretch gap-2">
           <div className="flex items-stretch flex-1 min-w-0 rounded-lg border-2 border-border focus-within:border-primary bg-background overflow-hidden">
             <div className="flex items-center pl-3 pr-2 text-muted-foreground">
               <LinkIcon className="w-4 h-4" />
@@ -742,7 +743,7 @@ export default function VideoTab() {
           </div>
         )}
 
-        <div className="flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
+        <div className="nova-library-search flex items-stretch gap-0 rounded-lg border-2 border-border focus-within:border-primary bg-background shadow-sm overflow-hidden">
           <div className="flex items-center pl-4 pr-2 text-muted-foreground">
             <Search className="w-5 h-5" />
           </div>
@@ -880,7 +881,7 @@ export default function VideoTab() {
           </Button>
         </SelectionBar>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+        <div className="nova-library-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
           {isLoading && Array.from({ length: 10 }).map((_, i) => (
             <div key={`sk-${i}`} className="aspect-video bg-muted animate-pulse rounded border" />
           ))}
@@ -909,7 +910,7 @@ export default function VideoTab() {
                   }}
                   className="absolute top-1 left-1 z-10"
                 />
-                <div className="absolute top-1 right-1 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="nova-library-actions absolute top-1 right-1 z-10 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   {v.archived_at ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); unarchive([v.id]); }}
@@ -998,8 +999,8 @@ export default function VideoTab() {
                   </div>
                 )}
 
-                <div className="p-1 text-[10px] truncate">
-                  <div className="truncate font-medium">{v.name}</div>
+                <div className="nova-library-caption p-1 text-[10px] truncate">
+                  <div className="nova-library-name truncate font-medium">{v.name}</div>
                   <div className="flex items-center justify-between gap-1">
                     <span className="text-muted-foreground truncate">
                       {v.source_type === "upload" && (

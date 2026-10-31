@@ -37,6 +37,7 @@ import { MoreHorizontal, Maximize2, Monitor, Smartphone, Tablet, ExternalLink, M
 import type { Device } from "./designChat/DesignChatContext";
 import { usePhoneChat } from "./designChat/phoneChat";
 import { PhoneChatButton, PhoneChatHeader } from "./designChat/PhoneChatChrome";
+import "./libraryLayout.css";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -385,13 +386,14 @@ function AdminShell() {
               </div>
             )}
             {tab !== "preview" && (
-              <div className={cn("w-full", phone ? "px-3 py-4" : "px-6 py-6")}>
+              <div className={cn("w-full", phone ? "px-3 py-4" : "px-6 py-6")}><div className="nova-library-area">
                 <Suspense fallback={<TabSkeleton />}>
                   {tab === "pages" && <PagesTab />}
                   {tab === "objects" && <ObjectsTab />}
                   {tab === "images" && <ImagesTab />}
                   {tab === "videos" && <VideoTab />}
                 </Suspense>
+              </div>
               </div>
             )}
           </main>
