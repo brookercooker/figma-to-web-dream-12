@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Fix library image candidates/fallbacks, frame image Delete, section confirmation names, page table fit, Manager title protection, Help copy and footer text editing; verify without saved edits.
 - [x] Fix Chat frame origin to the public site, exact-origin snapshot guards, bounded address fetch, offline page navigation and retained scroll/navigation/drawing protocols. Signed-in Ask Claude targets public /draft; no postMessage origin warnings; no saved content changed. 868 tests pass plus final 14 focused regressions.
 - [ ] Verify public /draft Spotlight rendering: the public preview redirects to Lovable's login screen in the signed-in Manager test, so the Arden section cannot be inspected with the available session.
 - [x] Refresh Chat snapshots on every ready, load and mode/page transition with count/reason debug logs; verified saved Ready /draft contains Spotlight object dfff040f-a387-494d-af9d-cc10e3955b8e with component_key ExampleFixtureSpotlight. Public rendering still awaits reachable frame.
