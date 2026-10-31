@@ -493,7 +493,7 @@ function AdminShell() {
         {phone && (
           <nav aria-label="Panes" className="grid shrink-0 grid-cols-2 border-t bg-background pb-[env(safe-area-inset-bottom)]" style={{ height: "calc(56px + env(safe-area-inset-bottom))" }}>
             {([
-              ["main", manual && tab === "preview" ? "Page" : tab === "preview" ? "Preview" : TABS.find(t => t.key === tab)?.label ?? "Page", tab === "preview" ? LayoutTemplate : (TABS.find(t => t.key === tab)?.Icon ?? FileText)],
+              ["main", manual && tab === "preview" ? "Page" : tab === "preview" ? "Preview" : TABS.find(t => t.key === tab)?.label ?? (tab === "pages" ? "Pages" : "Page"), tab === "preview" ? LayoutTemplate : (TABS.find(t => t.key === tab)?.Icon ?? FileText)],
               ["side", manual ? "Sections" : "Chat", manual ? ListTree : MessageSquare],
             ] as const).map(([key, label, Icon]) => (
               <button key={key} type="button" aria-pressed={phonePane === key} onClick={() => { setPhonePane(key); if (key === "side") setChatCollapsed(false); }}
