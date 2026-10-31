@@ -8,6 +8,8 @@ import { MATERIAL_ERROR, parseMaterialIcon } from "./materialIcon";
 export default function MaterialIconField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const [text, setText] = useState(value.startsWith("material:") ? value.split(":")[2] : "");
   const [error, setError] = useState("");
+  const [helpHovered, setHelpHovered] = useState(false);
+  const [helpFocused, setHelpFocused] = useState(false);
   useEffect(() => { setText(value.startsWith("material:") ? value.split(":")[2] : ""); }, [value]);
   const [, style, name] = value.split(":");
   useEffect(() => {
@@ -20,7 +22,7 @@ export default function MaterialIconField({ value, onChange }: { value: string; 
   }, [value, style]);
   return <div className="space-y-1">
     <div className="flex items-center gap-1 text-[11px] text-muted-foreground"><label htmlFor="google-icon">Paste a Google Icon</label>
-      <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="h-6 w-6" aria-label="Google Icon Help"><CircleHelp className="h-3.5 w-3.5" /></Button></TooltipTrigger><TooltipContent className="max-w-72">Find an icon at fonts.google.com/icons, open it, and copy the code under 'Inserting the icon'. Paste it here and the icon appears next to this item.</TooltipContent></Tooltip></TooltipProvider>
+      <TooltipProvider delayDuration={0}><Tooltip open={helpHovered || helpFocused}><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-6 w-6" aria-label="Google Icon Help" onPointerEnter={() => setHelpHovered(true)} onPointerLeave={() => setHelpHovered(false)} onFocus={() => setHelpFocused(true)} onBlur={() => setHelpFocused(false)}><CircleHelp className="h-3.5 w-3.5" /></Button></TooltipTrigger><TooltipContent className="z-[10000] max-w-72">Find an icon at fonts.google.com/icons, open it, and copy the code under 'Inserting the icon'. Paste it here and the icon appears next to this item.</TooltipContent></Tooltip></TooltipProvider>
     </div>
     <div className="flex items-center gap-2"><Input id="google-icon" value={text} placeholder="home or pasted icon code" onChange={e => {
       setText(e.target.value); const parsed = parseMaterialIcon(e.target.value);

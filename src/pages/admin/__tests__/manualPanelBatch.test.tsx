@@ -1,15 +1,20 @@
 import { useState } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { parseMaterialIcon } from "../materialIcon";
 import { detectLinkKind, linkAddress } from "../linkKind";
 import { replaceWording, wordingText } from "../textWording";
 import { createReplay, validateEdits, withoutPath } from "@/lib/inlineEditCore";
 import { inlineChangeLines } from "../changeLines";
-import { ManualEditHistory } from "../designChat/manualEditHistory";
+import { ManualEditHistory, type ManualEditSnapshot } from "../designChat/manualEditHistory";
 import InlineStylePanel from "../InlineStylePanel";
-import { remoteSelection } from "../remoteSelection";
-afterEach(cleanup);
+import { remoteSelection, validSnapshot } from "../remoteSelection";
+import MaterialIconField from "../MaterialIconField";
+beforeEach(() => {
+  vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
+  vi.stubGlobal("PointerEvent", MouseEvent);
+});
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 describe("safe Material paste", () => {
   it.each([
     ["home", "outlined", "home"], ["arrow_forward", "outlined", "arrow_forward"], ["123", "outlined", "123"],
@@ -56,9 +61,36 @@ it("the selected text box changes the existing html edit and follows page change
   expect(screen.getByRole("textbox", { name: "Selected Text" })).toHaveValue("Page changed");
 });
 it("image keyboard deletion ignores text fields and shows restore", () => {
-  const sel = remoteSelection({ key: "0", scope: "page", kind: "image", tag: "img", attrs: { src: "/light.jpg" } });
+  const snapshot = { key: "0", scope: "page", kind: "image" as const, tag: "img", context: { role: "image", section: "Categories" }, attrs: { src: "/light.jpg", alt: "Pendant" } };
+  expect(validSnapshot(snapshot)).toBe(true);
+  const sel = remoteSelection(snapshot);
   function Panel() { const [edits, set] = useState({}); return <><input aria-label="Other Text" /><InlineStylePanel sel={sel} edits={edits} onChange={set} onReplaceImage={vi.fn()} /></>; }
   render(<Panel />); fireEvent.keyDown(screen.getByLabelText("Other Text"), { key: "Delete" }); expect(screen.getByRole("button", { name: "Delete Image" })).toBeInTheDocument();
   fireEvent.keyDown(window, { key: "Backspace" }); expect(screen.getByRole("button", { name: "Restore Image" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Restore Image" })); expect(screen.getByRole("button", { name: "Delete Image" })).toBeInTheDocument();
+});
+it("Google icon help opens on hover and keyboard focus, including after pointer use", () => {
+  render(<MaterialIconField value="" onChange={vi.fn()} />);
+  const help = screen.getByRole("button", { name: "Google Icon Help" });
+  fireEvent.pointerEnter(help);
+  expect(screen.getByRole("tooltip")).toHaveTextContent("Find an icon at fonts.google.com/icons");
+  fireEvent.pointerLeave(help, { clientX: 10, clientY: 10 }); expect(screen.queryByRole("tooltip")).toBeNull();
+  fireEvent.focus(help); expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  fireEvent.pointerEnter(help); fireEvent.pointerLeave(help, { clientX: 10, clientY: 10 }); expect(screen.getByRole("tooltip")).toBeInTheDocument();
+  fireEvent.blur(help); expect(screen.queryByRole("tooltip")).toBeNull();
+});
+it("a frame image selection deletes through scoped edits and supports Undo, Redo and Discard", () => {
+  const sel = remoteSelection({ key: "0.1", scope: "page", kind: "image", tag: "img", context: { role: "image", section: "Categories" }, attrs: { src: "/light.jpg" } });
+  const history = new ManualEditHistory(); const original = { blocks: [], inlineEdits: {}, objectEdits: {} };
+  let current: ManualEditSnapshot = original;
+  const view = render(<InlineStylePanel sel={sel} edits={current.inlineEdits} onChange={next => {
+    const after = { ...current, inlineEdits: next }; history.record(current, after, { label: "picture removed" }); current = after;
+  }} onReplaceImage={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "Delete Image" }));
+  expect(current.inlineEdits).toEqual({ "hidden:0.1": "1" });
+  current = history.undo() ?? current; expect(current.inlineEdits).toEqual({});
+  current = history.redo() ?? current; expect(current.inlineEdits).toEqual({ "hidden:0.1": "1" });
+  current = original; history.reset();
+  view.rerender(<InlineStylePanel sel={sel} edits={current.inlineEdits} onChange={vi.fn()} onReplaceImage={vi.fn()} />);
+  expect(screen.getByRole("button", { name: "Delete Image" })).toBeInTheDocument(); expect(history.undo()).toBeNull();
 });
