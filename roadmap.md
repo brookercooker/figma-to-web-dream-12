@@ -1,4 +1,7 @@
 # Roadmap — coded object import fidelity
+- [ ] Notify the existing publishing sync after successful page/object/redirect changes, including batched notes and existing retries.
+- [ ] Stop page action-menu clicks from opening the row; verify Archive stays on Pages.
+- [ ] Preserve chat draft, focus and cursor while builder replies/preview updates arrive.
 - [x] Phone follow-ups: baseline loaded history, remove outside preview band, honour Manual Edit sizes, and use content-width library labels/cards/filters. All 900 tests pass. Signed-in libraries at 390/640/800 with chat open: searches 322/228/388px, no overflow, label creation available. Controlled public-frame checks: phone reaches bottom; Manual widths 390/768/1280 accept real heading clicks.
 - [ ] Verify device-size selection/scroll/section bars and floating-button clearance on the actual public site: hosted frame/design service unavailable; controlled frame checks pass but cannot establish visitor-specific controls.
 - [x] Phone-only retained chat pop-out, status button, compact top-bar mode/action menus and drawing return. All 895 tests pass; preview build OK.

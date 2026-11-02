@@ -635,7 +635,7 @@ export default function PagesTab() {
                         <MoreHorizontal className="w-4 h-4" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-80">
+                    <DropdownMenuContent align="end" className="w-80" onClick={(event) => event.stopPropagation()}>
                       <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
                         Description
                       </DropdownMenuLabel>
