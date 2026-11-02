@@ -49,7 +49,7 @@ export default function PreviewTools({ showViewControls, tight = false, navOnly 
 }
 
 /** Submit for review (or Publish, when review is off): changes can be waiting whichever tab is open. */
-export function SubmitButton({ compact = false }: { compact?: boolean }) {
+export function SubmitButton({ compact = false, showProgress = true }: { compact?: boolean; showProgress?: boolean }) {
   const { state, refreshSoon, waitProgress } = useDesignChat();
   const p = state?.publish ?? { ok: true, open: 0 };
   const reviewOn = state?.review?.enabled;
@@ -57,9 +57,9 @@ export function SubmitButton({ compact = false }: { compact?: boolean }) {
   const submit = async () => { await postToHelper("/publish"); refreshSoon(); };
   const label = reviewOn === false ? "Publish" : "Submit for Review";
   return (
-    <div className="relative shrink-0"><Button type="button" variant="review" size="sm" className={compact ? "w-9 shrink-0 px-0" : "shrink-0"} aria-label={label} title={label} disabled={submitDisabled} onClick={submit}>
+    <div className="shrink-0"><Button type="button" variant="review" size="sm" className={compact ? "w-9 shrink-0 px-0" : "shrink-0"} aria-label={label} title={label} disabled={submitDisabled} onClick={submit}>
       <Send className="h-4 w-4" aria-hidden />
       {!compact && label}
-    </Button><WaitProgress progress={waitProgress?.submit} className="absolute right-0 top-full z-40 mt-1 w-56 rounded-md border bg-background p-2 shadow-sm" /></div>
+    </Button>{showProgress && <WaitProgress progress={waitProgress?.submit} className="mt-2 w-full max-w-64" />}</div>
   );
 }

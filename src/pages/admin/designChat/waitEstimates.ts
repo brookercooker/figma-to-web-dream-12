@@ -7,6 +7,7 @@ export function detectWaitKind(message: string, planOnly = false): WaitKind {
   if (planOnly) return "question";
   if (/References from the library:\s*\n- (Image|Video) /i.test(message)) return "library";
   const text = message.split("\n\nReferences from the library:")[0];
+  if (/\?\s*$/.test(text) && /^(what|why|how|where|when|is|are|does|do|can you explain|could you explain)\b/i.test(text.trim())) return "question";
   if (text.length > 200 || text.split(/[.!?]+(?:\s|$)/).filter(s => s.trim()).length >= 3 ||
       /(^|\n)\s*(?:[-*•]|\d+[.)])\s/m.test(text) ||
       /\b(redesign|rebuild|layout|rename|everywhere|every page|all pages|new page|add a page|two columns|undo)\b/i.test(text)) return "bigger";

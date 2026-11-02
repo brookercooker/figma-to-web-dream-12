@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { CONTENT_SYNC_CHANGED, contentSyncFailed, contentSyncPending, contentSyncStartedAt, contentSyncDeferred } from "./contentSync";
 import { timedProgress, type WaitView } from "./waitEstimates";
 
 export function useSaveProgress(saving: boolean, stillDirty = false) {
   const [now, setNow] = useState(Date.now);
+  const [, refresh] = useReducer(n => n + 1, 0);
   const t = useRef<{ start: number; high: number; done?: number; failed?: boolean } | null>(null);
   const lastSaving = useRef(false);
   useEffect(() => {
-    const update = () => setNow(Date.now());
+    const update = () => { setNow(Date.now()); refresh(); };
     const timer = setInterval(update, 250);
     window.addEventListener(CONTENT_SYNC_CHANGED, update);
     return () => { clearInterval(timer); window.removeEventListener(CONTENT_SYNC_CHANGED, update); };

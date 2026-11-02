@@ -105,7 +105,7 @@ function AdminShell() {
   const [finishing, setFinishing] = useState(false);
   // Save Changes is enabled only while the editor holds unsaved edits; editors expose that as a function, so it is checked often.
   const [dirty, setDirty] = useState(false);
-  const saveProgress = useSaveProgress(finishing, dirty);
+  const saveProgress = useSaveProgress(finishing, hasChanges());
   useEffect(() => {
     if (!manual) { setDirty(false); return; }
     const check = () => setDirty(hasChanges());
@@ -356,7 +356,7 @@ function AdminShell() {
               {phone ? <PreviewTools showViewControls={tab === "preview"} navOnly /> : <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />}
 
               <div aria-hidden className={cn("h-9 w-px bg-border shrink-0", compact && "hidden")} />
-              {!phone && !manual && !editing && <SubmitButton compact={compact} />}
+              {!phone && !manual && !editing && <SubmitButton compact={compact} showProgress={false} />}
               {manual && (
                 <Button type="button" size="sm" data-save-changes variant={dirty ? "default" : "outline"} className="shrink-0 gap-1.5" aria-label="Save Changes" title="Save Changes" disabled={finishing || !dirty} onClick={() => void saveChanges()}>
                   <Save className="h-4 w-4" aria-hidden />{finishing ? "Saving…" : layout.labels && !compact ? "Save Changes" : "Save"}
@@ -366,6 +366,7 @@ function AdminShell() {
             </div>
           </header>
           <WaitProgress progress={saveProgress} className="shrink-0 border-b bg-background px-3 py-2" />
+          {!phone && !manual && <WaitProgress progress={designChat.waitProgress?.submit} className="shrink-0 border-b bg-background px-3 py-2" />}
 
           <ChangeMyPasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
 
