@@ -6,7 +6,7 @@ type Track = { id: number; version: number; kind: WaitKind; high: number; replyA
 const terminal = /^(done|complete|completed|published|live)$/;
 const failed = /^(failed|error|blocked)$/;
 const stopped = /^(stopped|cancelled|canceled)$/;
-export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0) {
+export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0): { request: WaitView | null; submit: WaitView | null } {
   const [now, setNow] = useState(Date.now);
   const track = useRef<Track | null>(null);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(timer); }, []);
