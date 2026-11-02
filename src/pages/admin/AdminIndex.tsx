@@ -38,6 +38,7 @@ import type { Device } from "./designChat/DesignChatContext";
 import { usePhoneChat } from "./designChat/phoneChat";
 import { PhoneChatButton, PhoneChatHeader } from "./designChat/PhoneChatChrome";
 import "./libraryLayout.css";
+import WaitProgress from "./designChat/WaitProgress";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -366,6 +367,7 @@ function AdminShell() {
           <ChangeMyPasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
 
           <div className={cn("relative min-h-0 flex-1", phone && manual && phonePane === "side" && "hidden")}>
+          {phone && !manual && !phoneChat.open && <WaitProgress thin progress={designChat.waitProgress?.request ?? designChat.waitProgress?.submit} className="pointer-events-none absolute inset-x-0 top-0 z-40" />}
           <main className={cn("relative h-full overflow-y-auto", tab !== "preview" && phone && "overflow-x-hidden")} style={phone && manual && tab === "preview" && phonePane === "main" ? { paddingBottom: sheet === "peek" ? 52 : sheet === "half" ? "45dvh" : "92dvh" } : undefined}>
             {previewOpened && (
               <div className={cn(tab === "preview" && !editing ? "h-full" : "hidden", phone && !manual && "nova-phone-chat-preview")}>

@@ -15,6 +15,7 @@ import { useChatReferences, type ChatReferences } from "./useChatReferences";
 import { emptyHistory, visit, step, canBack, canForward, type PreviewHistory } from "./previewHistory";
 import { observeContentSyncState } from "./contentSync";
 import { useChatDraft } from "./useChatDraft";
+import { useWaitProgress } from "./useWaitProgress";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview
@@ -49,6 +50,7 @@ export function workingReducer(s: WorkingState, a: WorkingAction): WorkingState 
 }
 
 export type DesignChat = {
+  waitProgress?: ReturnType<typeof useWaitProgress>;
   chatDraft?: ReturnType<typeof useChatDraft>;
   mode: "chat" | "manual";
   state: RelayState | null;
@@ -124,6 +126,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (!offline) observeContentSyncState(state); }, [state, offline]);
   const [navNonce, setNavNonce] = useState(0);
   const preview = usePreview(state, previewPath, navNonce);
+  const waitProgress = useWaitProgress(state, preview.completedAt);
   lastReload.current = preview.lastReloadAt;
 
   const [device, setDevice] = useState<Device>("desktop");
@@ -254,12 +257,13 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const chatDraft = useChatDraft();
 
   const value = useMemo<DesignChat>(() => ({
+    waitProgress,
     chatDraft,
     mode,
     state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
     editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, returnTo, refs, previewNav, reviewOpen, setReviewOpen, showPreviewPath,
-  }), [chatDraft, reviewOpen, showPreviewPath, mode, refs, previewNav, objectOpen, returnTo, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
+  }), [waitProgress, chatDraft, reviewOpen, showPreviewPath, mode, refs, previewNav, objectOpen, returnTo, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
   return <Ctx.Provider value={value}><ManifestReceiverFrame />{children}</Ctx.Provider>;
 }
