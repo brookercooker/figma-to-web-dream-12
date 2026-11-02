@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Add measured progress bars for requests, closed phone chat, review and draft saves; test timing and validate visible waits.
 - [x] Notify the existing publishing sync after successful page/object/redirect changes, including batched notes and existing retries. Mutation and queue regressions pass; hosted service acceptance remains unverified (browser uses intercepted data/service responses).
 - [x] Stop static/landing page action-menu clicks from opening the row. Signed-in browser with intercepted page data confirms Archive stays on Pages with the Undo notice and restore sends its note.
 - [x] Preserve provider-owned chat draft, focus and cursor through replies/preview updates and composer replacement. Signed-in browser with a controlled arriving reply preserves typing, focus and selection; full suite 913 tests passed before final registration-note checks.
