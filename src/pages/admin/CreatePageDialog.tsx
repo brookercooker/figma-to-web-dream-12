@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/prototype/client";
 import { toRouteSlug } from "./slug";
 import { reservedPrefixFor } from "./reservedPaths";
+import { notifyContentEdited } from "./designChat/contentSync";
+import { pageChangeNote } from "./contentChangeNotes";
 
 /**
  * Guided add-page flow.
@@ -54,6 +56,7 @@ export default function CreatePageDialog({
         name: name.trim(), path: route, description: "", notes: "", tags: [],
       }).select("id,slug_id,path,name").single();
       if (error) throw error;
+      notifyContentEdited([pageChangeNote("Added", data)]);
       toast.success(`Page "${data.name}" is live at ${data.path}`);
       onCreated?.(data);
       onOpenChange(false);
