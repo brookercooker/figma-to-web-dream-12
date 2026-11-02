@@ -4,8 +4,15 @@ import { MemoryRouter } from "react-router-dom";
 import PagesTab from "../PagesTab";
 import { PAGES_SYNCED } from "../manifestPageSync";
 
-const state = vi.hoisted(() => ({ rows: [] as any[], load: vi.fn(), choose: vi.fn(), start: vi.fn() }));
-vi.mock("@/prototype/client", () => ({ supabase: { from: () => ({ select: () => ({ order: async () => { state.load(); return { data: state.rows }; } }) }) } }));
+const state = vi.hoisted(() => ({ rows: [] as any[], load: vi.fn(), choose: vi.fn(), start: vi.fn(), notify: vi.fn(), error: null as null | { message: string } }));
+vi.mock("@/prototype/client", () => ({ supabase: { from: () => ({
+  select: () => ({ order: async () => { state.load(); return { data: state.rows }; } }),
+  update: (patch: any) => ({ in: async (_field: string, ids: string[]) => {
+    if (!state.error) state.rows = state.rows.map((row) => ids.includes(row.id) ? { ...row, ...patch } : row);
+    return { error: state.error };
+  } }),
+}) } }));
+vi.mock("../designChat/contentSync", () => ({ notifyContentEdited: state.notify }));
 vi.mock("../manifestPageSync", () => ({ PAGES_SYNCED: "nova-pages-synced", syncManifestPages: vi.fn() }));
 vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => ({ selectPage: state.choose, startEditing: state.start, workingPage: null }) }));
 vi.mock("../useThumbnailCapture", () => ({ useAutoCaptureThumbnails: vi.fn(), regenerateThumbnail: vi.fn() }));
@@ -18,8 +25,27 @@ vi.mock("../LinkAuditView", () => ({ default: () => null }));
 vi.mock("../PagePreviewDialog", () => ({ default: () => null }));
 vi.mock("../WorkStatusPopover", () => ({ default: () => null }));
 
-beforeEach(() => { cleanup(); state.rows = []; state.load.mockClear(); state.choose.mockClear(); state.start.mockClear(); });
+beforeEach(() => { cleanup(); state.rows = []; state.error = null; state.notify.mockClear(); state.load.mockClear(); state.choose.mockClear(); state.start.mockClear(); });
 describe("Pages list synchronization", () => {
+  it("archives from the portalled menu without opening the page and queues its named change", async () => {
+    state.rows = [{ id: "race", name: "Race Test Page", path: "/race-test-page", tags: [], build_status: "ready", archived_at: null }];
+    render(<MemoryRouter initialEntries={["/manage/pages"]}><PagesTab /></MemoryRouter>);
+    const menu = await screen.findByRole("button", { name: "More Actions" });
+    fireEvent.pointerDown(menu, { button: 0, ctrlKey: false, pointerType: "mouse" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Archive" }));
+    await waitFor(() => expect(state.notify).toHaveBeenCalledWith(['Archived the page "Race Test Page" (/race-test-page)']));
+    expect(state.choose).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Race Test Page" })).toBeNull());
+  });
+  it("does not queue a failed archive", async () => {
+    state.rows = [{ id: "race", name: "Race Test Page", path: "/race-test-page", tags: [], build_status: "ready", archived_at: null }];
+    state.error = { message: "Archive failed" };
+    render(<MemoryRouter><PagesTab /></MemoryRouter>);
+    fireEvent.pointerDown(await screen.findByRole("button", { name: "More Actions" }), { button: 0, ctrlKey: false, pointerType: "mouse" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Archive" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Race Test Page" })).toBeInTheDocument());
+    expect(state.notify).not.toHaveBeenCalled();
+  });
   it("shows a new page and chooses it without starting manual editing", async () => {
     render(<MemoryRouter initialEntries={["/manage/pages"]}><PagesTab /></MemoryRouter>);
     await waitFor(() => expect(state.load).toHaveBeenCalledTimes(1));

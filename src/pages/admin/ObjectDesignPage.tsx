@@ -1539,7 +1539,8 @@ export default function ObjectDesignPage({ embedded = false, objectId, focusSect
   const [deletingObj, setDeletingObj] = useState<ObjectRow | null>(null);
   const deleteObject = async (o: ObjectRow) => {
     const { error: delError } = await (supabase as any).from("object_registry").delete().eq("id", o.id);
-    if (!delError) notifyContentEdited();
+    if (delError) { toast.error(delError.message); return; }
+    notifyContentEdited([`Deleted the object "${o.name}"`]);
     setObjects((cur) => cur.filter((x) => x.id !== o.id));
     if (o.id === selectedId) {
       const next = new URLSearchParams(params);

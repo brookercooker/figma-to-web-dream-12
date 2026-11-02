@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ChatPanel from "../ChatPanel";
+import { useChatDraft } from "../useChatDraft";
 
 const mocks = vi.hoisted(() => ({
   post: vi.fn(),
@@ -17,12 +18,16 @@ const mocks = vi.hoisted(() => ({
   editing: false,
   guard: vi.fn(),
   refs: { references: [] as any[], addReference: vi.fn(), removeReference: vi.fn(), clearReferences: vi.fn(), focusTick: 0 },
+  history: [] as any[],
+  previewLoaded: false,
+  draft: undefined as ReturnType<typeof useChatDraft> | undefined,
 }));
 vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({
-  state: { busy: false, history: [] }, offline: false, refreshSoon: mocks.refresh,
+  state: { busy: false, history: mocks.history }, offline: false, refreshSoon: mocks.refresh,
+  chatDraft: mocks.draft,
   workingPage: null, clearWorkingPage: vi.fn(), editing: mocks.editing,
   drawing: { strokes: [], on: false, available: false, cancel: vi.fn(), toggle: vi.fn() },
-  preview: { loaded: false }, startEditing: mocks.start, stopEditing: vi.fn(), selectPage: mocks.select,
+  preview: { loaded: mocks.previewLoaded }, startEditing: mocks.start, stopEditing: vi.fn(), selectPage: mocks.select,
   previewLocation: mocks.location ? { path: mocks.location, search: "" } : mocks.candidate ? { path: mocks.candidate.path, search: "" } : null,
   previewPage: mocks.page,
   refs: mocks.refs,
@@ -48,6 +53,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.post.mockResolvedValue({ ok: true, data: {} });
   mocks.candidate = null;
+  mocks.history = []; mocks.previewLoaded = false; mocks.draft = undefined;
   mocks.location = null;
   mocks.refs = { references: [], addReference: vi.fn(), removeReference: vi.fn(), clearReferences: vi.fn(), focusTick: 0 };
   mocks.page = null;
@@ -81,6 +87,43 @@ function messageBox() {
 }
 
 describe("chat sending shortcuts", () => {
+  it("keeps draft, cursor, focus and the same box when a reply and preview arrive", () => {
+    const view = render(<MemoryRouter><ChatPanel /></MemoryRouter>);
+    const input = screen.getByRole("textbox", { name: "Describe a Change" }) as HTMLTextAreaElement;
+    fireEvent.change(input, { target: { value: "Keep my next request" } });
+    input.focus(); input.setSelectionRange(5, 7); fireEvent.select(input);
+    mocks.history = [{ role: "assistant", text: "Finished", ts: 42 }]; mocks.previewLoaded = true;
+    mocks.candidate = { name: "Home", path: "/" };
+    view.rerender(<MemoryRouter><ChatPanel /></MemoryRouter>);
+    expect(screen.getByRole("textbox", { name: "Describe a Change" })).toBe(input);
+    expect(input).toHaveValue("Keep my next request");
+    expect(document.activeElement).toBe(input); expect(input.selectionStart).toBe(5); expect(input.selectionEnd).toBe(7);
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+  it("keeps a provider-owned draft and cursor through composer replacement", () => {
+    function Parent({ version }: { version: number }) {
+      mocks.draft = useChatDraft();
+      return <MemoryRouter><ChatPanel key={version} /></MemoryRouter>;
+    }
+    const view = render(<Parent version={1} />);
+    const input = screen.getByRole("textbox", { name: "Describe a Change" }) as HTMLTextAreaElement;
+    fireEvent.change(input, { target: { value: "Keep this draft" } });
+    input.focus(); input.setSelectionRange(2, 6); fireEvent.select(input);
+    view.rerender(<Parent version={2} />);
+    const restored = screen.getByRole("textbox", { name: "Describe a Change" }) as HTMLTextAreaElement;
+    expect(restored).toHaveValue("Keep this draft"); expect(document.activeElement).toBe(restored);
+    expect(restored.selectionStart).toBe(2); expect(restored.selectionEnd).toBe(6);
+  });
+  it("does not clear a next draft typed while Send is still finishing", async () => {
+    let finish: ((result: any) => void) | undefined;
+    mocks.post.mockImplementationOnce(() => new Promise((resolve) => { finish = resolve; }));
+    const input = messageBox();
+    fireEvent.click(screen.getByRole("button", { name: /^Send$/ }));
+    fireEvent.change(input, { target: { value: "My next request" } });
+    finish?.({ ok: true, data: {} });
+    await waitFor(() => expect(mocks.refresh).toHaveBeenCalled());
+    expect(input).toHaveValue("My next request");
+  });
   it("exposes an asynchronous send error even if the phone sheet was closed", async () => {
     const onAttention = vi.fn();
     mocks.post.mockResolvedValue({ ok: false, error: "The request could not be sent" });

@@ -41,8 +41,9 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
   useLayoutEffect(() => {
     const el = textRef.current;
     if (el && selection.current.focused) {
+      const saved = selection.current;
       el.focus({ preventScroll: true });
-      el.setSelectionRange(selection.current.start, selection.current.end, selection.current.direction);
+      el.setSelectionRange(saved.start, saved.end, saved.direction);
     }
   }, [selection]);
   const rememberSelection = (el: HTMLTextAreaElement, focused = document.activeElement === el) => {
