@@ -22,6 +22,8 @@ let expiry: ReturnType<typeof setTimeout> | undefined;
 export const contentSyncBusy = (s: RelayState | null) => !!s && (s.busy || s.publish?.status === "reviewing" || !!s.approval);
 export const contentSyncDeferred = () => !!owed?.deferred;
 export const contentSyncFailed = () => syncFailed;
+export const contentSyncPending = () => owed !== null;
+export const contentSyncStartedAt = () => owed?.version ?? null;
 export function retryContentSync() {
   window.dispatchEvent(new Event("nova:preview-content-retry"));
   if (!owed) return;

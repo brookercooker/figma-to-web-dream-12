@@ -39,6 +39,7 @@ import { usePhoneChat } from "./designChat/phoneChat";
 import { PhoneChatButton, PhoneChatHeader } from "./designChat/PhoneChatChrome";
 import "./libraryLayout.css";
 import WaitProgress from "./designChat/WaitProgress";
+import { useSaveProgress } from "./designChat/useSaveProgress";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -102,6 +103,7 @@ function AdminShell() {
   const { setSlot, saveAll, discardAll, hasChanges, requestAdd, historyControls } = useEditorSlot();
   // Saves the editor's held changes, then leaves edit mode; on a failed save it stays in edit mode.
   const [finishing, setFinishing] = useState(false);
+  const saveProgress = useSaveProgress(finishing);
   // Save Changes is enabled only while the editor holds unsaved edits; editors expose that as a function, so it is checked often.
   const [dirty, setDirty] = useState(false);
   useEffect(() => {
@@ -363,6 +365,7 @@ function AdminShell() {
               {phone && <PhoneMoreMenu showView={tab === "preview"} isAdmin={isAdmin} onPassword={() => setPwOpen(true)} onReview={openPhoneChat} />}
             </div>
           </header>
+          <WaitProgress progress={saveProgress} className="shrink-0 border-b bg-background px-3 py-2" />
 
           <ChangeMyPasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
 
