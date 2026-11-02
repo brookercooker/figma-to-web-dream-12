@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/prototype/client";
 import { notifyContentEdited } from "./contentSync";
+import { pageChangeNote } from "../contentChangeNotes";
 import { homeAliases, isHomePath, isInternalPath, pageKey, pageToRegister, pageRow, pageSlugSuffix, type RegistrablePage } from "./registerPage";
 export { normalizePreviewPath } from "./registerPage";
 import { normalizePreviewPath } from "./registerPage";
@@ -21,6 +22,7 @@ export function registerPreviewPage(candidate: RegistrablePage): Promise<Preview
   const pending = registering.get(key);
   if (pending) return pending;
   const request = (async () => {
+    let action = "Added";
     const fields = pageRow({ ...candidate, path: key }, "static", pageSlugSuffix());
     let { data, error } = await (supabase as any).from("pages").insert(fields).select("id,name,path").single();
     if (error?.code === "23505") {
@@ -30,6 +32,7 @@ export function registerPreviewPage(candidate: RegistrablePage): Promise<Preview
       data = rows.find((r) => !r.archived_at && r.path === key) ?? rows.find((r) => !r.archived_at) ?? rows[0] ?? null;
       error = found.error;
       if (data?.archived_at) {
+        action = "Restored";
         const restored = await (supabase as any).from("pages").update({ archived_at: null, build_status: "ready" })
           .eq("id", data.id).select("id,name,path").single();
         data = restored.data;
@@ -40,7 +43,7 @@ export function registerPreviewPage(candidate: RegistrablePage): Promise<Preview
     const page: PreviewPage = { id: data.id, name: data.name, path: data.path };
     cache.set(key, page);
     listeners.forEach((notify) => notify());
-    notifyContentEdited();
+    notifyContentEdited([pageChangeNote(action, page)]);
     return page;
   })();
   registering.set(key, request);

@@ -1,7 +1,7 @@
 # Roadmap — coded object import fidelity
-- [ ] Notify the existing publishing sync after successful page/object/redirect changes, including batched notes and existing retries.
-- [ ] Stop page action-menu clicks from opening the row; verify Archive stays on Pages.
-- [ ] Preserve chat draft, focus and cursor while builder replies/preview updates arrive.
+- [x] Notify the existing publishing sync after successful page/object/redirect changes, including batched notes and existing retries. Mutation and queue regressions pass; hosted service acceptance remains unverified (browser uses intercepted data/service responses).
+- [x] Stop static/landing page action-menu clicks from opening the row. Signed-in browser with intercepted page data confirms Archive stays on Pages with the Undo notice and restore sends its note.
+- [x] Preserve provider-owned chat draft, focus and cursor through replies/preview updates and composer replacement. Signed-in browser with a controlled arriving reply preserves typing, focus and selection; full suite 913 tests passed before final registration-note checks.
 - [x] Phone follow-ups: baseline loaded history, remove outside preview band, honour Manual Edit sizes, and use content-width library labels/cards/filters. All 900 tests pass. Signed-in libraries at 390/640/800 with chat open: searches 322/228/388px, no overflow, label creation available. Controlled public-frame checks: phone reaches bottom; Manual widths 390/768/1280 accept real heading clicks.
 - [ ] Verify device-size selection/scroll/section bars and floating-button clearance on the actual public site: hosted frame/design service unavailable; controlled frame checks pass but cannot establish visitor-specific controls.
 - [x] Phone-only retained chat pop-out, status button, compact top-bar mode/action menus and drawing return. All 895 tests pass; preview build OK.
