@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import type { RelayState } from "./helper";
+import { RELAY, type RelayState } from "./helper";
 import { detectWaitKind, timedProgress, type WaitKind, type WaitView } from "./waitEstimates";
 
 type Track = { id: number; version: number; kind: WaitKind; high: number; replyAt?: number; pausedAt?: number; paused: number; doneAt?: number; error?: boolean; hasBuild?: boolean; view?: WaitView };
 const terminal = /^(done|complete|completed|published|live)$/;
 const failed = /^(failed|error|blocked)$/;
 const stopped = /^(stopped|cancelled|canceled)$/;
+const storageKey = `nova:wait-progress:${RELAY}`;
+function restoreTrack(id: number): Track | null {
+  try { const saved = JSON.parse(sessionStorage.getItem(storageKey) ?? "null"); return saved?.id === id && typeof saved.high === "number" && typeof saved.paused === "number" ? saved : null; } catch { return null; }
+}
+function rememberTrack(t: Track | null) {
+  try { if (t) sessionStorage.setItem(storageKey, JSON.stringify(t)); else sessionStorage.removeItem(storageKey); } catch { /* Server timestamps remain the fallback. */ }
+}
 export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0): { request: WaitView | null; submit: WaitView | null } {
   const [now, setNow] = useState(Date.now);
   const track = useRef<Track | null>(null);
@@ -16,26 +23,28 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   const submitJob = job?.kind === "publish" || job?.kind === "review" || /^(reviewing|publishing|updating|content)$/.test(status);
   const history = state.history ?? [];
   const user = [...history].reverse().find(e => e.role === "user" && (!job || !e.ts || e.ts <= job.startedAt + 1000));
-  const reply = history.find(e => e.role === "assistant" && job && typeof e.ts === "number" && e.ts >= job.startedAt);
-  const error = history.find(e => e.role === "error" && job && typeof e.ts === "number" && e.ts >= job.startedAt);
+  const startId = job?.startedAt ?? track.current?.id;
+  const reply = history.find(e => e.role === "assistant" && startId !== undefined && typeof e.ts === "number" && e.ts >= startId);
+  const error = history.find(e => e.role === "error" && startId !== undefined && typeof e.ts === "number" && e.ts >= startId);
   if (job && track.current?.id !== job.startedAt && (state.busy || state.previewChecking || status === "approval" || status === "queued")) {
     const content = state.draft?.requests?.some(r => r.source === "content");
-    track.current = { id: job.startedAt, version: state.previewVersion, high: 0, paused: 0,
+    track.current = restoreTrack(job.startedAt) ?? { id: job.startedAt, version: state.previewVersion, high: 0, paused: 0,
       kind: submitJob ? content || status === "content" ? "contentSubmit" : "submit" : detectWaitKind(user?.text ?? "", job.planOnly || /^(question|plan|plan-only|planOnly)$/.test(job.kind ?? "")) };
   }
   const t = track.current;
   if (!t) return { request: null, submit: null };
   const isSubmit = t.kind === "submit" || t.kind === "contentSubmit";
-  if (stopped.test(status) || (!job && !t.replyAt && !t.doneAt && !state.previewChecking)) {
-    track.current = null; return { request: null, submit: null };
+  if (stopped.test(status) || (!job && !reply && !t.replyAt && !t.doneAt && !state.previewChecking)) {
+    track.current = null; rememberTrack(null); return { request: null, submit: null };
   }
   if (state.approval || status === "approval") {
     t.pausedAt ??= state.approval?.createdAt ?? now;
+    rememberTrack(t);
     const view = { value: t.high, label: "Waiting for your approval" };
     return { request: isSubmit ? null : view, submit: isSubmit ? view : null };
   }
   if (t.pausedAt !== undefined) { t.paused += Math.max(0, now - t.pausedAt); t.pausedAt = undefined; }
-  if (failed.test(status) || error) t.error = true;
+  if (failed.test(status) || error || isSubmit && failed.test(state.draft?.review?.state ?? "")) t.error = true;
   if (!isSubmit && !t.replyAt && (reply?.ts || state.previewChecking && job?.stepStartedAt)) t.replyAt = reply?.ts ?? job?.stepStartedAt;
   // A question/no-change reply has no build stage. A reload with previewChecking is already in that stage.
   t.hasBuild ||= !!state.previewChecking || state.previewVersion > t.version || (t.kind !== "question" && !!t.replyAt && ((state.previewBuiltAt ?? 0) > t.replyAt || /^(building|build|previewChecking)$/.test(job?.lastStep ?? status)));
@@ -57,5 +66,6 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
     t.high = view.value;
   }
   t.view = view;
+  rememberTrack(t);
   return { request: isSubmit ? null : view, submit: isSubmit ? view : null };
 }

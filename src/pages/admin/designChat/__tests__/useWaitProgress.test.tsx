@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useWaitProgress } from "../useWaitProgress";
 import type { RelayState } from "../helper";
 const base = (): RelayState => ({ busy: true, job: { kind: "change", status: "working", startedAt: 10_000 }, previewVersion: 1, history: [{ role: "user", ts: 10_000, text: "Make the heading bigger" }] });
-beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(30_000); });
+beforeEach(() => { sessionStorage.clear(); vi.useFakeTimers(); vi.setSystemTime(30_000); });
 afterEach(() => vi.useRealTimers());
 it("reloads a running request using server elapsed time", () => { const one = renderHook(() => useWaitProgress(base())); const value = one.result.current.request?.value; one.unmount(); const two = renderHook(() => useWaitProgress(base())); expect(two.result.current.request?.value).toBe(value); expect(value).toBeGreaterThan(0.2); });
 it("jumps at reply, waits for real build, then completes for 1.5s", () => {
