@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { postToHelper } from "./helper";
 import { useDesignChat, type Device } from "./DesignChatContext";
+import WaitProgress from "./WaitProgress";
 
 /**
  * The buttons in the Site Manager's top bar that belong to the design chat: while the Preview tab is open, the size buttons
@@ -48,17 +49,17 @@ export default function PreviewTools({ showViewControls, tight = false, navOnly 
 }
 
 /** Submit for review (or Publish, when review is off): changes can be waiting whichever tab is open. */
-export function SubmitButton({ compact = false }: { compact?: boolean }) {
-  const { state, refreshSoon } = useDesignChat();
+export function SubmitButton({ compact = false, showProgress = true }: { compact?: boolean; showProgress?: boolean }) {
+  const { state, refreshSoon, waitProgress } = useDesignChat();
   const p = state?.publish ?? { ok: true, open: 0 };
   const reviewOn = state?.review?.enabled;
   const submitDisabled = !state || state.busy || p.open === 0 || (!p.ok && !p.willReview);
   const submit = async () => { await postToHelper("/publish"); refreshSoon(); };
   const label = reviewOn === false ? "Publish" : "Submit for Review";
   return (
-    <Button type="button" variant="review" size="sm" className={compact ? "w-9 shrink-0 px-0" : "shrink-0"} aria-label={label} title={label} disabled={submitDisabled} onClick={submit}>
+    <div className="shrink-0"><Button type="button" variant="review" size="sm" className={compact ? "w-9 shrink-0 px-0" : "shrink-0"} aria-label={label} title={label} disabled={submitDisabled} onClick={submit}>
       <Send className="h-4 w-4" aria-hidden />
       {!compact && label}
-    </Button>
+    </Button>{showProgress && <WaitProgress progress={waitProgress?.submit} className="mt-2 w-full max-w-64" />}</div>
   );
 }

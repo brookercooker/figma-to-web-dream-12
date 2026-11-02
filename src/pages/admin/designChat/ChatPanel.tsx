@@ -14,6 +14,7 @@ import { useVoice } from "./useVoice";
 import { kindLabel, referenceKey, withReferences } from "./references";
 import { useModeSwitch } from "./ModeSwitchContext";
 import { useChatDraft } from "./useChatDraft";
+import WaitProgress from "./WaitProgress";
 
 const SUGGESTIONS = [
   "Make the headline larger",
@@ -28,7 +29,7 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel({ opening = 0, onDraw, onAttention }: { opening?: number; onDraw?: () => void; onAttention?: () => void } = {}) {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress } = useDesignChat();
   const modeSwitch = useModeSwitch();
   const fallbackDraft = useChatDraft();
   const { text, setText, selection } = chatDraft ?? fallbackDraft;
@@ -193,7 +194,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
           </div>
         ))}
 
-        {working && job && state && (
+        {working && job && state && !waitProgress?.request && !waitProgress?.submit && (
           <div role="status" className="self-stretch grid grid-cols-[auto_1fr_auto] items-center gap-x-2.5 gap-y-1 rounded-lg border bg-muted/60 px-3 py-2.5">
             <span className="flex gap-1" aria-hidden="true">
               {[0, 1, 2].map((n) => <i key={n} className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: `${n * 0.2}s` }} />)}
@@ -203,6 +204,8 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
             {hintForWork && <span className="col-span-3 text-xs text-muted-foreground">{hintForWork}</span>}
           </div>
         )}
+
+        {(waitProgress?.request || waitProgress?.submit) && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><WaitProgress progress={waitProgress.request ?? waitProgress.submit} /></div>}
 
         {state?.approval && <ApprovalCard approval={state.approval} onAnswered={refreshSoon} />}
 

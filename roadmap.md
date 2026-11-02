@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [x] Add measured request, closed-phone, review and draft-save bars. Timing/lifecycle tests cover reloads, approval pauses, error freeze and actual sync acceptance. Signed-in controlled browser checks cover Send→reply→build→Done at desktop/390/360; hosted publishing and public frame remain unverified.
 - [x] Notify the existing publishing sync after successful page/object/redirect changes, including batched notes and existing retries. Mutation and queue regressions pass; hosted service acceptance remains unverified (browser uses intercepted data/service responses).
 - [x] Stop static/landing page action-menu clicks from opening the row. Signed-in browser with intercepted page data confirms Archive stays on Pages with the Undo notice and restore sends its note.
 - [x] Preserve provider-owned chat draft, focus and cursor through replies/preview updates and composer replacement. Signed-in browser with a controlled arriving reply preserves typing, focus and selection; full suite 913 tests passed before final registration-note checks.
