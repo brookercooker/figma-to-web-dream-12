@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { CONTENT_SYNC_CHANGED, contentSyncFailed, contentSyncPending, contentSyncStartedAt, contentSyncDeferred } from "./contentSync";
 import { timedProgress, type WaitView } from "./waitEstimates";
 
-export function useSaveProgress(saving: boolean) {
+export function useSaveProgress(saving: boolean, stillDirty = false) {
   const [now, setNow] = useState(Date.now);
   const t = useRef<{ start: number; high: number; done?: number; failed?: boolean } | null>(null);
   const lastSaving = useRef(false);
@@ -21,6 +21,7 @@ export function useSaveProgress(saving: boolean) {
   let progress: WaitView;
   if (contentSyncFailed()) progress = { value: track.high, label: "Your changes are saved, but couldn't reach the draft", error: true };
   else if (contentSyncDeferred()) progress = { value: track.high, label: "Waiting for the current task to finish" };
+  else if (!saving && stillDirty && !contentSyncPending()) progress = { value: track.high, label: "Your changes couldn't be saved", error: true };
   else if (!saving && !contentSyncPending()) {
     track.done ??= now;
     if (now - track.done > 1700) return null;

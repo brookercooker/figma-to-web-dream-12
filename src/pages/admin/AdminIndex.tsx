@@ -103,9 +103,9 @@ function AdminShell() {
   const { setSlot, saveAll, discardAll, hasChanges, requestAdd, historyControls } = useEditorSlot();
   // Saves the editor's held changes, then leaves edit mode; on a failed save it stays in edit mode.
   const [finishing, setFinishing] = useState(false);
-  const saveProgress = useSaveProgress(finishing);
   // Save Changes is enabled only while the editor holds unsaved edits; editors expose that as a function, so it is checked often.
   const [dirty, setDirty] = useState(false);
+  const saveProgress = useSaveProgress(finishing, dirty);
   useEffect(() => {
     if (!manual) { setDirty(false); return; }
     const check = () => setDirty(hasChanges());

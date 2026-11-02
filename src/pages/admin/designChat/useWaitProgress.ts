@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { RelayState } from "./helper";
 import { detectWaitKind, timedProgress, type WaitKind, type WaitView } from "./waitEstimates";
 
-type Track = { id: number; version: number; kind: WaitKind; high: number; replyAt?: number; pausedAt?: number; paused: number; doneAt?: number; error?: boolean; view?: WaitView };
+type Track = { id: number; version: number; kind: WaitKind; high: number; replyAt?: number; pausedAt?: number; paused: number; doneAt?: number; error?: boolean; hasBuild?: boolean; view?: WaitView };
 const terminal = /^(done|complete|completed|published|live)$/;
 const failed = /^(failed|error|blocked)$/;
 const stopped = /^(stopped|cancelled|canceled)$/;
@@ -18,7 +18,7 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0) 
   const user = [...history].reverse().find(e => e.role === "user" && (!job || !e.ts || e.ts <= job.startedAt + 1000));
   const reply = history.find(e => e.role === "assistant" && job && typeof e.ts === "number" && e.ts >= job.startedAt);
   const error = history.find(e => e.role === "error" && job && typeof e.ts === "number" && e.ts >= job.startedAt);
-  if (job && track.current?.id !== job.startedAt) {
+  if (job && track.current?.id !== job.startedAt && (state.busy || state.previewChecking || status === "approval" || status === "queued")) {
     const content = state.draft?.requests?.some(r => r.source === "content");
     track.current = { id: job.startedAt, version: state.previewVersion, high: 0, paused: 0,
       kind: submitJob ? content || status === "content" ? "contentSubmit" : "submit" : detectWaitKind(user?.text ?? "", job.planOnly || /^(question|plan|plan-only|planOnly)$/.test(job.kind ?? "")) };
@@ -38,7 +38,8 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0) 
   if (failed.test(status) || error) t.error = true;
   if (!isSubmit && !t.replyAt && (reply?.ts || state.previewChecking && job?.stepStartedAt)) t.replyAt = reply?.ts ?? job?.stepStartedAt;
   // A question/no-change reply has no build stage. A reload with previewChecking is already in that stage.
-  const hasBuild = state.previewChecking || state.previewVersion > t.version || (t.kind !== "question" && !!t.replyAt && /^(building|build|previewChecking)$/.test(job?.lastStep ?? status));
+  t.hasBuild ||= !!state.previewChecking || state.previewVersion > t.version || (t.kind !== "question" && !!t.replyAt && ((state.previewBuiltAt ?? 0) > t.replyAt || /^(building|build|previewChecking)$/.test(job?.lastStep ?? status)));
+  const hasBuild = !!t.hasBuild;
   if (!t.error && !t.doneAt) {
     if (isSubmit ? terminal.test(state.publish?.status ?? status) || history.some(e => e.role === "note" && (e.ts ?? 0) >= t.id && /^The draft is published|^Your changes are live/i.test(e.text))
       : !!t.replyAt && (!hasBuild || (state.previewBuiltAt ?? 0) > t.replyAt || frameCompletedAt > t.replyAt)) t.doneAt = now;
