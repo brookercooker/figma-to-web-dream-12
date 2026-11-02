@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { RELAY, type RelayState } from "./helper";
 import { detectWaitKind, timedProgress, type WaitKind, type WaitView } from "./waitEstimates";
 
-type Track = { id: number; version: number; kind: WaitKind; high: number; replyAt?: number; pausedAt?: number; paused: number; doneAt?: number; error?: boolean; hasBuild?: boolean; view?: WaitView };
+type Track = { id: number; version: number; kind: WaitKind; high: number; replyAt?: number; pausedAt?: number; paused: number; doneAt?: number; error?: boolean; hasBuild?: boolean; stageStart?: number; view?: WaitView };
 const terminal = /^(done|complete|completed|published|live)$/;
 const failed = /^(failed|error|blocked)$/;
 const stopped = /^(stopped|cancelled|canceled)$/;
@@ -22,6 +22,10 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   const status = job?.status ?? "";
   const submitJob = job?.kind === "publish" || job?.kind === "review" || /^(reviewing|publishing|updating|content)$/.test(status);
   const history = state.history ?? [];
+  if (!job && state.previewChecking && !track.current) {
+    const latestUser = [...history].reverse().find(e => e.role === "user" && typeof e.ts === "number");
+    if (latestUser?.ts) track.current = restoreTrack(latestUser.ts) ?? { id: latestUser.ts, version: state.previewVersion, kind: detectWaitKind(latestUser.text), high: 0, paused: 0, hasBuild: true };
+  }
   const user = [...history].reverse().find(e => e.role === "user" && (!job || !e.ts || e.ts <= job.startedAt + 1000));
   const startId = job?.startedAt ?? track.current?.id;
   const reply = history.find(e => e.role === "assistant" && startId !== undefined && typeof e.ts === "number" && e.ts >= startId);
@@ -60,7 +64,8 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   } else if (t.error) view = { value: t.high, label: "The change couldn't finish", error: true };
   else {
     const stage = isSubmit ? /^(publishing|updating)$/.test(status) ? 1 : 0 : t.replyAt && hasBuild ? 1 : 0;
-    const started = stage ? isSubmit ? job?.stepStartedAt ?? t.id : t.replyAt ?? t.id : job?.stepStartedAt ?? t.id;
+    if (!stage) t.stageStart ??= job?.stepStartedAt ?? t.id;
+    const started = stage ? isSubmit ? job?.stepStartedAt ?? t.id : t.replyAt ?? t.id : t.stageStart ?? t.id;
     const label = isSubmit ? stage ? "Publishing" : "Checking your changes" : stage ? "Building the preview" : t.kind === "question" ? "Thinking" : "Making your change";
     view = timedProgress(t.kind, stage, (now - started - (stage ? 0 : t.paused)) / 1000, label, t.high);
     t.high = view.value;
