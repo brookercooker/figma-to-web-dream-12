@@ -637,7 +637,7 @@ export default function LandingPagesView() {
                             <MoreHorizontal className="w-4 h-4" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuContent align="end" className="w-56" onClick={(event) => event.stopPropagation()}>
                           <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
                             {r.name}
                           </DropdownMenuLabel>
