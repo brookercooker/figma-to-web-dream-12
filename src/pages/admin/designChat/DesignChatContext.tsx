@@ -14,6 +14,7 @@ import ManifestReceiverFrame from "./ManifestReceiverFrame";
 import { useChatReferences, type ChatReferences } from "./useChatReferences";
 import { emptyHistory, visit, step, canBack, canForward, type PreviewHistory } from "./previewHistory";
 import { observeContentSyncState } from "./contentSync";
+import { useChatDraft } from "./useChatDraft";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview
@@ -48,6 +49,7 @@ export function workingReducer(s: WorkingState, a: WorkingAction): WorkingState 
 }
 
 export type DesignChat = {
+  chatDraft?: ReturnType<typeof useChatDraft>;
   mode: "chat" | "manual";
   state: RelayState | null;
   offline: boolean;
@@ -249,13 +251,15 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const { page: previewPage, loading: previewPageLoading, registrable: previewRegistrable } = usePreviewPage(previewLocation?.path ?? null, previewLocation?.notFound);
   const drawing = useDrawing({ device, path: previewLocation?.path ?? null });
   const refs = useChatReferences();
+  const chatDraft = useChatDraft();
 
   const value = useMemo<DesignChat>(() => ({
+    chatDraft,
     mode,
     state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
     editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, returnTo, refs, previewNav, reviewOpen, setReviewOpen, showPreviewPath,
-  }), [reviewOpen, showPreviewPath, mode, refs, previewNav, objectOpen, returnTo, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
+  }), [chatDraft, reviewOpen, showPreviewPath, mode, refs, previewNav, objectOpen, returnTo, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
   return <Ctx.Provider value={value}><ManifestReceiverFrame />{children}</Ctx.Provider>;
 }

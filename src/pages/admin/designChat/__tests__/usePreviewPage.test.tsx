@@ -27,6 +27,7 @@ describe("preview registration cache", () => {
     mocks.insert.mockReturnValue({ select: () => ({ single: async () => ({ data: page, error: null }) }) });
     await act(async () => { await registerPreviewPage({ name: page.name, path }); });
     expect(result.current.page).toEqual(page);
+    expect(mocks.sync).toHaveBeenCalledWith(['Added the page "Cache Registration Test" (/cache-registration-test)']);
     expect(result.current.registrable).toBeNull();
     await registerPreviewPage({ name: page.name, path });
     expect(mocks.insert).toHaveBeenCalledTimes(1);
@@ -46,6 +47,7 @@ describe("preview registration cache", () => {
     expect(mocks.insert).toHaveBeenCalledTimes(1);
     expect(mocks.restore).toHaveBeenCalledTimes(archived ? 1 : 0);
     expect(mocks.sync).toHaveBeenCalledTimes(1);
+    expect(mocks.sync).toHaveBeenCalledWith([`${archived ? "Restored" : "Added"} the page "Existing Page" (${path})`]);
   });
 
   it("does not sync or cache a failed insert", async () => {

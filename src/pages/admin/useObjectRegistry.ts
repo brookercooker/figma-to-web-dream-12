@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/prototype/client";
+import { notifyContentEdited } from "./designChat/contentSync";
+import { objectChangeNote } from "./contentChangeNotes";
 
 export type ObjectStatus = "Draft" | "Ready";
 
@@ -87,11 +89,12 @@ export function useArchiveObject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("object_registry")
         .update({ archived_at: new Date().toISOString() })
-        .eq("id", id);
+        .eq("id", id).select("id,name").single();
       if (error) throw error;
+      notifyContentEdited([objectChangeNote("Archived", data)]);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "object_registry"] });
@@ -103,11 +106,12 @@ export function useRestoreObject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("object_registry")
         .update({ archived_at: null })
-        .eq("id", id);
+        .eq("id", id).select("id,name").single();
       if (error) throw error;
+      notifyContentEdited([objectChangeNote("Restored", data)]);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "object_registry"] });
@@ -120,11 +124,12 @@ export function useDeleteObjectPermanent() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from("object_registry")
         .delete()
-        .eq("id", id);
+        .eq("id", id).select("id,name").single();
       if (error) throw error;
+      notifyContentEdited([objectChangeNote("Deleted", data)]);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "object_registry"] }),
   });

@@ -13,6 +13,8 @@ import LibraryLabels from "./LibraryLabels";
 import InlineEdit from "./InlineEdit";
 import ConfirmDialog from "./ConfirmDialog";
 import { scheduleDeleteWithUndo } from "./deferredDelete";
+import { notifyContentEdited } from "./designChat/contentSync";
+import { pageChangeNote } from "./contentChangeNotes";
 import { Search, Archive, ArchiveRestore, Trash2, ListChecks, FileText, Megaphone, ExternalLink, MoreHorizontal, RefreshCw, MessageSquare } from "lucide-react";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
 import { workingPageFrom } from "./designChat/pageSelection";
@@ -212,6 +214,7 @@ export default function PagesTab() {
       commit: async () => {
         const { error } = await (supabase as any).from("pages").delete().eq("id", page.id);
         if (error) throw error;
+        notifyContentEdited([pageChangeNote("Deleted", page)]);
       },
       onCommitted: () => { setHiddenIds((s) => { const n = new Set(s); n.delete(page.id); return n; }); load(); },
     });
@@ -227,6 +230,7 @@ export default function PagesTab() {
       commit: async () => {
         const { error } = await (supabase as any).from("pages").delete().in("id", ids);
         if (error) throw error;
+        notifyContentEdited(pages.filter((p) => ids.includes(p.id)).map((p) => pageChangeNote("Deleted", p)));
       },
       onCommitted: () => { setHiddenIds((s) => { const n = new Set(s); ids.forEach((i) => n.delete(i)); return n; }); load(); },
     });
@@ -236,15 +240,13 @@ export default function PagesTab() {
     if (!ids.length) return;
     const { error } = await (supabase as any).from("pages").update({ archived_at: new Date().toISOString() }).in("id", ids);
     if (error) { toast.error(error.message); return; }
+    notifyContentEdited(pages.filter((p) => ids.includes(p.id)).map((p) => pageChangeNote("Archived", p)));
     setSelected(new Set());
     toast(`Archived ${ids.length} page${ids.length === 1 ? "" : "s"}`, {
       duration: 5000,
       action: {
         label: "Undo",
-        onClick: async () => {
-          await (supabase as any).from("pages").update({ archived_at: null }).in("id", ids);
-          load();
-        },
+        onClick: () => unarchive(ids),
       },
     });
     load();
@@ -254,6 +256,7 @@ export default function PagesTab() {
     if (!ids.length) return;
     const { error } = await (supabase as any).from("pages").update({ archived_at: null }).in("id", ids);
     if (error) { toast.error(error.message); return; }
+    notifyContentEdited(pages.filter((p) => ids.includes(p.id)).map((p) => pageChangeNote("Restored", p)));
     toast.success(`Restored ${ids.length} page${ids.length === 1 ? "" : "s"}`);
     load();
   };
@@ -268,6 +271,8 @@ export default function PagesTab() {
     setPages((cur) => cur.map((p) => (p.id === id ? { ...p, build_status: status } : p)));
     const { error } = await (supabase as any).from("pages").update({ build_status: status }).eq("id", id);
     if (error) { toast.error(error.message); load(); return; }
+    const page = pages.find((p) => p.id === id);
+    if (page) notifyContentEdited([pageChangeNote(`Changed Work Status to ${status === "ready" ? "Ready" : "Draft"} for`, page)]);
     toast.success(`Marked as ${status === "ready" ? "Ready" : "Draft"}`);
     load();
   };
@@ -635,7 +640,7 @@ export default function PagesTab() {
                         <MoreHorizontal className="w-4 h-4" />
                       </button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-80">
+                    <DropdownMenuContent align="end" className="w-80" onClick={(event) => event.stopPropagation()}>
                       <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
                         Description
                       </DropdownMenuLabel>

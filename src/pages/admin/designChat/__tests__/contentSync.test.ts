@@ -6,6 +6,18 @@ const state = (busy = false, status = "idle") => ({ busy, publish: { open: 4, st
 beforeEach(() => { vi.resetModules(); vi.useFakeTimers(); localStorage.clear(); post.mockReset(); });
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); });
 describe("durable content sync", () => {
+  it("batches rapid page archives with all named notes into one publishing sync", async () => {
+    post.mockResolvedValue({ ok: true });
+    const sync = await import("../contentSync");
+    sync.notifyContentEdited(['Archived the page "Objects Flyer" (/objects-flyer)']);
+    await vi.advanceTimersByTimeAsync(1000);
+    sync.notifyContentEdited(['Archived the page "Race Test Page" (/race-test-page)']);
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(post).toHaveBeenCalledExactlyOnceWith("/content/sync", { changes: [
+      'Archived the page "Objects Flyer" (/objects-flyer)',
+      'Archived the page "Race Test Page" (/race-test-page)',
+    ] });
+  });
   it("shows a failed/blocked sync and Retry resends owed saved content", async () => {
     post.mockResolvedValueOnce({ ok: true, data: { blocked: true } }).mockResolvedValue({ ok: true });
     const sync = await import("../contentSync"); sync.notifyContentEdited(); await vi.advanceTimersByTimeAsync(4000);

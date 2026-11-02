@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { supabase } from "@/prototype/client";
 import { toRouteSlug } from "./slug";
 import { localDateToIso } from "@/lib/landingDates";
+import { notifyContentEdited } from "./designChat/contentSync";
+import { pageChangeNote } from "./contentChangeNotes";
 
 
 /**
@@ -69,6 +71,7 @@ export default function CreateLandingPageDialog({
       };
       const { error } = await (supabase as any).from("pages").insert(payload);
       if (error) throw error;
+      notifyContentEdited([pageChangeNote("Added", payload)]);
       toast.success(`Landing page "${name}" registered`);
       onCreated?.();
       onOpenChange(false);

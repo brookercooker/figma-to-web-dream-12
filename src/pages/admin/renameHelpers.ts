@@ -1,5 +1,7 @@
 import { supabase } from "@/prototype/client";
 import { toRouteSlug } from "./slug";
+import { notifyContentEdited } from "./designChat/contentSync";
+import { objectChangeNote, pageChangeNote } from "./contentChangeNotes";
 
 /**
  * Shared helpers for renaming Objects and Landing Pages with cascading updates.
@@ -61,6 +63,7 @@ export async function renameObject(params: {
     .update({ name, slug_id: slug })
     .eq("id", id);
   if (error) throw error;
+  notifyContentEdited([objectChangeNote("Renamed", { name })]);
 }
 
 // ---------- Landing Pages ----------
@@ -113,26 +116,33 @@ export async function renameLanding(params: {
     .update({ name, path: newPath, slug_id: slug })
     .eq("id", id);
   if (error) throw error;
+  notifyContentEdited([pageChangeNote("Renamed", { name, path: newPath })]);
 
   let redirected = false;
   if (newPath !== currentPath) {
     // If the new path was itself an old redirect target, remove that stale
     // self-redirect (would otherwise create an infinite loop).
-    await (supabase as any).from("page_redirects").delete().eq("from_path", newPath);
+    const removed = await (supabase as any).from("page_redirects").delete().eq("from_path", newPath);
+    if (removed.error) throw removed.error;
+    notifyContentEdited([`Removed any old redirect from ${newPath}`]);
 
     // Point any existing redirects that resolved to the old path at the new one.
-    await (supabase as any)
+    const changed = await (supabase as any)
       .from("page_redirects")
       .update({ to_path: newPath })
       .eq("to_path", currentPath);
+    if (changed.error) throw changed.error;
+    notifyContentEdited([`Changed redirects pointing to ${currentPath} to point to ${newPath}`]);
 
     // Upsert the old→new redirect so repeat renames don't error.
-    await (supabase as any)
+    const added = await (supabase as any)
       .from("page_redirects")
       .upsert(
         { from_path: currentPath, to_path: newPath, page_id: id },
         { onConflict: "from_path" },
       );
+    if (added.error) throw added.error;
+    notifyContentEdited([`Added a redirect from ${currentPath} to ${newPath}`]);
     redirected = true;
   }
 

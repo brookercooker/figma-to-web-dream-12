@@ -13,6 +13,7 @@ import { useHint } from "./useHint";
 import { useVoice } from "./useVoice";
 import { kindLabel, referenceKey, withReferences } from "./references";
 import { useModeSwitch } from "./ModeSwitchContext";
+import { useChatDraft } from "./useChatDraft";
 
 const SUGGESTIONS = [
   "Make the headline larger",
@@ -27,15 +28,27 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel({ opening = 0, onDraw, onAttention }: { opening?: number; onDraw?: () => void; onAttention?: () => void } = {}) {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft } = useDesignChat();
   const modeSwitch = useModeSwitch();
-  const [text, setText] = useState("");
+  const fallbackDraft = useChatDraft();
+  const { text, setText, selection } = chatDraft ?? fallbackDraft;
   const [now, setNow] = useState(() => Date.now());
   const [dragging, setDragging] = useState(false);
   const { hint, setHint } = useHint();
   const attentionCallback = useRef(onAttention); attentionCallback.current = onAttention;
   useEffect(() => { if (hint.bad && hint.text) attentionCallback.current?.(); }, [hint.bad, hint.text]);
   const textRef = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = textRef.current;
+    if (el && selection.current.focused) {
+      const saved = selection.current;
+      el.focus({ preventScroll: true });
+      el.setSelectionRange(saved.start, saved.end, saved.direction);
+    }
+  }, [selection]);
+  const rememberSelection = (el: HTMLTextAreaElement, focused = document.activeElement === el) => {
+    selection.current = { start: el.selectionStart, end: el.selectionEnd, direction: el.selectionDirection, focused };
+  };
   const fileRef = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
@@ -99,6 +112,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
   }, [text]);
 
   const send = async () => {
+    const submittedText = text;
     const message = text.trim();
     if (busy || offline) return;
     const hasDrawing = drawing.strokes.length > 0;
@@ -131,7 +145,8 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
     if (res.ok) {
       const took = Number(res.data?.marks ?? 0);
       const expected = hasDrawing && marks ? (marks as { marks: unknown[] }).marks.length : 0;
-      setText(""); attachments.clear(); refs.clearReferences(); drawing.cancel();
+      if (valueRef.current === submittedText) setText("");
+      attachments.clear(); refs.clearReferences(); drawing.cancel();
       setHint(expected && took !== expected ? "Your request was sent, but the service didn't take in your drawing." : expected ? `Sent with ${took} ${took === 1 ? "mark" : "marks"}${res.data?.picture ? " and a picture" : ""}.` : "", expected > 0 && took !== expected);
     } else setHint(res.error, true);
     refreshSoon();
@@ -269,9 +284,13 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
         )}
 
         <Textarea
+          key="chat-composer"
           ref={textRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onSelect={(e) => rememberSelection(e.currentTarget)}
+          onFocus={(e) => rememberSelection(e.currentTarget, true)}
+          onBlur={(e) => rememberSelection(e.currentTarget, false)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
           onPaste={(e) => {
             const pasted = Array.from(e.clipboardData?.files ?? []);

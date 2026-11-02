@@ -38,6 +38,8 @@ import { useAutoCaptureThumbnails, regenerateThumbnail } from "./useThumbnailCap
 import { PAGES_SYNCED, syncManifestPages } from "./manifestPageSync";
 import { useDesignChatOptional } from "./designChat/DesignChatContext";
 import { workingPageFrom } from "./designChat/pageSelection";
+import { notifyContentEdited } from "./designChat/contentSync";
+import { pageChangeNote } from "./contentChangeNotes";
 
 interface Landing {
   id: string;
@@ -292,6 +294,11 @@ export default function LandingPagesView() {
     setRows((cur) => cur.map((r) => (r.id === id ? { ...r, ...patch } as Landing : r)));
     const { error } = await (supabase as any).from("pages").update(patch).eq("id", id);
     if (error) { toast.error(error.message); load(); return; }
+    if (row) notifyContentEdited([
+      ...(row.build_status !== build_status ? [pageChangeNote(`Changed Work Status to ${build_status === "ready" ? "Ready" : "Draft"} for`, row)] : []),
+      ...(row.start_at !== next.startAt ? [pageChangeNote(`Changed the start date to ${next.startAt ?? "always on"} for`, row)] : []),
+      ...(row.end_at !== next.endAt ? [pageChangeNote(`Changed the end date to ${next.endAt ?? "no end date"} for`, row)] : []),
+    ]);
     toast.success("Status updated");
   };
 
@@ -315,15 +322,13 @@ export default function LandingPagesView() {
     if (!ids.length) return;
     const { error } = await (supabase as any).from("pages").update({ archived_at: new Date().toISOString() }).in("id", ids);
     if (error) { toast.error(error.message); return; }
+    notifyContentEdited(rows.filter((r) => ids.includes(r.id)).map((r) => pageChangeNote("Archived", r)));
     setSelected(new Set());
     toast(`Archived ${ids.length} landing page${ids.length === 1 ? "" : "s"}`, {
       duration: 5000,
       action: {
         label: "Undo",
-        onClick: async () => {
-          await (supabase as any).from("pages").update({ archived_at: null }).in("id", ids);
-          load();
-        },
+        onClick: () => unarchive(ids),
       },
     });
     load();
@@ -333,6 +338,7 @@ export default function LandingPagesView() {
     if (!ids.length) return;
     const { error } = await (supabase as any).from("pages").update({ archived_at: null }).in("id", ids);
     if (error) { toast.error(error.message); return; }
+    notifyContentEdited(rows.filter((r) => ids.includes(r.id)).map((r) => pageChangeNote("Restored", r)));
     setSelected(new Set());
     toast.success(`Restored ${ids.length} landing page${ids.length === 1 ? "" : "s"}`);
     load();
@@ -348,6 +354,7 @@ export default function LandingPagesView() {
       commit: async () => {
         const { error } = await (supabase as any).from("pages").delete().in("id", ids);
         if (error) throw error;
+        notifyContentEdited(rows.filter((r) => ids.includes(r.id)).map((r) => pageChangeNote("Deleted", r)));
       },
       onCommitted: () => { setHiddenIds((s) => { const n = new Set(s); ids.forEach((i) => n.delete(i)); return n; }); load(); },
     });
@@ -378,6 +385,7 @@ export default function LandingPagesView() {
       description: r.description ?? "", notes: "", tags: r.tags ?? [],
     });
     if (error) { toast.error(error.message); return; }
+    notifyContentEdited([pageChangeNote("Added", { name: baseName, path: `/landing/${slug}` })]);
     toast.success("Duplicated as draft");
     load();
   };
@@ -629,7 +637,7 @@ export default function LandingPagesView() {
                             <MoreHorizontal className="w-4 h-4" />
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuContent align="end" className="w-56" onClick={(event) => event.stopPropagation()}>
                           <DropdownMenuLabel className="text-[10px] uppercase tracking-wide text-muted-foreground">
                             {r.name}
                           </DropdownMenuLabel>
@@ -810,6 +818,7 @@ function EditLandingDialog({
     }).eq("id", row.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
+    notifyContentEdited([pageChangeNote("Updated the name, status and dates for", { name: name.trim() || row.name, path: row.path })]);
     toast.success("Landing page updated");
     onSaved();
     onClose();
