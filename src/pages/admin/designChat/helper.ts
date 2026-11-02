@@ -57,7 +57,7 @@ export type Finding = {
   accepted?: boolean;
 };
 
-export type Job = { kind?: string; status: string; startedAt: number; lastStep?: string; stepStartedAt?: number };
+export type Job = { kind?: string; planOnly?: boolean; status: string; startedAt: number; lastStep?: string; stepStartedAt?: number };
 
 export type UploadRules = { maxFiles: number; maxBytes: number; accept: string };
 
