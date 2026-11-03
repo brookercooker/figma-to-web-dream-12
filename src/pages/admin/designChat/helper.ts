@@ -4,6 +4,9 @@
  * by setting "designRelayUrl" in the browser (localStorage) or VITE_DESIGN_RELAY_URL.
  */
 
+import { hasManagerUser, SIGN_IN_REQUIRED } from "@/lib/authGate";
+import { toast } from "sonner";
+
 function storedRelay(): string | undefined {
   if (typeof window === "undefined") return undefined;
   try {
@@ -121,6 +124,10 @@ export const DEFAULT_UPLOADS: UploadRules = {
 /** POST JSON to the helper. Returns { ok } or { ok: false, error } with a message fit to show. */
 export async function postToHelper(path: string, body?: unknown): Promise<{ ok: boolean; error?: string; data?: any }> {
   try {
+    if (!await hasManagerUser()) {
+      if (path !== "/content/sync") toast.info(SIGN_IN_REQUIRED);
+      return { ok: false, error: SIGN_IN_REQUIRED };
+    }
     const res = await fetch(`${RELAY}/api${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(await relayHeaders()) },

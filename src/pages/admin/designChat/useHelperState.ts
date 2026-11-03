@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RELAY, relayHeaders, type RelayState } from "./helper";
+import { hasManagerUser, SIGN_IN_REQUIRED } from "@/lib/authGate";
 
 export function helperPollDelay(normal: number, hidden: boolean, failures: number): number {
   const base = hidden ? Math.max(30_000, normal) : normal;
@@ -38,6 +39,13 @@ export function useHelperState(delayFor: (s: RelayState | null) => number) {
       inFlight = true;
       lastStarted = Date.now();
       try {
+        if (!await hasManagerUser()) {
+          if (alive) {
+            latest = { busy: false, job: null, previewVersion: 0, history: [{ role: "note", text: SIGN_IN_REQUIRED }] };
+            setState(latest); setOffline(false);
+          }
+          return;
+        }
         const headers = await relayHeaders();
         if (!alive) return;
         const res = await fetch(`${RELAY}/api/state`, { cache: "no-store", headers, signal: controller.signal });

@@ -3,6 +3,7 @@ import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import AdminAuth from "./AdminAuth";
 import AdminIndex from "./AdminIndex";
+import { REQUIRE_LOGIN } from "@/lib/authGate";
 
 type GateState = "checking" | "signed-out" | "denied" | "allowed";
 
@@ -13,12 +14,16 @@ type GateState = "checking" | "signed-out" | "denied" | "allowed";
 export default function AdminGate({ children }: { children?: ReactNode }) {
   const [state, setState] = useState<GateState>("checking");
   const runId = useRef(0);
+  const [hasUser, setHasUser] = useState<boolean | null>(null);
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
     const check = async (hasSession: boolean) => {
       const id = ++runId.current;
+      if (mounted) setHasUser(hasSession);
+      if (!REQUIRE_LOGIN) { if (mounted) { setState("allowed"); if (hasSession) setShowLogin(false); } return; }
       if (!hasSession) { if (mounted) setState("signed-out"); return; }
       setState("checking");
       const isUser = async () => {
@@ -43,7 +48,8 @@ export default function AdminGate({ children }: { children?: ReactNode }) {
     return () => { mounted = false; sub.subscription.unsubscribe(); };
   }, []);
 
-  if (state === "checking") return <div className="min-h-screen" aria-hidden="true" />;
+  if (!REQUIRE_LOGIN && showLogin) return <AdminAuth />;
+  if (REQUIRE_LOGIN && state === "checking") return <div className="min-h-screen" aria-hidden="true" />;
   if (state === "signed-out") return <AdminAuth />;
   if (state === "denied") {
     return (
@@ -55,5 +61,5 @@ export default function AdminGate({ children }: { children?: ReactNode }) {
       </div>
     );
   }
-  return <>{children ?? <AdminIndex />}</>;
+  return <>{children ?? <AdminIndex />}{!REQUIRE_LOGIN && hasUser === false && <aside role="status" className="fixed bottom-2 left-2 right-2 z-50 mx-auto flex max-w-xl items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs text-muted-foreground shadow-sm"><span>Login is turned off for review. Saving and sending requests need a sign-in. Sign in to load or save this.</span><Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={() => setShowLogin(true)}>Sign In</Button></aside>}</>;
 }

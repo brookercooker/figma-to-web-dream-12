@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Shield, User as UserIcon, ArrowLeft, UserPlus, MoreHorizontal, Pencil, Trash2, KeyRound } from "lucide-react";
+import { REQUIRE_LOGIN } from "@/lib/authGate";
 
 
 
@@ -42,7 +43,7 @@ export default function UsersPage() {
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data, error }) => {
       if (error || !data.user) {
-        await supabase.auth.signOut();
+        if (REQUIRE_LOGIN) await supabase.auth.signOut();
         setCurrentUserId(null);
         setIsAdmin(false);
         return;
@@ -165,7 +166,8 @@ export default function UsersPage() {
     return <div className="min-h-screen" aria-hidden="true" />;
   }
   if (isAdmin === false) {
-    return <Navigate to="/admin" replace />;
+    if (REQUIRE_LOGIN) return <Navigate to="/admin" replace />;
+    return <div className="min-h-screen bg-background p-6"><Button asChild variant="ghost"><Link to="/manage/pages"><ArrowLeft className="h-4 w-4" />Site Manager</Link></Button><h1 className="mt-4 text-base font-medium">User Management</h1><p className="mt-3 text-sm text-muted-foreground">Sign in to load or save this. User Management requires an authorized account.</p></div>;
   }
 
   return (
