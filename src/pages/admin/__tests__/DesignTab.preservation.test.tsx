@@ -165,8 +165,8 @@ describe("public page save/discard integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete Section" })); expect(lastBlocks()).toHaveLength(1);
     expect(mocks.history.redoLabel).toBe(""); s.send("edit-undo"); expect(lastBlocks()[1].id).toBe("video");
     s.send("edit-change", { scope: "page", next: { "style:0": '{"font-size":"32px"}' } });
-    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
-    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Undo All Changes on This Page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Undo All Changes on This Page" }));
     expect(mocks.history.undoLabel).toBe(""); expect(mocks.history.redoLabel).toBe("");
     expect(lastBlocks()[1].width).toBe(100); expect(mocks.writes).not.toHaveBeenCalled();
   });
@@ -175,9 +175,9 @@ describe("public page save/discard integration", () => {
     mocks.original.inline_edits = { "0": "Saved hand edit" };
     const s = await openRemote(true, true);
     s.send("edit-change", { scope: "Header", next: { "0": "Shared edit" } });
-    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Undo All Changes on This Page" }));
     expect(mocks.writes).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Restore Original Page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Undo All Changes on This Page" }));
     expect(mocks.hasChanges()).toBe(true); expect(mocks.history.changeCount).toBe(1);
     expect(s.post.mock.calls.at(-1)?.[0]).toMatchObject({ edits: {}, objectEdits: { Header: { "0": "Shared edit" } } });
     expect(mocks.writes).not.toHaveBeenCalled();
@@ -300,7 +300,7 @@ describe("public page save/discard integration", () => {
     fireEvent.click(down);
     await waitFor(() => expect(order()).toEqual(["second", "first"]));
     stubReloadedFrame();
-    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Site Header", "Page Content", "Video", "Image", "Site Footer"]);
+    expect([...list.querySelectorAll("li")].map(el => el.querySelector("button")?.textContent ?? el.textContent)).toEqual(["Site Header", "Page Content", "Video", "Image", "Site Footer"]);
     for (const slot of ["site-header", "site-footer"]) expect(list.querySelector(`[data-section-row="${slot}"] [aria-label="Move Up"], [data-section-row="${slot}"] [aria-label="Move Down"], [data-section-row="${slot}"] [aria-label="Delete Block"]`)).toBeNull();
     const imageRow = [...list.querySelectorAll("li")].find(el => el.textContent === "Image");
     const imageButton = imageRow?.querySelector("button");
@@ -314,7 +314,7 @@ describe("public page save/discard integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete Section" }));
     await waitFor(() => expect(order()).toEqual(["first"]));
     stubReloadedFrame();
-    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Site Header", "Page Content", "Image", "Site Footer"]);
+    expect([...list.querySelectorAll("li")].map(el => el.querySelector("button")?.textContent ?? el.textContent)).toEqual(["Site Header", "Page Content", "Image", "Site Footer"]);
     s.unmount();
   });
   it("moves held components around page content without reload and restores saved order on discard", async () => {

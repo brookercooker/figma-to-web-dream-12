@@ -34,14 +34,14 @@ export default function ConfirmDialog({
   const secondary = secondaryLabel ? <Button type="button" variant="outline" className="gap-2" disabled={busy} onClick={onSecondary}>{secondaryIcon}{secondaryLabel}</Button> : null;
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className={secondaryLabel ? "max-w-[calc(100vw-32px)] sm:max-w-2xl" : undefined}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="text-sm text-muted-foreground">{description}</div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className={primaryFirst ? "flex-row flex-wrap justify-start gap-2 sm:justify-start sm:space-x-0" : "flex-wrap gap-2 sm:space-x-0"}>
+        <AlertDialogFooter className={primaryFirst ? "flex-col gap-2 sm:flex-row sm:flex-nowrap sm:justify-start sm:space-x-0" : "flex-wrap gap-2 sm:space-x-0"}>
           {!primaryFirst && cancel}
           {!primaryFirst && secondary}
           <AlertDialogAction

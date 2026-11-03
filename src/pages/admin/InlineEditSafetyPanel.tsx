@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import ResetEditsAction from "./ResetEditsAction";
 import { ToolGroup } from "./designChat/ToolPanel";
-import { RotateCcw, ShieldAlert } from "lucide-react";
+import { Undo2, ShieldAlert } from "lucide-react";
 import { parseKey, type InlineEdits } from "@/lib/inlineEditCore";
 import type { InlineReports, InlineSelection } from "@/components/InlineEditSurface";
 
@@ -32,7 +32,7 @@ export default function InlineEditSafetyPanel({ reports, selection, editsFor, di
     </ToolGroup>}
     {unchecked > 0 && <div className="space-y-2"><p className="text-xs font-medium">{unchecked} Edits Not Yet Verified</p><Button size="sm" variant="outline" title="Do this while the page still looks right." onClick={record}>Record Fingerprints</Button></div>}
     <div className="flex flex-wrap gap-2">
-      {selection && <Button size="sm" variant="outline" title="Put this item back the way it was built." onClick={() => discard(selection.scope, selection.key)}><RotateCcw className="mr-1 h-3.5 w-3.5" />Restore Original</Button>}
+      {selection && <Button size="sm" variant="outline" className="h-auto whitespace-normal text-left" title="Put this item back the way it was built." onClick={() => discard(selection.scope, selection.key)}><Undo2 className="mr-1 h-3.5 w-3.5 shrink-0" />Undo All Changes to {selection.kind === "image" ? "Image" : "Element"}</Button>}
     </div>
     {!hideReset && <ResetEditsAction name={objectName ?? "this page"} object={!!objectName} onReset={resetAll} />}
   </div>;

@@ -179,9 +179,6 @@ function AdminShell() {
     const ok = await finishEditing();
     if (ok && had) toast.success("Changes saved.");
   };
-  const [confirmDiscard, setConfirmDiscard] = useState(false);
-  const doDiscard = async () => { try { await discardAll(); stopEditing(); toast("Changes discarded."); } catch { /* Keep editing if restoration failed. */ } };
-  const discardEditing = () => { if (!hasChanges()) doDiscard(); else setConfirmDiscard(true); };
   const location = useLocation();
   const navigate = useNavigate();
   const tab: TabKey = useMemo(() => {
@@ -513,14 +510,11 @@ function AdminShell() {
           {reviewShown && <ReviewChangesView onShowPreview={() => { if (tab !== "preview") navigate("/manage/preview"); }} />}
           {manual && workingPage && (
             <div className="flex min-h-0 flex-1 flex-col">
-              <div ref={editingHeaderRef} tabIndex={-1} className={cn("flex shrink-0 flex-col gap-2 border-b px-3 py-3", phone && phonePane === "main" && "hidden")}>
+              <div ref={editingHeaderRef} tabIndex={-1} className={cn("flex shrink-0 flex-col gap-2", (objectOpen || designChat.state?.busy) && "border-b px-3 py-3", phone && phonePane === "main" && "hidden")}>
                 {designChat.state?.busy && <p role="status" className="flex items-center gap-1.5 text-xs font-medium"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />Claude Is Still Working on a Change</p>}
                 {objectOpen
                   ? <ObjectEditorHeader info={objectInfo} backLabel={objectOpen.from === "objects" ? "Back to Objects" : `Back to ${workingPage.name}`} disabled={finishing} onLeave={leaveObject} />
-                  : <ManualPageSwitcher navigation={pageNavigation} />}
-                <div className="flex flex-wrap gap-1.5">
-                  <Button type="button" size="sm" variant="outline" className="flex-1 gap-1.5" title="Undo everything since you last saved." disabled={finishing || !dirty} onClick={discardEditing}><Trash2 className="h-4 w-4" aria-hidden />Discard Changes</Button>
-                </div>
+                  : null}
               </div>
               <div ref={setSlot} aria-label="Page Editing Options" role="region" className="min-h-0 flex-1 overflow-y-auto" />
             </div>
@@ -544,14 +538,7 @@ function AdminShell() {
           </nav>
         )}
       </div>
-      <ConfirmDialog
-        open={confirmDiscard}
-        onOpenChange={setConfirmDiscard}
-        title="Discard Your Changes?"
-        description="Everything you changed since your last save in this editor will be lost. This can't be undone."
-        confirmLabel="Discard Changes"
-        onConfirm={() => { setConfirmDiscard(false); doDiscard(); }}
-      />
+      <ManualPageSwitcher navigation={pageNavigation} />
     </>
   );
 }

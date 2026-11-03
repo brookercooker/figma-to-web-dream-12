@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link as LinkIcon, Link2Off } from "lucide-react";
+import { Link as LinkIcon, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -50,12 +50,13 @@ export default function InlineDestinationPanel({ selection, editsFor, onChange, 
   };
   const content = <>
     <div className="relative space-y-1" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false); }}>
-      <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground"><label htmlFor="link-address">Link Address</label><span>{kind === "email" ? "Email" : kind === "phone" ? "Phone" : kind === "page" ? `Page: ${pages.find(p => p.path === address)?.name ?? address}` : "Web Address"}</span></div>
+      <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground"><label htmlFor="link-address">Link Address</label><span>{!address ? "None" : kind === "email" ? "Email" : kind === "phone" ? "Phone" : kind === "page" ? `Page: ${pages.find(p => p.path === address)?.name ?? address}` : "Web Address"}</span></div>
       <Input ref={addressRef} id="link-address" aria-label="Link Address" aria-expanded={open} type={kind === "email" ? "email" : kind === "phone" ? "tel" : "text"} value={kind === "email" || kind === "phone" ? address.replace(/^(mailto:|tel:)/i, "") : address} placeholder={embedded && !destination ? "None" : kind === "email" ? "name@example.com" : kind === "phone" ? "Phone number" : "https://"} aria-invalid={!!error}
         onPointerDown={() => setOpen(true)} onFocus={() => setOpen(true)} onClick={() => setOpen(true)}
         onChange={(e) => { setAddress(linkAddress(kind, e.target.value)); setError(""); }} onBlur={apply}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); apply(); setOpen(false); } if (e.key === "Escape") setOpen(false); }} />
       {open && <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-md border bg-popover p-1 shadow-md" aria-label="Link Address Options">
+        <Button type="button" variant={!destination ? "secondary" : "ghost"} aria-pressed={!destination} size="sm" className="w-full justify-start" onMouseDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); e.stopPropagation(); setAddress(""); setError(""); setOpen(false); onChange(target.scope, { ...edits, [key]: JSON.stringify({ unlinked: true }) }); }}>None</Button>
         {([["web", "Web Address"], ["page", "Choose a Page"], ["email", "Email"], ["phone", "Phone"]] as const).map(([value, label]) => <Button key={value} type="button" variant={kind === value ? "secondary" : "ghost"} size="sm" className="w-full justify-start" onMouseDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); e.stopPropagation(); setKind(value); if (value !== "page") { setAddress(value === detectLinkKind(address) ? address : ""); addressRef.current?.focus(); setOpen(false); } }}>{label}</Button>)}
         {kind === "page" && <div className="border-t pt-1"><Input aria-label="Find a Page" placeholder="Find a page" value={pageSearch} onChange={e => setPageSearch(e.target.value)} onKeyDown={e => { if (e.key === "Enter") e.preventDefault(); }} />{pages.filter(p => validLinkHref(p.path) && !isInternalPath(p.path) && p.name.toLowerCase().includes(pageSearch.toLowerCase())).map(p => <Button key={p.id} type="button" variant="ghost" size="sm" className="w-full justify-start" onMouseDown={e => e.preventDefault()} onClick={e => { e.preventDefault(); e.stopPropagation(); save(p.path); setOpen(false); }}>{p.name}</Button>)}</div>}
       </div>}
@@ -65,10 +66,9 @@ export default function InlineDestinationPanel({ selection, editsFor, onChange, 
       <Switch checked={blank} disabled={!allowed(address) || !!edit?.unlinked} onCheckedChange={(on) => save(address, on)} />
     </label>
     <div className="flex flex-wrap gap-2">
-      <Button type="button" size="sm" variant="ghost" className="gap-1 text-destructive hover:text-destructive" onClick={() => onChange(target.scope, { ...edits, [key]: JSON.stringify({ unlinked: true }) })}><Link2Off className="h-3.5 w-3.5" />Remove Link</Button>
       {value !== undefined && <Button type="button" size="sm" variant="ghost" onClick={() => {
         const next = { ...edits }; delete next[key]; onChange(target.scope, next);
-      }}>Restore Original Link</Button>}
+      }}><Undo2 className="mr-1 h-3.5 w-3.5" />Restore Original Link</Button>}
     </div>
   </>;
   return embedded ? <div className="space-y-3">{content}</div> : <ToolGroup title="Link" icon={LinkIcon} defaultOpen>{content}</ToolGroup>;

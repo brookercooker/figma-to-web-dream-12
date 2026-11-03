@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
   ArrowDown, ArrowUp, Bold, Heading, Image as ImageIcon, Italic, AlignCenter, AlignLeft, AlignRight, Trash2, Pencil, Boxes,
-  ChevronDown, ChevronRight, Film } from "lucide-react";
+  ChevronDown, ChevronRight, Film, PencilRuler } from "lucide-react";
 import { DEVICE_WIDTH, type Device } from "@/components/DeviceFrame";
 import CreatePageDialog from "./CreatePageDialog";
 import ImagePickerDialog from "./ImagePickerDialog";
@@ -852,6 +852,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                     {inlineSel && inlineSel.scope !== "page" && !objectId && (
                       <p className="mb-4 rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
                         Part of the shared object <span className="font-medium text-foreground">{inlineSel.scope}</span>. Changes apply everywhere it's used.
+                        <span className="mt-1 flex items-center gap-1"><PencilRuler className="h-3.5 w-3.5" aria-hidden />Edit in Object Editor</span>
                       </p>
                     )}
                     {inlineSel?.scope === "Header" && <>
@@ -874,7 +875,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                     />
                     {inlineSel?.kind !== "text" && <InlineDestinationPanel key={`destination:${inlineSel?.scope}:${inlineSel?.key}`} selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />}
                     {/* Framed pages replay in the public frame; local reports would be stale, so show none until the frame reports. */}
-                    <InlineEditSafetyPanel hideReset objectName={objectTarget?.name} reports={framed ? framedReports : {}} selection={inlineSel} editsFor={scopeEdits}
+                    <InlineEditSafetyPanel hideReset objectName={objectTarget?.name} reports={framed ? framedReports : {}} selection={inlineSel?.kind === "image" ? null : inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
                       record={async () => { if (!framed) return; const maps = await recordFramed(); if (maps) for (const [scope, next] of Object.entries(maps)) if (JSON.stringify(next) !== JSON.stringify(scopeEdits(scope))) changeScope(scope, next); if (embedded) void saveAllRef.current(); }}
                       resetAll={resetEdits} />
@@ -988,6 +989,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   /** Shared site chrome in the Sections list: fixed first/last, no move or delete; selecting scrolls the frame to it. */
   const chromeRow = (slot: "site-header" | "site-footer", label: string) => <li key={slot} data-section-row={slot} className="flex items-center px-2 py-2">
     <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(""); setInlineSel(null); framedApi.current?.scrollToSlot?.(slot); }}>{label}</Button>
+    <span className="flex max-w-24 items-center gap-1 text-[10px] text-muted-foreground"><PencilRuler className="h-3 w-3 shrink-0" aria-hidden />Edit in Object Editor</span>
   </li>;
   const tools = <div className="space-y-4 p-3">
     {stylePanel}
@@ -997,7 +999,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
         {frameSections.map((section, i) => <li key={section.key} data-section-row={section.key} aria-current={activeSection === section.key || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeSection === section.key ? "bg-accent" : ""}`}>
           {section.collapsed && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label="Collapsed" />}
           <Button variant="ghost" size="sm" className="h-auto min-w-0 flex-1 justify-start whitespace-normal text-left" onClick={() => { setActiveSection(section.key); setActiveId(blocks.some(b => b.id === section.key) ? section.key : ""); setInlineSel(null); framedApi.current?.scrollToSection?.(section.key); }}>{section.name}</Button>
-          {!objectId && (section.kind === "object" || section.objectId) && <span className="text-[10px] text-muted-foreground">Shared</span>}
+          {!objectId && (section.kind === "object" || section.objectId || section.kind === "site") && <span className="flex max-w-24 flex-col text-[10px] text-muted-foreground">Shared<span className="flex items-center gap-1"><PencilRuler className="h-3 w-3 shrink-0" aria-hidden />Edit in Object Editor</span></span>}
           {section.movable && i > 0 && frameSections[i-1].kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title={!objectId && blocks.some(b => b.id === section.key) ? "Move to Top" : "Move Up"} aria-label={!objectId && blocks.some(b => b.id === section.key) ? "Move to Top" : "Move Up"} onClick={() => sectionAction(section, "up")}><ArrowUp className="h-3.5 w-3.5" /></Button>}
           {section.movable && i < frameSections.length-1 && frameSections[i+1].kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title={!objectId && blocks.some(b => b.id === section.key) ? "Move to Bottom" : "Move Down"} aria-label={!objectId && blocks.some(b => b.id === section.key) ? "Move to Bottom" : "Move Down"} onClick={() => sectionAction(section, "down")}><ArrowDown className="h-3.5 w-3.5" /></Button>}
           {section.deletable && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title="Delete Section" aria-label="Delete Section" onClick={() => sectionAction(section, "delete")}><Trash2 className="h-3.5 w-3.5" /></Button>}
@@ -1023,7 +1025,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     <ol className="divide-y border rounded-md">
       {chromeRow("site-header", "Site Header")}
       {orderedPageContent(blocks).map((b,i) => isPageContent(b) ? <li key={b.id} data-section-row={b.id} className="px-2 py-2 text-xs">Page Content</li> : <li key={b.id} data-section-row={b.id} aria-current={activeId === b.id || undefined} className={`flex items-center gap-1 px-2 py-2 ${activeId === b.id ? "bg-accent" : ""}`}>
-        <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); if (heldInFrame) { void framedApi.current?.query("scrollTo", "held", b.id); return; } blockCanvasRef.current?.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>{blockLabel(b)}</Button>{b.type === "object" && <span className="text-[10px] text-muted-foreground">Shared</span>}
+        <Button variant="ghost" size="sm" className="min-w-0 flex-1 justify-start truncate" onClick={() => { setActiveId(b.id); if (heldInFrame) { void framedApi.current?.query("scrollTo", "held", b.id); return; } blockCanvasRef.current?.querySelector(`[data-page-block="${b.id}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" }); }}>{blockLabel(b)}</Button>{b.type === "object" && <span className="flex max-w-24 flex-col text-[10px] text-muted-foreground">Shared<span className="flex items-center gap-1"><PencilRuler className="h-3 w-3 shrink-0" aria-hidden />Edit in Object Editor</span></span>}
         {i > 0 && <ToolButton title="Move to Top" onClick={() => moveHeldBlock(b.id,0)}><ArrowUp className="h-4 w-4" /></ToolButton>}
         {i < orderedPageContent(blocks).length-1 && <ToolButton title="Move to Bottom" onClick={() => moveHeldBlock(b.id,orderedPageContent(blocks).length-1)}><ArrowDown className="h-4 w-4" /></ToolButton>}
         <ToolButton title="Delete Block" onClick={() => remove(b.id)}><Trash2 className="h-4 w-4" /></ToolButton>
@@ -1156,7 +1158,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
           }
           setObjectAsk(null); if (id) openObjectEditor(id, ask.slot);
         }} />
-      <ConfirmDialog open={!!openAsk} onOpenChange={(open) => { if (!open) setOpenAsk(null); }} title="Save Your Changes?"
+      <ConfirmDialog open={!!openAsk} onOpenChange={(open) => { if (!open) setOpenAsk(null); }} title="You have unsaved changes"
         description="Save your edits to this page before opening the object editor?" destructive={false} primaryFirst
         confirmLabel="Save Changes" confirmIcon={<SaveIcon className="h-4 w-4" aria-hidden />}
         secondaryLabel="Discard Changes" secondaryIcon={<TrashIcon className="h-4 w-4" aria-hidden />}

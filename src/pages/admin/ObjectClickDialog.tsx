@@ -19,9 +19,10 @@ export default function ObjectClickDialog({ ask, pageName, busy, onOpen, onCopy,
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground"><PencilRuler className="h-3.5 w-3.5" aria-hidden />Edit in Object Editor</span>
           <DialogDescription>
             {ask?.kind === "site" && `The ${label.toLowerCase()} appears on every page. Changes made in the object editor change it across the whole site.`}
-            {ask?.kind === "shared" && `${ask.name} is also used on ${elsewhere}. Edit it everywhere, or make a copy just for ${pageName}?`}
+            {ask?.kind === "shared" && `${ask.name} must be edited in the object editor and is also used on ${elsewhere}. Edit it everywhere, or make a copy just for ${pageName}?`}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-row flex-wrap justify-start gap-2 sm:justify-start sm:space-x-0">

@@ -25,7 +25,7 @@ it.each(["a", "button"])("edits %s without changing its appearance and restores/
   expect(JSON.parse(change.mock.lastCall?.[1]["link:0"])).toEqual({ href: "/lighting" });
   fireEvent.click(screen.getByRole("switch", { name: "Open in New Tab" }));
   expect(JSON.parse(change.mock.lastCall?.[1]["link:0"])).toEqual({ href: "/lighting", target: "_blank" });
-  fireEvent.click(screen.getByRole("button", { name: "Remove Link" }));
+  fireEvent.focus(field); fireEvent.click(screen.getByRole("button", { name: /^None$/ }));
   expect(el.getAttribute("data-inline-link")).toBe("off"); expect(el.firstChild).toBe(children);
   fireEvent.click(screen.getByRole("button", { name: "Restore Original Link" }));
   expect(change.mock.lastCall?.[1]).toEqual({}); expect(el.getAttribute("href")).toBe(tag === "a" ? "/original" : null);

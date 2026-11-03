@@ -29,7 +29,8 @@ describe("mode switch safeguards", () => {
   });
   it("saves before switching", async () => {
     open(); fireEvent.click(screen.getByText("Chat Mode"));
-    expect(screen.getByRole("alertdialog")).toHaveTextContent("Save Your Changes?");
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("You have unsaved changes");
+    expect(screen.getByRole("alertdialog")).not.toHaveTextContent("Claude");
     expect(m.stop).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("Save Changes"));
     await waitFor(() => expect(m.result).toHaveBeenCalledWith(true));

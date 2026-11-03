@@ -42,7 +42,7 @@ it.each([
 it("maps computed RGB and font stacks for display without rejecting unknown values", () => {
   document.documentElement.style.setProperty("--nova-cream", "0 0% 100%");
   document.documentElement.style.setProperty("--nova-ink", "0 0% 13%");
-  expect(selectionColourDisplay(publicRange.marks.color)).toMatchObject({ token: "cream", name: "Cream", hex: "#ffffff" });
+  expect(selectionColourDisplay(publicRange.marks.color)).toMatchObject({ token: "white", name: "White", hex: "#ffffff" });
   expect(selectionColourDisplay("rgb(34, 34, 34)")).toMatchObject({ token: "ink" });
   expect(selectionColourDisplay("rebeccapurple").name).toBe("rebeccapurple");
   expect(inheritedFont(publicRange.marks.font, "h1").name).toBe("Cormorant Garamond");
@@ -80,9 +80,10 @@ it("uses frame plaintext spacing and context instead of concatenated markup", ()
 it("colour selection supports custom valid hex and inheritance", () => {
   const change = vi.fn(); render(<SelectionColourPicker value="#212121" onChange={change} />);
   fireEvent.click(screen.getByRole("button", { name: "Colour" }));
+  fireEvent.click(screen.getByRole("button", { name: "Custom Color" }));
   fireEvent.change(screen.getByLabelText("Custom Colour (Hex)"), { target: { value: "invalid" } }); expect(screen.getByRole("button", { name: "Apply" })).toBeDisabled();
   fireEvent.change(screen.getByLabelText("Custom Colour (Hex)"), { target: { value: "#abc123" } }); fireEvent.click(screen.getByRole("button", { name: "Apply" })); expect(change).toHaveBeenLastCalledWith("#abc123");
-  fireEvent.click(screen.getByRole("button", { name: "Colour" })); fireEvent.click(screen.getByRole("button", { name: "Default" })); expect(change).toHaveBeenLastCalledWith("");
+  fireEvent.click(screen.getByRole("button", { name: "Colour" })); fireEvent.click(screen.getByRole("button", { name: "Reset" })); fireEvent.click(screen.getByRole("button", { name: "Apply" })); expect(change).toHaveBeenLastCalledWith("");
 });
 it("brand swatches send the same concrete hex format as Apply to highlighted words, without optimistic edits", () => {
   document.documentElement.style.setProperty("--nova-garnet", "3 44% 36%");
@@ -91,6 +92,8 @@ it("brand swatches send the same concrete hex format as Apply to highlighted wor
   render(<InlineStylePanel sel={sel} edits={{}} onChange={change} onReplaceImage={vi.fn()} />);
   fireEvent.click(screen.getByRole("button", { name: "Text Color" }));
   fireEvent.click(screen.getByRole("button", { name: "Garnet" }));
+  expect(format).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Apply" }));
   expect(format).toHaveBeenCalledWith("color", "#843733");
   expect(change).not.toHaveBeenCalled();
   document.documentElement.style.removeProperty("--nova-garnet");
