@@ -45,7 +45,7 @@ export default function TextIconLinkPanel({ sel, edits, onChange, editsFor, onSc
     <MaterialIconField value={icon === "none" || icon === "original" ? "" : icon} onChange={setIcon} />
     <ToolField label="Icon Position">
       <ToolSegment className="flex w-full" onMouseDown={e => e.preventDefault()}>
-        {(["before", "after"] as const).map(value => <Button key={value} type="button" size="sm" className="flex-1" variant={position === value ? "default" : "ghost"} aria-pressed={position === value} disabled={!hasIcon} onClick={() => onChange({ ...edits, [iconPositionKey(sel.key)]: value })}>{value === "before" ? "Before Text" : "After Text"}</Button>)}
+        {(["before", "after"] as const).map(value => <Button key={value} type="button" size="sm" className="flex-1" aria-label={value === "before" ? "Before Text" : "After Text"} variant={position === value ? "default" : "ghost"} aria-pressed={position === value} disabled={!hasIcon} onClick={() => onChange({ ...edits, [iconPositionKey(sel.key)]: value })}>{value === "before" ? "Before Text" : "After Text"}</Button>)}
       </ToolSegment>
     </ToolField>
     {edits[`icon:${sel.key}`] !== undefined && <Button type="button" variant="ghost" size="sm" onClick={() => { const next = { ...edits }; delete next[`icon:${sel.key}`]; delete next[iconPositionKey(sel.key)]; onChange(next); }}>Use Original Icon</Button>}
