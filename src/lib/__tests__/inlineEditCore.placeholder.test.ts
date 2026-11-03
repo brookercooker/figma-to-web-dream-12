@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { createReplay, validateEdits } from "@/lib/inlineEditCore";
 import { validSnapshot } from "@/pages/admin/remoteSelection";
+import { editMap } from "@/pages/admin/framedPageProtocol";
 
 describe("placeholder edits", () => {
   it("accepts placeholder keys without claiming to mutate hints in the shared replay", () => {
@@ -34,6 +35,7 @@ describe("placeholder edits", () => {
       "fp:0.0": '{"v":1,"tag":"img","t":"original","s":"picture"}',
     }));
     expect(validateEdits(saved)).toEqual({ ok: saved, rejected: [] });
+    expect(editMap(saved)).toEqual(saved);
   });
   it.each(["0", "true", "", " 1", 1, true])("rejects hidden values other than the string 1: %j", value => {
     expect(validateEdits({ "hidden:0": value }).ok).toEqual({});
@@ -49,6 +51,7 @@ describe("placeholder edits", () => {
       ok: { "hidden:0": "1", "placeholder:1": "Name" },
       rejected: [{ key: "unknown:2", reason: "Unknown edit key or invalid path" }],
     });
+    expect(editMap({ "hidden:0": "1", "placeholder:1": "Name", "unknown:2": "value" })).toBeNull();
   });
   it("accepts both input and older field selections", () => {
     for (const kind of ["input", "field"]) expect(validSnapshot({ key: "0.1", scope: "page", kind, tag: "input" })).toBe(true);
