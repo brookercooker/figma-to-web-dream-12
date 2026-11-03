@@ -21,6 +21,7 @@ const CLEAR_AT_MS = 10000; // the message clears with the reload this long after
 const UPDATING_FALLBACK_MS = 70000; // longest the message stays when no new build is reported (a rebuild shows within about 50 s)
 const REFRESH_MARGIN_MS = 5 * 60 * 1000; // ask for a new preview address this long before the old one expires
 const SWAP_TIMEOUT_MS = 10000; // Fail visibly rather than claim an unconfirmed public frame loaded.
+const NO_CHANGE_GRACE_MS = 10000; // Allow a reply's commit to reach the relay before dismissing a no-change wait.
 
 type Frame = { id: number; url: string };
 
@@ -38,6 +39,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   const updateStart = useRef<number | null>(null);
   const highStage = useRef<PreviewStage | null>(null);
   const jobStart = useRef<number | null>(null);
+  const jobVersion = useRef<number | null>(null);
   const completedJob = useRef<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +52,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   /** Where the visitor has gone inside the preview, used for the next fresh copy instead of `path`. */
   const remembered = useRef<string | null>(null);
   /** A page picked on purpose sticks until the preview reports it: earlier reports (e.g. the home page still loading) never override it. */
-  const pinned = useRef<string | null>(null);
+  const pinned = useRef<string | null>(path);
   const rememberPath = useCallback((p: string | null) => {
     if (pinned.current && p !== pinned.current && p?.split("?")[0] !== pinned.current) return;
     pinned.current = null;
@@ -206,16 +208,37 @@ export function usePreview(state: RelayState | null, path: string | null = null,
     lastBuiltAt.current = builtAt ?? 0;
   }, [builtAt, state === null]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const candidate = state?.job?.startedAt && state.job.startedAt === completedJob.current && !buildDetected ? null : previewStage(state, updating, buildDetected);
+  const candidate = state?.job?.startedAt && state.job.startedAt === completedJob.current && !buildDetected && !updating && !state.previewChecking ? null : previewStage(state, updating, buildDetected);
   const start = state?.job?.startedAt;
   if (start && start !== jobStart.current) {
     jobStart.current = start; highStage.current = null; updateStart.current = start;
+    jobVersion.current = state?.previewVersion ?? null;
   }
   if (candidate) {
     highStage.current = Math.max(highStage.current ?? 1, candidate) as PreviewStage;
     updateStart.current ??= start ?? state?.job?.stepStartedAt ?? Date.now();
   } else if (previewExcluded(state)) { highStage.current = null; updateStart.current = null; }
   const progressStage = previewExcluded(state) ? null : highStage.current;
+  const noChange = !!state && (state.job?.status === "done" || !state.busy)
+    && jobStart.current !== null && jobVersion.current === version
+    && !state.previewChecking && !buildDetected && buildFrame.current === null;
+  useEffect(() => {
+    if (!noChange || !progressStage) return;
+    const watchedJob = jobStart.current;
+    const watchedVersion = jobVersion.current;
+    const timer = setTimeout(() => {
+      const latest = stateRef.current;
+      if (!latest || jobStart.current !== watchedJob || latest.previewVersion !== watchedVersion
+        || latest.previewChecking || buildFrame.current !== null
+        || (latest.busy && latest.job?.status !== "done")) return;
+      hideUpdating();
+      highStage.current = null;
+      updateStart.current = null;
+      completedJob.current = watchedJob;
+      setClock(Date.now());
+    }, NO_CHANGE_GRACE_MS);
+    return () => clearTimeout(timer);
+  }, [noChange, progressStage, start, version, hideUpdating]);
   useEffect(() => {
     if (!progressStage) return;
     setClock(Date.now());

@@ -8,6 +8,7 @@ import { usePreview } from "./usePreview";
 import { usePreviewPage, type PreviewPage } from "./usePreviewPage";
 import { useDrawing, type Drawing } from "./useDrawing";
 import type { RegistrablePage } from "./registerPage";
+import { isInternalPath } from "./registerPage";
 import { syncManifestPages } from "../manifestPageSync";
 import { MANIFEST_CHANGED } from "../siteManifest";
 import ManifestReceiverFrame from "./ManifestReceiverFrame";
@@ -30,6 +31,17 @@ export type Device = "mobile" | "tablet" | "desktop";
 
 /** A page the person picked in the Pages tab for the chat to work on. */
 export type WorkingPage = { id?: string; name: string; path: string };
+
+const WORKING_PAGE_KEY = "nova:design-chat:working-page";
+function restoredWorkingPage(): WorkingPage | null {
+  try {
+    const page = JSON.parse(sessionStorage.getItem(WORKING_PAGE_KEY) ?? "null");
+    if (!page || typeof page.name !== "string" || !page.name.trim()
+      || typeof page.path !== "string" || !page.path.startsWith("/") || page.path.startsWith("//")
+      || page.path.length > 300 || isInternalPath(page.path)) return null;
+    return { name: page.name, path: page.path, ...(typeof page.id === "string" ? { id: page.id } : {}) };
+  } catch { return null; }
+}
 
 /** The working page and whether it is open in the editor. Kept pure so the rules can be tested. */
 export type WorkingState = { workingPage: WorkingPage | null; editing: boolean };
@@ -122,7 +134,8 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     return helperPollingInterval(s, recent);
   });
 
-  const [previewPath, setPreviewPath] = useState<string | null>(null);
+  const [restoredPage] = useState(restoredWorkingPage);
+  const [previewPath, setPreviewPath] = useState<string | null>(restoredPage?.path ?? null);
   useEffect(() => { if (!offline) observeContentSyncState(state); }, [state, offline]);
   const [navNonce, setNavNonce] = useState(0);
   const preview = usePreview(state, previewPath, navNonce);
@@ -134,7 +147,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const [coverFull, setCoverFull] = useState(false); // or, if it won't, by covering the window
   const boxRef = useRef<HTMLDivElement>(null);
   const editBoxRef = useRef<HTMLDivElement>(null);
-  const [work, dispatch] = useReducer(workingReducer, { workingPage: null, editing: false });
+  const [work, dispatch] = useReducer(workingReducer, { workingPage: restoredPage, editing: false });
   const editing = work.editing;
   const mode = editing ? "manual" : "chat";
   const location = useLocation();
@@ -161,11 +174,17 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   }, [editing]);
 
   const workingPage = work.workingPage;
+  useEffect(() => {
+    try {
+      if (workingPage) sessionStorage.setItem(WORKING_PAGE_KEY, JSON.stringify(workingPage));
+      else sessionStorage.removeItem(WORKING_PAGE_KEY);
+    } catch { /* Page selection still works when tab storage is unavailable. */ }
+  }, [workingPage]);
   // Back/Forward/page choice move the mounted preview in place; a src change happens only as a single fallback.
   const pendingNav = useRef<{ expect: string; timer: ReturnType<typeof setTimeout> } | null>(null);
   const shownPath = useRef<string | null>(null);
   // The page asked for sticks until the preview reports it (first-load race: the frame may still be on the home page).
-  const target = useRef<{ path: string; tries: number } | null>(null);
+  const target = useRef<{ path: string; tries: number } | null>(restoredPage ? { path: restoredPage.path, tries: 0 } : null);
   const navigatePreview = useCallback((nav: PreviewNavigate, expect: string, fallback: () => void) => {
     target.current = nav.action === "to" ? { path: expect, tries: 0 } : null;
     if (nav.action === "to" && shownPath.current === expect) return; // already showing it (e.g. entering or leaving Manual Edit Mode)
