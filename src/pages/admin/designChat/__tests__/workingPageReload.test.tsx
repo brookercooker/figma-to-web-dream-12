@@ -1,7 +1,7 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DesignChatProvider, useDesignChat } from "../DesignChatContext";
+import { DesignChatProvider, useDesignChat, NAV_FALLBACK_MS } from "../DesignChatContext";
 import type { ReactNode } from "react";
 
 const mocks = vi.hoisted(() => ({ preview: vi.fn(), navigate: vi.fn(() => false) }));
@@ -27,6 +27,50 @@ beforeEach(() => {
   mocks.preview.mockReturnValue({ completedAt: 0, lastReloadAt: { current: 0 }, rememberPath: vi.fn() });
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); sessionStorage.clear(); });
+
+describe("preview Back confirmation", () => {
+  it.each([
+    ["/home/", "", "/", ""],
+    ["/about/", "?b=2&a=1", "/about", "?a=1&b=2"],
+  ])("resolves equivalent %s in place with no delayed reload", (path, search, arrival, arrivalSearch) => {
+    vi.useFakeTimers(); mocks.navigate.mockReturnValue(true);
+    const frame = document.createElement("iframe");
+    frame.src = "https://site.example/"; frame.dataset.sitePreview = "true";
+    document.body.appendChild(frame);
+    const win = frame.contentWindow;
+    const report = (path: string, search = "") => act(() => {
+      window.dispatchEvent(new MessageEvent("message", { source: win, origin: "https://site.example", data: { source: "nova-site", type: "location", path, search } }));
+    });
+    try {
+      const hook = renderHook(useDesignChat, { wrapper });
+      report(path, search); report("/team");
+      act(() => hook.result.current.previewNav?.back());
+      expect(mocks.navigate).toHaveBeenLastCalledWith({ action: "back" });
+      report(arrival, arrivalSearch);
+      act(() => vi.advanceTimersByTime(NAV_FALLBACK_MS + 100));
+      expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual([null, 0]);
+      expect(hook.result.current.previewNav?.canForward).toBe(true);
+      expect(frame.src).toBe("https://site.example/");
+      hook.unmount();
+    } finally { frame.remove(); mocks.navigate.mockReturnValue(false); vi.useRealTimers(); }
+  });
+  it("retains one three-second fallback when the frame never confirms", () => {
+    vi.useFakeTimers(); mocks.navigate.mockReturnValue(true);
+    const frame = document.createElement("iframe"); frame.src = "https://site.example/"; frame.dataset.sitePreview = "true"; document.body.appendChild(frame);
+    try {
+      const hook = renderHook(useDesignChat, { wrapper });
+      for (const path of ["/", "/team"]) act(() => window.dispatchEvent(new MessageEvent("message", { source: frame.contentWindow, origin: "https://site.example", data: { source: "nova-site", type: "location", path } })));
+      act(() => hook.result.current.previewNav?.back());
+      act(() => vi.advanceTimersByTime(NAV_FALLBACK_MS - 1));
+      expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual([null, 0]);
+      act(() => vi.advanceTimersByTime(1));
+      expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual(["/", 1]);
+      act(() => vi.advanceTimersByTime(NAV_FALLBACK_MS));
+      expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual(["/", 1]);
+      hook.unmount();
+    } finally { frame.remove(); mocks.navigate.mockReturnValue(false); vi.useRealTimers(); }
+  });
+});
 
 describe("picked page reload", () => {
   it("restores the Draft chip and preview path during a running request, then lets a new pick win", () => {
