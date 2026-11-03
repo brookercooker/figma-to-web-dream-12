@@ -1,11 +1,12 @@
 import { Smile, Link as LinkIcon, icons } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { originalLink, type InlineEdits, type LinkEdit } from "@/lib/inlineEditCore";
-import { LINK_ICONS, type InlineSelection } from "@/components/InlineEditSurface";
+import { LINK_ICONS, readStyle, type InlineSelection } from "@/components/InlineEditSurface";
 import { ToolField, ToolGroup, ToolSegment } from "./designChat/ToolPanel";
 import InlineDestinationPanel from "./InlineDestinationPanel";
 import MaterialIconField from "./MaterialIconField";
 import { iconPositionKey } from "./textAdornment";
+import { selectionComputedStyle } from "./remoteSelection";
 
 export default function TextIconLinkPanel({ sel, edits, onChange, editsFor, onScopeChange, pages = [] }: {
   sel: InlineSelection; edits: InlineEdits; onChange: (next: InlineEdits) => void;
@@ -15,6 +16,8 @@ export default function TextIconLinkPanel({ sel, edits, onChange, editsFor, onSc
   const originalIcon = sel.el.querySelector("[data-inline-icon],svg");
   const icon = edits[`icon:${sel.key}`] ?? originalIcon?.getAttribute("data-inline-icon") ?? (originalIcon ? "original" : "none");
   const position = edits[iconPositionKey(sel.key)] ?? "after";
+  const fontSize = readStyle(edits, sel.key)["font-size"] || selectionComputedStyle(sel.el).fontSize || "16px";
+  const PreviewIcon = LINK_ICONS.includes(icon as typeof LINK_ICONS[number]) ? icons[icon as keyof typeof icons] : undefined;
   const target = sel.link ?? { key: sel.key, scope: sel.scope, el: sel.el };
   const targetEdits = editsFor?.(target.scope) ?? edits;
   let link: LinkEdit | undefined;
@@ -36,7 +39,8 @@ export default function TextIconLinkPanel({ sel, edits, onChange, editsFor, onSc
         return <Button key={name} type="button" variant={icon === name ? "secondary" : "outline"} size="icon" className="h-8 w-full min-w-0" aria-label={label} title={label} aria-pressed={icon === name} onMouseDown={e => e.preventDefault()} onClick={() => setIcon(name)}><Icon className="h-4 w-4" /></Button>;
       })}
     </div>
-    <MaterialIconField nameOnly value={icon === "none" || icon === "original" ? "" : icon} onChange={setIcon} />
+    {PreviewIcon && <span aria-label="Selected Icon Preview" style={{ fontSize }} className="inline-flex"><PreviewIcon className="h-[1em] w-[1em]" aria-hidden /></span>}
+    <MaterialIconField nameOnly fontSize={fontSize} value={icon === "none" || icon === "original" ? "" : icon} onChange={setIcon} />
     <ToolField label="Icon Position">
       <ToolSegment className="flex w-full" onMouseDown={e => e.preventDefault()}>
         {(["before", "after"] as const).map(value => <Button key={value} type="button" size="sm" className="flex-1" aria-label={value === "before" ? "Before Text" : "After Text"} variant={position === value ? "default" : "ghost"} aria-pressed={position === value} disabled={!hasIcon} onClick={() => onChange({ ...edits, [iconPositionKey(sel.key)]: value })}>{value === "before" ? "Before Text" : "After Text"}</Button>)}

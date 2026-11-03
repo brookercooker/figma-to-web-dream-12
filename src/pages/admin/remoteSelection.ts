@@ -14,6 +14,7 @@ export interface SelectionSnapshot {
   attrs?: Record<string, string | null>;
   style?: Record<string, string>;
   fingerprint?: Fingerprint;
+  expandable?: { path: string; open: boolean };
   link?: { key: string; scope: string; tag?: string; attrs?: Record<string, string | null>; fingerprint?: Fingerprint };
 }
 export type EditQuery = (op: "computed" | "measure" | "scrollTo" | "record", scope: string, key: string, props?: string[] | Record<string, number>) => Promise<unknown>;
@@ -22,6 +23,8 @@ export type FormatCommand = "bold" | "italic" | "underline" | "strike" | "color"
 export interface WordRange { key: string; scope: string; collapsed: boolean; text: string; marks: { bold: boolean; italic: boolean; underline: boolean; strike: boolean; color: string; size: string | number; weight: string | number; font: string } }
 export interface RemoteFormatting { range: WordRange | null; format: (command: FormatCommand, value?: string) => void }
 const formatting = new WeakMap<HTMLElement, RemoteFormatting>();
+const expansions = new WeakMap<HTMLElement, { setOpen: (open: boolean) => void }>();
+export const remoteExpansion = (el: HTMLElement) => expansions.get(el);
 export const remoteFormatting = (el: HTMLElement) => formatting.get(el);
 export function validWordRange(value: unknown): value is WordRange {
   if (!value || typeof value !== "object") return false;
@@ -53,11 +56,12 @@ export function validSnapshot(value: unknown): value is SelectionSnapshot {
         (s.context.section === undefined || typeof s.context.section === "string") &&
         (s.context.role === undefined || typeof s.context.role === "string"))) && (s.html === undefined || typeof s.html === "string") &&
     (s.style === undefined || (!!s.style && typeof s.style === "object" && Object.values(s.style).every((v) => typeof v === "string"))) &&
+    (s.expandable === undefined || (!!s.expandable && validPath(s.expandable.path) && typeof s.expandable.open === "boolean")) &&
     (!s.link || (validPath(s.link.key) && typeof s.link.scope === "string"));
 }
 
 /** Detached, inert DOM supports read-only panel queries, never impersonates a live Range. */
-export function remoteSelection(snapshot: SelectionSnapshot, query?: EditQuery, words?: RemoteFormatting): InlineSelection {
+export function remoteSelection(snapshot: SelectionSnapshot, query?: EditQuery, words?: RemoteFormatting, expand?: (open: boolean) => void): InlineSelection {
   const el = document.createElement(snapshot.tag);
   if (snapshot.html !== undefined) el.innerHTML = clean(snapshot.html);
   else el.textContent = snapshot.text ?? "";
@@ -67,6 +71,7 @@ export function remoteSelection(snapshot: SelectionSnapshot, query?: EditQuery, 
   }
   snapshots.set(el, snapshot);
   if (words) formatting.set(el, words);
+  if (snapshot.expandable && expand) expansions.set(el, { setOpen: expand });
   el.getBoundingClientRect = () => {
     const { x = 0, y = 0, width = 0, height = 0 } = snapshot.rect ?? {};
     return { x, y, width, height, top: y, left: x, right: x + width, bottom: y + height, toJSON: () => ({ x, y, width, height }) };

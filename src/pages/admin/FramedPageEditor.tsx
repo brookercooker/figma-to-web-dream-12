@@ -86,6 +86,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const sequence = useRef(0);
   const selectionVersion = useRef(0);
   const rangeCapable = useRef(false);
+  const expandCapable = useRef(false);
   const selectedSnapshot = useRef<SelectionSnapshot | null>(null);
   const wordRange = useRef<WordRange | null>(null);
   const destination = useRef<Window | null>(null);
@@ -118,6 +119,9 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       if (!ready.current || exited.current || !rangeCapable.current || !r || r.collapsed || !r.text || selectedSnapshot.current?.key !== snapshot.key || selectedSnapshot.current?.scope !== snapshot.scope || r.key !== snapshot.key || r.scope !== snapshot.scope) return;
       post("edit-format", { key: snapshot.key, scope: snapshot.scope, command, ...(value !== undefined ? { value } : {}) });
     },
+  } : undefined, expandCapable.current && snapshot.expandable ? (open) => {
+    if (!ready.current || exited.current || selectedSnapshot.current?.key !== snapshot.key || selectedSnapshot.current?.scope !== snapshot.scope) return;
+    post("edit-expand", { scope: snapshot.scope, path: snapshot.expandable?.path, open });
   } : undefined));
   useLayoutEffect(() => {
     if (!origin || !target) { setStatus("failed"); return; }
@@ -126,6 +130,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     moveCapableRef.current = false; setMoveCapable(false);
     sectionsCapable.current = false; sectionsRef.current = []; latest.current.onSections?.(null);
     rangeCapable.current = false; selectedSnapshot.current = null; wordRange.current = null;
+    expandCapable.current = false;
     latest.current.onReport?.({});
     destination.current = frame.current?.contentWindow ?? null;
     const timeout = setTimeout(() => setStatus("failed"), 15000);
@@ -154,6 +159,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         moveCapableRef.current = data.capabilities?.blockMove === true; setMoveCapable(moveCapableRef.current);
         sectionsCapable.current = data.capabilities?.sectionList === true;
         rangeCapable.current = data.capabilities?.rangeFormatting === true;
+        expandCapable.current = data.capabilities?.expandableContent === true;
         clearTimeout(timeout); ready.current = true; setStatus("ready");
         const initial = state(); sentState.current = JSON.stringify(initial); post("edit-init", initial);
         restoreFrameScroll(frame.current, latest.current.path); if (latest.current.scrollToSlot?.slot) post("scroll-to-slot", { slot: latest.current.scrollToSlot.slot }); return;

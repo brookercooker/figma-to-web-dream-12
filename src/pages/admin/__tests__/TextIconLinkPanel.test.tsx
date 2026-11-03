@@ -79,3 +79,12 @@ it("None in Link removes the scoped link and reflects its state", () => {
   expect(JSON.parse(change.mock.lastCall?.[0]["link:0"])).toEqual({ unlinked: true });
   fireEvent.focus(field); expect(screen.getByRole("button", { name: /^None$/ })).toHaveAttribute("aria-pressed", "true");
 });
+it.each(["Mail", "material:outlined:home"])("sizes %s preview from selected text and its override", icon => {
+  const sel = remoteSelection({ key: "0", scope: "page", kind: "text", tag: "h2", text: "Nova", style: { fontSize: "28px" } });
+  const { rerender } = render(<TextIconLinkPanel sel={sel} edits={{ "icon:0": icon }} onChange={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: /^Icon / }));
+  const preview = () => screen.getByLabelText(icon === "Mail" ? "Selected Icon Preview" : "home icon preview");
+  expect(preview()).toHaveStyle({ fontSize: "28px" });
+  rerender(<TextIconLinkPanel sel={sel} edits={{ "icon:0": icon, "style:0": '{"font-size":"36px"}' }} onChange={vi.fn()} />);
+  expect(preview()).toHaveStyle({ fontSize: "36px" });
+});
