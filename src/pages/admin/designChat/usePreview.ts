@@ -4,7 +4,7 @@ import { publicPreviewBase, publicPreviewPage } from "./publicPreviewUrl";
 import { setManifestBase, resetSiteManifestCache, isSafePublicFrameUrl } from "../siteManifest";
 import { previewExcluded, previewStage, type PreviewStage } from "./previewProgress";
 import { syncManifestPages } from "../manifestPageSync";
-import { previewAddressMatches } from "./previewHistory";
+import { previewAddressMatches, stripPreviewTokens } from "./previewHistory";
 
 /**
  * The draft preview and how it keeps up with changes.
@@ -57,7 +57,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   const rememberPath = useCallback((p: string | null) => {
     if (pinned.current && (!p || !previewAddressMatches(pinned.current, p))) return;
     pinned.current = null;
-    remembered.current = p;
+    remembered.current = p && stripPreviewTokens(p); // preview credentials are never reused from a remembered address
   }, []);
   const reloadAfter = useRef(false); // the page changed while an address was being fetched: fetch once more
   const expiry = useRef<ReturnType<typeof setTimeout>>();
