@@ -13,7 +13,7 @@ import { syncManifestPages } from "../manifestPageSync";
 import { MANIFEST_CHANGED } from "../siteManifest";
 import ManifestReceiverFrame from "./ManifestReceiverFrame";
 import { useChatReferences, type ChatReferences } from "./useChatReferences";
-import { emptyHistory, visit, step, canBack, canForward, previewAddressMatches, type PreviewHistory } from "./previewHistory";
+import { emptyHistory, visit, step, canBack, canForward, previewAddressMatches, stripPreviewTokens, type PreviewHistory } from "./previewHistory";
 import { observeContentSyncState } from "./contentSync";
 import { useChatDraft } from "./useChatDraft";
 import { useWaitProgress } from "./useWaitProgress";
@@ -189,9 +189,11 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const shownPath = useRef<string | null>(null);
   // The page asked for sticks until the preview reports it (first-load race: the frame may still be on the home page).
   const target = useRef<{ path: string; tries: number } | null>(restoredPage ? { path: restoredPage.path, tries: 0 } : null);
-  const navigatePreview = useCallback((nav: PreviewNavigate, expect: string, fallback: () => void) => {
+  // `sticky` re-asks for a picked page until it arrives (first-load race). History steps are not sticky: the step already
+  // moved the index, the pending confirmation and fallback cover a lost message, and re-sends would fight later steps.
+  const navigatePreview = useCallback((nav: PreviewNavigate, expect: string, fallback: () => void, sticky = true) => {
     debugNav("navigate", { action: nav.action, expect });
-    target.current = nav.action === "to" ? { path: expect, tries: 0 } : null;
+    target.current = nav.action === "to" && sticky ? { path: expect, tries: 0 } : null;
     if (nav.action === "to" && shownPath.current && previewAddressMatches(expect, shownPath.current)) return; // already showing it (e.g. entering or leaving Manual Edit Mode)
     if (pendingNav.current) { clearTimeout(pendingNav.current.timer); pendingNav.current = null; }
     if (!postPreviewNavigate(nav)) { debugNav("unavailable", { expect }); fallback(); return; }
@@ -239,7 +241,8 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       })) return;
       if (Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe[data-manifest-receiver]")).some((f) => f.contentWindow === event.source)) return;
       console.debug("[preview] location", d.path);
-      const search = typeof d.search === "string" && d.search.length <= 300 ? d.search : "";
+      // Preview credentials (`__lovable_*`) are dropped here so they are never compared, kept in history, remembered or logged.
+      const search = typeof d.search === "string" && d.search.length <= 300 ? stripPreviewTokens(d.search) : "";
       debugNav("location", { path: d.path, search, expect: pendingNav.current?.expect });
       const notFound = d.notFound === true;
       setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search && Boolean(cur.notFound) === notFound ? cur : { path: d.path, search, ...(notFound ? { notFound: true } : {}) }));
@@ -272,7 +275,8 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     setHistory(r.history);
     const address = r.address;
     debugNav("history step", { by, address });
-    navigatePreview({ action: by < 0 ? "back" : "forward" }, address, () => { setPreviewPath(address); setNavNonce((n) => n + 1); });
+    // Go straight to the address this history holds: a freshly reloaded frame has no browser history of its own to step through.
+    navigatePreview({ action: "to", path: address }, address, () => { setPreviewPath(address); setNavNonce((n) => n + 1); }, false);
   }, [editing, navigatePreview]);
   const previewNav = useMemo(() => ({
     canBack: !editing && canBack(history), canForward: !editing && canForward(history),
