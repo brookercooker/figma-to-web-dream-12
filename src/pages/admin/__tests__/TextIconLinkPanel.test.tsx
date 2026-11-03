@@ -75,7 +75,7 @@ it.each(["two words", "home-foo", "home()", '<span>home</span>'])("rejects paste
 it("None in Link removes the scoped link and reflects its state", () => {
   const { change } = setup(); const field = screen.getByRole("textbox", { name: "Link Address" });
   fireEvent.change(field, { target: { value: "/about" } }); fireEvent.blur(field);
-  fireEvent.focus(field); fireEvent.click(screen.getByRole("button", { name: "None", exact: true }));
+  fireEvent.focus(field); fireEvent.click(screen.getByRole("button", { name: /^None$/ }));
   expect(JSON.parse(change.mock.lastCall?.[0]["link:0"])).toEqual({ unlinked: true });
-  fireEvent.focus(field); expect(screen.getByRole("button", { name: "None", exact: true })).toHaveAttribute("aria-pressed", "true");
+  fireEvent.focus(field); expect(screen.getByRole("button", { name: /^None$/ })).toHaveAttribute("aria-pressed", "true");
 });
