@@ -17,6 +17,9 @@ import { useChatDraft } from "./useChatDraft";
 import WaitProgress from "./WaitProgress";
 import { useManagerLayout } from "./useManagerLayout";
 import type { WaitView } from "./waitEstimates";
+import StageRibbon from "./StageRibbon";
+import { elapsedTime } from "./stageRibbon";
+import { useChangeQueue } from "./useChangeQueue";
 
 const SUGGESTIONS = [
   "Make the headline larger",
@@ -31,7 +34,7 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgress }: { opening?: number; onDraw?: () => void; onAttention?: () => void; saveProgress?: WaitView | null } = {}) {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress, setDevice, setReviewOpen, previewPage } = useDesignChat();
   const modeSwitch = useModeSwitch();
   const { phone } = useManagerLayout();
   const fallbackDraft = useChatDraft();
@@ -72,6 +75,8 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
   const voice = useVoice(useCallback(() => valueRef.current, []), setText, setHint);
 
   const busy = Boolean(state?.busy);
+  const changing = !!state?.job && !/^(publish|review|content|content[-_]?sync)$/i.test(state.job.kind ?? "") && !/^(content|reviewing|publishing|updating)$/.test(state.job.status) && (busy || state.job.status === "approval" || state.job.status === "queued");
+  const queue = useChangeQueue(state, workingPage?.id ?? "", async body => { const result = await postToHelper("/send", body); refreshSoon(); return result; }, useCallback(() => setHint("Your queued changes were removed because you switched pages."), [setHint]));
   const working = isWorking(state);
   const messages = useMemo(
     () => (state?.history ?? []).map((e, i) => ({ e, i, shown: visibleText(e) })).filter((m) => m.shown !== null),
@@ -118,7 +123,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
   const send = async () => {
     const submittedText = text;
     const message = text.trim();
-    if (busy || offline) return;
+    if (busy && !changing || offline) return;
     const hasDrawing = drawing.strokes.length > 0;
     // A service that hasn't been updated would drop the drawing and send the words alone, so don't send it at all.
     if (hasDrawing && state?.drawing !== true) {
@@ -142,10 +147,14 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
       const d = await drawing.prepare();
       if (d) { marks = d.marks; image = d.image; }
     }
-    const res = await postToHelper("/send", {
+    const body = {
       message: withReferences(message, refs.references), uploadIds: attachments.ids(), ...(workingPage ? { page: workingPage } : {}),
       ...(marks ? { marks } : {}), ...(image ? { image } : {}),
-    });
+    };
+    if (changing || queue.items.some(q => q.status !== "error")) {
+      queue.add(message, body); setText(""); attachments.clear(); refs.clearReferences(); drawing.cancel(); return;
+    }
+    const res = await postToHelper("/send", body);
     if (res.ok) {
       const took = Number(res.data?.marks ?? 0);
       const expected = hasDrawing && marks ? (marks as { marks: unknown[] }).marks.length : 0;
@@ -199,7 +208,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
 
         {saveProgress && <div role="status" className={cn("self-stretch text-xs text-muted-foreground transition-opacity duration-200 motion-reduce:transition-none", saveProgress.fading && "opacity-0", saveProgress.error && "text-destructive")}>{saveProgress.label}</div>}
 
-        {working && job && state && job.status !== "content" && !/^(content|content[-_]sync)$/i.test(job.kind) && !waitProgress?.request && !waitProgress?.submit && (
+        {working && job && state && !changing && job.status !== "content" && !/^(content|content[-_]sync)$/i.test(job.kind) && !waitProgress?.request && !waitProgress?.submit && (
           <div role="status" className="self-stretch grid grid-cols-[auto_1fr_auto] items-center gap-x-2.5 gap-y-1 rounded-lg border bg-muted/60 px-3 py-2.5">
             <span className="flex gap-1" aria-hidden="true">
               {[0, 1, 2].map((n) => <i key={n} className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: `${n * 0.2}s` }} />)}
@@ -210,7 +219,26 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
           </div>
         )}
 
-        {(waitProgress?.request || waitProgress?.submit) && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><WaitProgress progress={waitProgress.request ?? waitProgress.submit} /></div>}
+        {(changing || waitProgress?.request && !waitProgress.request.done && !waitProgress.request.error) && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5 space-y-3">
+          <p className="font-medium">Your change is on its way · {elapsedTime(waitProgress?.request?.ribbon?.elapsed ?? (now - (job?.startedAt ?? now)) / 1000)}</p>
+          <p className="text-xs text-muted-foreground">You don't need to watch. Keep going, and we'll tell you the moment the preview is ready.</p>
+          <p className="text-[11px] uppercase text-muted-foreground">While you wait</p>
+          <div className="flex flex-col items-start gap-1">
+            {setDevice && preview.loaded && <Button type="button" variant="link" className="h-auto whitespace-normal p-0 text-left text-xs" onClick={() => setDevice("mobile")}>Check how {workingPage?.name ?? previewPage?.name ?? "the current page"} looks on a phone</Button>}
+            {setReviewOpen && (state?.draft?.requests?.length ?? 0) > 0 && <Button type="button" variant="link" className="h-auto whitespace-normal p-0 text-left text-xs" onClick={() => setReviewOpen(true)}>Look at the other pages in your draft ({state?.draft?.requests?.length})</Button>}
+            <Button type="button" variant="link" className="h-auto p-0 text-xs" onClick={() => textRef.current?.focus()}>Write your next change</Button>
+          </div>
+        </div>}
+        {waitProgress?.request && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><StageRibbon progress={waitProgress.request} /></div>}
+        {waitProgress?.submit && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><WaitProgress progress={waitProgress.submit} /></div>}
+        {queue.items.map(item => <div key={item.id} className="self-end max-w-[92%] rounded-lg border bg-muted px-3 py-2 text-sm">
+          <p className="whitespace-pre-wrap break-words">{item.message}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{item.status === "error" ? item.error ?? "The current change couldn't finish. Your next change wasn't sent." : item.status === "sending" ? "Sending…" : "Queued · sends after the current reply"}</p>
+          <div className="flex gap-3">
+            {item.status === "error" && <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" disabled={busy || offline || !!state?.approval} onClick={() => queue.sendNow(item.id)}>Send now</Button>}
+            {item.status !== "sending" && <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => queue.remove(item.id)}>{item.status === "error" ? "Remove" : "Cancel"}</Button>}
+          </div>
+        </div>)}
 
         {state?.approval && <ApprovalCard approval={state.approval} onAnswered={refreshSoon} />}
 
@@ -307,7 +335,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
             attachments.addPasted(pasted);
           }}
           placeholder="Describe the change you want, for example: add a contact section with an email address and phone number"
-          aria-label="Describe a Change"
+          aria-label={changing ? "Next change (sends when this one finishes)" : "Describe a Change"}
           rows={2}
           className={cn("resize-none overflow-y-auto leading-snug", phone ? "min-h-[62px] max-h-[150px]" : "min-h-[210px] max-h-[50vh]")}
         />
@@ -341,8 +369,8 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
           {(offline || hint.text) && <span role="status" className={cn("flex-1 min-w-0 text-xs", phone && "order-last basis-full", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>
             {offline ? "Can't reach the design service right now. It will keep trying." : hint.text}
           </span>}
-          <Button type="submit" disabled={busy || offline || attachments.uploading} className="ml-auto gap-2">
-            <Send className="h-4 w-4" /> Send
+          <Button type="submit" disabled={busy && !changing || offline || attachments.uploading} className="ml-auto gap-2">
+            <Send className="h-4 w-4" /> {changing ? "Queue it" : "Send"}
           </Button>
         </div>
       </form>
