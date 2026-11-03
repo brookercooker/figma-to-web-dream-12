@@ -18,9 +18,9 @@ it("restores the original Users redirect and sign-out with login required", asyn
   gate.require = true;
   render(<MemoryRouter initialEntries={["/manage/users"]}><Routes>
     <Route path="/manage/users" element={<UsersPage />} />
-    <Route path="/manage/pages" element={<p>Pages list</p>} />
+    <Route path="/admin" element={<p>Original admin destination</p>} />
   </Routes></MemoryRouter>);
-  expect(await screen.findByText("Pages list")).toBeVisible();
+  expect(await screen.findByText("Original admin destination")).toBeVisible();
   expect(signOut).toHaveBeenCalledOnce();
   expect(screen.queryByText("User Management")).toBeNull();
 });

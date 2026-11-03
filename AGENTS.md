@@ -1,6 +1,6 @@
 
 - Mirror inlineEditCore verbatim from Public 89e55b8; never fork it.
-- authGate REQUIRE_LOGIN=false everywhere; temporary: restore before real use. Keep original guards; client/relay writes require a user. Backend unchanged.
+- Review access turned off again; REQUIRE_LOGIN=true everywhere. Keep switch, guards, banner and user-required client/relay writes. Backend unchanged.
 - Link destinations use fingerprinted link overrides and capture-phase replay handlers; disable visitor handlers during manual editing so original code actions cannot override destinations or block selection.
 - Public-manifest pages are edited through FramedPageEditor, never local page copies; page overrides live in pages.inline_edits and shared-object overrides in object_registry.inline_edits, passed unchanged to public replay — keeps public markup authoritative without positional-key migration.
 - Header is shared chrome registered under component_key Header and discovered by the same fiber map; its separate page-canvas surface preserves existing page paths, suppresses visitor menus/actions during editing, and announces site-wide changes before saves; routed headers use objects-only replay so page overrides cannot affect chrome.
