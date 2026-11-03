@@ -43,24 +43,29 @@ export default function PreviewToolbar({ onManualNavigate, manualDisabled = fals
   } catch { /* No usable public address yet. */ }
   const fullLabel = chat.inFull ? "Exit Full Screen" : "Full Screen";
   const FullIcon = chat.inFull ? Minimize2 : Maximize2;
-  return <div role="toolbar" aria-label="Preview Toolbar" className="flex h-10 min-w-0 shrink-0 flex-nowrap items-center gap-1 border-b bg-background px-2">
+  return <div role="toolbar" aria-label="Preview Toolbar" className="grid h-10 min-w-0 shrink-0 grid-cols-[4.25rem_minmax(0,1fr)_4.25rem] items-center gap-1 border-b bg-background px-2">
+    <div className="flex shrink-0 gap-0.5">
+      {!chat.editing && chat.previewNav && <div data-preview-nav className="flex shrink-0 gap-0.5">
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Back" title="Back" onClick={chat.previewNav.back} disabled={!chat.previewNav.canBack}><ChevronLeft className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Forward" title="Forward" onClick={chat.previewNav.forward} disabled={!chat.previewNav.canForward}><ChevronRight className="h-4 w-4" /></Button>
+      </div>}
+    </div>
+    <div className="relative flex min-w-0 justify-center">
+      {!phone && <Button variant="ghost" size="icon" className="absolute right-1/2 mr-32 h-8 w-8 shrink-0" aria-label="Reload Preview" title="Reload Preview" onClick={reload}><RotateCw className="h-4 w-4" /></Button>}
     <Select value={current?.path ?? path} onValueChange={choose}>
-      <SelectTrigger aria-label="Preview Page" disabled={chat.editing && manualDisabled} className="h-8 w-auto min-w-0 max-w-64 flex-1 gap-2 border-0 bg-transparent text-xs shadow-none"><SelectValue>{name}</SelectValue></SelectTrigger>
+      <SelectTrigger aria-label="Preview Page" disabled={chat.editing && manualDisabled} className="h-8 w-64 min-w-0 max-w-full gap-2 border-0 bg-transparent text-xs shadow-none"><SelectValue>{name}</SelectValue></SelectTrigger>
       <SelectContent>{!current && <SelectItem value={path}>{name}</SelectItem>}{pages.map(page => <SelectItem key={page.path} value={page.path}>{page.name} <span className="text-muted-foreground">{page.path}</span></SelectItem>)}{failed && <p role="alert" className="px-2 py-1 text-xs text-destructive">Couldn't load pages. Reopen the preview to try again.</p>}</SelectContent>
     </Select>
-    {!chat.editing && chat.previewNav && <div data-preview-nav className="flex shrink-0 gap-0.5">
-      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Back" title="Back" onClick={chat.previewNav.back} disabled={!chat.previewNav.canBack}><ChevronLeft className="h-4 w-4" /></Button>
-      <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Forward" title="Forward" onClick={chat.previewNav.forward} disabled={!chat.previewNav.canForward}><ChevronRight className="h-4 w-4" /></Button>
     </div>}
-    <div className="flex-1" />
+    <div className="flex shrink-0 items-center justify-end gap-0.5">
     {phone ? <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Preview Options" title="Preview Options"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end">
       <DropdownMenuItem onSelect={reload}><RotateCw className="mr-2 h-4 w-4" />Reload Preview</DropdownMenuItem>
       <DropdownMenuItem onSelect={chat.toggleFull}><FullIcon className="mr-2 h-4 w-4" />{fullLabel}</DropdownMenuItem>
       {href && <DropdownMenuItem asChild><a href={href} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4" />Open Page in New Tab</a></DropdownMenuItem>}
     </DropdownMenuContent></DropdownMenu> : <>
-      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Reload Preview" title="Reload Preview" onClick={reload}><RotateCw className="h-4 w-4" /></Button>
       <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label={fullLabel} title={fullLabel} onClick={chat.toggleFull}><FullIcon className="h-4 w-4" /></Button>
       {href && <Button asChild variant="ghost" size="icon" className="h-8 w-8 shrink-0"><a href={href} target="_blank" rel="noopener noreferrer" aria-label="Open Page in New Tab" title="Open Page in New Tab"><ExternalLink className="h-4 w-4" /></a></Button>}
     </>}
+    </div>
   </div>;
 }
