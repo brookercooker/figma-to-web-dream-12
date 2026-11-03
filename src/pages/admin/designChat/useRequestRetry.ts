@@ -19,7 +19,7 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
       if (user?.ts) { a.userAt = user.ts; save(); }
     }
   }
-  const awaiting = !!optimisticAt && (state?.job?.startedAt ?? 0) < optimisticAt - 1000 && !history.some(e => e.role === "user" && (e.ts ?? 0) > optimisticAfter.current);
+  const awaiting = !!optimisticAt && !history.some(e => e.role === "user" && (e.ts ?? 0) > optimisticAfter.current) && !((state?.job?.startedAt ?? 0) > optimisticAfter.current && /^(queued|working|running)$/.test(state?.job?.status ?? ""));
   const disabled = sending || awaiting || offline || !!state?.busy || !!state?.approval || /^(queued|working|running|reviewing|publishing|updating)$/.test(state?.job?.status ?? "");
   const deliverSnapshot = async (body: Record<string, unknown>) => {
     const attempt = { body: structuredClone(body), after: Math.max(0, ...history.filter(e => e.role === "user").map(e => e.ts ?? 0)), sentAt: Date.now() };

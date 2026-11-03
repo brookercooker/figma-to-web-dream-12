@@ -86,7 +86,7 @@ it("keeps a working retry on the failed history message after the indicator disa
   view.rerender(<MemoryRouter><ChatPanel /></MemoryRouter>);
   fireEvent.click(screen.getByRole("button", { name: "Try Again" }));
   expect(retry).toHaveBeenCalledWith(1100, expect.any(Function));
-  expect(screen.getByText("Failed")).toBeInTheDocument();
+  expect(screen.getByRole("log")).toHaveTextContent("Failed");
 });
 it("renders contextual helper suggestions instead of unconditional phone and draft links", () => {
   mocks.busy = true; mocks.job = { id: "wait", kind: "change", status: "working", startedAt: Date.now() };
