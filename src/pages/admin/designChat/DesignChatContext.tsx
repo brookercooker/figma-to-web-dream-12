@@ -25,6 +25,10 @@ import { useWaitProgress } from "./useWaitProgress";
 
 /** How long Back/Forward/page choice waits for the preview to report the new page before reloading it once. */
 export const NAV_FALLBACK_MS = 3000;
+/** Opt-in navigation diagnostics; never log frame addresses containing embed credentials. */
+function debugNav(event: string, details: Record<string, unknown>) {
+  try { if (sessionStorage.getItem("nova:debug-nav") === "1") console.debug("[nav]", event, details); } catch { /* Optional diagnostics. */ }
+}
 /** An object open in the editor; `from` decides the back link (page or the Objects list). */
 export interface ObjectOpen { id: string; section?: string; slot?: string; from: "page" | "objects" }
 export type Device = "mobile" | "tablet" | "desktop";
@@ -186,11 +190,13 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   // The page asked for sticks until the preview reports it (first-load race: the frame may still be on the home page).
   const target = useRef<{ path: string; tries: number } | null>(restoredPage ? { path: restoredPage.path, tries: 0 } : null);
   const navigatePreview = useCallback((nav: PreviewNavigate, expect: string, fallback: () => void) => {
+    debugNav("navigate", { action: nav.action, expect });
     target.current = nav.action === "to" ? { path: expect, tries: 0 } : null;
     if (nav.action === "to" && shownPath.current === expect) return; // already showing it (e.g. entering or leaving Manual Edit Mode)
     if (pendingNav.current) { clearTimeout(pendingNav.current.timer); pendingNav.current = null; }
-    if (!postPreviewNavigate(nav)) { fallback(); return; }
-    const timer = setTimeout(() => { if (pendingNav.current?.timer === timer) { pendingNav.current = null; fallback(); } }, NAV_FALLBACK_MS);
+    if (!postPreviewNavigate(nav)) { debugNav("unavailable", { expect }); fallback(); return; }
+    debugNav("posted", { action: nav.action, expect });
+    const timer = setTimeout(() => { if (pendingNav.current?.timer === timer) { debugNav("timeout fallback", { expect }); pendingNav.current = null; fallback(); } }, NAV_FALLBACK_MS);
     pendingNav.current = { expect, timer };
   }, []);
   useEffect(() => () => { if (pendingNav.current) clearTimeout(pendingNav.current.timer); }, []);
@@ -234,6 +240,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       if (Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe[data-manifest-receiver]")).some((f) => f.contentWindow === event.source)) return;
       console.debug("[preview] location", d.path);
       const search = typeof d.search === "string" && d.search.length <= 300 ? d.search : "";
+      debugNav("location", { path: d.path, search, expect: pendingNav.current?.expect });
       const notFound = d.notFound === true;
       setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search && Boolean(cur.notFound) === notFound ? cur : { path: d.path, search, ...(notFound ? { notFound: true } : {}) }));
       const t = target.current;
@@ -246,7 +253,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       rememberPath(d.path + search);
       shownPath.current = d.path;
       const pending = pendingNav.current;
-      if (pending && (pending.expect === d.path + search || pending.expect === d.path)) { clearTimeout(pending.timer); pendingNav.current = null; }
+      if (pending && (pending.expect === d.path + search || pending.expect === d.path)) { debugNav("matched", { expect: pending.expect, path: d.path, search }); clearTimeout(pending.timer); pendingNav.current = null; }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
@@ -264,6 +271,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     if (!r.address) return;
     setHistory(r.history);
     const address = r.address;
+    debugNav("history step", { by, address });
     navigatePreview({ action: by < 0 ? "back" : "forward" }, address, () => { setPreviewPath(address); setNavNonce((n) => n + 1); });
   }, [editing, navigatePreview]);
   const previewNav = useMemo(() => ({
