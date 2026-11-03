@@ -1010,7 +1010,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     if (!baseline) return;
     if (selectedVideo.index !== undefined) {
       const original = (baseline as unknown as { videos?: SavedVideo[] }).videos?.[selectedVideo.index];
-      if (original) changeBlocks(prev => prev.map(b => b.id !== selectedVideo.parentId ? b : { ...b, videos: ((b as unknown as { videos: SavedVideo[] }).videos ?? []).map((v, i) => i === selectedVideo.index ? original : v) } as unknown as Block), "reset video settings");
+      if (original) changeBlocks(prev => prev.map(b => b.id !== selectedVideo.parentId ? b : { ...b, align: baseline.align, videos: ((b as unknown as { videos: SavedVideo[] }).videos ?? []).map((v, i) => i === selectedVideo.index ? original : v) } as unknown as Block), "reset video settings");
     } else changeBlocks(prev => prev.map(b => b.id === baseline.id ? structuredClone(baseline) : b), "reset video settings");
   };
   // A stale/missing frame section report must never hide a saved video from staff.
