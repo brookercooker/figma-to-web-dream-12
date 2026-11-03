@@ -29,6 +29,38 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); sessionStorage.clear(); });
 
 describe("preview Back confirmation", () => {
+  it("updates destination and history immediately, delays the cue 150ms, and ignores superseded arrivals", () => {
+    vi.useFakeTimers(); mocks.navigate.mockReturnValue(true);
+    const frame = document.createElement("iframe"); frame.src = "https://site.example/"; frame.dataset.sitePreview = "true"; document.body.appendChild(frame);
+    const report = (path: string) => act(() => window.dispatchEvent(new MessageEvent("message", { source: frame.contentWindow, origin: "https://site.example", data: { source: "nova-site", type: "location", path } })));
+    try {
+      const hook = renderHook(useDesignChat, { wrapper });
+      report("/"); report("/about"); report("/team");
+      act(() => hook.result.current.previewNav?.back());
+      expect(hook.result.current.previewDestination).toBe("/about");
+      expect(hook.result.current.previewNav?.canForward).toBe(true);
+      expect(hook.result.current.previewNavigating).toBe(false);
+      act(() => vi.advanceTimersByTime(149));
+      expect(hook.result.current.previewNavigating).toBe(false);
+      act(() => vi.advanceTimersByTime(1));
+      expect(hook.result.current.previewNavigating).toBe(true);
+      act(() => hook.result.current.previewNav?.forward());
+      expect(hook.result.current.previewDestination).toBe("/team");
+      expect(hook.result.current.previewNav?.canForward).toBe(false);
+      report("/about");
+      expect(hook.result.current.previewDestination).toBe("/team");
+      report("/team");
+      expect(hook.result.current.previewDestination).toBeNull();
+      expect(hook.result.current.previewNavigating).toBe(false);
+      act(() => { hook.result.current.previewNav?.back(); hook.result.current.previewNav?.back(); });
+      expect(hook.result.current.previewDestination).toBe("/");
+      expect(hook.result.current.previewNav?.canBack).toBe(false);
+      report("/");
+      act(() => vi.advanceTimersByTime(NAV_FALLBACK_MS + 1));
+      expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual([null, 0]);
+      hook.unmount();
+    } finally { frame.remove(); mocks.navigate.mockReturnValue(false); vi.useRealTimers(); }
+  });
   it.each([
     ["/home/", "", "/", ""],
     ["/about/", "?b=2&a=1", "/about", "?a=1&b=2"],

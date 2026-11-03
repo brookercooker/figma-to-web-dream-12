@@ -15,6 +15,22 @@ beforeEach(() => {
   Element.prototype.hasPointerCapture = vi.fn(() => false);
 });
 afterEach(cleanup);
+it("shows the requested page immediately without waiting for a location report", async () => {
+  const view = render(<PreviewToolbar onManualNavigate={vi.fn()} />);
+  await waitFor(() => expect(screen.getByRole("combobox", { name: "Preview Page" })).toHaveTextContent("Draft"));
+  m.chat.previewNav.back.mockImplementation(() => {
+    m.chat.previewDestination = "/";
+    m.chat.previewNav.canBack = false;
+    m.chat.previewNav.canForward = true;
+    view.rerender(<PreviewToolbar onManualNavigate={vi.fn()} />);
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Back" }));
+  expect(screen.getByRole("combobox", { name: "Preview Page" })).toHaveTextContent("Homepage");
+  expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Forward" })).toBeEnabled();
+  expect(screen.getByRole("link", { name: "Open Page in New Tab" })).toHaveAttribute("href", "https://site.example/");
+  expect(m.chat.previewLocation.path).toBe("/draft");
+});
 it("uses the reported current page for opening a new tab, including after navigation", async () => {
   const view = render(<PreviewToolbar onManualNavigate={vi.fn()} />);
   expect(screen.getByRole("link", { name: "Open Page in New Tab" })).toHaveAttribute("href", "https://site.example/draft?offer=1");
