@@ -1,8 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ChatPanel from "../ChatPanel";
 import { useChatDraft } from "../useChatDraft";
+import { useSaveProgress } from "../useSaveProgress";
+import WaitProgress from "../WaitProgress";
 
 const mocks = vi.hoisted(() => ({
   post: vi.fn(),
@@ -22,9 +24,13 @@ const mocks = vi.hoisted(() => ({
   history: [] as any[],
   previewLoaded: false,
   draft: undefined as ReturnType<typeof useChatDraft> | undefined,
+  syncPending: false,
+  syncFailed: false,
+  busy: false,
+  job: undefined as any,
 }));
 vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({
-  state: { busy: false, history: mocks.history }, offline: false, refreshSoon: mocks.refresh,
+  state: { busy: mocks.busy, job: mocks.job, history: mocks.history }, offline: false, refreshSoon: mocks.refresh,
   chatDraft: mocks.draft,
   workingPage: null, clearWorkingPage: vi.fn(), editing: mocks.editing,
   drawing: { strokes: [], on: false, available: false, cancel: vi.fn(), toggle: vi.fn() },
@@ -34,7 +40,7 @@ vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({
   refs: mocks.refs,
   previewRegistrable: mocks.candidate,
 }) }));
-vi.mock("../contentSync", () => ({ notifyContentEdited: mocks.sync }));
+vi.mock("../contentSync", () => ({ notifyContentEdited: mocks.sync, CONTENT_SYNC_CHANGED: "save-sync", contentSyncPending: () => mocks.syncPending, contentSyncFailed: () => mocks.syncFailed, contentSyncDeferred: () => false, contentSyncStartedAt: () => 10000 }));
 vi.mock("../useManagerLayout", () => ({ useManagerLayout: () => ({ phone: mocks.phone }) }));
 vi.mock("../ModeSwitchContext", () => ({ useModeSwitch: () => ({ requestChat: mocks.guard, requestManual: async (open: () => void) => open() }) }));
 vi.mock("@/prototype/client", () => ({ supabase: {
@@ -61,11 +67,50 @@ beforeEach(() => {
   mocks.page = null;
   mocks.editing = false;
   mocks.phone = false;
+  mocks.syncPending = false; mocks.syncFailed = false; mocks.busy = false; mocks.job = undefined;
   mocks.guard.mockResolvedValue(false);
   mocks.insert.mockReturnValue({ select: () => ({ single: async () => ({ data: { id: "registered", name: "Race Test Page", path: "/race-test-page" }, error: null }) }) });
 });
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
+
+describe("shared manual save feedback", () => {
+  function Feedback({ saving, dirty = false }: { saving: boolean; dirty?: boolean }) {
+    const progress = useSaveProgress(saving, dirty);
+    return <MemoryRouter><WaitProgress progress={progress} /><ChatPanel saveProgress={progress} /></MemoryRouter>;
+  }
+  const paired = () => {
+    const bar = screen.queryByRole("progressbar");
+    const chat = screen.queryByRole("status");
+    expect(Boolean(bar)).toBe(Boolean(chat));
+    if (bar) expect(chat?.textContent).toBe(bar.getAttribute("aria-valuetext"));
+  };
+  it("starts, finishes, fades and clears both displays together despite a lingering content job", () => {
+    vi.useFakeTimers(); vi.setSystemTime(15000);
+    mocks.busy = true; mocks.job = { kind: "publish", status: "content", startedAt: 10000 };
+    const view = render(<Feedback saving />); paired();
+    mocks.syncPending = true; view.rerender(<Feedback saving={false} />); paired();
+    mocks.syncFailed = true; act(() => window.dispatchEvent(new Event("save-sync"))); paired();
+    expect(screen.getByRole("progressbar").getAttribute("aria-valuetext")).toContain("couldn't reach the draft");
+    mocks.syncFailed = false; mocks.syncPending = false;
+    act(() => window.dispatchEvent(new Event("save-sync"))); paired();
+    expect(screen.getByRole("status")).toHaveTextContent("Done");
+    act(() => vi.advanceTimersByTime(1500)); paired();
+    expect(screen.getByRole("status")).toHaveClass("opacity-0");
+    act(() => vi.advanceTimersByTime(250)); paired();
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByRole("progressbar")).toBeNull();
+  });
+  it("keeps save errors paired and clears them together when edits are cancelled", () => {
+    vi.useFakeTimers(); vi.setSystemTime(15000);
+    const view = render(<Feedback saving dirty />);
+    view.rerender(<Feedback saving={false} dirty />); paired();
+    expect(screen.getByRole("status")).toHaveTextContent("couldn't be saved");
+    view.rerender(<Feedback saving={false} />); paired();
+    act(() => vi.advanceTimersByTime(1750)); paired();
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+});
 
 describe("composer autosizing", () => {
   it.each([
