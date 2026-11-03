@@ -22,8 +22,8 @@ vi.mock("../../VideoPickerDialog", () => ({ loadLibraryVideos: async () => [], v
 vi.mock("../../ObjectPickerDialog", async () => {
   const real = await vi.importActual<any>("../../ObjectPickerDialog");
   return { ...real, loadLibraryObjects: async () => [
-    { id: "o1", name: "Hero", component_key: "Hero", status: "Draft", labels: [] },
-    { id: "o2", name: "Flyer", component_key: null, status: "Ready", labels: [] },
+    { id: "o1", name: "Hero", component_key: "Hero", status: "Draft", labels: ["Homepage/Hero", "Marketing"] },
+    { id: "o2", name: "Flyer", component_key: null, status: "Ready", labels: ["Marketing"] },
   ] };
 });
 const labelData = vi.hoisted(() => ({ rows: [{ path: "Rooms/Lobby", color_index: 7 }] }));
@@ -51,6 +51,42 @@ const setup = (kind: "images" | "objects" = "images", addedRefs: ChatReference[]
 const cards = () => within(screen.getByRole("dialog")).getAllByRole("button").filter((b) => /^(photo-|Hero|Flyer)/.test(b.getAttribute("title") ?? ""));
 
 describe("library picker", () => {
+  it("toggles multiple object chips and Any/All without losing selected objects", async () => {
+    labelData.rows = [{ path: "Homepage", color_index: 7 }, { path: "Marketing", color_index: 7 }];
+    const { onPick } = setup("objects");
+    await screen.findByTitle("Flyer");
+    fireEvent.click(screen.getByTitle("Flyer"));
+    fireEvent.click(screen.getByRole("button", { name: "Homepage" }));
+    expect(screen.queryByRole("button", { name: "Any Label" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Marketing" }));
+    expect(screen.getByRole("button", { name: "Homepage" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Marketing" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Any Label" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("2 of 2 shown · matching any of 2 labels")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "All Labels" }));
+    expect(screen.getByText("1 of 1 shown · matching all of 2 labels")).toBeInTheDocument();
+    expect(screen.queryByTitle("Flyer")).toBeNull();
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Homepage" }));
+    expect(screen.queryByRole("button", { name: "All Labels" })).toBeNull();
+    expect(screen.getByTitle("Flyer")).toHaveAttribute("aria-pressed", "true");
+    fireEvent.change(screen.getByLabelText("Search Objects"), { target: { value: "Hero" } });
+    fireEvent.click(screen.getByRole("button", { name: "Clear Filters" }));
+    expect(screen.getByLabelText("Search Objects")).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "Homepage" }));
+    fireEvent.click(screen.getByRole("button", { name: "More Labels" }));
+    fireEvent.click(screen.getByRole("option", { name: "Marketing, 2 items" }));
+    expect(screen.getByRole("button", { name: "Homepage" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Any Label" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "More Labels" }));
+    fireEvent.click(screen.getByRole("option", { name: "Marketing, 2 items" }));
+    expect(screen.getByRole("button", { name: "Marketing" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByRole("button", { name: "Any Label" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "All", exact: true }));
+    expect(screen.getByTitle("Flyer")).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    expect(onPick).toHaveBeenCalledTimes(1);
+  });
   it("toggles attached images immediately and keeps the card synchronized", async () => {
     const ref: ChatReference = { kind: "image", id: "i3", name: "photo-03.jpg", url: "url", labels: [] };
     const { onPick } = setup("images", [ref]);
