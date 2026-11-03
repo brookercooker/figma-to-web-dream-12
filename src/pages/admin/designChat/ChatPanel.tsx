@@ -231,11 +231,11 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
         </div>}
         {waitProgress?.request && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><StageRibbon progress={waitProgress.request} /></div>}
         {waitProgress?.submit && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><WaitProgress progress={waitProgress.submit} /></div>}
-        {queue.items.map(item => <div key={item.id} className="self-end max-w-[92%] rounded-lg border bg-muted px-3 py-2 text-sm">
+        {queue.items.map((item, index) => <div key={item.id} className="self-end max-w-[92%] rounded-lg border bg-muted px-3 py-2 text-sm">
           <p className="whitespace-pre-wrap break-words">{item.message}</p>
           <p className="mt-1 text-xs text-muted-foreground">{item.status === "error" ? item.error ?? "The current change couldn't finish. Your next change wasn't sent." : item.status === "sending" ? "Sending…" : "Queued · sends after the current reply"}</p>
           <div className="flex gap-3">
-            {item.status === "error" && <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" disabled={busy || offline || !!state?.approval} onClick={() => queue.sendNow(item.id)}>Send now</Button>}
+            {item.status === "error" && <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" disabled={index !== 0 || busy || offline || !!state?.approval} onClick={() => queue.sendNow(item.id)}>Send now</Button>}
             {item.status !== "sending" && <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => queue.remove(item.id)}>{item.status === "error" ? "Remove" : "Cancel"}</Button>}
           </div>
         </div>)}

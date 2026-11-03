@@ -14,8 +14,8 @@ export function useChangeQueue(state: RelayState | null, page: string, send: (bo
   const previousPage = useRef(page);
   useEffect(() => { try { if (items.length) sessionStorage.setItem(KEY, JSON.stringify(items)); else sessionStorage.removeItem(KEY); } catch { /* Queue remains usable in this tab. */ } }, [items]);
   useEffect(() => {
-    if (itemsRef.current.some(q => q.page !== page)) { setItems([]); onPageClear(); }
-    if (previousPage.current === page) return;
+    const mismatched = itemsRef.current.some(q => q.page !== page);
+    if (previousPage.current === page && !mismatched) return;
     previousPage.current = page;
     if (itemsRef.current.length) { setItems([]); onPageClear(); }
     gate.current = null;
@@ -45,5 +45,5 @@ export function useChangeQueue(state: RelayState | null, page: string, send: (bo
     if (error) { setItems(old => old.map(q => ({ ...q, status: "error" }))); return; }
     if (state.history.some(e => e.role === "assistant" && (e.ts ?? 0) >= after)) void deliver(first, true);
   }, [state, items, page]);
-  return { items, add: (message: string, body: Record<string, unknown>) => setItems(old => [...old, { id: crypto.randomUUID(), message, body, page, after: state?.job?.startedAt ?? Date.now(), status: "pending" }]), remove: (id: string) => setItems(old => old.filter(q => q.id !== id)), sendNow: (id: string) => { const item = itemsRef.current.find(q => q.id === id); if (item) void deliver(item); } };
+  return { items, add: (message: string, body: Record<string, unknown>) => setItems(old => [...old, { id: crypto.randomUUID(), message, body, page, after: gate.current?.after ?? state?.job?.startedAt ?? Date.now(), status: "pending" }]), remove: (id: string) => setItems(old => old.filter(q => q.id !== id)), sendNow: (id: string) => { const item = itemsRef.current[0]; if (item?.id === id) void deliver(item); } };
 }
