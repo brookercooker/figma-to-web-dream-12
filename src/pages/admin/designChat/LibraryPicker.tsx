@@ -176,7 +176,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
       <TopDropContent hideClose anchorRef={trigger}
         onKeyDown={(e) => handleEnter(e.nativeEvent)}
         onCloseAutoFocus={(e) => { if (picked.current) { e.preventDefault(); picked.current = false; } }}>
-        <div className="shrink-0 space-y-3 border-b p-4">
+        <div className="shrink-0 space-y-2 border-b border-border bg-background p-4">
           <div className="flex items-center justify-between gap-2">
             <SheetTitle>{TITLE[kind]}</SheetTitle>
             <Button variant="link" size="sm" type="button" onClick={() => { setOpen(false); onOpenFull(); }}
