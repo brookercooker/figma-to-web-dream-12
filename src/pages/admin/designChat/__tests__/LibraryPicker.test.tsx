@@ -87,6 +87,35 @@ describe("library picker", () => {
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(onPick).toHaveBeenCalledTimes(1);
   });
+  it("keeps ranked object chips in place while toggling two labels", async () => {
+    labelData.rows = [{ path: "Homepage", color_index: 7 }, { path: "Marketing", color_index: 7 }];
+    setup("objects");
+    await screen.findByTitle("Flyer");
+    const order = () => Array.from(screen.getByRole("group", { name: "Filter by Label" }).querySelectorAll("[data-label-chips] button[title]")).map(chip => chip.getAttribute("title"));
+    expect(order()).toEqual(["Marketing", "Homepage", "Homepage/Hero"]);
+    const before = order();
+    fireEvent.click(screen.getByRole("button", { name: "Marketing" }));
+    expect(order()).toEqual(before);
+    fireEvent.click(screen.getByRole("button", { name: "Homepage" }));
+    expect(order()).toEqual(before);
+    fireEvent.click(screen.getByRole("button", { name: "Marketing" }));
+    expect(order()).toEqual(before);
+  });
+  it("appends rare object labels in selection order without replacing popular chips", async () => {
+    labelData.rows = Array.from({ length: 10 }, (_, n) => ({ path: `Rare ${n}`, color_index: 7 }));
+    setup("objects");
+    await screen.findByTitle("Flyer");
+    const order = () => Array.from(screen.getByRole("group", { name: "Filter by Label" }).querySelectorAll("[data-label-chips] button[title]")).map(chip => chip.getAttribute("title"));
+    const before = order();
+    expect(before).toHaveLength(8);
+    for (const path of ["Rare 9", "Rare 8"]) {
+      fireEvent.click(screen.getByRole("button", { name: "More Labels" }));
+      fireEvent.click(screen.getByRole("option", { name: `${path}, 0 items` }));
+    }
+    expect(order()).toEqual([...before, "Rare 9", "Rare 8"]);
+    fireEvent.click(screen.getByRole("button", { name: "Rare 9" }));
+    expect(order()).toEqual([...before, "Rare 8"]);
+  });
   it("toggles attached images immediately and keeps the card synchronized", async () => {
     const ref: ChatReference = { kind: "image", id: "i3", name: "photo-03.jpg", url: "url", labels: [] };
     const { onPick } = setup("images", [ref]);
@@ -113,7 +142,7 @@ describe("library picker", () => {
     labelData.rows.push({ path: "Rooms/Lobby", color_index: 7 });
     setup(); await screen.findByText("60 of 70 shown");
     const group = screen.getByRole("group", { name: "Filter by Label" });
-    expect(group.querySelectorAll("[data-label-chips] button")).toHaveLength(8);
+    expect(group.querySelectorAll("[data-label-chips] button[title]")).toHaveLength(8);
     fireEvent.click(screen.getByRole("button", { name: "More Labels" }));
     expect(within(screen.getByRole("listbox")).getAllByRole("option")).toHaveLength(212);
     expect(screen.getByRole("option", { name: "Rooms/Lobby, 1 items" })).toHaveTextContent("1");
@@ -135,7 +164,7 @@ describe("library picker", () => {
     fireEvent.keyDown(screen.getByRole("combobox", { name: "Search Labels" }), { key: "ArrowDown" });
     fireEvent.keyDown(screen.getByRole("combobox", { name: "Search Labels" }), { key: "Enter" });
     await waitFor(() => expect(screen.getByRole("button", { name: "Label 204" })).toHaveAttribute("aria-pressed", "true"));
-    expect(screen.getByRole("group", { name: "Filter by Label" }).querySelectorAll("[data-label-chips] button")).toHaveLength(8);
+    expect(screen.getByRole("group", { name: "Filter by Label" }).querySelectorAll("[data-label-chips] button[title]")).toHaveLength(8);
     expect(screen.getByText("No images match")).toBeInTheDocument();
   });
   it("centers whole image thumbnails for both the thumbnail and web fallback", async () => {
