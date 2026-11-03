@@ -1,6 +1,6 @@
 # Text Icon & Link: public-site companion contract
 
-Manager UI is implemented. Links and append-after icons on whole text elements use existing mechanisms. Before/after placement is new; the public site has not been changed. Icons/links affect the whole selected element, never the highlighted word range. Existing range formatting remains unchanged.
+Both projects now support before/after placement through the byte-identical `src/lib/inlineEditCore.ts` from Public commit `45d2c351`. Icons/links affect the whole selected element, never the highlighted word range. Existing range formatting remains unchanged.
 
 ## Stored maps and keys
 
@@ -16,7 +16,7 @@ Pages: `pages.inline_edits`. Objects: `object_registry.inline_edits`. Values are
 ```
 
 - `icon:<path>`: existing Lucide icon name from Manager's `LINK_ICONS`, `material:(outlined|rounded|sharp):<name>` (name matches `[a-z0-9_]{1,100}`), or `none` to hide the original/edited icon.
-- **New:** `icon-position:<path>` is `before` or `after` only. Absent means existing placement; new inserted icons default to after. Manager displays After Text for absent placement.
+- `icon-position:<path>` is `before` or `after` only, strictly validated by the shared core. Absent means existing placement; new inserted icons default to after. Manager displays After Text for absent placement.
 - `link:<path>`: existing JSON `{ "href": "...", "target": "_blank" }` (target optional) or `{ "unlinked": true }`. Omitted target means same tab. Omitted override restores original destination. Empty URL becomes unlinked, not an empty href.
 - Original `fp:<path>` stays unchanged; adornments never enter the text fingerprint or original snapshot.
 
@@ -35,7 +35,11 @@ Existing exact-origin/window-validated `edit-init` and `edit-update` carry the e
 
 Object-only mode retains `scope:"object"`, its existing object snapshot and `edits` under `object:<id>`. Public `edit-change {source:"nova-site",type:"edit-change",scope,next}` must preserve valid position keys in the whole `next` map, even when another text/style edit changed. Existing `edit-applied` reports should include placement keys and fingerprint/orphan outcomes. `edit-query` with `op:"record"` must record the original element fingerprints for positions too.
 
-No new capability is required by Manager; public must extend its verbatim core's parse/validate/replay/restore and path grouping to recognize `icon-position`. Manager accepts this extension separately without modifying its shared core; after both projects support it, move that validation into the verbatim shared core together.
+No new capability or message is required. Both projects' shared core handles placement in parse/validate/replay/restore, fingerprints and path grouping. Manager's `editMap` uses the core directly for edit-change and record replies; there is no separate placement extension validator. The trusted iconMarkup adapter supplies Lucide SVG or parsed Material spans.
+
+### Exact-source compatibility caveat
+
+Public `45d2c351` omits the Manager's older `hidden` and `placeholder` edit kinds. The exact mirror therefore rejects those keys, including whole incoming maps containing them. Image deletion and previously stored maps containing such keys need a reconciled Public `src/lib/inlineEditCore.ts` that restores those kinds alongside placement. Do not silently fork the shared core or claim this compatibility is resolved.
 
 ## Rendering and interaction
 

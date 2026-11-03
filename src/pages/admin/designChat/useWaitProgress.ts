@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { RELAY, type RelayState } from "./helper";
-import { detectWaitKind, timedProgress, WAIT_ESTIMATES, type WaitKind, type WaitView } from "./waitEstimates";
+import { detectWaitKind, timedProgress, type WaitKind, type WaitView } from "./waitEstimates";
 
 type Track = { id: number; version: number; kind: WaitKind; high: number; replyAt?: number; pausedAt?: number; paused: number; doneAt?: number; error?: boolean; hasBuild?: boolean; stageStart?: number; view?: WaitView; ribbonStage?: number; ribbonHigh?: number; committed?: boolean; built?: boolean; ready?: boolean };
 const terminal = /^(done|complete|completed|published|live)$/;
