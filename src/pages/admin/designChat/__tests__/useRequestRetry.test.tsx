@@ -19,6 +19,8 @@ it("retries the exact text, chip, references, uploads and drawing once and start
   expect(h.result.current.optimisticState?.job).toMatchObject({ status: "queued", startedAt: 2000 });
   await act(async () => { await h.result.current.retry(1100, clear); });
   expect(post).toHaveBeenCalledTimes(2);
+  const receipt = { ...failed, busy: true, job: { id: "retried", kind: "change", status: "working", startedAt: 1950 }, history: [...failed.history, { role: "user" as const, text: payload.message, ts: 1950 }] };
+  h.rerender({ state: receipt }); expect(h.result.current.optimisticState?.job?.id).toBe("retried");
 });
 it("keeps history recovery and the exact snapshot after reload and disables retry while busy", async () => {
   const one = renderHook(() => useRequestRetry(initial, false, vi.fn()));

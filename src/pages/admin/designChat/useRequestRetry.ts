@@ -10,6 +10,7 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
   const lock = useRef(false);
   const [sending, setSending] = useState(false);
   const [optimisticAt, setOptimisticAt] = useState<number | null>(null);
+  const optimisticAfter = useRef(0);
   const save = () => { try { sessionStorage.setItem(KEY, JSON.stringify(attempts.current)); } catch { /* In-memory snapshots still include attachments and drawings. */ } };
   const history = state?.history ?? [];
   for (const a of attempts.current) {
@@ -18,7 +19,7 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
       if (user?.ts) { a.userAt = user.ts; save(); }
     }
   }
-  const awaiting = !!optimisticAt && (state?.job?.startedAt ?? 0) < optimisticAt && !history.some(e => e.role === "user" && (e.ts ?? 0) >= optimisticAt);
+  const awaiting = !!optimisticAt && (state?.job?.startedAt ?? 0) < optimisticAt - 1000 && !history.some(e => e.role === "user" && (e.ts ?? 0) > optimisticAfter.current);
   const disabled = sending || awaiting || offline || !!state?.busy || !!state?.approval || /^(queued|working|running|reviewing|publishing|updating)$/.test(state?.job?.status ?? "");
   const deliverSnapshot = async (body: Record<string, unknown>) => {
     const attempt = { body: structuredClone(body), after: Math.max(0, ...history.filter(e => e.role === "user").map(e => e.ts ?? 0)), sentAt: Date.now() };
@@ -31,7 +32,7 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
     try { return await deliverSnapshot(body); } finally { lock.current = false; setSending(false); }
   };
   const attemptFor = (at: number) => {
-    const user = [...history].reverse().find(e => e.role === "user" && (e.ts ?? Infinity) <= at + 1000);
+    const user = [...history].reverse().find(e => e.role === "user" && (e.ts ?? Infinity) <= at);
     return [...attempts.current].reverse().find(a => user?.ts !== undefined && a.userAt === user.ts || a.userAt === undefined && user?.text === a.body.message && (user.ts ?? 0) > a.after);
   };
   const isReviewFailure = (at: number) => !!state?.job && /^(publish|review|content)/.test(state.job.kind ?? "") && at >= state.job.startedAt;
@@ -40,8 +41,10 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
     if (!attempt || isReviewFailure(at) || disabled || lock.current) return;
     lock.current = true; setSending(true);
     try {
+      const at = Date.now();
+      optimisticAfter.current = Math.max(0, ...history.filter(e => e.role === "user").map(e => e.ts ?? 0));
       const result = await deliverSnapshot(attempt.body);
-      if (result.ok) { clear(); setOptimisticAt(Date.now()); }
+      if (result.ok) { clear(); setOptimisticAt(at); }
       return result;
     } finally { lock.current = false; setSending(false); refresh(); }
   };
@@ -54,7 +57,7 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
   }
   const localErrors: Entry[] = attempts.current.flatMap((a, i) => a.failureAt !== undefined && !history.some(e => e.role === "error" && (e.ts ?? 0) >= (a.userAt ?? a.failureAt ?? 0) && (e.ts ?? 0) < (attempts.current[i + 1]?.userAt ?? Infinity))
     ? [{ role: "error" as const, text: "The change couldn't finish", ts: a.failureAt }] : []);
-  const optimisticState = optimisticAt && state && (currentJob?.startedAt ?? 0) < optimisticAt && !history.some(e => e.role === "user" && (e.ts ?? 0) >= optimisticAt)
+  const optimisticState = awaiting && optimisticAt && state
     ? { ...state, busy: true, job: { id: `retry:${optimisticAt}`, kind: "change", status: "queued", startedAt: optimisticAt } } : state;
   return { sendPrepared, retry, retryNote, isReviewFailure, canRetry: (at: number) => !isReviewFailure(at) && !!attemptFor(at), disabled, sending, localErrors, optimisticState };
 }
