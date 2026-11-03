@@ -76,7 +76,7 @@ it("whole-text icon placement and links survive framed updates and Undo/Redo wit
   send("edit-select", { selection: { key: "0", scope: "page", kind: "text", tag: "h2", text: "Nova", style: {}, rect: {} } });
   mocks.writes.mockClear();
   fireEvent.click(within(mocks.slot).getByRole("button", { name: "Icon & Link None" }));
-  fireEvent.click(within(mocks.slot).getByRole("button", { name: "Mail", exact: true }));
+  fireEvent.click(within(mocks.slot).getByRole("button", { name: "Mail" }));
   fireEvent.click(within(mocks.slot).getByRole("button", { name: "Before Text" }));
   const address = within(mocks.slot).getByRole("textbox", { name: "Link Address" });
   fireEvent.change(address, { target: { value: "/about" } }); fireEvent.keyDown(address, { key: "Enter" });

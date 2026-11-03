@@ -2,6 +2,7 @@ import asyncio,json
 from pathlib import Path
 from playwright.async_api import async_playwright
 async def main():
+ Path('/tmp/browser/text-style').mkdir(parents=True, exist_ok=True)
  async with async_playwright() as p:
   browser=await p.chromium.launch(headless=True)
   page=await browser.new_page(viewport={"width":1280,"height":1800})
@@ -32,6 +33,7 @@ async def main():
     assert bounds['labelBottom']<=bounds['buttonTop'],bounds
     assert bounds['rowScroll']<=bounds['rowWidth'],bounds
     assert bounds['bodyScroll']<=bounds['bodyWidth'],bounds
+    assert await page.locator('[data-text-toolbar]').evaluate('(row)=>Math.abs(row.getBoundingClientRect().right-row.lastElementChild.getBoundingClientRect().right)<2')
     await page.locator('#check').screenshot(path=f'/tmp/browser/text-style/{width}-{theme}.png')
     print(width,theme,json.dumps(bounds))
   await page.get_by_role('button',name='Text Color',exact=True).click()
@@ -48,6 +50,8 @@ async def main():
   await page.get_by_role('textbox',name='Link Address',exact=True).fill('/about')
   await page.get_by_role('textbox',name='Link Address',exact=True).press('Enter')
   await page.get_by_role('switch',name='Open in New Tab',exact=True).click()
+  assert await page.evaluate('window.checkEdits["icon-position:0"]')=='before'
+  assert await page.evaluate('JSON.parse(window.checkEdits["link:0"]).target')=='_blank'
   print('Saved control state:',await page.evaluate('JSON.stringify(window.checkEdits)'))
   await page.locator('#check').screenshot(path='/tmp/browser/text-style/icon-link.png')
   await browser.close()
