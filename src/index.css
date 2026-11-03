@@ -62,6 +62,7 @@
     --nova-review-foreground: 0 0% 100%;
     --nova-chat-shadow: 0 4px 20px hsl(var(--foreground) / .22);
     --nova-color-spectrum: conic-gradient(hsl(0 85% 55%), hsl(60 90% 55%), hsl(120 70% 45%), hsl(180 80% 45%), hsl(240 85% 60%), hsl(300 80% 55%), hsl(0 85% 55%));
+    --nova-stage-stripe: hsl(var(--nova-review-foreground) / .3);
   }
 
   .dark {
@@ -88,6 +89,14 @@
     --ring: 30 20% 80%;
   }
 }
+
+@keyframes nova-stage-stripes { to { background-position: -24px 0; } }
+.nova-stage-stripes {
+  background-image: repeating-linear-gradient(120deg, transparent 0 6px, var(--nova-stage-stripe) 6px 12px);
+  background-size: 24px 100%;
+  animation: nova-stage-stripes .9s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .nova-stage-stripes { animation: none; } }
 
 @layer base {
   * {

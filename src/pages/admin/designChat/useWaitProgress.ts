@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { RELAY, type RelayState } from "./helper";
-import { detectWaitKind, timedProgress, type WaitKind, type WaitView } from "./waitEstimates";
+import { detectWaitKind, timedProgress, WAIT_ESTIMATES, type WaitKind, type WaitView } from "./waitEstimates";
 
-type Track = { id: number; version: number; kind: WaitKind; high: number; replyAt?: number; pausedAt?: number; paused: number; doneAt?: number; error?: boolean; hasBuild?: boolean; stageStart?: number; view?: WaitView };
+type Track = { id: number; version: number; kind: WaitKind; high: number; replyAt?: number; pausedAt?: number; paused: number; doneAt?: number; error?: boolean; hasBuild?: boolean; stageStart?: number; view?: WaitView; ribbonStage?: number; ribbonHigh?: number; committed?: boolean; built?: boolean; ready?: boolean };
 const terminal = /^(done|complete|completed|published|live)$/;
 const failed = /^(failed|error|blocked)$/;
 const stopped = /^(stopped|cancelled|canceled)$/;
@@ -42,13 +42,27 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   const t = track.current;
   if (!t) return { request: null, submit: null };
   const isSubmit = t.kind === "submit" || t.kind === "contentSubmit";
+  const committed = state.draft?.requests?.some(r => r.source !== "content" && !!r.sha && Number(typeof r.at === "string" ? Date.parse(r.at) : r.at ?? 0) >= t.id);
+  t.committed ||= !!committed;
+  t.built ||= !!t.replyAt && (state.previewBuiltAt ?? 0) > t.replyAt;
+  t.ready ||= !!t.replyAt && frameCompletedAt > t.replyAt;
+  const decorate = (view: WaitView): WaitView => {
+    if (isSubmit || t.kind === "question" || view.done && !t.committed && !t.hasBuild) return view;
+    const stage = t.ready ? 4 : t.built ? 3 : t.committed && t.hasBuild ? 2 : 1;
+    const current = Math.max(t.ribbonStage ?? 1, stage);
+    if (current !== t.ribbonStage) { t.ribbonStage = current; t.ribbonHigh = 0; }
+    const elapsed = Math.max(0, (now - (current >= 2 ? t.replyAt ?? t.id : t.id) - t.paused) / 1000);
+    const estimate = WAIT_ESTIMATES[t.kind][current >= 2 ? 1 : 0] ?? 50;
+    if (!view.error && !t.pausedAt) t.ribbonHigh = Math.max(t.ribbonHigh ?? 0, Math.min(.95, 1 - Math.exp(-elapsed / estimate * 1.6)));
+    return { ...view, ribbon: { received: true, changed: !!t.committed, built: !!t.built, ready: !!t.ready, current: Math.min(3, current), partial: t.ribbonHigh ?? 0, elapsed: Math.max(0, (now - t.id) / 1000), paused: t.pausedAt !== undefined, long: elapsed > estimate * 2 } };
+  };
   if (stopped.test(status) || (!job && !reply && !t.replyAt && !t.doneAt && !state.previewChecking)) {
     track.current = null; rememberTrack(null); return { request: null, submit: null };
   }
   if (state.approval || status === "approval") {
     t.pausedAt ??= state.approval?.createdAt ?? now;
     rememberTrack(t);
-    const view = { value: t.high, label: "Waiting for your approval" };
+    const view = decorate({ value: t.high, label: "Waiting for your approval" });
     return { request: isSubmit ? null : view, submit: isSubmit ? view : null };
   }
   if (t.pausedAt !== undefined) { t.paused += Math.max(0, now - t.pausedAt); t.pausedAt = undefined; }
@@ -59,7 +73,7 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   const hasBuild = !!t.hasBuild;
   if (!t.error && !t.doneAt) {
     if (isSubmit ? terminal.test(state.publish?.status ?? status) || history.some(e => e.role === "note" && (e.ts ?? 0) >= t.id && /^The draft is published|^Your changes are live/i.test(e.text))
-      : !!t.replyAt && (!hasBuild || (state.previewBuiltAt ?? 0) > t.replyAt || frameCompletedAt > t.replyAt)) t.doneAt = now;
+      : !!t.replyAt && (!(hasBuild || t.committed) || frameCompletedAt > t.replyAt)) t.doneAt = now;
   }
   let view: WaitView;
   if (t.doneAt) {
@@ -74,6 +88,9 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
     view = timedProgress(t.kind, stage, (now - started - (stage ? 0 : t.paused)) / 1000, label, t.high);
     t.high = view.value;
   }
+  t.built ||= !!t.replyAt && (state.previewBuiltAt ?? 0) > t.replyAt;
+  t.ready ||= !!t.replyAt && frameCompletedAt > t.replyAt;
+  view = decorate(view);
   t.view = view;
   rememberTrack(t);
   return { request: isSubmit ? null : view, submit: isSubmit ? view : null };
