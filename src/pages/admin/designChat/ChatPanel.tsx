@@ -22,6 +22,9 @@ import { useChangeQueue } from "./useChangeQueue";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { needsManualContentEdit, rememberContentHandoff } from "./savedContentHandoff";
+import { waitSuggestions, type WaitAction } from "./waitSuggestions";
+import { supabase } from "@/prototype/client";
+import { loadModePages } from "./pageSelection";
 
 const SUGGESTIONS = [
   "Make the headline larger",
@@ -36,7 +39,7 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgress }: { opening?: number; onDraw?: () => void; onAttention?: () => void; saveProgress?: WaitView | null } = {}) {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress, setDevice, setReviewOpen, previewPage, selectPage, startEditing } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress, setDevice, setReviewOpen, previewPage, selectPage, startEditing, device, boxRef } = useDesignChat();
   const navigate = useNavigate();
   const handoffPage = workingPage?.id ? workingPage : previewPage;
   const openSavedContent = async (reply: string) => {
@@ -88,6 +91,52 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
   const busy = Boolean(state?.busy);
   const changing = !!state?.job && !/^(publish|review|content|content[-_]?sync)$/i.test(state.job.kind ?? "") && !/^(content|reviewing|publishing|updating)$/.test(state.job.status) && (busy || state.job.status === "approval" || state.job.status === "queued");
   const queue = useChangeQueue(state, workingPage?.id ?? "", async body => { const result = await postToHelper("/send", body); refreshSoon(); return result; }, useCallback(() => setHint("Your queued changes were removed because you switched pages."), [setHint]));
+  const [pageContext, setPageContext] = useState<{ id?: string; content?: unknown; type?: string; otherPages: boolean }>({ otherPages: false });
+  const waitId = state?.job?.id ?? state?.job?.startedAt;
+  useEffect(() => {
+    if (!changing || !handoffPage?.id) return;
+    let active = true;
+    setPageContext({ id: handoffPage.id, otherPages: false });
+    void (async () => {
+      try {
+        const [page, pages] = await Promise.all([supabase.from("pages").select("content,page_type").eq("id", handoffPage.id).maybeSingle(), loadModePages()]);
+        if (active) setPageContext({ id: handoffPage.id, content: page.data?.content, type: page.data?.page_type, otherPages: pages.some(p => p.path !== handoffPage.path) });
+      } catch { /* Unavailable context simply omits those suggestions. */ }
+    })();
+    return () => { active = false; };
+  }, [changing, handoffPage?.id]);
+  const previousSet = useRef<string[]>([]);
+  const suggestionRun = useRef<string | number | undefined>();
+  useEffect(() => {
+    if (!waitId || suggestionRun.current === waitId) return;
+    suggestionRun.current = waitId;
+    try { previousSet.current = JSON.parse(sessionStorage.getItem("nova:wait-suggestions") ?? "[]"); } catch { previousSet.current = []; }
+  }, [waitId]);
+  const suggestions = waitSuggestions({
+    page: handoffPage, editable: !!handoffPage?.id && !!modeSwitch && pageContext.id === handoffPage.id,
+    content: pageContext.id === handoffPage?.id ? pageContext.content : undefined,
+    draftCount: state?.draft?.requests?.length ?? 0,
+    otherDraftPages: (state?.draft?.requests ?? []).flatMap(r => r.page && r.page.path !== handoffPage?.path ? [r.page.path] : []),
+    otherPages: pageContext.otherPages, previewLoaded: !!preview.loaded, device, elapsed: waitProgress?.request?.ribbon?.elapsed ?? (now - (state?.job?.startedAt ?? now)) / 1000,
+    request: [...(state?.history ?? [])].reverse().find(e => e.role === "user")?.text ?? "", queued: queue.items.length > 0, previewReady: !!waitProgress?.request?.ribbon?.ready,
+    available: ["write", "queue", "library", "pages", "reminder", ...(setDevice ? ["phone", "tablet"] as WaitAction[] : []), ...(setReviewOpen ? ["draft"] as WaitAction[] : []), ...(modeSwitch && handoffPage?.id ? ["manual", "videos"] as WaitAction[] : []), ...(boxRef?.current ? ["preview"] as WaitAction[] : [])],
+  }, previousSet.current);
+  const suggestionKey = suggestions.map(s => s.id).join("|");
+  useEffect(() => {
+    if (!waitId || !suggestionKey) return;
+    try { sessionStorage.setItem("nova:wait-suggestions", JSON.stringify(suggestionKey.split("|"))); } catch { /* Keep in-tab behavior when storage is unavailable. */ }
+  }, [waitId, suggestionKey]);
+  const runSuggestion = (action: WaitAction) => {
+    if (action === "phone" || action === "tablet") setDevice(action === "phone" ? "mobile" : "tablet");
+    else if (action === "draft") setReviewOpen(true);
+    else if (action === "write") textRef.current?.focus();
+    else if (action === "queue") logRef.current?.querySelector<HTMLElement>("[data-queued-change] button")?.focus();
+    else if (action === "manual" || action === "videos") void openSavedContent(action === "videos" ? "video" : "");
+    else if (action === "library") navigate("/manage/videos");
+    else if (action === "pages") navigate("/manage/pages");
+    else if (action === "preview") { boxRef?.current?.scrollIntoView({ block: "nearest" }); boxRef?.current?.querySelector("iframe")?.focus(); }
+    else setHint("Changes are saved in your draft. You can leave this page and come back.");
+  };
   const working = isWorking(state);
   const messages = useMemo(
     () => (state?.history ?? []).map((e, i) => ({ e, i, shown: visibleText(e) })).filter((m) => m.shown !== null),
@@ -239,14 +288,12 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
           <p className="text-xs text-muted-foreground">You don't need to watch. Keep going, and we'll tell you the moment the preview is ready.</p>
           <p className="text-[11px] uppercase text-muted-foreground">While you wait</p>
           <div className="flex flex-col items-start gap-1">
-            {setDevice && preview.loaded && <Button type="button" variant="link" className="h-auto whitespace-normal p-0 text-left text-xs" onClick={() => setDevice("mobile")}>Check how {workingPage?.name ?? previewPage?.name ?? "the current page"} looks on a phone</Button>}
-            {setReviewOpen && (state?.draft?.requests?.length ?? 0) > 0 && <Button type="button" variant="link" className="h-auto whitespace-normal p-0 text-left text-xs" onClick={() => setReviewOpen(true)}>Look at the other pages in your draft ({state?.draft?.requests?.length})</Button>}
-            <Button type="button" variant="link" className="h-auto p-0 text-xs" onClick={() => textRef.current?.focus()}>Write your next change</Button>
+            {suggestions.map(s => <Button key={s.id} type="button" variant="link" className="h-auto whitespace-normal p-0 text-left text-xs" onClick={() => runSuggestion(s.action)}>{s.label}</Button>)}
           </div>
         </div>}
         {waitProgress?.request && !waitProgress.request.ribbon && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><WaitProgress progress={waitProgress.request} /></div>}
         {waitProgress?.submit && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><WaitProgress progress={waitProgress.submit} /></div>}
-        {queue.items.map((item, index) => <div key={item.id} className="self-end max-w-[92%] rounded-lg border bg-muted px-3 py-2 text-sm">
+        {queue.items.map((item, index) => <div key={item.id} data-queued-change className="self-end max-w-[92%] rounded-lg border bg-muted px-3 py-2 text-sm">
           <p className="whitespace-pre-wrap break-words">{item.message}</p>
           <p className="mt-1 text-xs text-muted-foreground">{item.status === "error" ? item.error ?? "The current change couldn't finish. Your next change wasn't sent." : item.status === "sending" ? "Sending…" : "Queued · sends after the current reply"}</p>
           <div className="flex gap-3">
