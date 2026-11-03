@@ -110,7 +110,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
   useLayoutEffect(() => {
     const el = logRef.current;
     if (el && stick.current) el.scrollTop = el.scrollHeight;
-  }, [messages.length, working, problems?.title, state?.approval?.id]);
+  }, [messages.length, working, problems?.title, state?.approval?.id, queue.items.length]);
 
   // The box grows as the person types, up to half the window.
   useLayoutEffect(() => {
@@ -151,7 +151,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
       message: withReferences(message, refs.references), uploadIds: attachments.ids(), ...(workingPage ? { page: workingPage } : {}),
       ...(marks ? { marks } : {}), ...(image ? { image } : {}),
     };
-    if (changing || queue.items.some(q => q.status !== "error")) {
+    if (changing || queue.items.length > 0) {
       queue.add(message, body); setText(""); attachments.clear(); refs.clearReferences(); drawing.cancel(); return;
     }
     const res = await postToHelper("/send", body);

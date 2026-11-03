@@ -71,6 +71,7 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   // A question/no-change reply has no build stage. A reload with previewChecking is already in that stage.
   t.hasBuild ||= !!state.previewChecking || state.previewVersion > t.version || (t.kind !== "question" && !!t.replyAt && ((state.previewBuiltAt ?? 0) > t.replyAt || /^(building|build|previewChecking)$/.test(job?.lastStep ?? status)));
   const hasBuild = !!t.hasBuild;
+  if (!isSubmit && t.kind !== "question" && t.doneAt && (hasBuild || t.committed) && !(t.replyAt && frameCompletedAt > t.replyAt)) t.doneAt = undefined;
   if (!t.error && !t.doneAt) {
     if (isSubmit ? terminal.test(state.publish?.status ?? status) || history.some(e => e.role === "note" && (e.ts ?? 0) >= t.id && /^The draft is published|^Your changes are live/i.test(e.text))
       : !!t.replyAt && (!(hasBuild || t.committed) || frameCompletedAt > t.replyAt)) t.doneAt = now;
