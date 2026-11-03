@@ -994,6 +994,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     return videos.map((video, index) => ({ selectionId: `${b.id}:video:${index}`, parentId: b.id, index, video }));
   });
   const selectedVideo = savedVideos.find(v => v.selectionId === activeId);
+  const videoParent = selectedVideo ? blocks.find(b => b.id === selectedVideo.parentId) : undefined;
   const deleteSavedVideo = (id: string) => {
     const target = savedVideos.find(v => v.selectionId === id);
     if (!target) return;
@@ -1010,7 +1011,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     if (!baseline) return;
     if (selectedVideo.index !== undefined) {
       const original = (baseline as unknown as { videos?: SavedVideo[] }).videos?.[selectedVideo.index];
-      if (original) changeBlocks(prev => prev.map(b => b.id !== selectedVideo.parentId ? b : { ...b, align: baseline.align, videos: ((b as unknown as { videos: SavedVideo[] }).videos ?? []).map((v, i) => i === selectedVideo.index ? original : v) } as unknown as Block), "reset video settings");
+      if (original && !isPageContent(baseline)) changeBlocks(prev => prev.map(b => b.id !== selectedVideo.parentId ? b : { ...b, align: baseline.align, videos: ((b as unknown as { videos: SavedVideo[] }).videos ?? []).map((v, i) => i === selectedVideo.index ? original : v) } as unknown as Block), "reset video settings");
     } else changeBlocks(prev => prev.map(b => b.id === baseline.id ? structuredClone(baseline) : b), "reset video settings");
   };
   // A stale/missing frame section report must never hide a saved video from staff.
@@ -1024,7 +1025,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const tools = <div className="space-y-4 p-3">
     {!selectedVideo && stylePanel}
     {selectedVideo && <SavedVideoOptions video={selectedVideo.video} onDelete={() => deleteSavedVideo(selectedVideo.selectionId)} onReset={resetSavedVideo} layout={{
-      align: blocks.find(b => b.id === selectedVideo.parentId)?.align,
+      align: videoParent && !isPageContent(videoParent) ? videoParent.align : undefined,
       width: (selectedVideo.video as SavedVideo & { width?: number }).width,
       pixels: selectedVideo.index !== undefined,
       onAlign: align => update(selectedVideo.parentId, { align } as Partial<Block>),
