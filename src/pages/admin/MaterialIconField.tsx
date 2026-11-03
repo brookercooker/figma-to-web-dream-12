@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MATERIAL_ERROR, parseMaterialIcon } from "./materialIcon";
 
-export default function MaterialIconField({ value, onChange, nameOnly = false }: { value: string; onChange: (value: string) => void; nameOnly?: boolean }) {
+export default function MaterialIconField({ value, onChange, nameOnly = false, fontSize }: { value: string; onChange: (value: string) => void; nameOnly?: boolean; fontSize?: string }) {
   const [text, setText] = useState(value.startsWith("material:") ? value.split(":")[2] : "");
   const [error, setError] = useState("");
   const [helpHovered, setHelpHovered] = useState(false);
@@ -30,7 +30,7 @@ export default function MaterialIconField({ value, onChange, nameOnly = false }:
       const parsed = parseMaterialIcon(nameOnly ? e.target.value.toLowerCase() : e.target.value);
       if (!parsed) { setError(e.target.value ? MATERIAL_ERROR : ""); return; }
       setError(""); onChange(parsed.value);
-    }} />{value.startsWith("material:") && <span aria-label={`${name} icon preview`} className={`material-symbols-${style} shrink-0`}>{name}</span>}</div>
+    }} />{value.startsWith("material:") && <span aria-label={`${name} icon preview`} style={fontSize ? { fontSize } : undefined} className={`material-symbols-${style} shrink-0`}>{name}</span>}</div>
     {nameOnly && <p id="google-icon-help" className="text-xs text-muted-foreground">Paste an icon name from Google's Material Symbols, for example “home”.</p>}
     {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
   </div>;

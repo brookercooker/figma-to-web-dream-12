@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest";
 import FramedPageEditor, { type FramedEditorController, type FramedPageEditorProps } from "../FramedPageEditor";
 import { editFrameUrl } from "../framedPageProtocol";
-import { remoteSelection, selectionComputedStyle } from "../remoteSelection";
+import { remoteSelection, remoteExpansion, selectionComputedStyle } from "../remoteSelection";
 import { originalLink } from "@/lib/inlineEditCore";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
@@ -55,6 +55,30 @@ describe("public edit-frame guards", () => {
   });
 });
 describe("edit-frame protocol", () => {
+  it("gates expansion on capability and current selection without changing edits", () => {
+    const s = setup();
+    const selection = { key: "0.1", scope: "page", kind: "text", tag: "button", style: {}, rect: {}, expandable: { path: "0", open: false } };
+    s.receive("edit-ready", { capabilities: { expandableContent: true } });
+    s.receive("edit-select", { selection }, "https://wrong.example");
+    expect(s.props.onSelect).not.toHaveBeenCalled();
+    s.receive("edit-select", { selection });
+    const selected = s.props.onSelect.mock.lastCall?.[0];
+    act(() => remoteExpansion(selected.el)?.setOpen(true));
+    expect(s.send).toHaveBeenLastCalledWith({ source: "nova-manager", type: "edit-expand", scope: "page", path: "0", open: true }, "https://public.example.com");
+    expect(s.props.onChange).not.toHaveBeenCalled();
+    s.receive("edit-select", { selection: null });
+    s.send.mockClear();
+    act(() => remoteExpansion(selected.el)?.setOpen(false));
+    expect(s.send).not.toHaveBeenCalled();
+  });
+  it("ignores invalid expansion metadata and exposes no action on older frames", () => {
+    const s = setup(); s.receive("edit-ready");
+    const selection = { key: "0.1", scope: "page", kind: "text", tag: "button", style: {}, rect: {}, expandable: { path: "0", open: false } };
+    s.receive("edit-select", { selection: { ...selection, expandable: { path: "body > button", open: false } } });
+    expect(s.props.onSelect).not.toHaveBeenCalled();
+    s.receive("edit-select", { selection });
+    expect(remoteExpansion(s.props.onSelect.mock.lastCall?.[0].el)).toBeUndefined();
+  });
   it("routes exact Delete/Backspace messages only for the current image with origin/source guards", () => {
     const onImageDelete = vi.fn(); const s = setup({ onImageDelete }); s.receive("edit-ready");
     s.receive("edit-key", { key: "Delete" }); expect(onImageDelete).not.toHaveBeenCalled();
