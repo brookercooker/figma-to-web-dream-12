@@ -62,7 +62,8 @@ describe("edit-frame protocol", () => {
     s.receive("edit-select", { selection }, "https://wrong.example");
     expect(s.props.onSelect).not.toHaveBeenCalled();
     s.receive("edit-select", { selection });
-    const selected = s.props.onSelect.mock.lastCall?.[0];
+    const selected = vi.mocked(s.props.onSelect).mock.lastCall?.[0];
+    if (!selected) throw new Error("Expected selection");
     act(() => remoteExpansion(selected.el)?.setOpen(true));
     expect(s.send).toHaveBeenLastCalledWith({ source: "nova-manager", type: "edit-expand", scope: "page", path: "0", open: true }, "https://public.example.com");
     expect(s.props.onChange).not.toHaveBeenCalled();
@@ -77,7 +78,9 @@ describe("edit-frame protocol", () => {
     s.receive("edit-select", { selection: { ...selection, expandable: { path: "body > button", open: false } } });
     expect(s.props.onSelect).not.toHaveBeenCalled();
     s.receive("edit-select", { selection });
-    expect(remoteExpansion(s.props.onSelect.mock.lastCall?.[0].el)).toBeUndefined();
+    const selected = vi.mocked(s.props.onSelect).mock.lastCall?.[0];
+    if (!selected) throw new Error("Expected selection");
+    expect(remoteExpansion(selected.el)).toBeUndefined();
   });
   it("routes exact Delete/Backspace messages only for the current image with origin/source guards", () => {
     const onImageDelete = vi.fn(); const s = setup({ onImageDelete }); s.receive("edit-ready");

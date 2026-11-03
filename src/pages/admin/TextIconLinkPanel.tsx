@@ -1,7 +1,7 @@
 import { Smile, Link as LinkIcon, icons } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { originalLink, readStyle, type InlineEdits, type LinkEdit } from "@/lib/inlineEditCore";
-import { LINK_ICONS, type InlineSelection } from "@/components/InlineEditSurface";
+import { originalLink, type InlineEdits, type LinkEdit } from "@/lib/inlineEditCore";
+import { LINK_ICONS, readStyle, type InlineSelection } from "@/components/InlineEditSurface";
 import { ToolField, ToolGroup, ToolSegment } from "./designChat/ToolPanel";
 import InlineDestinationPanel from "./InlineDestinationPanel";
 import MaterialIconField from "./MaterialIconField";
