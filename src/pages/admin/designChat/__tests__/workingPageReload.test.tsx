@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DesignChatProvider, useDesignChat, NAV_FALLBACK_MS, NAV_SETTLE_MS } from "../DesignChatContext";
 import type { ReactNode } from "react";
 
-const mocks = vi.hoisted(() => ({ preview: vi.fn(), navigate: vi.fn(() => false) }));
+const mocks = vi.hoisted(() => ({ preview: vi.fn(), navigate: vi.fn(() => false), ready: vi.fn(() => false) }));
 vi.mock("../usePreview", () => ({ usePreview: mocks.preview }));
 vi.mock("../useHelperState", () => ({ useHelperState: () => ({ state: { busy: true, job: { status: "working", startedAt: 1000 }, history: [] }, offline: false, refreshSoon: vi.fn() }) }));
 vi.mock("../useWaitProgress", () => ({ useWaitProgress: () => null }));
@@ -16,7 +16,7 @@ vi.mock("../useChatDraft", () => ({ useChatDraft: () => ({}) }));
 vi.mock("../contentSync", () => ({ observeContentSyncState: vi.fn() }));
 vi.mock("../../manifestPageSync", () => ({ syncManifestPages: vi.fn() }));
 vi.mock("../ManifestReceiverFrame", () => ({ default: () => null }));
-vi.mock("../previewNavigate", () => ({ notePreviewReady: () => false, postPreviewNavigate: mocks.navigate }));
+vi.mock("../previewNavigate", () => ({ notePreviewReady: mocks.ready, postPreviewNavigate: mocks.navigate }));
 
 const key = "nova:design-chat:working-page";
 const draft = { id: "draft-id", name: "Draft", path: "/draft" };
@@ -29,6 +29,24 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); sessionStorage.clear(); });
 
 describe("preview Back confirmation", () => {
+  it("waits for trusted readiness after an unavailable Back instead of immediately reloading", () => {
+    vi.useFakeTimers(); mocks.navigate.mockReturnValue(false);
+    const frame = document.createElement("iframe"); frame.src = "https://site.example/?__lovable_token=fixture"; frame.dataset.sitePreview = "true"; document.body.appendChild(frame);
+    const report = (data: object) => act(() => window.dispatchEvent(new MessageEvent("message", { source: frame.contentWindow, origin: "https://site.example", data })));
+    try {
+      const hook = renderHook(useDesignChat, { wrapper });
+      report({ source: "nova-site", type: "location", path: "/" }); report({ source: "nova-site", type: "location", path: "/brands" });
+      act(() => hook.result.current.previewNav?.back());
+      expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual([null, 0]);
+      mocks.ready.mockReturnValueOnce(true); mocks.navigate.mockReturnValue(true);
+      report({ type: "preview-ready" });
+      expect(mocks.navigate).toHaveBeenLastCalledWith({ action: "to", path: "/" });
+      report({ source: "nova-site", type: "location", path: "/" });
+      act(() => vi.advanceTimersByTime(NAV_FALLBACK_MS));
+      expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual([null, 0]);
+      hook.unmount();
+    } finally { frame.remove(); mocks.navigate.mockReturnValue(false); vi.useRealTimers(); }
+  });
   it("keeps the Back label and history after a matched report followed by a conflicting report, then Forward returns", () => {
     vi.useFakeTimers(); mocks.navigate.mockReturnValue(true);
     const frame = document.createElement("iframe"); frame.src = "https://site.example/brands"; frame.dataset.sitePreview = "true"; document.body.appendChild(frame);
@@ -237,7 +255,7 @@ describe("picked page reload", () => {
     const about = { id: "about-id", name: "About", path: "/about" };
     act(() => reloaded.result.current.selectPage(about));
     expect(reloaded.result.current.workingPage).toEqual(about);
-    expect(mocks.preview.mock.calls.at(-1)?.[1]).toBe("/about");
+    expect(reloaded.result.current.previewDestination).toBe("/about");
     reloaded.unmount();
     const again = renderHook(useDesignChat, { wrapper });
     expect(again.result.current.workingPage).toEqual(about);
@@ -268,7 +286,7 @@ describe("picked page reload", () => {
     const hook = renderHook(useDesignChat, { wrapper });
     act(() => hook.result.current.selectPage(draft));
     expect(hook.result.current.workingPage).toEqual(draft);
-    expect(mocks.preview.mock.calls.at(-1)?.[1]).toBe("/draft");
+    expect(hook.result.current.previewDestination).toBe("/draft");
     act(() => hook.result.current.clearWorkingPage());
     expect(hook.result.current.workingPage).toBeNull();
   });
