@@ -7,7 +7,7 @@ import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Strikethrough, ImageI
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { selectedImageDelete } from "./selectedImageEdit";
 import { readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
-import { remoteSnapshot, remoteFormatting, selectionComputedStyle, type FormatCommand } from "./remoteSelection";
+import { remoteSnapshot, remoteFormatting, remoteExpansion, selectionComputedStyle, type FormatCommand } from "./remoteSelection";
 import SelectionColourPicker from "./SelectionColourPicker";
 import { selectionDescription } from "./selectionDescription";
 import SelectedWording from "./SelectedWording";
@@ -161,7 +161,7 @@ export default function InlineStylePanel({
               ))}
             </ToolSegment>
           </ToolField>
-          <ToolGrid>
+          <div data-image-size-row className={`grid ${phone ? "grid-cols-2" : "grid-cols-3"} gap-2 [&>label]:min-w-0 [&>label>span]:block [&>label>span]:text-center [&_input]:min-w-0 [&_input]:px-1`}>
             <ToolField label="Width (px)">
               <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().width))}
                 value={num(style.width)} onChange={(e) => set("width", px(e.target.value))} />
@@ -170,14 +170,16 @@ export default function InlineStylePanel({
               <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().height))}
                 value={num(style.height)} onChange={(e) => set("height", px(e.target.value))} />
             </ToolField>
-          </ToolGrid>
-          <ToolField label="Rounded Corners (px)">
+          <ToolField label="Corners (px)">
             <Input type="number" min={0} placeholder={num(computed.borderRadius) || "0"}
               value={num(style["border-radius"])} onChange={(e) => set("border-radius", px(e.target.value))} />
           </ToolField>
+          </div>
         </ToolGroup>
+        <div className="flex w-full flex-col gap-2" data-image-actions>
         <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-destructive hover:text-destructive" onClick={() => { const next = selectedImageDelete(sel, edits, edits[`hidden:${sel.key}`] === "1"); if (next) onChange(next); }}><Trash2 className="h-4 w-4" />{edits[`hidden:${sel.key}`] === "1" ? "Restore Image" : "Delete Image"}</Button>
         <Button variant="outline" size="sm" className="h-auto w-full justify-start gap-2 whitespace-normal text-left" onClick={() => onChange(withoutPath(edits, sel.key))}><Undo2 className="h-4 w-4 shrink-0" />Undo All Changes to Image</Button>
+        </div>
       </div>
     );
   }
@@ -315,6 +317,7 @@ export default function InlineStylePanel({
         </div>
       ) : null}
       <ToolGroup title="Text" icon={Type} defaultOpen>
+        {remoteExpansion(sel.el) && <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => remoteExpansion(sel.el)?.setOpen(!remoteSnapshot(sel.el)?.expandable?.open)}>{remoteSnapshot(sel.el)?.expandable?.open ? "Collapse Item" : "Expand Item"}</Button>}
         <SelectedWording sel={sel} edits={edits} onChange={onChange} />
         <div data-text-toolbar className="flex w-full flex-wrap items-center gap-1">
           <ToolSegment className="min-w-28 flex-[4_1_112px] [&>button]:min-w-6 [&>button]:flex-1" onMouseDown={(e) => e.preventDefault()}>
