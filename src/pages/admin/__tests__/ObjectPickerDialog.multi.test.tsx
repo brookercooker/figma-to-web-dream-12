@@ -1,10 +1,14 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import ObjectPickerDialog from "../ObjectPickerDialog";
 import { rememberTopDropAnchor } from "../designChat/TopDropPanel";
 vi.mock("@/prototype/client", () => ({ supabase: { from: () => { const q: any = { select: () => q, is: () => q, order: () => Promise.resolve({ data: [{ id: "a", name: "Categories", labels: ["Hero", "Photo", "Core"] }, { id: "b", name: "About Us", labels: ["Footer", "Editorial", "Team"] }] }) }; return q; } } }));
 vi.mock("../ObjectThumbnail", () => ({ default: () => null }));
-afterEach(cleanup);
+beforeEach(() => {
+  const opener = document.createElement("button"); document.body.appendChild(opener); rememberTopDropAnchor(opener);
+  localStorage.removeItem("nova:picker-recent-labels");
+});
+afterEach(() => { cleanup(); document.body.replaceChildren(); });
 it("toggles thumbnails without adding or closing and adds all chosen objects together", async () => {
   const one = vi.fn(), many = vi.fn(), close = vi.fn();
   const opener = document.createElement("button"); document.body.appendChild(opener); rememberTopDropAnchor(opener);
