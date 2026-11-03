@@ -38,7 +38,7 @@
 - Framed-page safety counts come only from the frame's validated `edit-applied` reports (cleared on every frame load) and Record Fingerprints uses `edit-query op:"record"`; never show local or stale counts for framed pages.
 - The top bar and the left-panel header share HEADER_HEIGHT_CLASS (designChat/layout.ts) with border-b on the same element, so their bottom borders always align.
 - Placeholder edits retain placeholder:<path> strings capped at 300 characters; video src/poster/title remain read-only until the shared core supports their attributes. Validation acceptance alone does not establish DOM replay, so never add unilateral replay behavior to the verbatim core.
-- Preview Back/Forward/page choice post `preview-navigate` to the ready exact-origin preview frame; one src-change fallback if not ready or no location within NAV_FALLBACK_MS — instant, no reload loops.
+- Preview navigation supports embedded Managers and trusted bare/nova-site readiness; exact-origin child messages retry pending paths before one NAV_FALLBACK_MS reload, avoiding host-gated reloads.
 - frameScroll records validated page-scroll per normalized path and sends restore-scroll on readiness, frame swap and mode return; hidden previews cannot overwrite editor positions. Build/page navigation cancels superseded preview timers to avoid redundant reloads.
 - User Management uses GET for user lists and POST for actions, and decodes function error responses centrally so failed requests explain their actual cause.
 - Image deletion merges public usage with saved page/object references, confirms single/bulk actions and reuses the five-second deferred delete; remove correct bucket files before rows and stop on storage failure.
