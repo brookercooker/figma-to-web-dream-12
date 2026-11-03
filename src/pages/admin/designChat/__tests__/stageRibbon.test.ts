@@ -12,4 +12,9 @@ describe("real ribbon stages", () => {
     expect(ribbonSegments({ ...base, partial: 1e10 })[1].fill).toBe(1 - 1e-9);
     expect(ribbonSegments({ ...base, partial: .98 })[1].fill).toBe(.98);
   });
+  it("never marks a completed segment as updating", () => {
+    expect(ribbonSegments({ ...base, changed: true, built: true, ready: true, current: 3 }).some(s => s.current)).toBe(false);
+    expect(ribbonSegments(base)[0]).toMatchObject({ finished: true, current: false });
+    expect(ribbonSegments({ ...base, received: false, current: 0 })[0]).toMatchObject({ finished: false, current: true });
+  });
 });
