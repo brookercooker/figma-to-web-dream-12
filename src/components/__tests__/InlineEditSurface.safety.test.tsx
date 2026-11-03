@@ -1,9 +1,23 @@
 import { cleanup, fireEvent, render, act } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
-import InlineEditSurface, { type InlineEditController } from "../InlineEditSurface";
+import InlineEditSurface, { pathOf, type InlineEditController } from "../InlineEditSurface";
 import { fingerprintOf } from "@/lib/inlineEditCore";
 vi.mock('@/lib/objectScopes', () => ({objectComponentsNow:()=>new Map(),findObjectRoots:()=>[],loadObjectComponents:async()=>new Map()}));
 afterEach(cleanup);
+it('replays Material placement without making the icon editable or shifting paths, and typing retains adornments', async () => {
+  const edits = { 'icon:0.0': 'material:outlined:home', 'icon-position:0.0': 'before' };
+  const change = vi.fn();
+  const view = render(<InlineEditSurface editing sections={false} edits={edits} onChange={change}><section><h3>Lighting <b>Nova</b></h3></section></InlineEditSurface>);
+  await act(async () => {});
+  const root = view.container.querySelector('[data-inline-root]'), heading = view.container.querySelector('h3'), bold = view.container.querySelector('b');
+  if (!root || !heading || !bold) throw new Error('Missing text');
+  expect(view.container.querySelector('[data-inline-icon]')?.getAttribute('contenteditable')).toBe('false');
+  expect(view.container.querySelector('[data-inline-icon]')?.hasAttribute('data-inline-editable')).toBe(false);
+  expect(pathOf(root, bold)).toBe('0.0.0');
+  bold.textContent = 'New'; fireEvent.input(heading);
+  expect(change.mock.lastCall?.[1]['icon:0.0']).toBe('material:outlined:home');
+  expect(change.mock.lastCall?.[1]['icon-position:0.0']).toBe('before');
+});
 it('contains section controls in the editor wrapper stacking context', () => {
   const view = render(<InlineEditSurface editing edits={{}} sections={false}><section><h3>Lighting</h3></section></InlineEditSurface>);
   const root = view.container.querySelector('[data-inline-root]');

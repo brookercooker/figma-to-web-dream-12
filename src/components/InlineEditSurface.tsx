@@ -13,7 +13,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ChevronDown, ChevronRight, ExternalLink, GripVertical, icons } from "lucide-react";
-import { clean, createReplay, installLinkHandler, parseKey, resolvePath, withFingerprints, type ReplayReport } from "@/lib/inlineEditCore";
+import { clean, createReplay, inlineChildren, inlineText, isInlineIcon, installLinkHandler, parseKey, resolvePath, withFingerprints, type ReplayReport } from "@/lib/inlineEditCore";
 import type { InlineEdits } from "@/lib/inlineEditCore";
 export type { InlineEdits } from "@/lib/inlineEditCore";
 import { findObjectRoots, loadObjectComponents, objectComponentsNow, type ObjectRoot } from "@/lib/objectScopes";
@@ -46,24 +46,20 @@ export function pathOf(root: Element, el: Element): string {
   while (n && n !== root) {
     const p: Element | null = n.parentElement;
     if (!p) break;
-    parts.unshift([...p.children].indexOf(n));
+    parts.unshift(inlineChildren(p).indexOf(n));
     n = p;
   }
   return parts.join(".");
 }
 
 function byPath(root: Element, path: string): Element | null {
-  if (path === "") return root;
-  let n: Element | null = root;
-  for (const i of path.split(".")) {
-    if (!n) return null;
-    n = n.children[Number(i)] ?? null;
-  }
-  return n;
+  return resolvePath(root, path);
 }
 
 /** React/lucide adapter; shared replay never imports the app. */
 const iconMarkup = (value: string, cls: string): string | null => {
+  const material = /^material:(outlined|rounded|sharp):([a-z0-9_]{1,100})$/.exec(value);
+  if (material) return renderToStaticMarkup(createElement("span", { className: `material-symbols-${material[1]}`, "data-inline-icon": value, "aria-hidden": true }, material[2]));
   const Icon = (icons as Record<string, Parameters<typeof createElement>[0]>)[value];
   return Icon ? renderToStaticMarkup(createElement(Icon as React.ComponentType<Record<string, unknown>>, { className: cls, "aria-hidden": true })) : null;
 };
@@ -118,11 +114,12 @@ function protectedChrome(el: Element, objects: ObjectRoot[]): boolean {
 }
 function editableTexts(root: Element, objects: ObjectRoot[]): HTMLElement[] {
   return ([...root.querySelectorAll(TEXT_TAGS)] as HTMLElement[]).filter((el) => {
-    if (!(el.textContent ?? "").trim() && !el.hasAttribute("data-empty-editable")) return false;
+    if (isInlineIcon(el) || el.closest("[data-inline-icon]")) return false;
+    if (!inlineText(el).trim() && !el.hasAttribute("data-empty-editable")) return false;
     if (el.closest("[data-inline-skip],form") || protectedChrome(el, objects)) return false;
-    if ([...el.children].some((c) => BLOCKISH.test(c.tagName))) return false;
+    if (inlineChildren(el).some((c) => BLOCKISH.test(c.tagName))) return false;
     const parent = el.parentElement;
-    if (parent && parent !== root && parent.matches(TEXT_TAGS) && ![...parent.children].some((c) => BLOCKISH.test(c.tagName))) return false;
+    if (parent && parent !== root && parent.matches(TEXT_TAGS) && !inlineChildren(parent).some((c) => BLOCKISH.test(c.tagName))) return false;
     return true;
   });
 }

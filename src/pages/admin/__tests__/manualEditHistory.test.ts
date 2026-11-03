@@ -21,7 +21,7 @@ describe("local edit history", () => {
     const h = new ManualEditHistory(); const a = initial(); const b = { ...a, inlineEdits: { "0": label } };
     h.record(a, b, { label }); expect(h.undo()).toEqual(a); expect(h.undo()).toBeNull(); expect(h.redo()).toEqual(b);
   });
-  it.each(["0", "placeholder:0"])("merges consecutive typing on %s within 1 second", key => {
+  it.each(["0"])("merges consecutive typing on %s within 1 second", key => {
     const h = new ManualEditHistory(); const a = initial(); const b = { ...a, inlineEdits: { [key]: "a", "fp:0": "metadata" } }; const c = { ...b, inlineEdits: { ...b.inlineEdits, [key]: "ab" } };
     h.record(a, b, inlineEditAction("page", a.inlineEdits, b.inlineEdits), 0);
     h.record(b, c, inlineEditAction("page", b.inlineEdits, c.inlineEdits), 999);

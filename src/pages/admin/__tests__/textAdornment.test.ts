@@ -32,7 +32,8 @@ it.each(["before", "after"])("round-trips %s placement through core validation, 
   expect(history.redo()?.inlineEdits).toEqual(edits);
   const reloaded = document.createElement("section"); reloaded.innerHTML = original;
   expect(createReplay().apply(reloaded, saved ?? {}, opts).rejected).toEqual([]);
-  expect(reloaded.innerHTML).toBe(heading?.parentElement?.innerHTML === original ? (() => { replay.apply(root, edits, opts); return root.innerHTML; })() : root.innerHTML);
+  replay.apply(root, edits, opts);
+  expect(reloaded.innerHTML).toBe(root.innerHTML);
   const wording = editMap({ ...edits, "0": "New <b>wording</b>" });
   expect(wording?.["icon:0"]).toBe("material:outlined:home"); expect(wording?.["icon-position:0"]).toBe(position);
   expect(withoutPath(edits, "0")).toEqual({});
