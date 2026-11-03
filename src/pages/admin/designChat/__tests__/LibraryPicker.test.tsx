@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, createEvent, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Box, Image as ImageIcon } from "lucide-react";
 import LibraryPicker from "../LibraryPicker";
@@ -51,6 +51,27 @@ const setup = (kind: "images" | "objects" = "images", addedRefs: ChatReference[]
 const cards = () => within(screen.getByRole("dialog")).getAllByRole("button").filter((b) => /^(photo-|Hero|Flyer)/.test(b.getAttribute("title") ?? ""));
 
 describe("library picker", () => {
+  it("keeps native label-list wheel and touch scrolling out of the dialog scroll lock", async () => {
+    setup("objects");
+    await screen.findByTitle("Flyer");
+    fireEvent.click(screen.getByRole("button", { name: "More Labels" }));
+    const list = screen.getByRole("listbox");
+    const scrollLock = vi.fn();
+    document.addEventListener("wheel", scrollLock);
+    document.addEventListener("touchmove", scrollLock);
+    try {
+      const wheel = createEvent.wheel(list, { deltaY: 100, bubbles: true, cancelable: true });
+      const touch = createEvent.touchMove(list, { bubbles: true, cancelable: true });
+      expect(fireEvent(list, wheel)).toBe(true);
+      expect(fireEvent(list, touch)).toBe(true);
+      expect(wheel.defaultPrevented).toBe(false);
+      expect(touch.defaultPrevented).toBe(false);
+      expect(scrollLock).not.toHaveBeenCalled();
+    } finally {
+      document.removeEventListener("wheel", scrollLock);
+      document.removeEventListener("touchmove", scrollLock);
+    }
+  });
   it("toggles multiple object chips and Any/All without losing selected objects", async () => {
     labelData.rows = [{ path: "Homepage", color_index: 7 }, { path: "Marketing", color_index: 7 }];
     const { onPick } = setup("objects");

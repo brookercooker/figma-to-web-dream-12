@@ -70,7 +70,10 @@ export default function LibraryFilterBar({ colorOf = (p) => colorFor(p), labels,
               <PopoverContent align="start" className="w-80 max-w-[85vw] p-0" data-picker-own-enter="">
                 <Command label="Search Labels">
                   <CommandInput aria-label="Search Labels" placeholder="Search labels…" />
-                  <CommandList aria-label="Labels">
+                  <CommandList aria-label="Labels"
+                    className="max-h-[min(320px,calc(var(--radix-popover-content-available-height,100dvh)-3rem))] overflow-y-auto overscroll-contain touch-pan-y"
+                    // Keep native list scrolling from reaching the enclosing Dialog's document scroll lock.
+                    onWheel={event => event.stopPropagation()} onTouchMove={event => event.stopPropagation()}>
                     <CommandEmpty>No labels match.</CommandEmpty>
                     {groups.map(([folder, paths]) => <CommandGroup key={folder} heading={folder || "Labels"}>
                       {paths.map((path) => <CommandItem key={path} value={path} aria-label={`${path}, ${labelCounts[path] ?? 0} items`} onSelect={() => { choose(path); setMore(false); }} className={folder ? "pl-5" : ""}>
