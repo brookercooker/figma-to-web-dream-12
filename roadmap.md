@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Restore non-phone Position/status layouts and add a compact preview page/navigation toolbar without changing relay, progress or loading behavior.
 - [x] Clear no-change preview cards after a 10-second grace without interrupting real build confirmation; regressions cover late commits, removed jobs and new requests. Signed-in browser with controlled replies confirms dismissal; live relay unavailable. Estimates/chat bar unchanged.
 - [x] Retain the picked preview page and working-page chip across same-tab reloads; explicit later picks win. Signed-in real Pages→Ask Claude selection keeps Draft chip and /draft frame on reload during a controlled request, then Homepage pick wins. All 960 tests pass; build OK. Public frame still requires separate login.
 - [x] Add measured request, closed-phone, review and draft-save bars. Timing/lifecycle tests cover reloads, approval pauses, error freeze and actual sync acceptance. Signed-in controlled browser checks cover Send→reply→build→Done at desktop/390/360; hosted publishing and public frame remain unverified.
