@@ -262,7 +262,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
             e.role === "error" && "self-stretch max-w-none bg-destructive/10 text-destructive",
           )}>
             {shown}
-            {e.role === "error" && requestRetry && e.ts !== undefined && <div className="mt-1 text-xs">
+            {e.role === "error" && requestRetry && e.ts !== undefined && !requestRetry.isReviewFailure(e.ts) && <div className="mt-1 text-xs">
               {requestRetry.canRetry(e.ts) ? <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" disabled={requestRetry.disabled || editing} onClick={() => { void requestRetry.retry(e.ts ?? 0, () => waitProgress?.request?.errorControls?.dismiss()).then(result => { if (result && !result.ok) setHint(result.error, true); }); }}>Try Again</Button>
                 : <p>{requestRetry.retryNote(e.ts)}</p>}
             </div>}

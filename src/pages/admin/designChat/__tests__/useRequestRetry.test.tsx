@@ -34,6 +34,14 @@ it("never reconstructs an unavailable original payload or adds duplicate history
   expect(h.result.current.canRetry(1500)).toBe(false); expect(h.result.current.retryNote(1500)).toContain("Reattach any files or drawings");
   expect(h.result.current.localErrors).toHaveLength(0); expect(failed.history).toHaveLength(2);
 });
+it("does not resend a Chat request for a Submit for Review failure", async () => {
+  const h = renderHook(({ state }) => useRequestRetry(state, false, vi.fn()), { initialProps: { state: initial } });
+  await act(async () => { await h.result.current.sendPrepared(payload); });
+  h.rerender({ state: { ...failed, job: { kind: "review", status: "failed", startedAt: 1300 } } });
+  expect(h.result.current.canRetry(1500)).toBe(false);
+  await act(async () => { await h.result.current.retry(1500, vi.fn()); });
+  expect(post).toHaveBeenCalledTimes(1);
+});
 it("retains status-only failures as one recoverable local history entry across reloads", async () => {
   const h = renderHook(({ state }) => useRequestRetry(state, false, vi.fn()), { initialProps: { state: initial } });
   await act(async () => { await h.result.current.sendPrepared(payload); });

@@ -34,9 +34,10 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
     const user = [...history].reverse().find(e => e.role === "user" && (e.ts ?? Infinity) <= at + 1000);
     return [...attempts.current].reverse().find(a => user?.ts !== undefined && a.userAt === user.ts || a.userAt === undefined && user?.text === a.body.message && (user.ts ?? 0) > a.after);
   };
+  const isReviewFailure = (at: number) => !!state?.job && /^(publish|review|content)/.test(state.job.kind ?? "") && at >= state.job.startedAt;
   const retry = async (at: number, clear: () => void) => {
     const attempt = attemptFor(at);
-    if (!attempt || disabled || lock.current) return;
+    if (!attempt || isReviewFailure(at) || disabled || lock.current) return;
     lock.current = true; setSending(true);
     try {
       const result = await deliverSnapshot(attempt.body);
@@ -55,5 +56,5 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
     ? [{ role: "error" as const, text: "The change couldn't finish", ts: a.failureAt }] : []);
   const optimisticState = optimisticAt && state && (currentJob?.startedAt ?? 0) < optimisticAt && !history.some(e => e.role === "user" && (e.ts ?? 0) >= optimisticAt)
     ? { ...state, busy: true, job: { id: `retry:${optimisticAt}`, kind: "change", status: "queued", startedAt: optimisticAt } } : state;
-  return { sendPrepared, retry, retryNote, canRetry: (at: number) => !!attemptFor(at), disabled, sending, localErrors, optimisticState };
+  return { sendPrepared, retry, retryNote, isReviewFailure, canRetry: (at: number) => !isReviewFailure(at) && !!attemptFor(at), disabled, sending, localErrors, optimisticState };
 }
