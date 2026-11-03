@@ -6,12 +6,12 @@ import { fontMenu, inheritedFont, inheritedWeight } from "./designChat/fontOptio
 import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Strikethrough, ImageIcon, RotateCcw, Trash2, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, Film, TextCursorInput, icons } from "lucide-react";
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { selectedImageDelete } from "./selectedImageEdit";
-import { LINK_ICONS, readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
+import { readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
 import { remoteSnapshot, remoteFormatting, selectionComputedStyle, type FormatCommand } from "./remoteSelection";
 import SelectionColourPicker from "./SelectionColourPicker";
 import { selectionDescription } from "./selectionDescription";
 import SelectedWording from "./SelectedWording";
-import MaterialIconField from "./MaterialIconField";
+import TextIconLinkPanel from "./TextIconLinkPanel";
 import { spacingPixels, lineHeightMultiplier } from "./textUnits";
 import { SIDES, commonValue, isMixed, setAllSides, setBorderPart, sideValues, type BorderPart, type Side } from "./borderEdit";
 import { useManagerLayout } from "./designChat/useManagerLayout";
@@ -23,12 +23,15 @@ const px = (v: string) => (v ? `${v}px` : "");
 const num = (v?: string) => (v ? String(parseFloat(v)) : "");
 
 export default function InlineStylePanel({
-  sel, edits, onChange, onReplaceImage,
+  sel, edits, onChange, onReplaceImage, editsFor, onScopeChange, pages,
 }: {
   sel: InlineSelection | null;
   edits: InlineEdits;
   onChange: (next: InlineEdits) => void;
   onReplaceImage: () => void;
+  editsFor?: (scope: string) => InlineEdits;
+  onScopeChange?: (scope: string, next: InlineEdits) => void;
+  pages?: { id: string; name: string; path: string }[];
 }) {
   const { phone } = useManagerLayout();
   // Words highlighted inside the selected text: style changes then apply to just those words.
@@ -281,8 +284,6 @@ export default function InlineStylePanel({
     sel.el.dispatchEvent(new Event("input", { bubbles: true }));
   };
   const hs = highlighted && span.current ? span.current.style : null;
-  const linkEl = sel.el.closest("a,button") ?? (sel.el.querySelector("svg") ? sel.el : null);
-  const iconNow = edits[`icon:${sel.key}`] ?? "";
   const bold = marks?.bold ?? (hs ? parseInt(hs.fontWeight) >= 600 : parseInt(style["font-weight"] ?? computed.fontWeight) >= 600);
   const italic = marks?.italic ?? (hs ? hs.fontStyle === "italic" : (style["font-style"] ?? computed.fontStyle) === "italic");
   const decoration = hs ? hs.textDecoration : style["text-decoration"] ?? computed.textDecorationLine;
@@ -316,12 +317,12 @@ export default function InlineStylePanel({
         </div>
       ) : null}
       <ToolGroup title="Text" icon={Type} defaultOpen summary={`${fontName} · ${sizeNow}px`}>
-        <div data-text-toolbar className="flex items-center gap-1">
-          <ToolSegment className="shrink-0 [&>button]:w-6" onMouseDown={(e) => e.preventDefault()}>
+        <div data-text-toolbar className="flex w-full flex-wrap items-center gap-1">
+          <ToolSegment className="min-w-28 flex-[4_1_112px] [&>button]:min-w-6 [&>button]:flex-1" onMouseDown={(e) => e.preventDefault()}>
             {([["bold", Bold, bold], ["italic", Italic, italic], ["underline", Underline, under], ["strike", Strikethrough, strike]] as const).map(([command, Icon, active]) => <Button key={command} size="icon" variant={active ? "default" : "ghost"} title={command === "strike" ? "Strikethrough" : command[0].toUpperCase() + command.slice(1)} aria-label={command === "strike" ? "Strikethrough" : command[0].toUpperCase() + command.slice(1)} aria-pressed={active} onClick={() => toggleMark(command)}><Icon className="h-3.5 w-3.5" /></Button>)}
           </ToolSegment>
-          <div className="relative w-14 shrink-0"><Input aria-label="Size (px)" className="h-8 px-1 pr-5 text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" type="number" min={8} placeholder={num(computed.fontSize)} value={marks ? sizeNow : num(style["font-size"])} onChange={e => apply("font-size", px(e.target.value))} /><span className="pointer-events-none absolute right-1 top-2 text-[10px] text-muted-foreground">px</span></div>
-          <SelectionColourPicker value={colourNow} onChange={v => apply("color", v)} />
+          <div className="relative min-w-14 flex-[2_1_56px]"><Input aria-label="Size (px)" className="h-8 px-1 pr-5 text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" type="number" min={8} placeholder={num(computed.fontSize)} value={marks ? sizeNow : num(style["font-size"])} onChange={e => apply("font-size", px(e.target.value))} /><span className="pointer-events-none absolute right-1 top-2 text-[10px] text-muted-foreground">px</span></div>
+          <SelectionColourPicker fontColor value={colourNow} onChange={v => apply("color", v)} />
         </div>
         <div className="flex items-center gap-2">
           <Select value={fontValue || "inherited"} onValueChange={value => apply("font-family", value === "inherited" ? "" : value)}>
@@ -340,7 +341,7 @@ export default function InlineStylePanel({
       </ToolGroup>
       <ToolGroup title="Position" icon={MoveVertical}>
         <div className={`flex ${phone ? "flex-wrap" : "flex-nowrap"} items-end gap-x-2 gap-y-3 [&>*]:shrink-0 [&_label]:whitespace-nowrap`}>
-          <ToolField label="Alignment"><ToolSegment className="shrink-0 [&>button]:w-7" onMouseDown={(e) => e.preventDefault()}>
+          <ToolField label={<span className="block">Alignment</span>}><ToolSegment className="flex w-fit shrink-0 [&>button]:w-7" onMouseDown={(e) => e.preventDefault()}>
             {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Icon]) => (
               <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a[0].toUpperCase() + a.slice(1)}`} aria-label={`Align ${a[0].toUpperCase() + a.slice(1)}`} onClick={() => set("text-align", a)}><Icon className="h-3.5 w-3.5" /></Button>
             ))}
@@ -355,29 +356,7 @@ export default function InlineStylePanel({
           </div>
         </div>
       </ToolGroup>
-      {linkEl && (
-        <ToolGroup title="Icon" icon={Smile}>
-          <MaterialIconField value={iconNow} onChange={value => onChange({ ...edits, [`icon:${sel.key}`]: value })} />
-          <div className="grid grid-cols-6 gap-1">
-            <Button variant="outline" size="icon" type="button" title="No Icon" aria-pressed={iconNow === "none"}
-              onClick={() => onChange({ ...edits, [`icon:${sel.key}`]: "none" })}
-              className={`flex h-8 items-center justify-center rounded border text-[10px] ${iconNow === "none" ? "ring-2 ring-ring" : ""}`}>None</Button>
-            {LINK_ICONS.map((n) => {
-              const I = icons[n as keyof typeof icons];
-              return (
-                <Button variant="outline" size="icon" key={n} type="button" title={n.replace(/([a-z])([A-Z])/g, "$1 $2")} aria-pressed={iconNow === n}
-                  onClick={() => onChange({ ...edits, [`icon:${sel.key}`]: n })}
-                  className={`flex h-8 items-center justify-center rounded border hover:bg-muted ${iconNow === n ? "ring-2 ring-ring" : ""}`}>
-                  <I className="h-4 w-4" />
-                </Button>
-              );
-            })}
-          </div>
-          {iconNow && (
-            <Button variant="link" size="sm" className="text-xs underline text-muted-foreground" onClick={() => { const o = { ...edits }; delete o[`icon:${sel.key}`]; onChange(o); }}>Use Original Icon</Button>
-          )}
-        </ToolGroup>
-      )}
+      <TextIconLinkPanel sel={sel} edits={edits} onChange={onChange} editsFor={editsFor} onScopeChange={onScopeChange} pages={pages} />
     </div>
   );
 }

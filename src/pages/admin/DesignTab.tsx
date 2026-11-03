@@ -863,13 +863,16 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                       sel={inlineSel}
                       edits={inlineSel ? scopeEdits(inlineSel.scope) : inlineEdits}
                       onChange={(next) => changeScope(inlineSel?.scope ?? "page", next)}
+                      editsFor={scopeEdits}
+                      onScopeChange={changeScope}
+                      pages={pages}
                       onReplaceImage={async () => {
                         if (!inlineSel) return;
                         const url = await pickImage();
                         if (url) changeScope(inlineSel.scope, { ...scopeEdits(inlineSel.scope), [`img:${inlineSel.key}`]: url });
                       }}
                     />
-                    <InlineDestinationPanel key={`destination:${inlineSel?.scope}:${inlineSel?.key}`} selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />
+                    {inlineSel?.kind !== "text" && <InlineDestinationPanel key={`destination:${inlineSel?.scope}:${inlineSel?.key}`} selection={inlineSel} editsFor={scopeEdits} onChange={changeScope} pages={pages} />}
                     {/* Framed pages replay in the public frame; local reports would be stale, so show none until the frame reports. */}
                     <InlineEditSafetyPanel hideReset objectName={objectTarget?.name} reports={framed ? framedReports : {}} selection={inlineSel} editsFor={scopeEdits}
                       discard={(scope, path) => changeScope(scope, withoutPath(scopeEdits(scope), path))}
