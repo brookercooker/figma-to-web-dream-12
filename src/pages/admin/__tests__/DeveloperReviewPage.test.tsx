@@ -4,19 +4,28 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DeveloperReviewPage from "../DeveloperReviewPage";
 import type { RelayState } from "../designChat/helper";
 
-const mocks = vi.hoisted(() => ({ review: undefined as RelayState["draft"], admin: true, require: true }));
+const mocks = vi.hoisted(() => ({ review: undefined as RelayState["draft"], admin: true, require: true, signedIn: true }));
 vi.mock("@/lib/authGate", () => ({ get REQUIRE_LOGIN() { return mocks.require; } }));
 vi.mock("@/prototype/client", () => ({ supabase: {
-  auth: { getUser: async () => ({ data: { user: { id: "staff" } } }) },
+  auth: { getUser: async () => ({ data: { user: mocks.signedIn ? { id: "staff" } : null } }) },
   rpc: async () => ({ data: mocks.admin }),
 } }));
 vi.mock("../designChat/helper", () => ({ RELAY: "https://design.example", RELAY_IS_HOSTED: true, relayHeaders: async () => ({}) }));
 vi.mock("../designChat/useHelperState", () => ({ useHelperState: () => ({ state: { draft: mocks.review } }) }));
-beforeEach(() => { mocks.admin = true; mocks.review = undefined; mocks.require = true; });
+beforeEach(() => { mocks.admin = true; mocks.review = undefined; mocks.require = true; mocks.signedIn = true; });
 afterEach(cleanup);
 const open = () => render(<MemoryRouter><DeveloperReviewPage /></MemoryRouter>);
 
 describe("Developer Review error details", () => {
+  it("restores the original signed-out redirect with login required", async () => {
+    mocks.signedIn = false;
+    render(<MemoryRouter initialEntries={["/manage/developer"]}><Routes>
+      <Route path="/manage/developer" element={<DeveloperReviewPage />} />
+      <Route path="/manage/pages" element={<p>Pages list</p>} />
+    </Routes></MemoryRouter>);
+    expect(await screen.findByText("Pages list")).toBeVisible();
+    expect(screen.queryByTitle("Developer Review")).toBeNull();
+  });
   it("keeps the screen visible but private details unavailable during signed-out review", async () => {
     mocks.require = false; mocks.admin = false;
     mocks.review = { review: { state: "error", headline: "Private review details" } };

@@ -22,6 +22,28 @@ it("restores the original signed-out login behavior when on", async () => {
   render(<AdminGate><div>Guarded Screen</div></AdminGate>);
   expect(await screen.findByText("Original Login Page")).toBeInTheDocument();
   expect(screen.queryByText("Guarded Screen")).toBeNull();
+  expect(screen.queryByRole("status")).toBeNull();
+});
+it("preserves signed-in staff access with login required and no review banner", async () => {
+  m.require = true;
+  m.session = { user: { id: "staff" } };
+  m.rpc.mockResolvedValue({ data: true, error: null });
+  render(<AdminGate><div>Guarded Screen</div></AdminGate>);
+  expect(await screen.findByText("Guarded Screen")).toBeInTheDocument();
+  expect(m.rpc).toHaveBeenCalledWith("is_site_user");
+  expect(screen.queryByRole("status")).toBeNull();
+  expect(m.invoke).not.toHaveBeenCalled();
+});
+it("preserves the original denied-staff check with login required", async () => {
+  m.require = true;
+  m.session = { user: { id: "non-staff" } };
+  m.rpc.mockResolvedValue({ data: false, error: null });
+  m.invoke.mockResolvedValue({});
+  render(<AdminGate><div>Guarded Screen</div></AdminGate>);
+  expect(await screen.findByText(/Your account doesn't have access/)).toBeInTheDocument();
+  expect(m.invoke).toHaveBeenCalledWith("admin-bootstrap");
+  expect(screen.queryByText("Guarded Screen")).toBeNull();
+  expect(screen.queryByRole("status")).toBeNull();
 });
 it("does not show the review banner with a user", async () => {
   m.session = { user: { id: "user" } };
