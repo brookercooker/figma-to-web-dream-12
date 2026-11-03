@@ -8,10 +8,11 @@ beforeEach(() => { sessionStorage.clear(); vi.useFakeTimers(); vi.setSystemTime(
 afterEach(() => vi.useRealTimers());
 it("reloads a running request using server elapsed time", () => { const one = renderHook(() => useWaitProgress(base())); const value = one.result.current.request?.value; one.unmount(); const two = renderHook(() => useWaitProgress(base())); expect(two.result.current.request?.value).toBe(value); expect(value).toBeGreaterThan(0.2); });
 it("jumps at reply, waits for real build, then completes for 1.5s", () => {
-  const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  const s = base(); const h = renderHook(({ state, frame = 0 }: { state: RelayState; frame?: number }) => useWaitProgress(state, frame), { initialProps: { state: s, frame: 0 } });
   const reply: RelayState = { ...s, busy: false, previewVersion: 2, previewChecking: true, history: [...s.history, { role: "assistant", text: "Changed", ts: 30_000 }] };
   h.rerender({ state: reply }); expect(h.result.current.request?.value).toBeGreaterThanOrEqual(40 / 90); expect(h.result.current.request?.done).not.toBe(true);
-  h.rerender({ state: { ...reply, previewChecking: false, previewBuiltAt: 31_000 } }); expect(h.result.current.request?.value).toBe(1);
+  h.rerender({ state: { ...reply, previewChecking: false, previewBuiltAt: 31_000 }, frame: 0 }); expect(h.result.current.request?.done).not.toBe(true);
+  h.rerender({ state: { ...reply, previewChecking: false, previewBuiltAt: 31_000 }, frame: 32_000 }); expect(h.result.current.request?.value).toBe(1);
   act(() => vi.advanceTimersByTime(1500)); expect(h.result.current.request?.fading).toBe(true);
   act(() => vi.advanceTimersByTime(250)); expect(h.result.current.request).toBeNull();
 });

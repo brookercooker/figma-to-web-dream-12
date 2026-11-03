@@ -1,0 +1,52 @@
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { useChangeQueue } from "../useChangeQueue";
+import type { RelayState } from "../helper";
+const base = (): RelayState => ({ busy: true, job: { kind: "change", status: "working", startedAt: 100 }, history: [{ role: "user", text: "First", ts: 100 }], previewVersion: 1 });
+beforeEach(() => sessionStorage.clear());
+afterEach(cleanup);
+it("sends one queued item after the reply without waiting for the preview and then waits for its own reply", async () => {
+  const send = vi.fn().mockResolvedValue({ ok: true }); const s = base();
+  const h = renderHook(({ state }) => useChangeQueue(state, "home", send, vi.fn()), { initialProps: { state: s } });
+  act(() => { h.result.current.add("Second", { message: "Second" }); h.result.current.add("Third", { message: "Third" }); });
+  expect(send).not.toHaveBeenCalled();
+  const replied: RelayState = { ...s, previewChecking: true, history: [...s.history, { role: "assistant", text: "Done", ts: 200 }] };
+  h.rerender({ state: replied }); await waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+  expect(send).toHaveBeenLastCalledWith({ message: "Second" });
+  h.rerender({ state: { ...replied } }); expect(send).toHaveBeenCalledTimes(1);
+  const next = Date.now();
+  h.rerender({ state: { ...s, job: { kind: "change", status: "working", startedAt: next }, history: [...replied.history, { role: "user", text: "Second", ts: next }] } });
+  expect(send).toHaveBeenCalledTimes(1);
+  h.rerender({ state: { ...s, job: { kind: "change", status: "done", startedAt: next }, history: [...replied.history, { role: "user", text: "Second", ts: next }, { role: "assistant", text: "Done again", ts: next + 1 }] } });
+  await waitFor(() => expect(send).toHaveBeenCalledTimes(2));
+  expect(send).toHaveBeenLastCalledWith({ message: "Third" });
+});
+it("keeps the queue on current-job errors and supports Remove or Send now", async () => {
+  const send = vi.fn().mockResolvedValue({ ok: true }); const s = base();
+  const h = renderHook(({ state }) => useChangeQueue(state, "home", send, vi.fn()), { initialProps: { state: s } });
+  act(() => h.result.current.add("Next", { message: "Next" }));
+  h.rerender({ state: { ...s, busy: false, job: { ...s.job, startedAt: 100, status: "error" } } });
+  expect(h.result.current.items[0].status).toBe("error"); expect(send).not.toHaveBeenCalled();
+  act(() => h.result.current.sendNow(h.result.current.items[0].id)); await waitFor(() => expect(send).toHaveBeenCalledTimes(1));
+  act(() => h.result.current.add("Remove me", { message: "Remove me" }));
+  act(() => h.result.current.remove(h.result.current.items[0].id)); expect(h.result.current.items).toEqual([]);
+});
+it("cancelled items never send, pending items restore, and page changes clear with a note", () => {
+  const send = vi.fn(), clear = vi.fn(); const s = base();
+  const h = renderHook(({ page }) => useChangeQueue(s, page, send, clear), { initialProps: { page: "home" } });
+  act(() => h.result.current.add("Cancel", { message: "Cancel" })); act(() => h.result.current.remove(h.result.current.items[0].id));
+  expect(send).not.toHaveBeenCalled();
+  act(() => h.result.current.add("Retained", { message: "Retained" })); h.unmount();
+  const restored = renderHook(({ page }) => useChangeQueue(s, page, send, clear), { initialProps: { page: "home" } });
+  expect(restored.result.current.items[0].message).toBe("Retained");
+  restored.rerender({ page: "about" }); expect(restored.result.current.items).toEqual([]); expect(clear).toHaveBeenCalled();
+});
+it("retains rejected sends and does not send during approval", async () => {
+  const send = vi.fn().mockResolvedValue({ ok: false, error: "Busy" }); const s = base();
+  const h = renderHook(({ state }) => useChangeQueue(state, "home", send, vi.fn()), { initialProps: { state: s } });
+  act(() => h.result.current.add("Next", { message: "Next" }));
+  const reply: RelayState = { ...s, busy: false, history: [...s.history, { role: "assistant", text: "Done", ts: 200 }] };
+  h.rerender({ state: { ...reply, approval: { id: "approval" } as RelayState["approval"] } }); expect(send).not.toHaveBeenCalled();
+  h.rerender({ state: reply }); await waitFor(() => expect(h.result.current.items[0].status).toBe("error"));
+  expect(h.result.current.items[0].error).toBe("Busy");
+});
