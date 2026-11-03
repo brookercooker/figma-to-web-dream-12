@@ -33,7 +33,7 @@ import { referenceKey } from "./designChat/references";
 import { useManagerTitle } from "./useManagerTitle";
 import { useManagerLayout, useKeyboardInset, clampPanelWidth, PANEL_WIDTH_KEY } from "./designChat/useManagerLayout";
 import { DropdownMenu as MoreMenu, DropdownMenuContent as MoreMenuContent, DropdownMenuItem as MoreMenuItem, DropdownMenuTrigger as MoreMenuTrigger, DropdownMenuSeparator as MoreMenuSeparator, DropdownMenuLabel as MoreMenuLabel } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Maximize2, Monitor, Smartphone, Tablet, ExternalLink, MessageSquare, ListTree, LayoutTemplate } from "lucide-react";
+import { MoreHorizontal, Monitor, Smartphone, Tablet, MessageSquare, ListTree, LayoutTemplate } from "lucide-react";
 import type { Device } from "./designChat/DesignChatContext";
 import { usePhoneChat } from "./designChat/phoneChat";
 import { PhoneChatButton, PhoneChatHeader } from "./designChat/PhoneChatChrome";
@@ -556,7 +556,7 @@ function AdminShell() {
   );
 }
 
-/** Phone toolbar overflow: preview size, full screen and the published site. */
+/** Phone top-bar overflow: account, tools, review and preview size. */
 function PhoneMoreMenu({ showView, isAdmin, onPassword, onReview }: { showView: boolean; isAdmin: boolean; onPassword: () => void; onReview: () => void }) {
   const { device, setDevice, state, editing } = useDesignChat();
   const navigate = useNavigate();

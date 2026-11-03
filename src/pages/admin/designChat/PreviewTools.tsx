@@ -6,8 +6,8 @@ import { useDesignChat, type Device } from "./DesignChatContext";
 import WaitProgress from "./WaitProgress";
 
 /**
- * The buttons in the Site Manager's top bar that belong to the design chat: while the Preview tab is open, the size buttons
- * and Full screen; always, a link to the published site. Submit for review stays in the top bar (SubmitButton).
+ * Device size stays with the component pickers; navigation lives in PreviewToolbar.
+ * Submit for review stays in the top bar (SubmitButton).
  */
 export default function PreviewTools({ showViewControls, tight = false }: { showViewControls: boolean; tight?: boolean }) {
   const { device, setDevice } = useDesignChat();
