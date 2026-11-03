@@ -7,7 +7,7 @@ import type { RelayState } from "../helper";
 const toast = vi.hoisted(() => vi.fn());
 vi.mock("sonner", () => ({ toast }));
 vi.mock("../helper", () => ({ EMBED_FN: "/embed", SUPABASE_KEY: "" }));
-vi.mock("../../siteManifest", () => ({ setManifestBase: vi.fn(), resetSiteManifestCache: vi.fn() }));
+vi.mock("../../siteManifest", () => ({ setManifestBase: vi.fn(), resetSiteManifestCache: vi.fn(), isSafePublicFrameUrl: () => true }));
 vi.mock("../../manifestPageSync", () => ({ syncManifestPages: vi.fn() }));
 const state = (patch: Partial<RelayState> = {}): RelayState => ({ busy: false, job: null, previewVersion: 1, history: [], ...patch });
 const job = (status: string, kind = "change") => ({ kind, status, startedAt: 1000 });
@@ -60,6 +60,51 @@ describe("preview update lifecycle", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ embed_url: "http://localhost:8080/home", expires_at: new Date(9999999).toISOString() }) })));
   });
   afterEach(() => vi.unstubAllGlobals());
+  it.each(["done", "idle", "removed"])("clears a no-change %s job after ten seconds without claiming a preview build", async status => {
+    const hook = renderHook(({ relay }) => usePreview(relay), { initialProps: { relay: state({ busy: true, job: job("working") }) } });
+    await act(async () => {});
+    hook.rerender({ relay: state({ busy: status === "done", job: status === "removed" ? null : job(status) }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(9_999); });
+    expect(hook.result.current.progressStage).toBe(2);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+    expect(hook.result.current.progressStage).toBeNull();
+    expect(hook.result.current.updating).toBe(false);
+    expect(hook.result.current.completedAt).toBe(0);
+  });
+  it.each(["version", "checking"])("keeps the normal build flow if %s arrives during the grace", async signal => {
+    const hook = renderHook(({ relay }) => usePreview(relay), { initialProps: { relay: state({ busy: true, job: job("working") }) } });
+    await act(async () => {});
+    hook.rerender({ relay: state({ job: job("done") }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(9_000); });
+    hook.rerender({ relay: state({ job: job("done"), ...(signal === "version" ? { previewVersion: 2 } : { previewChecking: true }) }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(20_000); });
+    expect(hook.result.current.progressStage).toBe(3);
+  });
+  it("shows Building again for a late commit after a no-change card cleared", async () => {
+    const hook = renderHook(({ relay }) => usePreview(relay), { initialProps: { relay: state({ busy: true, job: job("working"), previewBuiltAt: 100 }) } });
+    await act(async () => {});
+    hook.rerender({ relay: state({ job: job("done"), previewBuiltAt: 100 }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+    expect(hook.result.current.progressStage).toBeNull();
+    hook.rerender({ relay: state({ job: job("done"), previewVersion: 2, previewChecking: true, previewBuiltAt: 100 }) });
+    await act(async () => {});
+    expect(hook.result.current.progressStage).toBe(3);
+    hook.rerender({ relay: state({ job: job("done"), previewVersion: 2, previewBuiltAt: 200 }) });
+    await act(async () => {});
+    expect(hook.result.current.progressStage).toBe(4);
+    act(() => hook.result.current.finish(hook.result.current.frames.at(-1)?.id ?? 0));
+    expect(hook.result.current.progressStage).toBeNull();
+    expect(hook.result.current.completedAt).toBeGreaterThan(0);
+  });
+  it("does not dismiss a new request with the previous request's grace timer", async () => {
+    const hook = renderHook(({ relay }) => usePreview(relay), { initialProps: { relay: state({ busy: true, job: job("working") }) } });
+    await act(async () => {});
+    hook.rerender({ relay: state({ job: job("done") }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(9_000); });
+    hook.rerender({ relay: state({ busy: true, job: { ...job("working"), startedAt: 69_000 } }) });
+    await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
+    expect(hook.result.current.progressStage).toBe(2);
+  });
   it("survives reload mid-job and never moves backwards or silently expires", async () => {
     const hook = renderHook(({ relay }) => usePreview(relay), { initialProps: { relay: state({ busy: true, job: job("working") }) } });
     await act(async () => {});
