@@ -18,6 +18,7 @@ import { useImageThumbnails } from "../useAdminData";
 import { tileSrcCandidates } from "../imageTileSrc";
 import ObjectThumbnail from "../ObjectThumbnail";
 import LibraryImageThumbnail from "../LibraryImageThumbnail";
+import { matchesObjectPickerFilter, type LabelMatchMode } from "./objectPickerFilter";
 
 export type LibraryKind = "images" | "videos" | "objects";
 const PAGE = 60;
@@ -81,6 +82,8 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   const [rows, setRows] = useState<Row[] | null>(null);
   const [term, setTerm] = useState("");
   const [labelF, setLabelF] = useState("");
+  const [objectLabels, setObjectLabels] = useState<string[]>([]);
+  const [labelMode, setLabelMode] = useState<LabelMatchMode>("any");
   const [limit, setLimit] = useState(PAGE);
   const [sort, setSort] = useState<SortKey>("name");
   const picked = useRef(false); // after a pick, the chat box keeps focus instead of the tab button
@@ -107,6 +110,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   useEffect(() => {
     if (!open) return;
     setTerm(""); setLabelF(""); setSort("name"); setLimit(PAGE);
+    setObjectLabels([]); setLabelMode("any");
     void refetchRef.current();
     let live = true;
     setRows(null);
@@ -115,9 +119,11 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
   }, [open, kind]);
 
   const matches = useMemo(() => sortRows((rows ?? [])
-    .filter((r) => r.search(term) && (!labelF || matchesLabelFilter(r.labels, labelF))), sort), [rows, term, labelF, sort]);
+    .filter((r) => kind === "objects"
+      ? matchesObjectPickerFilter(r, term, objectLabels, labelMode)
+      : r.search(term) && (!labelF || matchesLabelFilter(r.labels, labelF))), sort), [rows, kind, term, labelF, objectLabels, labelMode, sort]);
   const showDates = useMemo(() => (rows ?? []).some((r) => !!r.createdAt), [rows]);
-  useEffect(() => setLimit(PAGE), [term, labelF]);
+  useEffect(() => setLimit(PAGE), [term, labelF, objectLabels, labelMode]);
   const shown = useMemo(() => matches.slice(0, limit), [matches, limit]);
   const publicPaths = useMemo(() => open && kind === "images"
     ? shown.filter((r) => r.visibility !== "gated").flatMap((r) => r.webPath ? [r.webPath] : []) : [], [open, kind, shown]);
@@ -125,8 +131,10 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
     ? shown.filter((r) => r.visibility === "gated").flatMap((r) => r.webPath ? [r.webPath] : []) : [], [open, kind, shown]);
   const { data: publicThumbs = {} } = useImageThumbnails("images-web", publicPaths, 320);
   const { data: gatedThumbs = {} } = useImageThumbnails(GATED_BUCKET, gatedPaths, 320);
-  const filtering = term.trim() !== "" || labelF !== "";
-  const clear = () => { setTerm(""); setLabelF(""); };
+  const filtering = term.trim() !== "" || (kind === "objects" ? objectLabels.length > 0 : labelF !== "");
+  const clear = () => { setTerm(""); setLabelF(""); setObjectLabels([]); setLabelMode("any"); };
+  const toggleObjectLabel = (path: string) => setObjectLabels(current => !path ? []
+    : current.includes(path) ? current.filter(label => label !== path) : [...current, path]);
   const FallbackIcon = kind === "images" ? ImageIcon : kind === "videos" ? Film : Box;
 
   const finish = () => {
@@ -185,6 +193,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
  />
           </div>
           <LibraryFilterBar colorOf={colorOf} labels={allLabels} labelCounts={labelCounts} label={labelF} setLabel={setLabelF}
+            multiLabels={kind === "objects" ? objectLabels : undefined} onToggleLabel={toggleObjectLabel} labelMode={labelMode} setLabelMode={setLabelMode}
             sort={sort} setSort={setSort} showDates={showDates} shown={Math.min(limit, matches.length)} total={matches.length} filtering={filtering} onClear={clear} />
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">

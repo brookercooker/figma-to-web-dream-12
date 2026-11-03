@@ -35,3 +35,4 @@
 - MediaAlignment shares joined alignment controls across saved media; Video Layout uses existing page percentage width versus object-video pixel width and containing-section alignment, preserving the public content schema.
 - waitSuggestions ranks only available existing actions from saved page/draft/device/request context; ChatPanel loads optional context once per page wait and rotates per-wait session sets without altering the send queue or ribbon.
 - ObjectPickerDialog keeps its public exports and callbacks; objectLabelFilter owns normalized counts/search/any-all/hidden-selection logic. Filters never mutate the selected-ID Set; recent labels use optional localStorage only.
+- Chat LibraryPicker objects use objectPickerFilter for search plus hierarchical Any/All label matching; optional multi-label LibraryFilterBar props leave image/video single-label behavior unchanged and attached references independent of filters.
