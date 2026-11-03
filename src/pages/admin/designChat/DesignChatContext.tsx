@@ -216,8 +216,8 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     setPreviewDestination(expect);
     setPreviewNavigating(false);
     navigationCue.current = setTimeout(() => setPreviewNavigating(true), 150);
-    if (!postPreviewNavigate(nav)) { debugNav("unavailable", { expect }); fallback(); return; }
-    debugNav("posted", { action: nav.action, expect });
+    const posted = postPreviewNavigate(nav);
+    debugNav(posted ? "posted" : "waiting for ready", { action: nav.action, expect });
     const timer = setTimeout(() => { if (pendingNav.current?.timer === timer) { debugNav("timeout fallback", { expect }); pendingNav.current = null; fallback(); } }, NAV_FALLBACK_MS);
     pendingNav.current = { expect, timer };
   }, [clearNavigationCue]);
@@ -252,6 +252,10 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (notePreviewReady(event)) {
+        // A loaded frame may announce readiness just after the click. Retain it
+        // and retry the requested address within the existing single fallback.
+        const pending = pendingNav.current;
+        if (pending) { postPreviewNavigate({ action: "to", path: pending.expect }); return; }
         const t = target.current;
         if (t && (!shownPath.current || !previewAddressMatches(t.path, shownPath.current)) && t.tries < 5) { t.tries++; postPreviewNavigate({ action: "to", path: t.path }); }
         return;

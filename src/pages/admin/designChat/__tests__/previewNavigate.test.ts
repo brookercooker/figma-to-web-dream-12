@@ -14,6 +14,23 @@ const ready = (win: Window, origin = ORIGIN) => new MessageEvent("message", { or
 afterEach(() => { document.body.innerHTML = ""; });
 
 describe("preview in-place navigation", () => {
+  it("navigates a ready tokenised public frame while the Manager is embedded in Lovable", () => {
+    const top = vi.spyOn(window, "top", "get").mockReturnValue({} as Window);
+    try {
+      const { f, win } = frame(); f.src = `${ORIGIN}/about?__lovable_token=fixture`;
+      expect(notePreviewReady(new MessageEvent("message", { origin: ORIGIN, source: win, data: { type: "preview-ready" } }))).toBe(true);
+      expect(postPreviewNavigate({ action: "to", path: "/team" })).toBe(true);
+      expect(win.postMessage).toHaveBeenCalledWith({ source: "nova-manager", type: "preview-navigate", action: "to", path: "/team" }, ORIGIN);
+      expect(document.querySelector("iframe")).toBe(f);
+      expect(f.src).toBe(`${ORIGIN}/about?__lovable_token=fixture`);
+    } finally { top.mockRestore(); }
+  });
+  it("rejects bare readiness from another origin or window", () => {
+    const { win } = frame();
+    expect(notePreviewReady(new MessageEvent("message", { origin: "https://evil.example", source: win, data: { type: "preview-ready" } }))).toBe(false);
+    expect(notePreviewReady(new MessageEvent("message", { origin: ORIGIN, source: {} as Window, data: { type: "preview-ready" } }))).toBe(false);
+    expect(postPreviewNavigate({ action: "to", path: "/team" })).toBe(false);
+  });
   it("Back posts preview-navigate to the exact origin without changing src or remounting", () => {
     const { f, win } = frame();
     expect(notePreviewReady(ready(win))).toBe(true);
