@@ -80,6 +80,9 @@ export default function ObjectPickerDialog({
   const chip = (key: string, name: string, count?: number) => <Button key={key} type="button" variant={labels.has(key) ? "default" : "outline"} aria-pressed={labels.has(key)} onClick={() => toggleLabel(key)} className="h-11 shrink-0 rounded-full px-3 sm:h-9">
     {labels.has(key) && <Check className="h-3.5 w-3.5" aria-hidden="true" />}{name}{count !== undefined && <span>{count}</span>}
   </Button>;
+  const labelModeControl = <div className="shrink-0 space-y-2"><p id="object-label-mode" className="text-sm text-muted-foreground">Show objects with</p><div role="group" aria-labelledby="object-label-mode" className="flex">
+    {(["any", "all"] as const).map(value => <Button key={value} variant={mode === value ? "default" : "outline"} aria-pressed={mode === value} onClick={() => setMode(value)} className={`h-11 flex-1 ${value === "any" ? "rounded-r-none" : "rounded-l-none"}`}>{value === "any" ? "Any Label" : "All Labels"}</Button>)}
+  </div></div>;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -92,9 +95,7 @@ export default function ObjectPickerDialog({
         {labelView ? <>
           <div className="flex items-center justify-between gap-2 shrink-0"><Button variant="ghost" onClick={() => setLabelView(false)} className="h-11 px-0"><ArrowLeft className="h-4 w-4" />Back to Objects</Button><h2 className="font-medium">Labels</h2></div>
           <Input aria-label="Find a Label" value={labelSearch} onChange={e => setLabelSearch(e.target.value)} placeholder={`Find a label (${labelCounts.length} in total)`} className="h-11 shrink-0" />
-          <div className="shrink-0 space-y-2"><p id="object-label-mode" className="text-sm text-muted-foreground">Show objects with</p><div role="group" aria-labelledby="object-label-mode" className="flex">
-            {(["any", "all"] as const).map(value => <Button key={value} variant={mode === value ? "default" : "outline"} aria-pressed={mode === value} onClick={() => setMode(value)} className={`h-11 flex-1 ${value === "any" ? "rounded-r-none" : "rounded-l-none"}`}>{value === "any" ? "Any Label" : "All Labels"}</Button>)}
-          </div></div>
+          {labelModeControl}
           <div className="min-h-0 flex-1 overflow-y-auto">
             {recent.some(key => labelCounts.some(label => label.key === key)) && <section className="mb-4 space-y-2"><h3 className="text-sm font-medium">Recently Used</h3><div className="flex flex-wrap gap-2">{recent.map(key => { const label = labelCounts.find(item => item.key === key); return label ? chip(key, label.name) : null; })}</div></section>}
             <h3 className="mb-2 text-sm font-medium">All Labels, A to Z</h3>
@@ -103,12 +104,13 @@ export default function ObjectPickerDialog({
           <div className="flex shrink-0 gap-2 border-t pt-3"><Button variant="ghost" disabled={!labels.size} onClick={() => setLabels(new Set())} className="h-12 sm:h-11">Clear Labels</Button><Button onClick={() => setLabelView(false)} className="h-12 flex-1 sm:h-11">Show {filtered.length} Objects</Button></div>
         </> : <>
         <Input aria-label="Search by Name or Label" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or label" className="h-11 shrink-0" />
-        <section className="min-w-0 shrink-0 space-y-2"><h2 className="text-sm font-medium">Labels</h2><div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+        <section className="min-w-0 shrink-0 space-y-2"><h2 className="text-sm font-medium">Labels</h2><div className="flex flex-nowrap gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible">
           <Button type="button" variant={!labels.size ? "default" : "outline"} aria-pressed={!labels.size} onClick={() => setLabels(new Set())} className="h-11 shrink-0 rounded-full px-3 sm:h-9">{!labels.size && <Check className="h-3.5 w-3.5" aria-hidden="true" />}All <span>{items.length}</span></Button>
           {labelCounts.slice(0, 5).map(label => chip(label.key, label.name, label.count))}
           {labelCounts.length > 5 && <Button variant="outline" onClick={() => setLabelView(true)} className="h-11 shrink-0 rounded-full border-dashed px-3 sm:h-9">More Labels {labelCounts.length - 5}</Button>}
         </div></section>
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-1"><p role="status" className="text-xs text-muted-foreground">Showing {filtered.length} of {items.length} objects{hidden > 0 ? ` · ${hidden} selected hidden by filters` : ""}</p>{(labels.size > 0 || q.length > 0) && <Button variant="ghost" onClick={clearFilters} className="h-9 px-1 text-xs">Clear Filters</Button>}</div>
+        {labels.size >= 2 && labelModeControl}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-1"><p role="status" className="text-xs text-muted-foreground">Showing {filtered.length} of {items.length} objects{labels.size >= 2 ? ` · matching ${mode} of ${labels.size} labels` : ""}{hidden > 0 ? ` · ${hidden} selected hidden by filters` : ""}</p>{(labels.size > 0 || q.length > 0) && <Button variant="ghost" onClick={clearFilters} className="h-9 px-1 text-xs">Clear Filters</Button>}</div>
         <div className="grid grid-cols-1 content-start gap-2 sm:grid-cols-2 sm:gap-3 flex-1 min-h-0 overflow-y-auto pr-1">
           {filtered.map((o) => (
             <Button variant="ghost"
@@ -119,7 +121,7 @@ export default function ObjectPickerDialog({
               onClick={() => onPickMany ? setSelected(prev => { const next = new Set(prev); if (next.has(o.id)) next.delete(o.id); else next.add(o.id); return next; }) : onPick({ id: o.id, name: o.name })}
               className={`relative h-auto min-w-0 flex-row items-center justify-start gap-3 whitespace-normal rounded-lg border-2 p-2 text-left transition-colors hover:bg-muted/60 sm:flex-col sm:items-stretch sm:gap-0 sm:p-3 ${selected.has(o.id) ? "border-primary bg-primary/10" : "border-border"}`}
             >
-              <div className="h-12 w-[52px] shrink-0 overflow-hidden rounded-lg sm:mb-2 sm:h-28 sm:w-full"><ObjectThumbnail id={o.id} storedThumb={o.thumbnail_url} /></div>
+              <div className="h-12 w-[52px] shrink-0 overflow-hidden rounded-lg sm:mb-2 sm:h-20 sm:w-full"><ObjectThumbnail id={o.id} storedThumb={o.thumbnail_url} /></div>
               <div className="min-w-0 flex-1 pr-7 sm:pr-0"><div className="flex items-center gap-2">
                 <span className="text-sm font-medium truncate">{o.name}</span>
               </div>
