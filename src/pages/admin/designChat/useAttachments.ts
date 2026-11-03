@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { DEFAULT_UPLOADS, RELAY, type UploadRules } from "./helper";
 import { fileProblem } from "./logic";
+import { hasManagerUser, SIGN_IN_REQUIRED } from "@/lib/authGate";
 
 export type Attached = { key: number; name: string; size: number; status: "uploading" | "ready"; id: string | null };
 
@@ -15,8 +16,10 @@ export function useAttachments(rules: UploadRules | undefined, say: (text: strin
   const pasted = useRef(0);
   const set = (next: Attached[]) => { filesRef.current = next; setFiles(next); };
 
-  const forget = (id: string) =>
-    fetch(`${RELAY}/api/upload-remove`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }).catch(() => {});
+  const forget = async (id: string) => {
+    if (!await hasManagerUser()) return;
+    await fetch(`${RELAY}/api/upload-remove`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }).catch(() => {});
+  };
 
   const remove = useCallback((key: number) => {
     const f = filesRef.current.find((x) => x.key === key);
@@ -33,6 +36,7 @@ export function useAttachments(rules: UploadRules | undefined, say: (text: strin
       set([...filesRef.current, item]);
       (async () => {
         try {
+          if (!await hasManagerUser()) throw new Error(SIGN_IN_REQUIRED);
           const res = await fetch(`${RELAY}/api/upload?name=${encodeURIComponent(file.name)}`, {
             method: "POST",
             headers: { "Content-Type": file.type || "application/octet-stream" },
