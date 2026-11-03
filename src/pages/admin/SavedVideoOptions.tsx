@@ -10,11 +10,11 @@ export function videoThumbnail(video: SavedVideo): string | undefined {
   return parsed?.source === "youtube" && /^[\w-]+$/.test(parsed.videoId) ? parsed.posterUrl : undefined;
 }
 export function SavedVideoPreview({ video, compact = false }: { video: SavedVideo; compact?: boolean }) {
-  const [failed, setFailed] = useState(false);
-  const thumbnail = videoThumbnail(video);
+  const [failedSources, setFailedSources] = useState<string[]>([]);
+  const thumbnail = [video.poster, videoThumbnail({ ...video, poster: undefined })].find(src => src && !failedSources.includes(src));
   return <div className="min-w-0 space-y-1">
     <div className={compact ? "relative w-20 aspect-video overflow-hidden rounded-lg bg-muted" : "relative w-full aspect-video overflow-hidden rounded-lg bg-muted"}>
-      {thumbnail && !failed ? <img src={thumbnail} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} /> : <Film className="absolute inset-0 m-auto h-6 w-6 text-muted-foreground" />}
+      {thumbnail ? <img src={thumbnail} alt="" className="h-full w-full object-cover" onError={() => setFailedSources(previous => [...previous, thumbnail])} /> : <Film className="absolute inset-0 m-auto h-6 w-6 text-muted-foreground" />}
       <span className="absolute bottom-1 right-1 rounded-full bg-background/90 p-1 text-foreground"><Play className="h-3 w-3" aria-hidden /></span>
     </div>
     <p className="break-all text-xs text-muted-foreground">{video.title || video.caption || video.url}</p>
