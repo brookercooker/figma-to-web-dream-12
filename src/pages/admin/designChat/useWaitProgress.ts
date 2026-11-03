@@ -72,11 +72,11 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   t.lastVersion = state.previewVersion; t.lastBuiltAt = state.previewBuiltAt ?? 0;
   const decorate = (view: WaitView): WaitView => {
     if (isSubmit || t.kind === "question") return view;
-    const stage = t.ready ? 3 : t.committed ? 2 : 0;
+    const stage = t.ready ? 3 : t.committed ? 2 : /^(working|running)$/.test(status) ? 1 : 0;
     const current = Math.max(t.ribbonStage ?? 0, stage);
     if (current !== t.ribbonStage) { t.ribbonStage = current; t.ribbonHigh = 0; }
     // Segmentation decorates the existing estimate, never introduces another clock/easing.
-    return { ...view, ribbon: { received: true, changed: !!t.committed, built: !!t.ready, ready: !!t.ready, current, partial: view.value, elapsed: Math.max(0, ((t.pausedAt ?? now) - t.id - t.paused) / 1000), paused: t.pausedAt !== undefined } };
+    return { ...view, ribbon: { received: current > 0, changed: !!t.committed, built: !!t.ready, ready: !!t.ready, current, partial: view.value, elapsed: Math.max(0, ((t.pausedAt ?? now) - t.id - t.paused) / 1000), paused: t.pausedAt !== undefined } };
   };
   if (stopped.test(status) || (!job && !reply && !t.replyAt && !t.doneAt && !state.previewChecking)) {
     t.doneAt ??= now - 2000; continue;
@@ -107,7 +107,8 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
     const stage = isSubmit ? /^(publishing|updating)$/.test(status) ? 1 : 0 : t.replyAt && hasBuild ? 1 : 0;
     if (!stage) t.stageStart ??= job?.stepStartedAt ?? t.id;
     const started = stage ? isSubmit ? job?.stepStartedAt ?? t.id : t.replyAt ?? t.id : t.stageStart ?? t.id;
-    const label = isSubmit ? stage ? "Publishing" : "Checking your changes" : stage ? "Building the preview" : t.kind === "question" ? "Thinking" : "Making your change";
+    // Keep the estimate clock unchanged; the visible phase follows this run's signals only.
+    const label = isSubmit ? stage ? "Publishing" : "Checking your changes" : t.kind === "question" ? "Thinking" : t.committed ? "Building the preview" : /^(working|running)$/.test(status) || (t.ribbonStage ?? 0) >= 1 ? "Making your change" : "Received";
     view = timedProgress(t.kind, stage, (now - started - (stage ? 0 : t.paused)) / 1000, label, t.high);
     t.high = view.value;
   }
