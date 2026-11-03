@@ -20,10 +20,15 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
   }
   const awaiting = !!optimisticAt && (state?.job?.startedAt ?? 0) < optimisticAt && !history.some(e => e.role === "user" && (e.ts ?? 0) >= optimisticAt);
   const disabled = sending || awaiting || offline || !!state?.busy || !!state?.approval || /^(queued|working|running|reviewing|publishing|updating)$/.test(state?.job?.status ?? "");
-  const sendPrepared = async (body: Record<string, unknown>) => {
+  const deliverSnapshot = async (body: Record<string, unknown>) => {
     const attempt = { body: structuredClone(body), after: Math.max(0, ...history.filter(e => e.role === "user").map(e => e.ts ?? 0)), sentAt: Date.now() };
     attempts.current.push(attempt); save();
     return postToHelper("/send", body);
+  };
+  const sendPrepared = async (body: Record<string, unknown>) => {
+    if (lock.current) return { ok: false, error: "A request is already being sent." };
+    lock.current = true; setSending(true);
+    try { return await deliverSnapshot(body); } finally { lock.current = false; setSending(false); }
   };
   const attemptFor = (at: number) => {
     const user = [...history].reverse().find(e => e.role === "user" && (e.ts ?? Infinity) <= at + 1000);
@@ -34,7 +39,7 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
     if (!attempt || disabled || lock.current) return;
     lock.current = true; setSending(true);
     try {
-      const result = await sendPrepared(attempt.body);
+      const result = await deliverSnapshot(attempt.body);
       if (result.ok) { clear(); setOptimisticAt(Date.now()); }
       return result;
     } finally { lock.current = false; setSending(false); refresh(); }
@@ -46,5 +51,5 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
     ? { role: "error", text: "The change couldn't finish", ts: currentJob.startedAt } : null;
   const optimisticState = optimisticAt && state && (currentJob?.startedAt ?? 0) < optimisticAt && !history.some(e => e.role === "user" && (e.ts ?? 0) >= optimisticAt)
     ? { ...state, busy: true, job: { id: `retry:${optimisticAt}`, kind: "change", status: "queued", startedAt: optimisticAt } } : state;
-  return { sendPrepared, retry, retryNote, canRetry: (at: number) => !!attemptFor(at), disabled, syntheticError, optimisticState };
+  return { sendPrepared, retry, retryNote, canRetry: (at: number) => !!attemptFor(at), disabled, sending, syntheticError, optimisticState };
 }

@@ -437,7 +437,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
           {(offline || hint.text) && <span role="status" className={cn("flex-1 min-w-0 text-xs", phone && "order-last basis-full", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>
             {offline ? "Can't reach the design service right now. It will keep trying." : hint.text}
           </span>}
-          <Button type="submit" disabled={busy && !changing || offline || attachments.uploading} className="ml-auto gap-2">
+          <Button type="submit" disabled={busy && !changing || offline || attachments.uploading || requestRetry?.sending} className="ml-auto gap-2">
             <Send className="h-4 w-4" /> {changing ? "Queue it" : "Send"}
           </Button>
         </div>

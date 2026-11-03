@@ -56,6 +56,17 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   if (!currentJob && !tracks.current.length) {
     const latestUser = [...history].reverse().find(e => e.role === "user" && typeof e.ts === "number");
     if (latestUser?.ts && state.previewChecking) tracks.current.push({ id: latestUser.ts, version: state.previewVersion, kind: detectWaitKind(latestUser.text), high: 0, paused: 0, hasBuild: true });
+    else if (latestUser?.ts) {
+      const failure = history.find(e => e.role === "error" && (e.ts ?? 0) >= latestUser.ts);
+      if (failure) tracks.current.push({ id: latestUser.ts, version: state.previewVersion, kind: detectWaitKind(latestUser.text), high: 0, paused: 0, error: true, errorAt: failure.ts ?? now });
+    }
+  }
+  // Replace a retry's provisional receipt with its real relay job, never a second run.
+  if (currentJob && !failed.test(currentStatus)) {
+    const provisional = tracks.current.find(t => t.jobId?.startsWith("retry:") && currentJob.startedAt >= t.id - 1000);
+    if (provisional && provisional.jobId !== currentJob.id) {
+      provisional.id = currentJob.startedAt; provisional.jobId = currentJob.id; provisional.job = currentJob;
+    }
   }
   const matchesJob = (t: Track, job: Job) => t.jobId && job.id ? t.jobId === job.id : t.id === job.startedAt;
   if (currentJob && !tracks.current.some(t => matchesJob(t, currentJob)) && (state.busy || state.previewChecking || currentStatus === "approval" || currentStatus === "queued" || failed.test(currentStatus))) {
@@ -105,7 +116,7 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
     // Segmentation decorates the existing estimate, never introduces another clock/easing.
     return { ...view, ribbon: { received: current > 0, changed: !!t.committed, built: !!t.ready, ready: !!t.ready, current, partial: view.value, elapsed: Math.max(0, ((t.pausedAt ?? now) - t.id - t.paused) / 1000), paused: t.pausedAt !== undefined } };
   };
-  if (stopped.test(status) || (!job && !reply && !t.replyAt && !t.doneAt && !state.previewChecking)) {
+  if (stopped.test(status) || (!job && !reply && !t.replyAt && !t.doneAt && !t.error && !error && !state.previewChecking)) {
     t.doneAt ??= now - 2000; continue;
   }
   if (ownsJob && state.approval || status === "approval") {
