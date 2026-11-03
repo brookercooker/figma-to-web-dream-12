@@ -2,7 +2,7 @@
 import DOMPurify from "dompurify";
 
 export type InlineEdits = Record<string, string>;
-export type Kind = "html" | "style" | "img" | "icon" | "link" | "placeholder" | "hidden" | "fp";
+export type Kind = "html" | "style" | "img" | "icon" | "icon-position" | "link" | "fp";
 export interface LinkEdit { href?: string; target?: "_blank"; unlinked?: true }
 export interface Fingerprint { v: 1; tag: string; t: string; s?: string }
 export interface ReplayReport {
@@ -16,7 +16,7 @@ export function parseKey(key: string): { kind: Kind; path: string } | null {
   const colon = key.indexOf(":");
   const kind = colon < 0 ? "html" : key.slice(0, colon);
   const path = colon < 0 ? key : key.slice(colon + 1);
-  return ["html", "style", "img", "icon", "link", "placeholder", "hidden", "fp"].includes(kind) &&
+  return ["html", "style", "img", "icon", "icon-position", "link", "fp"].includes(kind) &&
     (colon < 0 || kind !== "html") && PATH.test(path) ? { kind: kind as Kind, path } : null;
 }
 // Properties written by InlineStylePanel, plus the existing surface's reorder controls.
@@ -54,7 +54,11 @@ export function validateEdits(edits: unknown): { ok: InlineEdits; rejected: Repl
     let reason = "";
     if (!parsed) reason = "Unknown edit key or invalid path";
     else if (typeof value !== "string") reason = "Edit must be a string";
-    else if (parsed.kind === "style") {
+    else if (parsed.kind === "icon-position") {
+      if (value !== "before" && value !== "after") reason = "Icon position must be before or after";
+    } else if (parsed.kind === "icon" && value.startsWith("material:")) {
+      if (!/^material:(outlined|rounded|sharp):[a-z0-9_]{1,100}$/.test(value)) reason = "Invalid Material icon";
+    } else if (parsed.kind === "style") {
       try {
         const style: unknown = JSON.parse(value);
         if (!style || typeof style !== "object" || Array.isArray(style) ||
@@ -80,12 +84,6 @@ export function validateEdits(edits: unknown): { ok: InlineEdits; rejected: Repl
             (!("href" in fields) && fields.unlinked !== true)) reason = "Link contains an unsupported destination or setting";
         }
       } catch { reason = "Link must be a JSON object"; }
-    } else if (parsed.kind === "placeholder") {
-      if (value.length > 300 || /[\u0000-\u001f\u007f]/.test(value)) reason = "Placeholder text is too long or contains unsupported characters";
-    } else if (parsed.kind === "hidden") {
-      if (value !== "1") reason = "Hidden edit must be 1";
-    } else if (parsed.kind === "icon" && value.startsWith("material:")) {
-      if (!/^material:(outlined|rounded|sharp):[a-z0-9_]{1,100}$/.test(value)) reason = "Invalid Material icon";
     } else if (parsed.kind === "fp") {
       try { if (!isFingerprint(JSON.parse(value))) reason = "Invalid fingerprint"; }
       catch { reason = "Invalid fingerprint"; }
@@ -100,15 +98,26 @@ const hash = (value: string): string => {
   for (let i = 0; i < value.length; i++) h = Math.imul(h ^ value.charCodeAt(i), 16777619);
   return (h >>> 0).toString(16).padStart(8, "0");
 };
+/** Decorative icons never contribute wording or positional children. */
+export function isInlineIcon(el: Element): boolean {
+  return el.matches('[data-inline-icon],svg[aria-hidden="true"]');
+}
+export function inlineText(node: Node): string {
+  if (node instanceof Element && isInlineIcon(node)) return "";
+  return node.nodeType === Node.TEXT_NODE ? node.textContent ?? "" : [...node.childNodes].map(inlineText).join("");
+}
+export function inlineChildren(el: Element): Element[] {
+  return [...el.children].filter(child => !isInlineIcon(child));
+}
 export function fingerprintOf(el: Element): Fingerprint {
-  return { v: 1, tag: el.tagName.toLowerCase(), t: hash((el.textContent ?? "").replace(/\s+/g, " ").trim()),
+  return { v: 1, tag: el.tagName.toLowerCase(), t: hash(inlineText(el).replace(/\s+/g, " ").trim()),
     ...(el.tagName.toLowerCase() === "img" ? { s: hash((el.getAttribute("src") ?? "").split(/[?#]/)[0]) } : {}) };
 }
 export function fingerprintMatches(saved: Partial<Fingerprint>, current: Fingerprint): boolean {
   return saved.tag === current.tag && (saved.t === undefined || saved.t === current.t) &&
     (saved.s === undefined || saved.s === current.s);
 }
-interface Original { html: string; src: string | null; srcset: string | null; style: string | null; hidden: string | null; placeholder: string | null; icon: boolean; fp: Fingerprint; link: Record<string, string | null> }
+interface Original { html: string; src: string | null; srcset: string | null; style: string | null; icon: boolean; fp: Fingerprint; link: Record<string, string | null> }
 const LINK_ATTRIBUTES = ["href", "target", "rel", "data-inline-link", "data-inline-href", "data-inline-target"];
 // Shared snapshots also let withFingerprints read originals after replay/typing.
 const originals = new WeakMap<Element, Original>();
@@ -116,7 +125,7 @@ function snapshot(el: Element): Original {
   let original = originals.get(el);
   if (!original) {
     original = { html: el.innerHTML, src: el.getAttribute("src"), srcset: el.getAttribute("srcset"),
-      style: el.getAttribute("style"), hidden: el.getAttribute("hidden"), placeholder: el.getAttribute("placeholder"), icon: !!el.querySelector("svg"), fp: fingerprintOf(el),
+      style: el.getAttribute("style"), icon: !!el.querySelector("svg"), fp: fingerprintOf(el),
       link: Object.fromEntries(LINK_ATTRIBUTES.map((key) => [key, el.getAttribute(key)])) };
     originals.set(el, original);
   }
@@ -129,7 +138,7 @@ export function originalLink(el: Element): { href: string | null; target: string
 export function resolvePath(root: Element, path: string): Element | null {
   if (!PATH.test(path)) return null;
   let el: Element | null = root;
-  for (const index of path === "" ? [] : path.split(".")) el = el?.children[Number(index)] ?? null;
+  for (const index of path === "" ? [] : path.split(".")) el = el ? inlineChildren(el)[Number(index)] ?? null : null;
   return el;
 }
 export function hasVisibleEdits(edits: InlineEdits): boolean {
@@ -153,6 +162,8 @@ interface Applied { el: Element; kinds: Set<Kind>; styleProps: Set<string>; html
 export interface ReplayOptions {
   /** Adapter for the existing icon library; keeps this shared file free of React/app imports. */
   iconMarkup?: (name: string, className: string) => string | null;
+  /** Trusted adapter may return a Material span as well as a Lucide SVG. */
+  managerUpdate?: boolean;
 }
 function attribute(el: Element, key: string, value: string | null) {
   if (el.getAttribute(key) === value) return;
@@ -160,11 +171,9 @@ function attribute(el: Element, key: string, value: string | null) {
 }
 function restore(entry: Applied, kinds: Set<Kind>) {
   const o = snapshot(entry.el), el = entry.el;
-  if ((kinds.has("html") || kinds.has("icon")) && el.innerHTML !== o.html) el.innerHTML = o.html;
+  if ((kinds.has("html") || kinds.has("icon") || kinds.has("icon-position")) && el.innerHTML !== o.html) el.innerHTML = o.html;
   if (kinds.has("img")) { attribute(el, "src", o.src); attribute(el, "srcset", o.srcset); }
   if (kinds.has("style")) attribute(el, "style", o.style);
-  if (kinds.has("placeholder")) attribute(el, "placeholder", o.placeholder);
-  if (kinds.has("hidden")) { attribute(el, "hidden", o.hidden); attribute(el, "style", o.style); }
   if (kinds.has("link")) for (const key of LINK_ATTRIBUTES) attribute(el, key, o.link[key]);
 }
 export function createReplay() {
@@ -191,17 +200,19 @@ export function createReplay() {
           const removed = new Set([...entry.kinds].filter((kind) => !kinds.has(kind)));
           restore(entry, removed);
           // Restoring HTML/icon must invalidate the other content kind's cache too.
-          if (removed.has("html") || removed.has("icon")) { entry.html = undefined; entry.icon = undefined; }
+          if (removed.has("html") || removed.has("icon") || removed.has("icon-position")) { entry.html = undefined; entry.icon = undefined; entry.composed = undefined; }
         }
       }
+      // Resolve original targets before a parent's text/icon composition can change children.
+      const targets = new Map([...groups.keys()].map(path => [path, resolvePath(root, path)]));
       for (const [path, group] of [...groups].sort(([a], [b]) => a.split(".").length - b.split(".").length)) {
-        const el = resolvePath(root, path), kinds = group.map((v) => v.kind);
+        const originalTarget = targets.get(path);
+        const el = originalTarget && root.contains(originalTarget) ? originalTarget : null, kinds = group.map((v) => v.kind);
         let reason = "";
         if (!el) reason = "This part of the page is no longer there.";
         else if (kinds.includes("img") && el.tagName.toLowerCase() !== "img") reason = "This part of the page is no longer a picture.";
         else if (kinds.includes("style") && !(el instanceof HTMLElement)) reason = "This part of the page can no longer use these appearance settings.";
-        else if (kinds.includes("placeholder") && !/^(input|textarea)$/i.test(el.tagName)) reason = "This part of the page is no longer a form field.";
-        else if ((kinds.includes("html") || kinds.includes("icon")) && /^(img|input|br|hr|video|iframe|svg)$/i.test(el.tagName)) reason = "This part of the page is no longer the right kind of element.";
+        else if ((kinds.includes("html") || kinds.includes("icon") || kinds.includes("icon-position")) && /^(img|input|br|hr|video|iframe|svg)$/i.test(el.tagName)) reason = "This part of the page is no longer the right kind of element.";
         const fpKey = `fp:${path}`;
         if (!reason && el && fpKey in edits) {
           if (!(fpKey in ok)) reason = "The saved verification information is not valid.";
@@ -215,32 +226,39 @@ export function createReplay() {
         const o = snapshot(el), old = previous.get(path);
         const entry: Applied = old?.el === el ? old : { el, kinds: new Set(), styleProps: new Set() };
         const values = new Map(group.map((v) => [v.kind, v.value]));
-        const html = values.get("html"), icon = values.get("icon");
+        const html = values.get("html"), icon = values.get("icon"), position = values.get("icon-position");
         // Compose HTML and icon together so repeated replay never oscillates between them.
-        if (html !== undefined || icon !== undefined) {
+        if (html !== undefined || icon !== undefined || position !== undefined) {
           const base = html === undefined ? o.html : clean(html);
           const holder = document.createElement("div"); holder.innerHTML = base;
-          if (icon !== undefined) {
-            const svg = holder.querySelector("svg,[data-inline-icon]");
-            if (icon === "none") { if (svg) { (svg as SVGElement).style.display = "none"; svg.setAttribute("data-inline-icon", "none"); } }
-            else {
-              const material = /^material:(outlined|rounded|sharp):([a-z0-9_]{1,100})$/.exec(icon);
-              if (material) {
-                const replacement = document.createElement("span");
-                replacement.className = `material-symbols-${material[1]}`;
-                replacement.textContent = material[2]; replacement.setAttribute("data-inline-icon", icon); replacement.setAttribute("aria-hidden", "true");
-                if (svg) svg.replaceWith(replacement); else holder.append(replacement);
-              }
-              const markup = material ? null : opts.iconMarkup?.(icon, svg?.getAttribute("class") ?? "inline-block h-4 w-4 ml-2 align-[-2px]");
-              if (markup) {
-                const shell = document.createElement("div"); shell.innerHTML = clean(markup);
-                const replacement = shell.querySelector("svg");
-                if (replacement) { replacement.setAttribute("data-inline-icon", icon); if (svg) svg.replaceWith(replacement); else holder.append(replacement); }
-              }
+          // Own only a direct icon, never an unrelated icon inside a text descendant.
+          const originalBox = document.createElement("div"); originalBox.innerHTML = o.html;
+          const owned = (box: Element) => [...box.children].find(child => child.matches("svg,[data-inline-icon]"));
+          const originalIcon = owned(originalBox);
+          let decoration = owned(holder);
+          const existingBefore = !!originalIcon && ![...originalBox.childNodes].slice(0, [...originalBox.childNodes].indexOf(originalIcon)).some(node => inlineText(node).trim());
+          if (!decoration && originalIcon && (icon !== undefined || position !== undefined)) { decoration = originalIcon.cloneNode(true) as Element; if (existingBefore) holder.prepend(decoration); else holder.append(decoration); }
+          if (icon !== undefined && icon !== "none") {
+            const markup = opts.iconMarkup?.(icon, decoration?.getAttribute("class") ?? "");
+            if (markup) {
+              const shell = document.createElement("div"); shell.innerHTML = clean(markup);
+              const replacement = shell.querySelector("svg,[data-inline-icon]");
+              if (replacement) { replacement.setAttribute("data-inline-icon", icon); if (decoration) decoration.replaceWith(replacement); else holder.append(replacement); decoration = replacement; }
             }
           }
+          if (decoration && (icon !== undefined || position !== undefined)) {
+            decoration.setAttribute("data-inline-icon", icon ?? decoration.getAttribute("data-inline-icon") ?? "owned");
+            decoration.setAttribute("aria-hidden", "true");
+            decoration.setAttribute("contenteditable", "false");
+            const style = (decoration as HTMLElement | SVGElement).style;
+            style.fontSize = "1em"; style.width = "1em"; style.height = "1em"; style.verticalAlign = "middle"; style.flexShrink = "0";
+            style.display = icon === "none" ? "none" : "inline-block";
+            const before = position === "before" || (position === undefined && !!originalIcon && existingBefore);
+            style.margin = before ? "0 0.25em 0 0" : "0 0 0 0.25em";
+            if (position !== undefined || !originalIcon) { if (before) holder.prepend(decoration); else holder.append(decoration); }
+          }
           const unchanged = entry.composed === holder.innerHTML && entry.rendered === el.innerHTML;
-          if (!unchanged && document.activeElement !== el && el.innerHTML !== holder.innerHTML) el.innerHTML = holder.innerHTML;
+          if (!unchanged && (document.activeElement !== el || opts.managerUpdate) && el.innerHTML !== holder.innerHTML) el.innerHTML = holder.innerHTML;
           entry.composed = holder.innerHTML;
           entry.html = html; entry.icon = icon;
         }
@@ -267,9 +285,6 @@ export function createReplay() {
         }
         const img = values.get("img");
         if (img !== undefined) { attribute(el, "src", img); attribute(el, "srcset", null); }
-        const placeholder = values.get("placeholder");
-        if (placeholder !== undefined) attribute(el, "placeholder", placeholder);
-        if (values.get("hidden") === "1") { attribute(el, "hidden", ""); if (el instanceof HTMLElement) el.style.setProperty("display", "none", "important"); }
         const linkValue = values.get("link");
         if (linkValue !== undefined) {
           const link = JSON.parse(linkValue) as LinkEdit;
