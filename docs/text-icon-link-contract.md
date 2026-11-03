@@ -1,6 +1,6 @@
 # Text Icon & Link: public-site companion contract
 
-Both projects now support before/after placement through the byte-identical `src/lib/inlineEditCore.ts` from Public commit `45d2c351`. Icons/links affect the whole selected element, never the highlighted word range. Existing range formatting remains unchanged.
+The Manager mirrors the supplied three-hunk update from Public commit `89e55b8` in `src/lib/inlineEditCore.ts`, retaining before/after placement and restoring hidden/placeholder validation. Icons/links affect the whole selected element, never the highlighted word range. Existing range formatting remains unchanged.
 
 ## Stored maps and keys
 
@@ -37,9 +37,11 @@ Object-only mode retains `scope:"object"`, its existing object snapshot and `edi
 
 No new capability or message is required. Both projects' shared core handles placement in parse/validate/replay/restore, fingerprints and path grouping. Manager's `editMap` uses the core directly for edit-change and record replies; there is no separate placement extension validator. The trusted iconMarkup adapter supplies Lucide SVG or parsed Material spans.
 
-### Exact-source compatibility caveat
+### Hidden/placeholder validation compatibility resolved
 
-Public `45d2c351` omits the Manager's older `hidden` and `placeholder` edit kinds. The exact mirror therefore rejects those keys, including whole incoming maps containing them. Image deletion and previously stored maps containing such keys need a reconciled Public `src/lib/inlineEditCore.ts` that restores those kinds alongside placement. Do not silently fork the shared core or claim this compatibility is resolved.
+Public `89e55b8` restores `hidden:<path>` (only the string `"1"`) and `placeholder:<path>` (strings of at most 300 characters). Saved mixed maps now validate in full through the shared core and Manager's `editMap`; unknown kinds still reject the incoming map. Delete Image retains the same hidden key/value; form hints retain the same placeholder key, slice input to 300 characters and remove the override when cleared. No saved-key migration or message changes are needed.
+
+This closes the old parse/validation gap, not a live rendering check: the supplied shared core has no hidden/placeholder DOM mutation or restoration branches. Its replay can report these keys as applied without changing visibility or the placeholder attribute. Keep the core verbatim; actual public-frame rendering remains separately unverified.
 
 ## Rendering and interaction
 

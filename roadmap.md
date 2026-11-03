@@ -5,7 +5,7 @@
 - [x] Chat ribbon above interactive preview (40px desktop/tablet, 6px phone); per-run SHA/build baseline and confirmed load, reload recovery/no-commit/queue tests. Signed-in controlled frame clicks/scroll work while waiting/building. Job-ID commit attribution now supported; served-frame build identity remains unavailable. No relay changes.
 - [x] Saved video list/panel deletion, staged undo/redo/discard, poster previews and chat Manual Edit hand-off; 89 affected tests pass, build OK. Real Experiment local delete/empty/Undo and 1280/768/390 options verified without saving; public poster click remains unavailable. Contract: docs/saved-video-editing.md. No library deletion or new relay/public behavior.
 - [x] Ribbon now decorates the existing estimate/remaining-time wording only; exact Public 45d2c351 core mirrored byte-for-byte, placement workaround removed; save/undo/reload/record and Material adapter tests pass (175 focused checks), build OK.
-- [ ] Restore hidden/placeholder compatibility: exact Public 45d2c351 core omits these older Manager kinds. Needs reconciled Public src/lib/inlineEditCore.ts retaining placement plus hidden/placeholder support; no unilateral shared-core fork.
+- [x] Restore hidden/placeholder validation compatibility with exactly the three supplied Public 89e55b8 hunks (7 insertions, 3 deletions). Existing Delete Image writes "1"; form-placeholder input slices strings to 300 characters; mixed saved maps validate in full and unknown kinds still reject. Shared replay has no hidden/placeholder DOM mutation branches; live public rendering remains unverified, not claimed fixed.
 - [x] Chat-only stage ribbon with commit/build/confirmed-frame completion, monotonic capped fill, elapsed time and phone strip; Submit/save bars and estimates unchanged. Missing timestamped draft SHA never claims Change made. Design canvas shell reachable but board content unavailable; implemented supplied spec.
 - [x] Keep-working card and session-persisted FIFO next-change queue release after builder reply, retain errors and clear on page-chip switch. 77 focused tests pass. Signed-in controlled relay browser confirms queued send occurs once after reply while previewChecking=true; 1280/768/390 light/dark fit and phone sheet composer verified. Actual public frame still shows separate login; hosted relay completion/visitor clicking remain unverified.
 - [x] Share AdminShell's Manual Edit save progress view with chat status; suppress independent content-job status and remove both page/object Manual Edit success toasts. 32 focused tests pass, including paired start/error/completion/fade/cancel dismissal and real toolbar save without success toast; build OK. Relay, Submit and estimates unchanged.
@@ -116,10 +116,10 @@
 - [x] Send saved edits to the Chat Mode preview on preview-ready and after saves/discards
 - [x] Manual Edit Mode: top-bar Objects/Images/Videos add beneath the original; removed the in-canvas add row
 - [x] Video selection options (size, alignment, corners, read-only details); held video sections select without playing
-- [x] Button label editing; placeholder shown read-only
+- [x] Button label editing; form-placeholder editing retains placeholder:<path> strings capped at 300 characters (clear removes the override).
 - [x] Top bar and chat header share one height
 - [x] Framed safety panel reads the public frame's edit-applied report and record query
-- [ ] Editable placeholders and video title/poster/source on built pages: needs a new attribute edit kind in the shared core on both projects
+- [ ] Verify public-frame placeholder replay and support editable video title/poster/source on built pages: placeholder validation restored in Public 89e55b8, but the supplied shared replay has no attribute mutation branches; video attributes still need shared support.
 - [x] One Manual Edit surface: every page (including database-only and brand-new) opens in the public frame at full pane width; local page surface, starter, header/footer copies removed
 - [x] Held sections drawn inside the public frame (plan step 4): waits on the public-site brief (Manager side done; public site in progress)
 - [x] Allow manual editing with waiting requests; persist busy content sync and retry from existing relay status

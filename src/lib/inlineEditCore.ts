@@ -2,7 +2,7 @@
 import DOMPurify from "dompurify";
 
 export type InlineEdits = Record<string, string>;
-export type Kind = "html" | "style" | "img" | "icon" | "icon-position" | "link" | "fp";
+export type Kind = "html" | "style" | "img" | "icon" | "icon-position" | "link" | "hidden" | "placeholder" | "fp";
 export interface LinkEdit { href?: string; target?: "_blank"; unlinked?: true }
 export interface Fingerprint { v: 1; tag: string; t: string; s?: string }
 export interface ReplayReport {
@@ -16,7 +16,7 @@ export function parseKey(key: string): { kind: Kind; path: string } | null {
   const colon = key.indexOf(":");
   const kind = colon < 0 ? "html" : key.slice(0, colon);
   const path = colon < 0 ? key : key.slice(colon + 1);
-  return ["html", "style", "img", "icon", "icon-position", "link", "fp"].includes(kind) &&
+  return ["html", "style", "img", "icon", "icon-position", "link", "hidden", "placeholder", "fp"].includes(kind) &&
     (colon < 0 || kind !== "html") && PATH.test(path) ? { kind: kind as Kind, path } : null;
 }
 // Properties written by InlineStylePanel, plus the existing surface's reorder controls.
@@ -54,7 +54,11 @@ export function validateEdits(edits: unknown): { ok: InlineEdits; rejected: Repl
     let reason = "";
     if (!parsed) reason = "Unknown edit key or invalid path";
     else if (typeof value !== "string") reason = "Edit must be a string";
-    else if (parsed.kind === "icon-position") {
+    else if (parsed.kind === "hidden") {
+      if (value !== "1") reason = "Hidden edit must be 1";
+    } else if (parsed.kind === "placeholder") {
+      if (value.length > 300) reason = "Placeholder must be at most 300 characters";
+    } else if (parsed.kind === "icon-position") {
       if (value !== "before" && value !== "after") reason = "Icon position must be before or after";
     } else if (parsed.kind === "icon" && value.startsWith("material:")) {
       if (!/^material:(outlined|rounded|sharp):[a-z0-9_]{1,100}$/.test(value)) reason = "Invalid Material icon";
