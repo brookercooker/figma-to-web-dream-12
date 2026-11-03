@@ -1,7 +1,7 @@
 import { act, cleanup, renderHook } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DesignChatProvider, useDesignChat, NAV_FALLBACK_MS } from "../DesignChatContext";
+import { DesignChatProvider, useDesignChat, NAV_FALLBACK_MS, NAV_SETTLE_MS } from "../DesignChatContext";
 import type { ReactNode } from "react";
 
 const mocks = vi.hoisted(() => ({ preview: vi.fn(), navigate: vi.fn(() => false) }));
@@ -29,6 +29,70 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); sessionStorage.clear(); });
 
 describe("preview Back confirmation", () => {
+  it("keeps the Back label and history after a matched report followed by a conflicting report, then Forward returns", () => {
+    vi.useFakeTimers(); mocks.navigate.mockReturnValue(true);
+    const frame = document.createElement("iframe"); frame.src = "https://site.example/brands"; frame.dataset.sitePreview = "true"; document.body.appendChild(frame);
+    const report = (path: string) => act(() => window.dispatchEvent(new MessageEvent("message", { source: frame.contentWindow, origin: "https://site.example", data: { source: "nova-site", type: "location", path } })));
+    try {
+      const hook = renderHook(useDesignChat, { wrapper });
+      report("/"); report("/brands"); report("/showrooms");
+      const label = () => hook.result.current.previewDestination ?? hook.result.current.previewLocation?.path;
+      act(() => hook.result.current.previewNav?.back());
+      expect(label()).toBe("/brands");
+      act(() => vi.advanceTimersByTime(1300));
+      report("/brands");
+      act(() => vi.advanceTimersByTime(25)); report("/coming-soon");
+      expect(label()).toBe("/brands");
+      expect(hook.result.current.previewLocation?.path).toBe("/brands");
+      expect(hook.result.current.previewNav?.canForward).toBe(true);
+      const remembered = mocks.preview.mock.results.at(-1)?.value.rememberPath as ReturnType<typeof vi.fn>;
+      expect(remembered).not.toHaveBeenCalledWith("/coming-soon");
+      act(() => hook.result.current.previewNav?.forward());
+      expect(label()).toBe("/showrooms");
+      report("/showrooms"); report("/coming-soon");
+      expect(label()).toBe("/showrooms");
+      expect(hook.result.current.previewNav?.canForward).toBe(false);
+      act(() => { hook.result.current.previewNav?.back(); hook.result.current.previewNav?.back(); }); report("/");
+      expect(label()).toBe("/");
+      expect(hook.result.current.previewNav?.canBack).toBe(false);
+      hook.unmount();
+    } finally { frame.remove(); mocks.navigate.mockReturnValue(false); vi.useRealTimers(); }
+  });
+  it("accepts in-frame navigation without a Manager request and after the non-extending settling window", () => {
+    vi.useFakeTimers(); mocks.navigate.mockReturnValue(true);
+    const frame = document.createElement("iframe"); frame.src = "https://site.example/"; frame.dataset.sitePreview = "true"; document.body.appendChild(frame);
+    const report = (path: string) => act(() => window.dispatchEvent(new MessageEvent("message", { source: frame.contentWindow, origin: "https://site.example", data: { source: "nova-site", type: "location", path } })));
+    try {
+      const hook = renderHook(useDesignChat, { wrapper });
+      report("/"); report("/coming-soon");
+      expect(hook.result.current.previewLocation?.path).toBe("/coming-soon");
+      act(() => hook.result.current.showPreviewPath("/brands")); report("/brands");
+      act(() => vi.advanceTimersByTime(NAV_SETTLE_MS - 1)); report("/brands"); report("/coming-soon");
+      expect(hook.result.current.previewLocation?.path).toBe("/brands");
+      act(() => vi.advanceTimersByTime(1)); report("/coming-soon");
+      expect(hook.result.current.previewLocation?.path).toBe("/coming-soon");
+      act(() => hook.result.current.previewNav?.back());
+      expect(hook.result.current.previewDestination).toBe("/brands");
+      hook.unmount();
+    } finally { frame.remove(); mocks.navigate.mockReturnValue(false); vi.useRealTimers(); }
+  });
+  it("does not apply an old preview settling guard to a replacement frame or Manual Edit frame", () => {
+    vi.useFakeTimers(); mocks.navigate.mockReturnValue(true);
+    const frame = document.createElement("iframe"); frame.src = "https://site.example/"; frame.dataset.sitePreview = "true"; document.body.appendChild(frame);
+    const other = document.createElement("iframe"); other.src = "https://site.example/"; other.dataset.siteEditor = "true"; document.body.appendChild(other);
+    const report = (f: HTMLIFrameElement, path: string) => act(() => window.dispatchEvent(new MessageEvent("message", { source: f.contentWindow, origin: "https://site.example", data: { source: "nova-site", type: "location", path } })));
+    try {
+      const hook = renderHook(useDesignChat, { wrapper });
+      report(frame, "/"); act(() => hook.result.current.showPreviewPath("/brands")); report(frame, "/brands");
+      act(() => hook.result.current.selectPage({ id: "about", name: "About", path: "/about" })); report(frame, "/about");
+      act(() => hook.result.current.startEditing()); report(other, "/team");
+      expect(hook.result.current.previewLocation?.path).toBe("/team");
+      act(() => hook.result.current.stopEditing()); act(() => hook.result.current.showPreviewPath("/brands")); report(frame, "/brands");
+      frame.remove(); other.removeAttribute("data-site-editor"); other.dataset.sitePreview = "true"; report(other, "/showrooms");
+      expect(hook.result.current.previewLocation?.path).toBe("/showrooms");
+      hook.unmount();
+    } finally { frame.remove(); other.remove(); mocks.navigate.mockReturnValue(false); vi.useRealTimers(); }
+  });
   it("updates destination and history immediately, delays the cue 150ms, and ignores superseded arrivals", () => {
     vi.useFakeTimers(); mocks.navigate.mockReturnValue(true);
     const frame = document.createElement("iframe"); frame.src = "https://site.example/"; frame.dataset.sitePreview = "true"; document.body.appendChild(frame);

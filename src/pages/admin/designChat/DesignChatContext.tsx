@@ -25,6 +25,8 @@ import { useWaitProgress } from "./useWaitProgress";
 
 /** How long Back/Forward/page choice waits for the preview to report the new page before reloading it once. */
 export const NAV_FALLBACK_MS = 3000;
+/** Bound duplicate/conflicting reports after a Manager navigation, without pinning later visitor navigation. */
+export const NAV_SETTLE_MS = 1500;
 /** Opt-in navigation diagnostics; never log frame addresses containing embed credentials. */
 function debugNav(event: string, details: Record<string, unknown>) {
   try { if (sessionStorage.getItem("nova:debug-nav") === "1") console.debug("[nav]", event, details); } catch { /* Optional diagnostics. */ }
@@ -189,6 +191,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   }, [workingPage]);
   // Back/Forward/page choice move the mounted preview in place; a src change happens only as a single fallback.
   const pendingNav = useRef<{ expect: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const settledNav = useRef<{ address: string; source: MessageEventSource; until: number } | null>(null);
   const [previewDestination, setPreviewDestination] = useState<string | null>(null);
   const [previewNavigating, setPreviewNavigating] = useState(false);
   const navigationCue = useRef<ReturnType<typeof setTimeout>>();
@@ -204,6 +207,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   // moved the index, the pending confirmation and fallback cover a lost message, and re-sends would fight later steps.
   const navigatePreview = useCallback((nav: PreviewNavigate, expect: string, fallback: () => void, sticky = true) => {
     debugNav("navigate", { action: nav.action, expect });
+    settledNav.current = null;
     target.current = nav.action === "to" && sticky ? { path: expect, tries: 0 } : null;
     const superseding = pendingNav.current !== null;
     if (pendingNav.current) { clearTimeout(pendingNav.current.timer); pendingNav.current = null; }
@@ -255,14 +259,25 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       const d = event.data;
       if (!d || typeof d !== "object" || d.source !== "nova-site" || d.type !== "location") return;
       if (typeof d.path !== "string" || !d.path.startsWith("/") || d.path.length > 300) return;
-      if (!event.source || !Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview], iframe[data-site-editor]")).some((f) => {
+      const reportingFrame = Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe[data-site-preview], iframe[data-site-editor]")).find((f) => {
         try { return f.contentWindow === event.source && new URL(f.src).origin === event.origin; } catch { return false; }
-      })) return;
+      });
+      if (!event.source || !reportingFrame) return;
       if (Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe[data-manifest-receiver]")).some((f) => f.contentWindow === event.source)) return;
       console.debug("[preview] location", d.path);
       // Preview credentials (`__lovable_*`) are dropped here so they are never compared, kept in history, remembered or logged.
       const search = typeof d.search === "string" && d.search.length <= 300 ? stripPreviewTokens(d.search) : "";
       debugNav("location", { path: d.path, search, expect: pendingNav.current?.expect });
+      const settled = settledNav.current;
+      if (settled && (settled.source !== event.source || Date.now() >= settled.until)) settledNav.current = null;
+      else if (settled && !pendingNav.current && !previewAddressMatches(settled.address, d.path, search)
+        && reportingFrame.hasAttribute("data-site-preview")) {
+        // `iframe.src` is the original address, not the SPA's current route. A cross-origin frame's live
+        // location is unreadable, so only suppress conflicts for a bounded settling window. Do not
+        // extend that window on duplicate reports: later visitor navigation must remain possible.
+        debugNav("settled conflict ignored", { path: d.path, search });
+        return;
+      }
       const notFound = d.notFound === true;
       const t = target.current;
       if (t && !previewAddressMatches(t.path, d.path, search)) {
@@ -273,6 +288,9 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       target.current = null;
       const pending = pendingNav.current;
       if (pending && !previewAddressMatches(pending.expect, d.path, search)) return;
+      if ((pending || t) && reportingFrame.hasAttribute("data-site-preview")) {
+        settledNav.current = { address: d.path + search, source: event.source, until: Date.now() + NAV_SETTLE_MS };
+      }
       setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search && Boolean(cur.notFound) === notFound ? cur : { path: d.path, search, ...(notFound ? { notFound: true } : {}) }));
       rememberPath(d.path + search);
       shownPath.current = d.path + search;
