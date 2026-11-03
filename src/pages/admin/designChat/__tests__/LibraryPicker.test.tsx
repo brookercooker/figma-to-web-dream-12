@@ -82,7 +82,7 @@ describe("library picker", () => {
     fireEvent.click(screen.getByRole("option", { name: "Marketing, 2 items" }));
     expect(screen.getByRole("button", { name: "Marketing" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.queryByRole("button", { name: "Any Label" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "All", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^All$/ }));
     expect(screen.getByTitle("Flyer")).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(onPick).toHaveBeenCalledTimes(1);
