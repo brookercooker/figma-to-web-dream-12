@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   location: null as null | string,
   page: null as null | { id: string; name: string; path: string },
   editing: false,
+  phone: false,
   guard: vi.fn(),
   refs: { references: [] as any[], addReference: vi.fn(), removeReference: vi.fn(), clearReferences: vi.fn(), focusTick: 0 },
   history: [] as any[],
@@ -34,6 +35,7 @@ vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({
   previewRegistrable: mocks.candidate,
 }) }));
 vi.mock("../contentSync", () => ({ notifyContentEdited: mocks.sync }));
+vi.mock("../useManagerLayout", () => ({ useManagerLayout: () => ({ phone: mocks.phone }) }));
 vi.mock("../ModeSwitchContext", () => ({ useModeSwitch: () => ({ requestChat: mocks.guard, requestManual: async (open: () => void) => open() }) }));
 vi.mock("@/prototype/client", () => ({ supabase: {
   from: () => ({ insert: mocks.insert }),
@@ -58,11 +60,35 @@ beforeEach(() => {
   mocks.refs = { references: [], addReference: vi.fn(), removeReference: vi.fn(), clearReferences: vi.fn(), focusTick: 0 };
   mocks.page = null;
   mocks.editing = false;
+  mocks.phone = false;
   mocks.guard.mockResolvedValue(false);
   mocks.insert.mockReturnValue({ select: () => ({ single: async () => ({ data: { id: "registered", name: "Race Test Page", path: "/race-test-page" }, error: null }) }) });
 });
 
 afterEach(cleanup);
+
+describe("composer autosizing", () => {
+  it.each([
+    { phone: false, height: 1024, minimum: 210, maximum: 512 },
+    { phone: false, height: 800, minimum: 210, maximum: 400 },
+    { phone: true, height: 844, minimum: 62, maximum: 150 },
+  ])("uses $minimum–$maximum px when phone=$phone at height=$height", ({ phone, height, minimum, maximum }) => {
+    mocks.phone = phone;
+    const viewport = vi.spyOn(window, "innerHeight", "get").mockReturnValue(height);
+    try {
+      render(<MemoryRouter><ChatPanel /></MemoryRouter>);
+      const input = screen.getByRole("textbox", { name: "Describe a Change" }) as HTMLTextAreaElement;
+      expect(parseFloat(input.style.height)).toBe(minimum);
+      Object.defineProperty(input, "scrollHeight", { configurable: true, value: 1000 });
+      fireEvent.change(input, { target: { value: "A long draft\n".repeat(40) } });
+      expect(parseFloat(input.style.height)).toBe(maximum);
+      expect(input).toHaveValue("A long draft\n".repeat(40));
+      expect(mocks.post).not.toHaveBeenCalled();
+    } finally {
+      viewport.mockRestore();
+    }
+  });
+});
 
 describe("mode-only entry and hidden chat controls", () => {
   it("has no manual entry in the chat or empty state and preserves hidden controls", () => {
