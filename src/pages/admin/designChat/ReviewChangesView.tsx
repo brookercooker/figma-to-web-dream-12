@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Eye } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -10,13 +10,12 @@ import type { DraftRequest } from "./helper";
 import { atMs, CHANGE_LABEL, changeKind, changeTitle, newestFirst, relativeTime, waitingLine } from "./reviewChanges";
 
 /** Changes waiting for review, from the relay's draft.requests only (never the chat history). Replaces the chat in the left column. */
-export default function ReviewChangesView({ onShowPreview }: { onShowPreview: () => void }) {
-  const { state, setReviewOpen, showPreviewPath } = useDesignChat();
+export default function ReviewChangesView(_props: { onShowPreview: () => void }) {
+  const { state, setReviewOpen } = useDesignChat();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(t); }, []);
   const requests = state?.draft?.requests;
   const count = state?.publish?.open ?? requests?.length ?? 0;
-  const view = (r: DraftRequest) => { onShowPreview(); if (r.page?.path) showPreviewPath(r.page.path); };
   return (
     <section aria-label="Changes Waiting for Review" className="flex min-h-0 flex-1 flex-col bg-background">
       <div className="flex shrink-0 items-center gap-2 border-b px-3 py-2">
@@ -33,7 +32,7 @@ export default function ReviewChangesView({ onShowPreview }: { onShowPreview: ()
         {requests && requests.length > 0 && (
           <TooltipProvider delayDuration={200}>
             <ul className="space-y-2" aria-label="Changes">
-              {newestFirst(requests).map((r) => <ChangeCard key={r.id} r={r} now={now} onView={() => view(r)} />)}
+              {newestFirst(requests).map((r) => <ChangeCard key={r.id} r={r} now={now} />)}
             </ul>
           </TooltipProvider>
         )}
@@ -42,7 +41,7 @@ export default function ReviewChangesView({ onShowPreview }: { onShowPreview: ()
   );
 }
 
-function ChangeCard({ r, now, onView }: { r: DraftRequest; now: number; onView: () => void }) {
+function ChangeCard({ r, now }: { r: DraftRequest; now: number }) {
   const [more, setMore] = useState(false);
   const { title, body } = changeTitle(r);
   const ms = atMs(r.at);
@@ -65,9 +64,6 @@ function ChangeCard({ r, now, onView }: { r: DraftRequest; now: number; onView: 
       {showBody && long && <button type="button" className="text-xs underline underline-offset-2" aria-expanded={more} onClick={() => setMore(!more)}>{more ? "Show Less" : "Show More"}</button>}
       {details.length > 0 && <ChangeDetails details={details} />}
       {r.page && <p className="truncate text-xs text-muted-foreground" title={`${r.page.name} ${r.page.path}`}>Page: {r.page.name} <span className="font-mono">{r.page.path}</span></p>}
-      <Button type="button" variant="outline" size="sm" className="h-7 gap-1.5 text-xs" onClick={onView}>
-        <Eye className="h-3.5 w-3.5" aria-hidden />{r.page ? "View Page on Preview" : "Open Draft Preview"}
-      </Button>
     </li>
   );
 }
