@@ -20,7 +20,7 @@
 - "/" and "/home" are one page: lookups, caches and registration go through registerPage homeAliases/pageKey, and the front page is only ever stored as "/".
 - The top bar starts with Preview/Objects/Images/Videos; one review-variant Submit stays hidden during manual editing. At phone widths Submit and Account/Tools/Review/Help use the labelled top-bar overflow; otherwise Tools stays in the accessible left-header rail.
 - Left-header actions consume DesignChatContext and reuse SubmitButton/ReviewProblems; the Review button toggles ReviewChangesView in place of the chat (chat hidden, never unmounted), listing only relay draft.requests (count from publish.open, count-only when requests are absent); chat history must never be presented as a change ledger, and full-session discard must never masquerade as single-change undo.
-- Site Manager mode derives only from DesignChat editing; ModeToggle is the sole switch (compact in the phone toolbar, segmented otherwise). Manual entry prefers the viewed editable page, then working page, then chooser. ModeSwitchProvider guards entry and sends via EditorSlot; the manual outline stays outside the canvas.
+- Site Manager mode derives only from DesignChat editing; ModeToggle is the sole switch (compact on phone, segmented otherwise). Manual entry prefers viewed editable page, working page, then chooser. ModeSwitchProvider guards entry via EditorSlot; keep frame-owned selection highlights, not an outer outline.
 
 ## Manual Editing Regression Checklist
 - Across static, Draft and landing pages: open editor, add/reorder sections, discard byte-identically, and ensure Chat Mode has no editing tools; unavailable public targets show Retry.
