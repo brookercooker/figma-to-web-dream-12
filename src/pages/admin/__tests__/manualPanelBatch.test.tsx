@@ -54,11 +54,26 @@ it("hidden image undo redo and discard restore the original without writes", () 
 });
 it("the selected text box changes the existing html edit and follows page changes", () => {
   const sel = remoteSelection({ key: "0", scope: "page", kind: "text", tag: "h2", html: 'See <b>Nova</b>', text: "See Nova" }); const change = vi.fn();
-  const view = render(<InlineStylePanel sel={sel} edits={{}} onChange={change} onReplaceImage={vi.fn()} />);
+  const adornments = { "icon:0": "House", "icon-position:0": "before" };
+  const view = render(<InlineStylePanel sel={sel} edits={adornments} onChange={change} onReplaceImage={vi.fn()} />);
   fireEvent.change(screen.getByRole("textbox", { name: "Selected Text" }), { target: { value: "Visit Nova" } });
   expect(change.mock.lastCall?.[0]["0"]).toContain("<b>Nova</b>");
+  expect(change.mock.lastCall?.[0]).toMatchObject(adornments);
   view.rerender(<InlineStylePanel sel={sel} edits={{ "0": "Page changed" }} onChange={change} onReplaceImage={vi.fn()} />);
   expect(screen.getByRole("textbox", { name: "Selected Text" })).toHaveValue("Page changed");
+});
+it("image size controls share a grid and destructive actions occupy separate full-width lines", () => {
+  const sel = remoteSelection({ key: "0", scope: "page", kind: "image", tag: "img" });
+  const { container } = render(<InlineStylePanel sel={sel} edits={{}} onChange={vi.fn()} onReplaceImage={vi.fn()} />);
+  const width = screen.getByLabelText("Width (px)").closest("label");
+  const height = screen.getByLabelText("Height (px)").closest("label");
+  const corners = screen.getByLabelText("Corners (px)").closest("label");
+  expect(width?.parentElement).toBe(height?.parentElement);
+  expect(corners?.parentElement).toBe(width?.parentElement);
+  expect(container.querySelector("[data-image-size-row]")).toHaveClass("grid-cols-3");
+  const actions = container.querySelector("[data-image-actions]");
+  expect(actions).toHaveClass("flex-col");
+  expect([...actions?.children ?? []]).toEqual([screen.getByRole("button", { name: "Delete Image" }), screen.getByRole("button", { name: "Undo All Changes to Image" })]);
 });
 it("image keyboard deletion ignores text fields and shows restore", () => {
   const snapshot = { key: "0", scope: "page", kind: "image" as const, tag: "img", context: { role: "image", section: "Categories" }, attrs: { src: "/light.jpg", alt: "Pendant" } };
