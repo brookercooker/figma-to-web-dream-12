@@ -85,6 +85,16 @@ it("restores commit/build stage across reload and waits for the newly loaded fra
   reloaded.rerender({ frame: 32000 }); expect(reloaded.result.current.request?.ribbon?.current).toBe(3);
   expect(reloaded.result.current.request?.done).toBe(true);
 });
+it("freezes highlighted stages on approval and error even if new metadata arrives", () => {
+  const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  const metadata = { requests: [{ id: "new", sha: "abc", at: 25000, request: "New" }] };
+  h.rerender({ state: { ...s, draft: metadata, job: { kind: "change", status: "approval", startedAt: 10000 } } });
+  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  expect(h.result.current.request?.label).toBe("Waiting for your approval");
+  h.rerender({ state: { ...s, draft: metadata, job: { kind: "change", status: "error", startedAt: 10000 } } });
+  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  expect(h.result.current.request?.error).toBe(true);
+});
 it("finishes a no-change question immediately on reply", () => { const s = base(); s.job = { kind: "question", status: "working", startedAt: 10_000 }; const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } }); h.rerender({ state: { ...s, busy: false, history: [...s.history, { role: "assistant", text: "Answer", ts: 30_000 }] } }); expect(h.result.current.request?.done).toBe(true); });
 it("pauses for approval and resumes without counting the wait", () => { const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } }); const value = h.result.current.request?.value; h.rerender({ state: { ...s, job: { ...s.job, kind: "change", startedAt: 10_000, status: "approval" } } }); act(() => vi.advanceTimersByTime(30_000)); expect(h.result.current.request?.value).toBe(value); h.rerender({ state: s }); expect(h.result.current.request?.value).toBe(value); });
 it("freezes errors and clears stopped jobs", () => { const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } }); h.rerender({ state: { ...s, job: { kind: "change", status: "error", startedAt: 10_000 } } }); const value = h.result.current.request?.value; act(() => vi.advanceTimersByTime(5000)); expect(h.result.current.request?.value).toBe(value); expect(h.result.current.request?.error).toBe(true); h.rerender({ state: { ...s, job: { kind: "change", status: "stopped", startedAt: 10_000 } } }); expect(h.result.current.request).toBeNull(); });
