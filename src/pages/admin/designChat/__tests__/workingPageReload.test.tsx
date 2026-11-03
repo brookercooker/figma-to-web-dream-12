@@ -93,7 +93,7 @@ describe("preview Back confirmation", () => {
     const make = () => { const f = document.createElement("iframe"); f.src = "https://site.example/"; f.dataset.sitePreview = "true"; document.body.appendChild(f); return f; };
     let frame = make();
     const report = (path: string, search = "") => act(() => window.dispatchEvent(new MessageEvent("message", { source: frame.contentWindow, origin: "https://site.example", data: { source: "nova-site", type: "location", path, search } })));
-    const toCalls = (path: string) => mocks.navigate.mock.calls.filter(([nav]) => (nav as { action: string; path?: string }).action === "to" && (nav as { path?: string }).path === path).length;
+    const toCalls = (path: string) => (mocks.navigate.mock.calls as unknown as [{ action: string; path?: string }][]).filter(([nav]) => nav.action === "to" && nav.path === path).length;
     try {
       const hook = renderHook(useDesignChat, { wrapper });
       report("/", "?__lovable_token=secret"); report("/about"); report("/team");
