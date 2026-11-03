@@ -89,7 +89,7 @@ it("brand swatches send the same concrete hex format as Apply to highlighted wor
   const format = vi.fn(), change = vi.fn();
   const sel = remoteSelection(snapshot, undefined, { range: { key: snapshot.key, scope: snapshot.scope, collapsed: false, text: "transforms", marks }, format });
   render(<InlineStylePanel sel={sel} edits={{}} onChange={change} onReplaceImage={vi.fn()} />);
-  fireEvent.click(screen.getByRole("button", { name: "Colour" }));
+  fireEvent.click(screen.getByRole("button", { name: "Text Color" }));
   fireEvent.click(screen.getByRole("button", { name: "Garnet" }));
   expect(format).toHaveBeenCalledWith("color", "#843733");
   expect(change).not.toHaveBeenCalled();
