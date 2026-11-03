@@ -1,7 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const m = vi.hoisted(() => ({ manual: false, busy: false, mounts: 0, reviewOpen: false }));
+const m = vi.hoisted(() => ({ manual: false, busy: false, mounts: 0, reviewOpen: false, dirty: false, save: vi.fn(), success: vi.fn() }));
+vi.mock("sonner", () => ({ toast: { success: m.success, error: vi.fn(), warning: vi.fn() } }));
 vi.mock("../designChat/DesignChatContext", () => ({ DesignChatProvider: ({ children }: any) => children,
   useDesignChat: () => ({ mode: m.manual ? "manual" : "chat", editing: m.manual, workingPage: { id: "home", name: "Homepage", path: "/" },
     state: { busy: m.busy, publish: { open: 0 } }, stopEditing: vi.fn(), clearWorkingPage: vi.fn(), objectOpen: null, closeObject: vi.fn(), refs: { addReference: vi.fn() }, reviewOpen: m.reviewOpen, setReviewOpen: vi.fn(), showPreviewPath: vi.fn() }) }));
@@ -12,12 +13,30 @@ vi.mock("../designChat/ChatPanel", async () => {
 vi.mock("../designChat/LibraryPicker", () => ({ default: () => null }));
 vi.mock("@/prototype/client", () => ({ supabase: { auth: { getUser: async () => ({ data: { user: null } }), onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }) } } }));
 vi.mock("../DesignChatTab", () => ({ default: () => <div data-testid="preview">Preview</div> }));
-vi.mock("../DesignTab", () => ({ default: () => <div data-testid="canvas">Unchanged Canvas</div> }));
+vi.mock("../DesignTab", async () => {
+  const { useEffect } = await import("react");
+  const { useEditorSlot } = await import("../designChat/EditorSlot");
+  return { default: () => {
+    const { registerSave, registerHasChanges } = useEditorSlot();
+    useEffect(() => { registerSave(m.save); registerHasChanges(() => m.dirty); return () => { registerSave(null); registerHasChanges(null); }; }, [registerSave, registerHasChanges]);
+    return <div data-testid="canvas">Unchanged Canvas</div>;
+  } };
+});
 import AdminIndex from "../AdminIndex";
-beforeEach(() => { m.manual = false; m.busy = false; m.mounts = 0; m.reviewOpen = false; localStorage.clear(); (globalThis as any).ResizeObserver = class { observe() {} disconnect() {} }; });
+beforeEach(() => { m.manual = false; m.busy = false; m.mounts = 0; m.reviewOpen = false; m.dirty = false; m.success.mockClear(); m.save.mockReset().mockImplementation(async () => { m.dirty = false; return true; }); localStorage.clear(); (globalThis as any).ResizeObserver = class { observe() {} disconnect() {} }; });
 afterEach(cleanup);
 const app = () => <MemoryRouter initialEntries={["/manage/preview"]}><AdminIndex /></MemoryRouter>;
 describe("Site Manager mode cues", () => {
+  it("saves Manual Edit changes without any success toast", async () => {
+    m.manual = true; m.dirty = true;
+    render(app()); await screen.findByTestId("canvas");
+    const save = screen.getByRole("button", { name: "Save Changes" });
+    await waitFor(() => expect(save).toBeEnabled());
+    fireEvent.click(save);
+    await waitFor(() => expect(m.save).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(save).not.toHaveTextContent("Saving…"));
+    expect(m.success).not.toHaveBeenCalled();
+  });
   it("swaps the chat for the review view without unmounting it", () => {
     const view = render(app());
     fireEvent.change(screen.getByLabelText("Held Chat Text"), { target: { value: "Draft text" } });
