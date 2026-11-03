@@ -27,6 +27,9 @@ export default function PreviewToolbar({ onManualNavigate, manualDisabled = fals
   const path = chat.editing ? chat.workingPage?.path ?? "/" : chat.previewLocation?.path ?? chat.workingPage?.path ?? "/";
   const current = pages.find(page => page.path === path || (path === "/home" && page.path === "/"));
   const name = current?.name ?? (chat.workingPage?.path === path ? chat.workingPage.name : path);
+  const manualIndex = pages.findIndex(page => page.path === path);
+  const backPage = pages[manualIndex - 1];
+  const forwardPage = manualIndex >= 0 ? pages[manualIndex + 1] : undefined;
   const choose = (value: string) => {
     if (chat.editing) { onManualNavigate(value); return; }
     const page = pages.find(p => p.path === value);
@@ -45,7 +48,10 @@ export default function PreviewToolbar({ onManualNavigate, manualDisabled = fals
   const FullIcon = chat.inFull ? Minimize2 : Maximize2;
   return <div role="toolbar" aria-label="Preview Toolbar" className="grid h-10 min-w-0 shrink-0 grid-cols-[4.25rem_minmax(0,1fr)_4.25rem] items-center gap-1 border-b bg-background px-2">
     <div className="flex shrink-0 gap-0.5">
-      {!chat.editing && chat.previewNav && <div data-preview-nav className="flex shrink-0 gap-0.5">
+      {chat.editing ? <div data-preview-nav className="flex shrink-0 gap-0.5">
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Back" title="Back" disabled={manualDisabled || !backPage} onClick={() => { if (backPage) onManualNavigate(backPage.path); }}><ChevronLeft className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Forward" title="Forward" disabled={manualDisabled || !forwardPage} onClick={() => { if (forwardPage) onManualNavigate(forwardPage.path); }}><ChevronRight className="h-4 w-4" /></Button>
+      </div> : chat.previewNav && <div data-preview-nav className="flex shrink-0 gap-0.5">
         <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Back" title="Back" onClick={chat.previewNav.back} disabled={!chat.previewNav.canBack}><ChevronLeft className="h-4 w-4" /></Button>
         <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Forward" title="Forward" onClick={chat.previewNav.forward} disabled={!chat.previewNav.canForward}><ChevronRight className="h-4 w-4" /></Button>
       </div>}
