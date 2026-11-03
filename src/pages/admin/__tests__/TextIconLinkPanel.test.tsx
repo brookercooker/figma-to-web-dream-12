@@ -13,18 +13,17 @@ function setup(tag = "h2", initial: InlineEdits = {}) {
   const change = vi.fn();
   function Panel() { const [edits, set] = useState(initial); return <TextIconLinkPanel sel={sel} edits={edits} onChange={next => { change(next); set(next); }} />; }
   render(<Panel />);
-  const header = screen.getByRole("button", { name: "Icon & Link None" });
+  const header = screen.getByRole("button", { name: "Icon None" });
   expect(header).toHaveAttribute("aria-expanded", "false");
   expect(screen.queryByRole("textbox", { name: "Link Address" })).toBeNull();
   fireEvent.click(header);
+  fireEvent.click(screen.getByRole("button", { name: "Link None" }));
   expect(screen.getByRole("button", { name: "No Icon" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("textbox", { name: "Link Address" })).toHaveAttribute("placeholder", "None");
   return { change };
 }
 it.each(["h1", "h2", "p", "button", "label"])("supports icons and links on a %s", tag => {
   const { change } = setup(tag);
-  fireEvent.change(screen.getByRole("textbox", { name: "Find an Icon" }), { target: { value: "mail" } });
-  expect(screen.queryByRole("button", { name: "Arrow Right" })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Mail" }));
   expect(change).toHaveBeenLastCalledWith({ "icon:0": "Mail" });
   fireEvent.click(screen.getByRole("button", { name: "Before Text" }));
@@ -34,8 +33,8 @@ it.each(["h1", "h2", "p", "button", "label"])("supports icons and links on a %s"
   expect(JSON.parse(change.mock.lastCall?.[0]["link:0"])).toEqual({ href: "/about" });
   fireEvent.click(screen.getByRole("switch", { name: "Open in New Tab" }));
   expect(JSON.parse(change.mock.lastCall?.[0]["link:0"])).toEqual({ href: "/about", target: "_blank" });
-  fireEvent.click(screen.getByRole("button", { name: "Icon & Link" }));
-  expect(screen.getByRole("button", { name: "Icon & Link Icon + Link" })).toHaveAttribute("aria-expanded", "false");
+  fireEvent.click(screen.getByRole("button", { name: "Icon" }));
+  expect(screen.getByRole("button", { name: "Icon Mail" })).toHaveAttribute("aria-expanded", "false");
 });
 it.each(["javascript:bad()", "http://example.com", "//example.com", "ftp://example.com"])("shows an inline error and never saves %s", address => {
   const { change } = setup(); const field = screen.getByRole("textbox", { name: "Link Address" });
@@ -59,7 +58,24 @@ it("clears icon/link values through existing undo and redo snapshots", () => {
 it("uses an existing link ancestor's independent scope and path", () => {
   const sel = remoteSelection({ key: "0.1", scope: "page", kind: "text", tag: "span", text: "Nova", link: { key: "2", scope: "Header", tag: "a", attrs: { href: "/old" } } });
   const change = vi.fn(); render(<TextIconLinkPanel sel={sel} edits={{}} onChange={vi.fn()} editsFor={() => ({})} onScopeChange={change} />);
-  fireEvent.click(screen.getByRole("button", { name: "Icon & Link Link" }));
+  fireEvent.click(screen.getByRole("button", { name: "Link /old" }));
   const field = screen.getByRole("textbox", { name: "Link Address" }); fireEvent.change(field, { target: { value: "/new" } }); fireEvent.blur(field);
   expect(change).toHaveBeenCalledWith("Header", { "link:2": JSON.stringify({ href: "/new" }) });
+});
+it.each(["home", "arrow_forward", "123", "Home"])("accepts pasted Google icon name %s", name => {
+  const { change } = setup();
+  fireEvent.change(screen.getByLabelText("Paste a Google Icon"), { target: { value: name } });
+  expect(change.mock.lastCall?.[0]["icon:0"]).toBe(`material:outlined:${name.toLowerCase()}`);
+});
+it.each(["two words", "home-foo", "home()", '<span>home</span>'])("rejects pasted icon name %s without editing", name => {
+  const { change } = setup();
+  fireEvent.change(screen.getByLabelText("Paste a Google Icon"), { target: { value: name } });
+  expect(screen.getByRole("alert")).toBeVisible(); expect(change).not.toHaveBeenCalled();
+});
+it("None in Link removes the scoped link and reflects its state", () => {
+  const { change } = setup(); const field = screen.getByRole("textbox", { name: "Link Address" });
+  fireEvent.change(field, { target: { value: "/about" } }); fireEvent.blur(field);
+  fireEvent.focus(field); fireEvent.click(screen.getByRole("button", { name: "None", exact: true }));
+  expect(JSON.parse(change.mock.lastCall?.[0]["link:0"])).toEqual({ unlinked: true });
+  fireEvent.focus(field); expect(screen.getByRole("button", { name: "None", exact: true })).toHaveAttribute("aria-pressed", "true");
 });

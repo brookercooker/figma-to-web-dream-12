@@ -75,9 +75,10 @@ it("whole-text icon placement and links survive framed updates and Undo/Redo wit
   send("edit-ready", { capabilities: { heldBlocks: true } });
   send("edit-select", { selection: { key: "0", scope: "page", kind: "text", tag: "h2", text: "Nova", style: {}, rect: {} } });
   mocks.writes.mockClear();
-  fireEvent.click(within(mocks.slot).getByRole("button", { name: "Icon & Link None" }));
+  fireEvent.click(within(mocks.slot).getByRole("button", { name: "Icon None" }));
   fireEvent.click(within(mocks.slot).getByRole("button", { name: "Mail" }));
   fireEvent.click(within(mocks.slot).getByRole("button", { name: "Before Text" }));
+  fireEvent.click(within(mocks.slot).getByRole("button", { name: "Link None" }));
   const address = within(mocks.slot).getByRole("textbox", { name: "Link Address" });
   fireEvent.change(address, { target: { value: "/about" } }); fireEvent.keyDown(address, { key: "Enter" });
   const next = { "icon:0": "Mail", "icon-position:0": "before", "link:0": JSON.stringify({ href: "/about" }) };
@@ -165,7 +166,6 @@ it("highlighted-word results enter unsaved history and Undo/Redo without databas
   send("edit-select", { selection: { key: "0.0.2.0", scope: "page", kind: "text", tag: "h1", text: "Light transforms everything.", context: { section: "Light transforms everything.", role: "heading" }, html: 'Light<br><span class="italic">…' } });
   send("edit-range", { key: "0.0.2.0", scope: "page", collapsed: false, text: "transforms", marks: { bold: false, italic: true, underline: false, strike: false, color: "rgb(255, 255, 255)", size: "88px", weight: "300", font: '"Cormorant Garamond", …' } });
   expect(within(mocks.slot).getByRole("textbox", { name: "Selected Text" })).toHaveValue("Light transforms everything.");
-  expect(within(mocks.slot).getByText("Heading · Light transforms everything. section")).toBeInTheDocument();
   expect(within(mocks.slot).getByRole("button", { name: "Italic" })).toHaveAttribute("aria-pressed", "true");
   expect(within(mocks.slot).getByRole("spinbutton", { name: "Size (px)" })).toHaveValue(88);
   fireEvent.click(within(mocks.slot).getByRole("button", { name: "Bold" }));

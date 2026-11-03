@@ -39,7 +39,9 @@ it("routes manual picks through the existing unsaved guard and reloads without s
     fireEvent.click(screen.getByRole("combobox", { name: "Preview Page" }));
     fireEvent.click(await screen.findByRole("option", { name: "Draft /draft" }));
     expect(navigate).toHaveBeenCalledWith("/draft"); expect(m.select).not.toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Forward" }));
+    expect(navigate).toHaveBeenLastCalledWith("/draft");
     fireEvent.click(screen.getByRole("button", { name: "Reload Preview" }));
     expect(reloaded).toHaveBeenCalledOnce(); expect(m.retry).not.toHaveBeenCalled();
   } finally { window.removeEventListener("nova-manager-reload-editor", reloaded); }

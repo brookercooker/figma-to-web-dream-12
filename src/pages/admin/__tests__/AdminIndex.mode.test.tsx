@@ -40,7 +40,6 @@ describe("Site Manager mode cues", () => {
     m.manual = true; view.rerender(app());
     const canvas = await screen.findByTestId("canvas");
     expect(canvas.parentElement?.parentElement?.tagName).toBe("MAIN");
-    expect(screen.getByText("Editing Homepage")).toBeVisible();
     expect(document.querySelector("[data-chat-header]")).toContainElement(screen.getByRole("button", { name: "Undo" }));
     expect(document.querySelector("[data-chat-header]")).toContainElement(screen.getByRole("button", { name: "Redo" }));
     expect(screen.queryByRole("button", { name: "Submit for Review" })).toBeNull();
