@@ -20,6 +20,9 @@ import type { WaitView } from "./waitEstimates";
 import StageRibbon from "./StageRibbon";
 import { elapsedTime } from "./stageRibbon";
 import { useChangeQueue } from "./useChangeQueue";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { needsManualContentEdit, rememberContentHandoff } from "./savedContentHandoff";
 
 const SUGGESTIONS = [
   "Make the headline larger",
@@ -34,7 +37,16 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgress }: { opening?: number; onDraw?: () => void; onAttention?: () => void; saveProgress?: WaitView | null } = {}) {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress, setDevice, setReviewOpen, previewPage } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress, setDevice, setReviewOpen, previewPage, selectPage, startEditing } = useDesignChat();
+  const navigate = useNavigate();
+  const handoffPage = workingPage?.id ? workingPage : previewPage;
+  const openSavedContent = async (reply: string) => {
+    if (!handoffPage?.id || !modeSwitch) return;
+    try { await modeSwitch.requestManual(() => {
+      rememberContentHandoff(handoffPage.id ?? "", reply);
+      selectPage(handoffPage); navigate("/manage/preview"); startEditing();
+    }); } catch { toast.error("Couldn't open this page for editing. Try again."); }
+  };
   const modeSwitch = useModeSwitch();
   const { phone } = useManagerLayout();
   const fallbackDraft = useChatDraft();
@@ -202,6 +214,10 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
             e.role === "error" && "self-stretch max-w-none bg-destructive/10 text-destructive",
           )}>
             {shown}
+            {e.role === "assistant" && needsManualContentEdit(e.text) && handoffPage?.id && <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+              <p>This saved content can be changed here.</p>
+              <Button type="button" variant="link" size="sm" className="h-auto whitespace-normal p-0 text-left text-xs" onClick={() => void openSavedContent(e.text)}>Edit in Manual Edit Mode</Button>
+            </div>}
             {(e.role === "user" || e.role === "assistant") && e.ts ? <time className="mt-1 block text-[11px] opacity-70">{fmtTime(e.ts)}</time> : null}
           </div>
         ))}
