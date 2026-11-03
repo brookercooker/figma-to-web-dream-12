@@ -42,8 +42,8 @@ it.each(["https://www.youtube.com/watch?v=abcdefghijk", "/upload.mp4"])("deletes
   expect(within(mocks.slot).getByLabelText("Saved Video Options")).toBeInTheDocument();
   fireEvent.click(within(row as HTMLElement).getByRole("button", { name: "Delete Video" }));
   expect(mocks.hasChanges()).toBe(false);
-  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete Video" }));
-  expect(post.mock.calls.filter(([m]) => m.type === "edit-update").at(-1)?.[0].heldBlocks).toHaveLength(0);
+  fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Delete Video" }));
+  expect(post.mock.calls.filter(([m]) => m.type === "edit-update").at(-1)?.[0].heldBlocks).toHaveLength(1);
   expect(mocks.hasChanges()).toBe(true); expect(mocks.writes).not.toHaveBeenCalled();
   act(() => mocks.history.undo()); expect(mocks.hasChanges()).toBe(false);
   act(() => mocks.history.redo()); expect(mocks.hasChanges()).toBe(true);
@@ -62,7 +62,7 @@ it("confirms saved video deletion from its full-width options panel", async () =
   expect(button).toHaveClass("w-full");
   expect(button.nextElementSibling).toHaveTextContent("Undo All Changes to Video");
   fireEvent.click(button); fireEvent.click(screen.getByRole("button", { name: "Cancel" })); expect(mocks.hasChanges()).toBe(false);
-  fireEvent.click(button); fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete Video" })); expect(mocks.hasChanges()).toBe(true);
+  fireEvent.click(button); fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Delete Video" })); expect(mocks.hasChanges()).toBe(true);
 });
 it.each([["mobile", 390], ["tablet", 768], ["desktop", 1280]])("Manual Edit uses the chosen %s viewport without replacing the frame", async (device, width) => {
   mocks.chat = { device, drawing: {}, startEditing: vi.fn() };

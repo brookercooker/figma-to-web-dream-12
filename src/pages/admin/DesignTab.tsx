@@ -153,7 +153,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const [heldInFrame, setHeldInFrame] = useState(false);
   const [frameSections, setFrameSections] = useState<FrameSection[] | null>(null);
   const [activeSection, setActiveSection] = useState("");
-  const [removeAsk, setRemoveAsk] = useState<{ name: string; confirm: () => void } | null>(null);
+  const [removeAsk, setRemoveAsk] = useState<{ name: string; video?: boolean; confirm: () => void } | null>(null);
   const sectionTemplates = useRef(new Map<string, FrameSection>());
   const receiveSections = (sections: FrameSection[] | null) => {
     if (sections) sections.forEach(section => sectionTemplates.current.set(section.key, section));
@@ -578,7 +578,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     const block = editState.current.blocks.find(b => b.id === id);
     if (!block || isPageContent(block)) return;
     const name = frameSections?.find(s => s.key === id)?.name ?? (block.type === "object" ? block.name ?? "Object" : block.type === "heading" || block.type === "text" ? block.text : block.type);
-    setRemoveAsk({ name, confirm: () => removeNow(id) });
+    setRemoveAsk({ name, video: block.type === "video", confirm: () => removeNow(id) });
   };
   const moveHeldBlock = (id: string, to: number) => {
     const block = editState.current.blocks.find(b => b.id === id);
@@ -987,7 +987,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     </>
   );
 
-  const savedVideos = blocks.flatMap(b => {
+  const savedVideos: { selectionId: string; parentId: string; index?: number; video: SavedVideo }[] = blocks.flatMap(b => {
     if (b.type === "video") return [{ selectionId: b.id, parentId: b.id, video: b as SavedVideo }];
     const videos = (b as unknown as { videos?: SavedVideo[] }).videos ?? [];
     return videos.map((video, index) => ({ selectionId: `${b.id}:video:${index}`, parentId: b.id, index, video }));
@@ -996,8 +996,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const deleteSavedVideo = (id: string) => {
     const target = savedVideos.find(v => v.selectionId === id);
     if (!target) return;
-    if (!("index" in target)) { remove(target.parentId); return; }
-    setRemoveAsk({ name: "Video", confirm: () => {
+    if (target.index === undefined) { remove(target.parentId); return; }
+    setRemoveAsk({ name: "Video", video: true, confirm: () => {
       changeBlocks(prev => prev.map(b => b.id !== target.parentId ? b : { ...b, videos: ((b as unknown as { videos: SavedVideo[] }).videos ?? []).filter((_, index) => index !== target.index) } as unknown as Block), "removed a video");
       setActiveId(""); setInlineSel(null);
     } });
@@ -1007,13 +1007,13 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     if (!selectedVideo) return;
     const baseline = cleanState.current.blocks.find(b => b.id === selectedVideo.parentId);
     if (!baseline) return;
-    if ("index" in selectedVideo) {
+    if (selectedVideo.index !== undefined) {
       const original = (baseline as unknown as { videos?: SavedVideo[] }).videos?.[selectedVideo.index];
       if (original) changeBlocks(prev => prev.map(b => b.id !== selectedVideo.parentId ? b : { ...b, videos: ((b as unknown as { videos: SavedVideo[] }).videos ?? []).map((v, i) => i === selectedVideo.index ? original : v) } as unknown as Block), "reset video settings");
     } else changeBlocks(prev => prev.map(b => b.id === baseline.id ? structuredClone(baseline) : b), "reset video settings");
   };
   // A stale/missing frame section report must never hide a saved video from staff.
-  const visibleFrameSections = frameSections === null ? null : [...frameSections, ...blocks.filter(b => b.type === "video" && !frameSections.some(s => s.key === b.id)).map(b => ({ key: b.id, name: "Video", kind: "held" as const, collapsed: false, movable: true, deletable: true }))];
+  const visibleFrameSections: FrameSection[] | null = frameSections === null ? null : [...frameSections, ...blocks.filter(b => b.type === "video" && !frameSections.some(s => s.key === b.id)).map(b => ({ key: b.id, name: "Video", kind: "held" as const, collapsed: false, movable: true, deletable: true }))];
   const blockLabel = (b: RenderBlock) => b.type === "object" ? b.name ?? "Saved Object" : b.type === "code" ? b.name : b.type === "text" || b.type === "heading" ? b.text : b.type === "image" ? "Image" : "Video";
   /** Shared site chrome in the Sections list: fixed first/last, no move or delete; selecting scrolls the frame to it. */
   const chromeRow = (slot: "site-header" | "site-footer", label: string) => <li key={slot} data-section-row={slot} className="flex items-center px-2 py-2">
@@ -1023,7 +1023,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   const tools = <div className="space-y-4 p-3">
     {!selectedVideo && stylePanel}
     {selectedVideo && <SavedVideoOptions video={selectedVideo.video} onDelete={() => deleteSavedVideo(selectedVideo.selectionId)} onReset={resetSavedVideo} />}
-    {savedVideos.filter(v => "index" in v).map(v => <div key={v.selectionId} data-section-row={v.selectionId} className="space-y-2 border-b pb-2"><SavedVideoPreview compact video={v.video} /><Button variant="ghost" size="sm" onClick={() => selectSavedBlock(v.selectionId)}>Video</Button><Button variant="ghost" size="sm" className="gap-2 text-destructive" onClick={() => deleteSavedVideo(v.selectionId)}><Trash2 className="h-4 w-4" />Delete Video</Button></div>)}
+    {savedVideos.filter(v => v.index !== undefined).map(v => <div key={v.selectionId} data-section-row={v.selectionId} className="space-y-2 border-b pb-2"><SavedVideoPreview compact video={v.video} /><Button variant="ghost" size="sm" onClick={() => selectSavedBlock(v.selectionId)}>Video</Button><Button variant="ghost" size="sm" className="gap-2 text-destructive" onClick={() => deleteSavedVideo(v.selectionId)}><Trash2 className="h-4 w-4" />Delete Video</Button></div>)}
     {frameSections !== null && <>
       <p className="text-xs font-medium">Sections</p>
       <ol className="divide-y rounded-md border">
@@ -1032,8 +1032,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
           {section.collapsed && <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label="Collapsed" />}
           <Button variant="ghost" size="sm" className="h-auto min-w-0 flex-1 justify-start whitespace-normal text-left" onClick={() => { setActiveSection(section.key); setActiveId(blocks.some(b => b.id === section.key) ? section.key : ""); setInlineSel(null); framedApi.current?.scrollToSection?.(section.key); }}>{section.name}</Button>
           {!objectId && (section.kind === "object" || section.objectId || section.kind === "site") && <span className="flex max-w-24 flex-col text-[10px] text-muted-foreground">Shared<span className="flex items-center gap-1"><PencilRuler className="h-3 w-3 shrink-0" aria-hidden />Edit in Object Editor</span></span>}
-          {section.movable && i > 0 && frameSections[i-1].kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title={!objectId && blocks.some(b => b.id === section.key) ? "Move to Top" : "Move Up"} aria-label={!objectId && blocks.some(b => b.id === section.key) ? "Move to Top" : "Move Up"} onClick={() => sectionAction(section, "up")}><ArrowUp className="h-3.5 w-3.5" /></Button>}
-          {section.movable && i < frameSections.length-1 && frameSections[i+1].kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title={!objectId && blocks.some(b => b.id === section.key) ? "Move to Bottom" : "Move Down"} aria-label={!objectId && blocks.some(b => b.id === section.key) ? "Move to Bottom" : "Move Down"} onClick={() => sectionAction(section, "down")}><ArrowDown className="h-3.5 w-3.5" /></Button>}
+          {section.movable && i > 0 && visibleFrameSections?.[i-1]?.kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title={!objectId && blocks.some(b => b.id === section.key) ? "Move to Top" : "Move Up"} aria-label={!objectId && blocks.some(b => b.id === section.key) ? "Move to Top" : "Move Up"} onClick={() => sectionAction(section, "up")}><ArrowUp className="h-3.5 w-3.5" /></Button>}
+          {section.movable && i < (visibleFrameSections?.length ?? 0)-1 && visibleFrameSections?.[i+1]?.kind !== "site" && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title={!objectId && blocks.some(b => b.id === section.key) ? "Move to Bottom" : "Move Down"} aria-label={!objectId && blocks.some(b => b.id === section.key) ? "Move to Bottom" : "Move Down"} onClick={() => sectionAction(section, "down")}><ArrowDown className="h-3.5 w-3.5" /></Button>}
           {(section.deletable || blocks.find(b => b.id === section.key)?.type === "video") && <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" title={blocks.find(b => b.id === section.key)?.type === "video" ? "Delete Video" : "Delete Section"} aria-label={blocks.find(b => b.id === section.key)?.type === "video" ? "Delete Video" : "Delete Section"} onClick={() => sectionAction(section, "delete")}><Trash2 className="h-3.5 w-3.5" /></Button>}
         </li>)}
       </ol>
@@ -1156,7 +1156,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
           objectScope={objectTarget} scrollToSlot={objectId ? null : returnTo ?? null}
           sectionRevision={sectionRevision} heldBlocks={objectId && !designedObject ? NO_BLOCKS : blocks} heldObjects={heldObjects} activeBlockId={activeId || null}
           onSections={receiveSections}
-          onBlockSelect={(id) => { setActiveId(id); setActiveSection(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setActiveSection(id); setInlineSel(null); }} fill={!deviceStyle}
+          onBlockSelect={(id) => { const video = savedVideos.find(v => v.video.id === id); setActiveId(video?.selectionId ?? id); setActiveSection(id); setInlineSel(null); requestAnimationFrame(() => document.querySelector(`[data-section-row="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" })); }} onHeldInFrame={setHeldInFrame} onBlockMove={(id, toIndex) => { moveHeldBlock(id, toIndex); setActiveId(id); setActiveSection(id); setInlineSel(null); }} fill={!deviceStyle}
           onUndo={() => restoreHistory("undo")} onRedo={() => restoreHistory("redo")}
           collapsed={foldedChunks} selectedKey={inlineSel ? `${inlineSel.scope}|${inlineSel.key}` : null} apiRef={framedApi}
           onImageDelete={() => { if (!inlineSel) return; const next = selectedImageDelete(inlineSel, scopeEdits(inlineSel.scope)); if (next) changeScope(inlineSel.scope, next); }}
@@ -1225,7 +1225,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
           setObjectAt(null);
         }}
       />
-      <ConfirmDialog open={!!removeAsk} onOpenChange={open => { if (!open) setRemoveAsk(null); }} title={`Remove ${removeAsk?.name ?? "This Section"}?`} description="The section will be removed from this page. You can undo it before saving." confirmLabel={removeAsk?.name.toLowerCase() === "video" ? "Delete Video" : "Delete Section"} onConfirm={() => { const ask = removeAsk; setRemoveAsk(null); ask?.confirm(); }} />
+      <ConfirmDialog open={!!removeAsk} onOpenChange={open => { if (!open) setRemoveAsk(null); }} title={`Remove ${removeAsk?.name ?? "This Section"}?`} description="The section will be removed from this page. You can undo it before saving." confirmLabel={removeAsk?.video ? "Delete Video" : "Delete Section"} onConfirm={() => { const ask = removeAsk; setRemoveAsk(null); ask?.confirm(); }} />
       <VideoPickerDialog
         open={!!videoFor}
         onOpenChange={(v) => { if (!v) { setVideoFor(null); setVideoAt(null); } }}
