@@ -319,7 +319,9 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
           </div>
         )}
 
+        {changing && <label htmlFor="next-change" className="text-xs text-muted-foreground">Next change (sends when this one finishes)</label>}
         <Textarea
+          id="next-change"
           key="chat-composer"
           ref={textRef}
           value={text}

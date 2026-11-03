@@ -48,7 +48,7 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   t.ready ||= !!t.replyAt && frameCompletedAt > t.replyAt;
   const decorate = (view: WaitView): WaitView => {
     if (isSubmit || t.kind === "question" || view.done && !t.committed && !t.hasBuild) return view;
-    const stage = t.ready ? 4 : t.built ? 3 : t.committed && t.hasBuild ? 2 : 1;
+    const stage = t.ready ? 4 : t.built ? 3 : t.committed ? 2 : 1;
     const current = Math.max(t.ribbonStage ?? 1, stage);
     if (current !== t.ribbonStage) { t.ribbonStage = current; t.ribbonHigh = 0; }
     const elapsed = Math.max(0, (now - (current >= 2 ? t.replyAt ?? t.id : t.id) - t.paused) / 1000);

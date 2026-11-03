@@ -111,6 +111,19 @@ describe("shared manual save feedback", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 });
+it("keeps the composer usable, queues through the normal payload and sends after reply during preview building", async () => {
+  mocks.busy = true; mocks.job = { kind: "change", status: "working", startedAt: 100 };
+  mocks.history = [{ role: "user", text: "First change", ts: 100 }];
+  const view = render(<MemoryRouter><ChatPanel /></MemoryRouter>);
+  const input = screen.getByRole("textbox", { name: "Next change (sends when this one finishes)" });
+  fireEvent.change(input, { target: { value: "Second change" } });
+  fireEvent.click(screen.getByRole("button", { name: "Queue it" }));
+  expect(mocks.post).not.toHaveBeenCalled(); expect(input).toHaveValue("");
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  mocks.history = [...mocks.history, { role: "assistant", text: "First replied", ts: 200 }];
+  view.rerender(<MemoryRouter><ChatPanel /></MemoryRouter>);
+  await waitFor(() => expect(mocks.post).toHaveBeenCalledWith("/send", { message: "Second change", uploadIds: [] }));
+});
 
 describe("composer autosizing", () => {
   it.each([

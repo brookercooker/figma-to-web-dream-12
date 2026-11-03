@@ -11,7 +11,7 @@ export default function StageRibbon({ progress, thin = false, className }: { pro
     {!thin && <p role="status" className="text-xs text-muted-foreground">{label}{r.long && <span className="mt-1 block">Taking a bit longer than usual. Still working.</span>}</p>}
     <div role="progressbar" aria-valuetext={label} aria-label={label} className="grid grid-cols-4 gap-1.5">
       {ribbonSegments(r).map(segment => <div key={segment.label} className="min-w-0">
-        <div className="h-[6px] overflow-hidden rounded-full bg-muted"><div className={cn("h-full rounded-full", progress.error ? "bg-destructive" : "bg-review", segment.current && !progress.error && !r.paused && "nova-stage-stripes")} style={{ width: `${segment.fill * 100}%` }} /></div>
+        <div className="h-[6px] overflow-hidden rounded-full bg-[var(--nova-stage-track)]"><div className={cn("h-full rounded-full", progress.error ? "bg-destructive" : "bg-review", segment.current && !progress.error && !r.paused && "nova-stage-stripes")} style={{ width: `${segment.fill * 100}%` }} /></div>
         {!thin && <p className={cn("mt-1.5 text-[11px] leading-tight", segment.current ? "font-bold text-foreground" : segment.finished ? "text-foreground" : "text-muted-foreground")}>{segment.label}</p>}
       </div>)}
     </div>
