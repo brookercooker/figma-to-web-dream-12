@@ -4,6 +4,7 @@ import { publicPreviewBase, publicPreviewPage } from "./publicPreviewUrl";
 import { setManifestBase, resetSiteManifestCache, isSafePublicFrameUrl } from "../siteManifest";
 import { previewExcluded, previewStage, type PreviewStage } from "./previewProgress";
 import { syncManifestPages } from "../manifestPageSync";
+import { previewAddressMatches } from "./previewHistory";
 
 /**
  * The draft preview and how it keeps up with changes.
@@ -54,7 +55,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   /** A page picked on purpose sticks until the preview reports it: earlier reports (e.g. the home page still loading) never override it. */
   const pinned = useRef<string | null>(path);
   const rememberPath = useCallback((p: string | null) => {
-    if (pinned.current && p !== pinned.current && p?.split("?")[0] !== pinned.current) return;
+    if (pinned.current && (!p || !previewAddressMatches(pinned.current, p))) return;
     pinned.current = null;
     remembered.current = p;
   }, []);

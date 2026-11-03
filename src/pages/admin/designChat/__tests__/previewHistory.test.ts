@@ -1,7 +1,19 @@
 import { describe, it, expect } from "vitest";
-import { emptyHistory, visit, step, canBack, canForward } from "../previewHistory";
+import { emptyHistory, visit, step, canBack, canForward, normalizePreviewAddress, previewAddressMatches } from "../previewHistory";
 
 describe("preview history", () => {
+  it("keeps Forward available after Back reports an equivalent Homepage address", () => {
+    const back = step(visit(visit(emptyHistory, "/home/"), "/about"), -1);
+    expect(visit(back.history, "/")).toBe(back.history);
+    expect(canForward(visit(back.history, "/"))).toBe(true);
+  });
+  it("normalizes trailing slashes and equivalent query serialization without losing query destinations", () => {
+    expect(normalizePreviewAddress("/home/?b=2&a=hello%20world")).toBe("/?a=hello+world&b=2");
+    expect(previewAddressMatches("/about/?b=2&a=1", "/about", "?a=1&b=2")).toBe(true);
+    expect(previewAddressMatches("/home", "/", "?offer=1")).toBe(true);
+    expect(previewAddressMatches("/about?offer=1", "/about", "?offer=2")).toBe(false);
+    expect(previewAddressMatches("/about", "/team")).toBe(false);
+  });
   it("starts with nothing to go back or forward to", () => {
     expect(canBack(emptyHistory)).toBe(false);
     expect(canForward(emptyHistory)).toBe(false);

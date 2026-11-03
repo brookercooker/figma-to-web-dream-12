@@ -13,7 +13,7 @@ import { syncManifestPages } from "../manifestPageSync";
 import { MANIFEST_CHANGED } from "../siteManifest";
 import ManifestReceiverFrame from "./ManifestReceiverFrame";
 import { useChatReferences, type ChatReferences } from "./useChatReferences";
-import { emptyHistory, visit, step, canBack, canForward, type PreviewHistory } from "./previewHistory";
+import { emptyHistory, visit, step, canBack, canForward, previewAddressMatches, type PreviewHistory } from "./previewHistory";
 import { observeContentSyncState } from "./contentSync";
 import { useChatDraft } from "./useChatDraft";
 import { useWaitProgress } from "./useWaitProgress";
@@ -25,6 +25,10 @@ import { useWaitProgress } from "./useWaitProgress";
 
 /** How long Back/Forward/page choice waits for the preview to report the new page before reloading it once. */
 export const NAV_FALLBACK_MS = 3000;
+/** Opt-in navigation diagnostics; never log frame addresses containing embed credentials. */
+function debugNav(event: string, details: Record<string, unknown>) {
+  try { if (sessionStorage.getItem("nova:debug-nav") === "1") console.debug("[nav]", event, details); } catch { /* Optional diagnostics. */ }
+}
 /** An object open in the editor; `from` decides the back link (page or the Objects list). */
 export interface ObjectOpen { id: string; section?: string; slot?: string; from: "page" | "objects" }
 export type Device = "mobile" | "tablet" | "desktop";
@@ -186,11 +190,13 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   // The page asked for sticks until the preview reports it (first-load race: the frame may still be on the home page).
   const target = useRef<{ path: string; tries: number } | null>(restoredPage ? { path: restoredPage.path, tries: 0 } : null);
   const navigatePreview = useCallback((nav: PreviewNavigate, expect: string, fallback: () => void) => {
+    debugNav("navigate", { action: nav.action, expect });
     target.current = nav.action === "to" ? { path: expect, tries: 0 } : null;
-    if (nav.action === "to" && shownPath.current === expect) return; // already showing it (e.g. entering or leaving Manual Edit Mode)
+    if (nav.action === "to" && shownPath.current && previewAddressMatches(expect, shownPath.current)) return; // already showing it (e.g. entering or leaving Manual Edit Mode)
     if (pendingNav.current) { clearTimeout(pendingNav.current.timer); pendingNav.current = null; }
-    if (!postPreviewNavigate(nav)) { fallback(); return; }
-    const timer = setTimeout(() => { if (pendingNav.current?.timer === timer) { pendingNav.current = null; fallback(); } }, NAV_FALLBACK_MS);
+    if (!postPreviewNavigate(nav)) { debugNav("unavailable", { expect }); fallback(); return; }
+    debugNav("posted", { action: nav.action, expect });
+    const timer = setTimeout(() => { if (pendingNav.current?.timer === timer) { debugNav("timeout fallback", { expect }); pendingNav.current = null; fallback(); } }, NAV_FALLBACK_MS);
     pendingNav.current = { expect, timer };
   }, []);
   useEffect(() => () => { if (pendingNav.current) clearTimeout(pendingNav.current.timer); }, []);
@@ -222,7 +228,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     const onMessage = (event: MessageEvent) => {
       if (notePreviewReady(event)) {
         const t = target.current;
-        if (t && shownPath.current !== t.path && t.tries < 5) { t.tries++; postPreviewNavigate({ action: "to", path: t.path }); }
+        if (t && (!shownPath.current || !previewAddressMatches(t.path, shownPath.current)) && t.tries < 5) { t.tries++; postPreviewNavigate({ action: "to", path: t.path }); }
         return;
       }
       const d = event.data;
@@ -234,19 +240,20 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       if (Array.from(document.querySelectorAll<HTMLIFrameElement>("iframe[data-manifest-receiver]")).some((f) => f.contentWindow === event.source)) return;
       console.debug("[preview] location", d.path);
       const search = typeof d.search === "string" && d.search.length <= 300 ? d.search : "";
+      debugNav("location", { path: d.path, search, expect: pendingNav.current?.expect });
       const notFound = d.notFound === true;
       setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search && Boolean(cur.notFound) === notFound ? cur : { path: d.path, search, ...(notFound ? { notFound: true } : {}) }));
       const t = target.current;
-      if (t && t.path !== d.path && t.path !== d.path + search) {
+      if (t && !previewAddressMatches(t.path, d.path, search)) {
         // Still showing an earlier page: ask again (bounded) rather than adopt it.
         if (t.tries < 5) { t.tries++; postPreviewNavigate({ action: "to", path: t.path }); }
         return;
       }
       target.current = null;
       rememberPath(d.path + search);
-      shownPath.current = d.path;
+      shownPath.current = d.path + search;
       const pending = pendingNav.current;
-      if (pending && (pending.expect === d.path + search || pending.expect === d.path)) { clearTimeout(pending.timer); pendingNav.current = null; }
+      if (pending && previewAddressMatches(pending.expect, d.path, search)) { debugNav("matched", { expect: pending.expect, path: d.path, search }); clearTimeout(pending.timer); pendingNav.current = null; }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
@@ -264,6 +271,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     if (!r.address) return;
     setHistory(r.history);
     const address = r.address;
+    debugNav("history step", { by, address });
     navigatePreview({ action: by < 0 ? "back" : "forward" }, address, () => { setPreviewPath(address); setNavNonce((n) => n + 1); });
   }, [editing, navigatePreview]);
   const previewNav = useMemo(() => ({

@@ -7,6 +7,15 @@ vi.mock("../../manifestPageSync", () => ({ syncManifestPages: vi.fn() }));
 vi.mock("../../siteManifest", () => ({ setManifestBase: vi.fn(), resetSiteManifestCache: vi.fn(), isSafePublicFrameUrl: (url: string) => url.startsWith("https://") }));
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 describe("Chat public frames", () => {
+  it("remembers canonical Homepage arrivals for later refreshes instead of keeping a stale home pin", async () => {
+    vi.stubEnv("VITE_PUBLIC_SITE_URL", "https://public.example");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ expires_at: "2099-01-01" }) }));
+    const view = renderHook(() => usePreview(null, "/home/"));
+    await waitFor(() => expect(view.result.current.frames).toHaveLength(1));
+    act(() => { view.result.current.rememberPath("/"); view.result.current.rememberPath("/about"); });
+    await act(async () => { await view.result.current.retry(); });
+    expect(view.result.current.frames[1]?.url).toBe("https://public.example/about");
+  });
   it("replaces the Manager preview with the public /draft route and preserves it across page changes", async () => {
     vi.stubEnv("VITE_PUBLIC_SITE_URL", "https://public.example");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ embed_url: "https://manager.example/preview?token=manager", expires_at: "2099-01-01" }) }));
