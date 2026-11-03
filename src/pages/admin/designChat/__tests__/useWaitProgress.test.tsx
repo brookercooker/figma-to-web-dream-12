@@ -32,7 +32,7 @@ it("requires a commit for Change made and a confirmed frame for Ready, never fil
   h.rerender({ state: reply, frame: 0 }); expect(h.result.current.request?.ribbon?.changed).toBe(false);
   const committed: RelayState = { ...reply, draft: { requests: [{ id: "code", source: "chat", request: "Heading", sha: "abc123", at: 30000 }] } };
   h.rerender({ state: committed, frame: 0 }); expect(h.result.current.request?.ribbon?.changed).toBe(true);
-  const building: RelayState = { ...committed, previewBuiltAt: 31000 };
+  const building: RelayState = { ...committed, previewChecking: false, previewBuiltAt: 31000 };
   h.rerender({ state: building, frame: 0 }); expect(h.result.current.request?.done).not.toBe(true);
   expect(h.result.current.request?.ribbon?.ready).toBe(false);
   h.rerender({ state: building, frame: 32000 });
@@ -44,12 +44,46 @@ it("requires a commit for Change made and a confirmed frame for Ready, never fil
 it("reloads a running request using server elapsed time", () => { const one = renderHook(() => useWaitProgress(base())); const value = one.result.current.request?.value; one.unmount(); const two = renderHook(() => useWaitProgress(base())); expect(two.result.current.request?.value).toBe(value); expect(value).toBeGreaterThan(0.2); });
 it("jumps at reply, waits for real build, then completes for 1.5s", () => {
   const s = base(); const h = renderHook(({ state, frame = 0 }: { state: RelayState; frame?: number }) => useWaitProgress(state, frame), { initialProps: { state: s, frame: 0 } });
-  const reply: RelayState = { ...s, busy: false, previewVersion: 2, previewChecking: true, history: [...s.history, { role: "assistant", text: "Changed", ts: 30_000 }] };
+  const reply: RelayState = { ...s, busy: false, previewVersion: 2, previewChecking: true, draft: { requests: [{ id: "change", source: "chat", sha: "abc", at: 30000, request: "Change" }] }, history: [...s.history, { role: "assistant", text: "Changed", ts: 30_000 }] };
   h.rerender({ state: reply }); expect(h.result.current.request?.value).toBeGreaterThanOrEqual(40 / 90); expect(h.result.current.request?.done).not.toBe(true);
   h.rerender({ state: { ...reply, previewChecking: false, previewBuiltAt: 31_000 }, frame: 0 }); expect(h.result.current.request?.done).not.toBe(true);
   h.rerender({ state: { ...reply, previewChecking: false, previewBuiltAt: 31_000 }, frame: 32_000 }); expect(h.result.current.request?.value).toBe(1);
   act(() => vi.advanceTimersByTime(1500)); expect(h.result.current.request?.fading).toBe(true);
   act(() => vi.advanceTimersByTime(250)); expect(h.result.current.request).toBeNull();
+});
+it("highlights Received until a timestamped SHA, ignores time and older commits", () => {
+  const s = { ...base(), draft: { requests: [{ id: "old", sha: "old", at: 9999, request: "Old" }] } };
+  const h = renderHook(() => useWaitProgress(s));
+  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  act(() => vi.advanceTimersByTime(100000));
+  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  expect(h.result.current.request?.ribbon?.changed).toBe(false);
+});
+it("skips preview stages for a no-commit change reply", () => {
+  const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  h.rerender({ state: { ...s, busy: false, job: { ...s.job, kind: "change", startedAt: 10000, status: "done" }, history: [...s.history, { role: "assistant", text: "Nothing changed", ts: 30000 }] } });
+  expect(h.result.current.request?.label).toBe("Done");
+  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  expect(h.result.current.request?.ribbon?.built).toBe(false);
+});
+it("a queued next job gets its own run and cannot inherit the previous commit or loaded frame", () => {
+  const s = base(); const h = renderHook(({ state, frame }) => useWaitProgress(state, frame), { initialProps: { state: s, frame: 0 } });
+  const first: RelayState = { ...s, previewChecking: true, draft: { requests: [{ id: "first", sha: "abc", at: 30000, request: "First" }] } };
+  h.rerender({ state: first, frame: 0 }); expect(h.result.current.request?.ribbon?.current).toBe(2);
+  const next = { ...first, job: { kind: "change", status: "working", startedAt: 40000 }, history: [...s.history, { role: "user" as const, ts: 40000, text: "Next change" }] };
+  h.rerender({ state: next, frame: 35000 });
+  expect(h.result.current.request?.ribbon?.current).toBe(0); expect(h.result.current.request?.ribbon?.ready).toBe(false);
+});
+it("restores commit/build stage across reload and waits for the newly loaded frame", () => {
+  const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  const changed: RelayState = { ...s, busy: false, job: { kind: "change", status: "done", startedAt: 10000 }, draft: { requests: [{ id: "new", sha: "abc", at: 25000, request: "New" }] }, history: [...s.history, { role: "assistant", ts: 26000, text: "Changed" }] };
+  h.rerender({ state: changed }); expect(h.result.current.request?.ribbon?.current).toBe(2); h.unmount();
+  const built = { ...changed, previewVersion: 2, previewBuiltAt: 31000 };
+  const reloaded = renderHook(({ frame }) => useWaitProgress(built, frame), { initialProps: { frame: 0 } });
+  expect(reloaded.result.current.request?.ribbon?.current).toBe(2);
+  expect(reloaded.result.current.request?.done).not.toBe(true);
+  reloaded.rerender({ frame: 32000 }); expect(reloaded.result.current.request?.ribbon?.current).toBe(3);
+  expect(reloaded.result.current.request?.done).toBe(true);
 });
 it("finishes a no-change question immediately on reply", () => { const s = base(); s.job = { kind: "question", status: "working", startedAt: 10_000 }; const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } }); h.rerender({ state: { ...s, busy: false, history: [...s.history, { role: "assistant", text: "Answer", ts: 30_000 }] } }); expect(h.result.current.request?.done).toBe(true); });
 it("pauses for approval and resumes without counting the wait", () => { const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } }); const value = h.result.current.request?.value; h.rerender({ state: { ...s, job: { ...s.job, kind: "change", startedAt: 10_000, status: "approval" } } }); act(() => vi.advanceTimersByTime(30_000)); expect(h.result.current.request?.value).toBe(value); h.rerender({ state: s }); expect(h.result.current.request?.value).toBe(value); });

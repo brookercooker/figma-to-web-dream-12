@@ -84,9 +84,21 @@ describe("floating preview navigation", () => {
     expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Forward" })).toBeDisabled();
   });
-  it("hides toolbar navigation while editing by hand", () => {
+  it("keeps manual toolbar navigation guarded and disabled without a valid page", () => {
     setup({ editing: true }); cleanup();
     render(<PreviewToolbar onManualNavigate={vi.fn()} />);
-    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Back" })).toBeDisabled();
+  });
+  it("keeps the same shown frame interactive and undimmed while waiting, with no covering update layer", () => {
+    const { chat, view, rerender, container } = setup({ preview: { frames: [{ id: 1, url: "https://public.example/" }], shownId: 1, loaded: true, finish: vi.fn() } as any });
+    const frame = container.querySelector("iframe");
+    chat.preview.progressStage = 2;
+    chat.waitProgress = { submit: null, request: { value: .4, label: "Making your change · about 40 sec left", ribbon: { received: true, changed: false, built: false, ready: false, current: 0, partial: .4, elapsed: 10 } } };
+    rerender(view());
+    expect(container.querySelector("iframe")).toBe(frame);
+    expect(frame?.className).not.toMatch(/pointer-events-none|opacity/);
+    expect(screen.queryByText("Updating Preview")).toBeNull();
+    expect(container.querySelector('[aria-label="Preview Loading"]')).toBeNull();
+    expect(screen.getByRole("progressbar").compareDocumentPosition(frame as Node) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

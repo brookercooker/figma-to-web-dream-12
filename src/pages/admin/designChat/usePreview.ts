@@ -33,6 +33,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   const [loaded, setLoaded] = useState(false); // the first copy is on screen
   const [updating, setUpdating] = useState(false);
   const [completedAt, setCompletedAt] = useState(0);
+  const [frameLoadedAt, setFrameLoadedAt] = useState(0);
   const [buildDetected, setBuildDetected] = useState(false);
   const buildFrame = useRef<number | null>(null);
   const stateRef = useRef(state); stateRef.current = state;
@@ -86,6 +87,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
     shown.current = id;
     setShownId(id);
     setLoaded(true);
+    if (confirmed) setFrameLoadedAt(Date.now());
     void syncManifestPages();
     setError(null);
     setFrames((fs) => fs.filter((f) => f.id >= id)); // older copies go; newer ones still loading stay
@@ -251,5 +253,5 @@ export function usePreview(state: RelayState | null, path: string | null = null,
     buildFrame.current = null; setBuildDetected(false); hideUpdating();
   }, [state, hideUpdating]);
   return { frames, shownId, loaded, updating, error, finish, retry: loadPreview, lastReloadAt, rememberPath,
-    progressStage, elapsedMs: Math.max(0, clock - (updateStart.current ?? clock)), completedAt };
+    progressStage, elapsedMs: Math.max(0, clock - (updateStart.current ?? clock)), completedAt, frameLoadedAt };
 }
