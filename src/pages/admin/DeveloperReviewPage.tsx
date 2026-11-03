@@ -68,7 +68,7 @@ export default function DeveloperReviewPage() {
           <h1 className="text-base font-medium tracking-tight">Developer Review</h1>
         </div>
       </header>
-      <ReviewErrorDetails />
+      {isAdmin && <ReviewErrorDetails />}
       {!isAdmin ? <div className="p-6 text-sm text-muted-foreground">Sign in to load or save this. Developer review requires an authorized account.</div> : RELAY_IS_HOSTED ? (
         <iframe
           ref={iframeRef}

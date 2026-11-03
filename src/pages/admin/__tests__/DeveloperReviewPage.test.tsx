@@ -4,18 +4,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DeveloperReviewPage from "../DeveloperReviewPage";
 import type { RelayState } from "../designChat/helper";
 
-const mocks = vi.hoisted(() => ({ review: undefined as RelayState["draft"], admin: true }));
+const mocks = vi.hoisted(() => ({ review: undefined as RelayState["draft"], admin: true, require: true }));
+vi.mock("@/lib/authGate", () => ({ get REQUIRE_LOGIN() { return mocks.require; } }));
 vi.mock("@/prototype/client", () => ({ supabase: {
   auth: { getUser: async () => ({ data: { user: { id: "staff" } } }) },
   rpc: async () => ({ data: mocks.admin }),
 } }));
 vi.mock("../designChat/helper", () => ({ RELAY: "https://design.example", RELAY_IS_HOSTED: true, relayHeaders: async () => ({}) }));
 vi.mock("../designChat/useHelperState", () => ({ useHelperState: () => ({ state: { draft: mocks.review } }) }));
-beforeEach(() => { mocks.admin = true; mocks.review = undefined; });
+beforeEach(() => { mocks.admin = true; mocks.review = undefined; mocks.require = true; });
 afterEach(cleanup);
 const open = () => render(<MemoryRouter><DeveloperReviewPage /></MemoryRouter>);
 
 describe("Developer Review error details", () => {
+  it("keeps the screen visible but private details unavailable during signed-out review", async () => {
+    mocks.require = false; mocks.admin = false;
+    mocks.review = { review: { state: "error", headline: "Private review details" } };
+    open();
+    expect(await screen.findByText(/Sign in to load or save this/)).toBeVisible();
+    expect(screen.queryByText("Private review details")).toBeNull();
+    expect(screen.queryByTitle("Developer Review")).toBeNull();
+  });
   it.each([true, false, undefined])("shows exact service details and retry classification (%s)", async (retry) => {
     mocks.review = { review: { state: "error", headline: "GitHub refused commit abc123.", summary: "Missing actions:write.\nWorkflow review.yml could not start.", retry } };
     open();
