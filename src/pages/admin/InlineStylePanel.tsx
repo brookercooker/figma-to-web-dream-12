@@ -16,6 +16,7 @@ import { spacingPixels, lineHeightMultiplier } from "./textUnits";
 import { SIDES, commonValue, isMixed, setAllSides, setBorderPart, sideValues, type BorderPart, type Side } from "./borderEdit";
 import { useManagerLayout } from "./designChat/useManagerLayout";
 import { withoutPath } from "@/lib/inlineEditCore";
+import MediaAlignment from "./MediaAlignment";
 
 const WEIGHTS = [["Light", "300"], ["Regular", "400"], ["Medium", "500"], ["Bold", "700"]] as const;
 
@@ -235,13 +236,7 @@ export default function InlineStylePanel({
                 value={num(style.height)} onChange={(e) => set("height", px(e.target.value))} />
             </ToolField>
           </ToolGrid>
-          <ToolField label="Alignment">
-            <ToolSegment>
-              {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Icon]) => (
-                <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a}`} aria-label={`Align ${a}`} onClick={() => setAlign(align === a ? "" : a)}><Icon className="w-4 h-4" /></Button>
-              ))}
-            </ToolSegment>
-          </ToolField>
+          <MediaAlignment value={align} onChange={a => setAlign(align === a ? "" : a)} />
         </ToolGroup>
         <ToolGroup title="Corners" icon={SquareDashed}>
           <ToolField label="Rounded Corners (px)">

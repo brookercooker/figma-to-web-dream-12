@@ -39,6 +39,7 @@ import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import { objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";
 import SectionLayoutGroup from "./SectionLayoutGroup";
 import SavedVideoOptions, { SavedVideoPreview, type SavedVideo } from "./SavedVideoOptions";
+import MediaAlignment from "./MediaAlignment";
 import { consumeContentHandoff } from "./designChat/savedContentHandoff";
 import { saveRow } from "./saveRow";
 import { imageSection, moveSection, sectionLabel, videoSection } from "./objectSectionsEdit";
@@ -966,7 +967,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
                               ))}
                             </>
                           )}
-                          {b.type !== "object" && b.type !== "code" && (
+                          {b.type === "image" ? <div className="w-full"><MediaAlignment value={b.align} onChange={align => update(b.id, { align } as Partial<Block>)} /></div> : b.type !== "object" && b.type !== "code" && (
                             <>
                               <span className="mx-1 h-5 w-px bg-border" />
                               {(["left", "center", "right"] as BlockAlign[]).map((a) => (
@@ -1022,7 +1023,14 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
   </li>;
   const tools = <div className="space-y-4 p-3">
     {!selectedVideo && stylePanel}
-    {selectedVideo && <SavedVideoOptions video={selectedVideo.video} onDelete={() => deleteSavedVideo(selectedVideo.selectionId)} onReset={resetSavedVideo} />}
+    {selectedVideo && <SavedVideoOptions video={selectedVideo.video} onDelete={() => deleteSavedVideo(selectedVideo.selectionId)} onReset={resetSavedVideo} layout={{
+      align: blocks.find(b => b.id === selectedVideo.parentId)?.align,
+      width: (selectedVideo.video as SavedVideo & { width?: number }).width,
+      pixels: selectedVideo.index !== undefined,
+      onAlign: align => update(selectedVideo.parentId, { align } as Partial<Block>),
+      onWidth: width => { if (selectedVideo.index === undefined) update(selectedVideo.parentId, { width: width ?? 100 } as Partial<Block>);
+        else changeBlocks(prev => prev.map(b => b.id !== selectedVideo.parentId ? b : { ...b, videos: ((b as unknown as { videos: SavedVideo[] }).videos ?? []).map((video, index) => index === selectedVideo.index ? { ...video, width } : video) } as unknown as Block), "changed video width"); },
+    }} />}
     {savedVideos.filter(v => v.index !== undefined).map(v => <div key={v.selectionId} data-section-row={v.selectionId} className="space-y-2 border-b pb-2"><SavedVideoPreview compact video={v.video} /><Button variant="ghost" size="sm" onClick={() => selectSavedBlock(v.selectionId)}>Video</Button><Button variant="ghost" size="sm" className="gap-2 text-destructive" onClick={() => deleteSavedVideo(v.selectionId)}><Trash2 className="h-4 w-4" />Delete Video</Button></div>)}
     {frameSections !== null && <>
       <p className="text-xs font-medium">Sections</p>
