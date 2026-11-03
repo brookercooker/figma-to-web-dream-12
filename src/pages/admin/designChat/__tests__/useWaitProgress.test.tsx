@@ -4,9 +4,21 @@ import { useWaitProgress } from "../useWaitProgress";
 import type { RelayState } from "../helper";
 import { RELAY } from "../helper";
 import { ribbonSegments } from "../stageRibbon";
+import { timedProgress } from "../waitEstimates";
 const base = (): RelayState => ({ busy: true, job: { kind: "change", status: "working", startedAt: 10_000 }, previewVersion: 1, history: [{ role: "user", ts: 10_000, text: "Make the heading bigger" }] });
 beforeEach(() => { sessionStorage.clear(); vi.useFakeTimers(); vi.setSystemTime(30_000); });
 afterEach(() => vi.useRealTimers());
+it("segments the existing estimate-driven level without changing easing or remaining time", () => {
+  const s = base();
+  const h = renderHook(({ state }: { state: RelayState }) => useWaitProgress(state), { initialProps: { state: s } });
+  const expected = timedProgress("normal", 0, 20, "Making your change");
+  expect(h.result.current.request?.value).toBe(expected.value);
+  expect(h.result.current.request?.ribbon?.partial).toBe(expected.value);
+  expect(h.result.current.request?.label).toBe("Making your change · about a minute left");
+  h.rerender({ state: { ...s, previewChecking: true, history: [...s.history, { role: "assistant", text: "Changed", ts: 30_000 }] } });
+  expect(h.result.current.request?.ribbon?.partial).toBe(h.result.current.request?.value);
+  expect(h.result.current.request?.label).toBe("Building the preview · about 50 sec left");
+});
 it("requires a commit for Change made and a confirmed frame for Ready, never filling early", () => {
   const s = base();
   const h = renderHook(({ state, frame }: { state: RelayState; frame: number }) => useWaitProgress(state, frame), { initialProps: { state: s, frame: 0 } });

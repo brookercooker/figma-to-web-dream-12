@@ -9,6 +9,7 @@ describe("real ribbon stages", () => {
     expect(ribbonSegments({ ...base, changed: true, built: true, ready: true }).map(s => s.fill)).toEqual([1, 1, 1, 1]);
   });
   it("cannot fill a current stage early even with an excessive estimate", () => {
-    expect(ribbonSegments({ ...base, partial: 1e10 })[1].fill).toBe(.95);
+    expect(ribbonSegments({ ...base, partial: 1e10 })[1].fill).toBe(1 - 1e-9);
+    expect(ribbonSegments({ ...base, partial: .98 })[1].fill).toBe(.98);
   });
 });

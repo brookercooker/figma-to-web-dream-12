@@ -3,15 +3,16 @@ import { createReplay, validateEdits } from "@/lib/inlineEditCore";
 import { validSnapshot } from "@/pages/admin/remoteSelection";
 
 describe("placeholder edits", () => {
-  it("applies and restores a form field's hint", () => {
+  it("rejects unsupported placeholder edits without altering a form field's hint", () => {
     const root = document.createElement("div");
     root.innerHTML = '<form><input placeholder="Your name"></form>';
     const r = createReplay();
     const rep = r.apply(root, { "placeholder:0.0": "Full name" });
-    expect(rep.applied).toEqual(["placeholder:0.0"]);
-    expect(root.querySelector("input")!.getAttribute("placeholder")).toBe("Full name");
+    expect(rep.applied).toEqual([]);
+    expect(rep.rejected).toEqual([{ key: "placeholder:0.0", reason: "Unknown edit key or invalid path" }]);
+    expect(root.querySelector("input")?.getAttribute("placeholder")).toBe("Your name");
     r.apply(root, {});
-    expect(root.querySelector("input")!.getAttribute("placeholder")).toBe("Your name");
+    expect(root.querySelector("input")?.getAttribute("placeholder")).toBe("Your name");
   });
   it("rejects hints over 300 characters", () => {
     expect(validateEdits({ "placeholder:0": "x".repeat(301) }).rejected).toHaveLength(1);

@@ -1,7 +1,6 @@
 import { isSafePublicFrameUrl } from "./siteManifest";
 import { validateEdits, type InlineEdits } from "@/lib/inlineEditCore";
 import { PAGE_CONTENT, isPageContent } from "./pageContentOrder";
-import { splitIconPositions } from "./textAdornment";
 
 export function editFrameUrl(base: string | null | undefined, path: string): string | null {
   if (window.self !== window.top || !isSafePublicFrameUrl(base) || !/^\/(?!\/)/.test(path) || /[\\\u0000-\u001f]/.test(path)) return null;
@@ -17,10 +16,8 @@ export function trustedEditMessage(event: MessageEvent, frame: HTMLIFrameElement
 }
 export function editMap(value: unknown): InlineEdits | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const split = splitIconPositions(value as Record<string, unknown>);
-  if (!split) return null;
-  const { ok, rejected } = validateEdits(split.base);
-  return rejected.length ? null : { ...ok, ...split.positions };
+  const { ok, rejected } = validateEdits(value);
+  return rejected.length ? null : ok;
 }
 export const HELD_BLOCKS_MAX = 50;
 export const HELD_BLOCKS_MAX_BYTES = 500_000;

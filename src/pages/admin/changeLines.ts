@@ -61,7 +61,9 @@ export function inlineChangeLines(subject: string, before: InlineEdits, after: I
       lines.push(after[key] ? `${subject}: made its own copy of ${name ? quote(name) : "a shared object"}` : `${subject}: went back to the shared ${name ? quote(name) : "object"}`);
       continue;
     }
-    const p = parseKey(key);
+    // Keep summaries of historical saves even when the exact current core lacks these kinds.
+    const legacy = /^(hidden|placeholder):(\d+(?:\.\d+)*)?$/.exec(key);
+    const p = parseKey(key) ?? (legacy ? { kind: legacy[1], path: legacy[2] ?? "" } : null);
     if (!p) continue;
     byPath.set(p.path, [...(byPath.get(p.path) ?? []), key]);
   }
@@ -74,7 +76,8 @@ export function inlineChangeLines(subject: string, before: InlineEdits, after: I
     const parts: string[] = [];
     let wording: string | null = null, link: string | null = null, picture = false, moved = false;
     for (const key of keys) {
-      const parsed = parseKey(key); if (!parsed) continue;
+      const legacy = /^(hidden|placeholder):(\d+(?:\.\d+)*)?$/.exec(key);
+      const parsed = parseKey(key) ?? (legacy ? { kind: legacy[1], path: legacy[2] ?? "" } : null); if (!parsed) continue;
       const kind = parsed.kind;
       if (kind === "hidden") { lines.push(after[key] === "1" ? `Picture removed from ${subject}` : `Picture restored on ${subject}`); continue; }
       if (kind === "html") {

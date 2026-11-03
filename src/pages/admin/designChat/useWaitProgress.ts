@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { RELAY, type RelayState } from "./helper";
-import { detectWaitKind, timedProgress, WAIT_ESTIMATES, type WaitKind, type WaitView } from "./waitEstimates";
+import { detectWaitKind, timedProgress, type WaitKind, type WaitView } from "./waitEstimates";
 
 type Track = { id: number; version: number; kind: WaitKind; high: number; replyAt?: number; pausedAt?: number; paused: number; doneAt?: number; error?: boolean; hasBuild?: boolean; stageStart?: number; view?: WaitView; ribbonStage?: number; ribbonHigh?: number; committed?: boolean; built?: boolean; ready?: boolean };
 const terminal = /^(done|complete|completed|published|live)$/;
@@ -51,10 +51,8 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
     const stage = t.ready ? 4 : t.built ? 3 : t.committed ? 2 : 1;
     const current = Math.max(t.ribbonStage ?? 1, stage);
     if (current !== t.ribbonStage) { t.ribbonStage = current; t.ribbonHigh = 0; }
-    const elapsed = Math.max(0, (now - (current >= 2 ? t.replyAt ?? t.id : t.id) - t.paused) / 1000);
-    const estimate = WAIT_ESTIMATES[t.kind][current >= 2 ? 1 : 0] ?? 50;
-    if (!view.error && !t.pausedAt) t.ribbonHigh = Math.max(t.ribbonHigh ?? 0, Math.min(.95, 1 - Math.exp(-elapsed / estimate * 1.6)));
-    return { ...view, ribbon: { received: true, changed: !!t.committed, built: !!t.built, ready: !!t.ready, current: Math.min(3, current), partial: t.ribbonHigh ?? 0, elapsed: Math.max(0, (now - t.id) / 1000), paused: t.pausedAt !== undefined, long: elapsed > estimate * 2 } };
+    // Segmentation decorates the existing estimate, never introduces another clock/easing.
+    return { ...view, ribbon: { received: true, changed: !!t.committed, built: !!t.built, ready: !!t.ready, current: Math.min(3, current), partial: view.value, elapsed: Math.max(0, (now - t.id) / 1000), paused: t.pausedAt !== undefined } };
   };
   if (stopped.test(status) || (!job && !reply && !t.replyAt && !t.doneAt && !state.previewChecking)) {
     track.current = null; rememberTrack(null); return { request: null, submit: null };
