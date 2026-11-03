@@ -28,10 +28,13 @@ const mocks = vi.hoisted(() => ({
   syncFailed: false,
   busy: false,
   job: undefined as any,
+  retry: undefined as any,
+  wait: undefined as any,
 }));
 vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({
   state: { busy: mocks.busy, job: mocks.job, history: mocks.history }, offline: false, refreshSoon: mocks.refresh,
   chatDraft: mocks.draft,
+  requestRetry: mocks.retry, waitProgress: mocks.wait,
   workingPage: null, clearWorkingPage: vi.fn(), editing: mocks.editing,
   drawing: { strokes: [], on: false, available: false, cancel: vi.fn(), toggle: vi.fn() },
   preview: { loaded: mocks.previewLoaded }, startEditing: mocks.start, stopEditing: vi.fn(), selectPage: mocks.select,
@@ -67,12 +70,24 @@ beforeEach(() => {
   mocks.page = null;
   mocks.editing = false;
   mocks.phone = false;
-  mocks.syncPending = false; mocks.syncFailed = false; mocks.busy = false; mocks.job = undefined;
+  mocks.syncPending = false; mocks.syncFailed = false; mocks.busy = false; mocks.job = undefined; mocks.retry = undefined; mocks.wait = undefined;
   mocks.guard.mockResolvedValue(false);
   mocks.insert.mockReturnValue({ select: () => ({ single: async () => ({ data: { id: "registered", name: "Race Test Page", path: "/race-test-page" }, error: null }) }) });
 });
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
+it("keeps a working retry on the failed history message after the indicator disappears", () => {
+  const retry = vi.fn().mockResolvedValue({ ok: true });
+  mocks.retry = { canRetry: () => true, isReviewFailure: () => false, retry, disabled: false };
+  mocks.history = [{ role: "user", text: "Make the lamp larger", ts: 1000 }, { role: "error", text: "Failed", ts: 1100 }];
+  mocks.wait = { request: { error: true, label: "The change couldn't finish", value: 0 }, submit: null };
+  const view = render(<MemoryRouter><ChatPanel /></MemoryRouter>);
+  mocks.wait = { request: null, submit: null };
+  view.rerender(<MemoryRouter><ChatPanel /></MemoryRouter>);
+  fireEvent.click(screen.getByRole("button", { name: "Try Again" }));
+  expect(retry).toHaveBeenCalledWith(1100, expect.any(Function));
+  expect(screen.getByText("Failed")).toBeInTheDocument();
+});
 it("renders contextual helper suggestions instead of unconditional phone and draft links", () => {
   mocks.busy = true; mocks.job = { id: "wait", kind: "change", status: "working", startedAt: Date.now() };
   mocks.history = [{ role: "user", text: "Replace the video", ts: Date.now() }];
