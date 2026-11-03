@@ -107,19 +107,16 @@ describe("public page save/discard integration", () => {
     await act(async () => { expect(await mocks.save()).toBe(true); }); expect(mocks.writes).not.toHaveBeenCalled();
     expect(mocks.history.redoLabel).toBe("");
     s.send("edit-change", { scope: "page", next: { "placeholder:0": "Name" } });
-    s.send("edit-undo"); s.send("edit-redo"); expect(mocks.hasChanges()).toBe(true);
-    expect(s.post).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", edits: { "placeholder:0": "Name" } }), "https://public.example.com");
+    expect(mocks.hasChanges()).toBe(false); // Exact Public core currently rejects placeholder edits.
     expect(mocks.writes).not.toHaveBeenCalled();
   });
-  it("hidden picture edits undo, redo, save and discard through normal frame updates", async () => {
+  it("rejects unsupported hidden picture maps without saving them", async () => {
     const s = await openRemote(true, true);
     s.send("edit-change", { scope: "page", next: { "hidden:0": "1" } });
-    expect(mocks.hasChanges()).toBe(true);
-    s.send("edit-undo"); expect(mocks.hasChanges()).toBe(false);
-    s.send("edit-redo"); expect(s.post.mock.calls.at(-1)?.[0].edits).toEqual({ "hidden:0": "1" });
+    expect(mocks.hasChanges()).toBe(false);
     await act(async () => expect(await mocks.save()).toBe(true));
-    expect(mocks.writes).toHaveBeenCalledWith("pages", expect.objectContaining({ inline_edits: { "hidden:0": "1" } }));
-    await act(async () => mocks.discard()); expect(mocks.writes.mock.calls.at(-1)?.[1].inline_edits).toEqual({});
+    expect(mocks.writes).not.toHaveBeenCalled();
+    await act(async () => mocks.discard());
   });
   it.each(["objects", "images", "videos"])("adding %s is one undo step and redo restores it", async kind => {
     const s = await openRemote(true, true);
@@ -160,9 +157,9 @@ describe("public page save/discard integration", () => {
     s.send("edit-redo"); expect(lastBlocks()[1].width).toBe(50);
     fireEvent.click(screen.getByRole("button", { name: "Replace Video" })); fireEvent.click(screen.getByRole("button", { name: "Pick Video" }));
     expect(lastBlocks()[1].url).toBe("/held.mp4"); s.send("edit-undo"); expect(lastBlocks()[1].url).toBe("/original.mp4");
-    fireEvent.click(screen.getAllByRole("button", { name: "Delete Block" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Delete Video" })[0]);
     expect(lastBlocks()).toHaveLength(2);
-    fireEvent.click(screen.getByRole("button", { name: "Delete Section" })); expect(lastBlocks()).toHaveLength(1);
+    fireEvent.click(screen.getByRole("alertdialog").querySelector('button:last-child') as HTMLElement); expect(lastBlocks()).toHaveLength(1);
     expect(mocks.history.redoLabel).toBe(""); s.send("edit-undo"); expect(lastBlocks()[1].id).toBe("video");
     s.send("edit-change", { scope: "page", next: { "style:0": '{"font-size":"32px"}' } });
     fireEvent.click(screen.getByRole("button", { name: "Undo All Changes on This Page" }));
@@ -309,9 +306,9 @@ describe("public page save/discard integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Width 50%" }));
     stubReloadedFrame();
     expect(s.container.querySelector('[data-page-block="first"] figure')?.className).toContain("w-1/2");
-    const deletes = list.querySelectorAll('[aria-label="Delete Block"]');
+    const deletes = list.querySelectorAll('[aria-label="Delete Video"]');
     fireEvent.click(deletes[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Delete Section" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Video" }));
     await waitFor(() => expect(order()).toEqual(["first"]));
     stubReloadedFrame();
     expect([...list.querySelectorAll("li")].map(el => el.querySelector("button")?.textContent ?? el.textContent)).toEqual(["Site Header", "Page Content", "Image", "Site Footer"]);
