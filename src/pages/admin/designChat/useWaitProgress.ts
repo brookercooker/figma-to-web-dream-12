@@ -64,7 +64,8 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
     }
     if (commit && typeof commit.builtAt === "number" && Number.isFinite(commit.builtAt)) t.authoritativeBuiltAt = commit.builtAt;
     if (t.changeAt) {
-      t.built ||= t.authoritativeBuiltAt !== undefined ? t.authoritativeBuiltAt >= t.changeAt : !state.previewChecking && ((state.previewBuiltAt ?? 0) > Math.max(t.changeAt, t.changeBuiltAt ?? 0) || !(state.previewBuiltAt ?? 0) && state.previewVersion > (t.changeVersion ?? t.version));
+      if (t.authoritativeBuiltAt !== undefined) t.built = t.authoritativeBuiltAt >= t.changeAt;
+      else t.built ||= !state.previewChecking && ((state.previewBuiltAt ?? 0) > Math.max(t.changeAt, t.changeBuiltAt ?? 0) || !(state.previewBuiltAt ?? 0) && state.previewVersion > (t.changeVersion ?? t.version));
       t.ready ||= !!t.built && frameCompletedAt > Math.max(t.changeAt, t.frameBaseline ?? 0, t.authoritativeBuiltAt ?? state.previewBuiltAt ?? 0);
     }
   }

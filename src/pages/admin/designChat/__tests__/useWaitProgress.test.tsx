@@ -82,6 +82,11 @@ it("matches the job ID instead of a newer unrelated commit and supports changes[
   h.rerender({ state: { ...s, changes: [...(s.changes ?? []), { id: "A", sha: "a", request: "A" }] } });
   expect(h.result.current.request?.ribbon?.changed).toBe(true);
 });
+it("uses timestamp fallback only for an older relay without job.id", () => {
+  const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  h.rerender({ state: { ...s, changes: [{ id: "legacy-entry", sha: "legacy", at: 15000, request: "Old relay change" }] } });
+  expect(h.result.current.request?.ribbon?.changed).toBe(true);
+});
 it("retains two ID-keyed runs across reload when B commits before A builds, then advances each independently", () => {
   const a: RelayState = { ...base(), job: { id: "A", kind: "change", status: "working", startedAt: 10000 } };
   const h = renderHook(({ state, frame }) => useWaitProgress(state, frame), { initialProps: { state: a, frame: 0 } });
