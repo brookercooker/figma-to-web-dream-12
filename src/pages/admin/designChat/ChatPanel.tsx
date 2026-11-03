@@ -15,6 +15,7 @@ import { kindLabel, referenceKey, withReferences } from "./references";
 import { useModeSwitch } from "./ModeSwitchContext";
 import { useChatDraft } from "./useChatDraft";
 import WaitProgress from "./WaitProgress";
+import { useManagerLayout } from "./useManagerLayout";
 
 const SUGGESTIONS = [
   "Make the headline larger",
@@ -31,6 +32,7 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
 export default function ChatPanel({ opening = 0, onDraw, onAttention }: { opening?: number; onDraw?: () => void; onAttention?: () => void } = {}) {
   const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress } = useDesignChat();
   const modeSwitch = useModeSwitch();
+  const { phone } = useManagerLayout();
   const fallbackDraft = useChatDraft();
   const { text, setText, selection } = chatDraft ?? fallbackDraft;
   const [now, setNow] = useState(() => Date.now());
@@ -109,8 +111,8 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
     const el = textRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight + 2, 150)}px`;
-  }, [text]);
+    el.style.height = `${Math.max(phone ? 62 : 210, Math.min(el.scrollHeight + 2, phone ? 150 : window.innerHeight / 2))}px`;
+  }, [text, phone]);
 
   const send = async () => {
     const submittedText = text;
@@ -213,7 +215,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
       </div>
 
       <form
-        className={cn("border-t p-3 flex flex-col gap-2", editing && "[&>*:not(:last-child)]:hidden", dragging && "outline-2 outline-dashed outline-primary -outline-offset-4 bg-muted")}
+        className={cn("border-t p-3 flex shrink-0 flex-col gap-2", editing && "[&>*:not(:last-child)]:hidden", dragging && "outline-2 outline-dashed outline-primary -outline-offset-4 bg-muted")}
         autoComplete="off"
         onSubmit={(e) => { e.preventDefault(); send(); }}
         onDragEnter={(e) => { if (hasFiles(e)) { e.preventDefault(); dragDepth.current++; setDragging(true); } }}
@@ -304,7 +306,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
           placeholder="Describe the change you want, for example: add a contact section with an email address and phone number"
           aria-label="Describe a Change"
           rows={2}
-          className="min-h-[62px] max-h-[150px] resize-none overflow-y-auto leading-snug"
+          className={cn("resize-none overflow-y-auto leading-snug", phone ? "min-h-[62px] max-h-[150px]" : "min-h-[210px] max-h-[50vh]")}
         />
 
         <div className="flex flex-wrap items-center gap-2.5">
