@@ -32,5 +32,13 @@ it("keeps history recovery and the exact snapshot after reload and disables retr
 it("never reconstructs an unavailable original payload or adds duplicate history entries", () => {
   const h = renderHook(() => useRequestRetry(failed, false, vi.fn()));
   expect(h.result.current.canRetry(1500)).toBe(false); expect(h.result.current.retryNote(1500)).toContain("Reattach any files or drawings");
-  expect(h.result.current.syntheticError).toBeNull(); expect(failed.history).toHaveLength(2);
+  expect(h.result.current.localErrors).toHaveLength(0); expect(failed.history).toHaveLength(2);
+});
+it("retains status-only failures as one recoverable local history entry across reloads", async () => {
+  const h = renderHook(({ state }) => useRequestRetry(state, false, vi.fn()), { initialProps: { state: initial } });
+  await act(async () => { await h.result.current.sendPrepared(payload); });
+  const s = { ...failed, history: failed.history.slice(0, 1) };
+  h.rerender({ state: s }); expect(h.result.current.localErrors).toHaveLength(1); h.unmount();
+  const reloaded = renderHook(() => useRequestRetry({ ...s, job: null }, false, vi.fn()));
+  expect(reloaded.result.current.localErrors).toHaveLength(1); expect(reloaded.result.current.canRetry(1100)).toBe(true);
 });

@@ -139,8 +139,8 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
   };
   const working = isWorking(state);
   const messages = useMemo(
-    () => [...(state?.history ?? []), ...(requestRetry?.syntheticError ? [requestRetry.syntheticError] : [])].map((e, i) => ({ e, i, shown: visibleText(e) })).filter((m) => m.shown !== null),
-    [state?.history, requestRetry?.syntheticError?.ts],
+    () => [...(state?.history ?? []), ...(requestRetry?.localErrors ?? [])].sort((a, b) => (a.ts ?? 0) - (b.ts ?? 0)).map((e, i) => ({ e, i, shown: visibleText(e) })).filter((m) => m.shown !== null),
+    [state?.history, requestRetry?.localErrors.map(e => e.ts).join(",")],
   );
   const problems = problemsModel(state);
   const rules = state?.uploads ?? DEFAULT_UPLOADS;

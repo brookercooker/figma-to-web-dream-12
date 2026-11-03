@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { postToHelper, RELAY, type Entry, type RelayState } from "./helper";
-type Attempt = { body: Record<string, unknown>; after: number; sentAt: number; userAt?: number };
+type Attempt = { body: Record<string, unknown>; after: number; sentAt: number; userAt?: number; failureAt?: number };
 const KEY = `nova:request-retries:${RELAY}`;
 function restore(): Attempt[] {
   try { const rows = JSON.parse(sessionStorage.getItem(KEY) ?? "[]"); return Array.isArray(rows) ? rows.filter(r => r?.body && typeof r.body.message === "string" && typeof r.after === "number" && typeof r.sentAt === "number") : []; } catch { return []; }
@@ -47,9 +47,13 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
   const retryNote = (at: number) => attemptFor(at) ? undefined : "The original request details are unavailable. Reattach any files or drawings and send the request again.";
   const currentJob = state?.job;
   const statusFailed = /^(failed|error|blocked)$/.test(currentJob?.status ?? "") && !/^(publish|review|content)/.test(currentJob?.kind ?? "");
-  const syntheticError: Entry | null = statusFailed && currentJob && !history.some(e => e.role === "error" && (e.ts ?? 0) >= currentJob.startedAt)
-    ? { role: "error", text: "The change couldn't finish", ts: currentJob.startedAt } : null;
+  if (statusFailed && currentJob) {
+    const attempt = attemptFor(currentJob.startedAt);
+    if (attempt && attempt.failureAt === undefined) { attempt.failureAt = currentJob.startedAt; save(); }
+  }
+  const localErrors: Entry[] = attempts.current.flatMap((a, i) => a.failureAt !== undefined && !history.some(e => e.role === "error" && (e.ts ?? 0) >= (a.userAt ?? a.failureAt ?? 0) && (e.ts ?? 0) < (attempts.current[i + 1]?.userAt ?? Infinity))
+    ? [{ role: "error" as const, text: "The change couldn't finish", ts: a.failureAt }] : []);
   const optimisticState = optimisticAt && state && (currentJob?.startedAt ?? 0) < optimisticAt && !history.some(e => e.role === "user" && (e.ts ?? 0) >= optimisticAt)
     ? { ...state, busy: true, job: { id: `retry:${optimisticAt}`, kind: "change", status: "queued", startedAt: optimisticAt } } : state;
-  return { sendPrepared, retry, retryNote, canRetry: (at: number) => !!attemptFor(at), disabled, sending, syntheticError, optimisticState };
+  return { sendPrepared, retry, retryNote, canRetry: (at: number) => !!attemptFor(at), disabled, sending, localErrors, optimisticState };
 }
