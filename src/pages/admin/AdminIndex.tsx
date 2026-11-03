@@ -405,7 +405,6 @@ function AdminShell() {
               </div>
             )}
           </main>
-          {manual && <div data-manual-outline aria-hidden="true" className="pointer-events-none absolute inset-0 z-40 ring-1 ring-inset ring-manual" />}
           </div>
         </div>
 

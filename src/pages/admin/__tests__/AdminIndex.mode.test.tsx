@@ -34,19 +34,12 @@ describe("Site Manager mode cues", () => {
     const input = screen.getByLabelText("Held Chat Text"); fireEvent.change(input, { target: { value: "Keep this request" } });
     expect(screen.getByRole("radio", { name: "Chat Mode" })).toHaveAttribute("aria-checked", "true");
     expect(document.querySelector("[data-mode-switch]")?.previousElementSibling).toContainElement(screen.getByRole("button", { name: "Account Menu" }));
-    expect(document.querySelector("[data-manual-outline]")).toBeNull();
     const submit = screen.getByRole("button", { name: "Submit for Review" });
     expect(document.querySelector("header")).toContainElement(submit);
     expect(screen.getAllByRole("button", { name: "Submit for Review" })).toHaveLength(1);
     m.manual = true; view.rerender(app());
     const canvas = await screen.findByTestId("canvas");
     expect(canvas.parentElement?.parentElement?.tagName).toBe("MAIN");
-    const overlay = document.querySelector<HTMLDivElement>("[data-manual-outline]");
-    const main = canvas.closest("main");
-    expect(main).not.toContainElement(overlay);
-    expect(overlay?.parentElement).toBe(main?.parentElement);
-    expect(overlay).toHaveClass("pointer-events-none", "absolute");
-    expect(overlay).not.toContainElement(canvas);
     expect(screen.getByText("Editing Homepage")).toBeVisible();
     expect(document.querySelector("[data-chat-header]")).toContainElement(screen.getByRole("button", { name: "Undo" }));
     expect(document.querySelector("[data-chat-header]")).toContainElement(screen.getByRole("button", { name: "Redo" }));
@@ -61,7 +54,6 @@ describe("Site Manager mode cues", () => {
     expect(input).toBeVisible(); expect(input).toHaveValue("Keep this request"); expect(m.mounts).toBe(1);
     expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Chat Mode. Claude makes the changes.");
     expect(document.querySelector("[data-manual-chat-bar]")).toBeNull();
-    expect(document.querySelector("[data-manual-outline]")).toBeNull();
   });
   it.each([false, true])("removes redundant visible prompts in manual=%s", (manual) => {
     m.manual = manual; const { container } = render(app());
