@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fontMenu, inheritedFont, inheritedWeight } from "./designChat/fontOptions";
-import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Strikethrough, ImageIcon, RotateCcw, Trash2, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, Film, TextCursorInput, icons } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Strikethrough, ImageIcon, RotateCcw, Undo2, Trash2, Underline, Eraser, Minus, Type, Eye, EyeOff, Palette, MoveVertical, Smile, Maximize2, SquareDashed, Film, TextCursorInput, icons } from "lucide-react";
 import { ToolHeader, ToolGroup, ToolGrid, ToolField, ToolSegment, ToolNote } from "./designChat/ToolPanel";
 import { selectedImageDelete } from "./selectedImageEdit";
 import { readStyle, styleKey, type InlineEdits, type InlineSelection } from "@/components/InlineEditSurface";
@@ -94,7 +94,7 @@ export default function InlineStylePanel({
   if (sel.kind === "locked") return <div className="space-y-3">
     <ToolHeader icon={SquareDashed} title="Built in Code" />
     <Button variant="outline" size="sm" onClick={() => set("display", "none")}>Delete Element</Button>
-    <Button variant="ghost" size="sm" title="Put this item back the way it was built." onClick={reset}>Restore Original</Button>
+    <Button variant="ghost" size="sm" title="Put this item back the way it was built." onClick={reset}><Undo2 className="mr-1 h-4 w-4" />Undo All Changes to Element</Button>
   </div>;
   const swatches = (cur: string | undefined, pick: (v: string) => void) => <SelectionColourPicker value={cur} onChange={pick} />;
 
@@ -150,7 +150,8 @@ export default function InlineStylePanel({
           <Button variant="outline" size="sm" className="w-full gap-2" onClick={onReplaceImage}>
             <ImageIcon className="w-4 h-4" /> Replace Picture
           </Button>
-          <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-destructive hover:text-destructive" onClick={() => { const next = selectedImageDelete(sel, edits, edits[`hidden:${sel.key}`] === "1"); if (next) onChange(next); }}><Trash2 className="h-4 w-4" />{edits[`hidden:${sel.key}`] === "1" ? "Restore Image" : "Delete Image"}</Button>
+        </ToolGroup>
+        <ToolGroup title="Size" icon={Maximize2}>
           <ToolField label="Fit">
             <ToolSegment className="flex w-full">
               {([["Fill", "cover"], ["Whole picture", "contain"]] as const).map(([l, v]) => (
@@ -159,8 +160,6 @@ export default function InlineStylePanel({
               ))}
             </ToolSegment>
           </ToolField>
-        </ToolGroup>
-        <ToolGroup title="Size" icon={Maximize2}>
           <ToolGrid>
             <ToolField label="Width (px)">
               <Input type="number" min={20} placeholder={String(Math.round(sel.el.getBoundingClientRect().width))}
@@ -171,13 +170,12 @@ export default function InlineStylePanel({
                 value={num(style.height)} onChange={(e) => set("height", px(e.target.value))} />
             </ToolField>
           </ToolGrid>
-        </ToolGroup>
-        <ToolGroup title="Corners" icon={SquareDashed}>
           <ToolField label="Rounded Corners (px)">
             <Input type="number" min={0} placeholder={num(computed.borderRadius) || "0"}
               value={num(style["border-radius"])} onChange={(e) => set("border-radius", px(e.target.value))} />
           </ToolField>
         </ToolGroup>
+        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-destructive hover:text-destructive" onClick={() => { const next = selectedImageDelete(sel, edits, edits[`hidden:${sel.key}`] === "1"); if (next) onChange(next); }}><Trash2 className="h-4 w-4" />{edits[`hidden:${sel.key}`] === "1" ? "Restore Image" : "Delete Image"}</Button>
       </div>
     );
   }
@@ -304,8 +302,6 @@ export default function InlineStylePanel({
   const colourNow = marks ? marks.color : style.color || computed.color;
   return (
     <div>
-      <ToolHeader icon={Type} {...description}
-        menu={[{ label: "Restore Original", icon: RotateCcw, onSelect: reset }]}><SelectedWording sel={sel} edits={edits} onChange={onChange} /></ToolHeader>
       {highlighted ? (
         <div className="pb-3">
           <ToolNote>
@@ -316,7 +312,8 @@ export default function InlineStylePanel({
           </ToolNote>
         </div>
       ) : null}
-      <ToolGroup title="Text" icon={Type} defaultOpen summary={`${fontName} · ${sizeNow}px`}>
+      <ToolGroup title="Text" icon={Type} defaultOpen>
+        <SelectedWording sel={sel} edits={edits} onChange={onChange} />
         <div data-text-toolbar className="flex w-full flex-wrap items-center gap-1">
           <ToolSegment className="min-w-28 flex-[4_1_112px] [&>button]:min-w-6 [&>button]:flex-1" onMouseDown={(e) => e.preventDefault()}>
             {([["bold", Bold, bold], ["italic", Italic, italic], ["underline", Underline, under], ["strike", Strikethrough, strike]] as const).map(([command, Icon, active]) => <Button key={command} size="icon" variant={active ? "default" : "ghost"} title={command === "strike" ? "Strikethrough" : command[0].toUpperCase() + command.slice(1)} aria-label={command === "strike" ? "Strikethrough" : command[0].toUpperCase() + command.slice(1)} aria-pressed={active} onClick={() => toggleMark(command)}><Icon className="h-3.5 w-3.5" /></Button>)}
@@ -340,20 +337,19 @@ export default function InlineStylePanel({
         </div>
       </ToolGroup>
       <ToolGroup title="Position" icon={MoveVertical}>
-        <div className={`flex ${phone ? "flex-wrap" : "flex-nowrap"} items-end gap-x-2 gap-y-3 [&>*]:shrink-0 [&_label]:whitespace-nowrap`}>
-          <ToolField label={<span className="block">Alignment</span>}><ToolSegment className="flex w-fit shrink-0 [&>button]:w-7" onMouseDown={(e) => e.preventDefault()}>
+        <div className={`grid ${phone ? "grid-cols-2" : "grid-cols-3"} items-end gap-2 [&>label]:min-w-0 [&>label>span]:block [&>label>span]:text-center`}>
+          <ToolField label="Alignment"><ToolSegment className="flex w-full [&>button]:min-w-0 [&>button]:flex-1" onMouseDown={(e) => e.preventDefault()}>
             {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Icon]) => (
               <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a[0].toUpperCase() + a.slice(1)}`} aria-label={`Align ${a[0].toUpperCase() + a.slice(1)}`} onClick={() => set("text-align", a)}><Icon className="h-3.5 w-3.5" /></Button>
             ))}
           </ToolSegment></ToolField>
-          <div className={`flex ${phone ? "basis-full flex-wrap" : "min-w-0 flex-1"} gap-2`}>
+          {phone && <div />}
           <ToolField label="Letter Spacing">
-            <div className="relative w-20"><Input aria-label="Letter Spacing (px)" className="h-8 pl-2 pr-6" type="number" step={0.1} placeholder={spacingPixels(computed.letterSpacing, computed.fontSize) || "0"} value={spacingPixels(style["letter-spacing"], computed.fontSize)} onChange={(e) => set("letter-spacing", px(e.target.value))} /><span className="pointer-events-none absolute right-2 top-2 text-xs text-muted-foreground">px</span></div>
+            <div className="relative w-full"><Input aria-label="Letter Spacing (px)" className="h-8 pl-1 pr-5 text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" type="number" step={0.01} placeholder={spacingPixels(computed.letterSpacing, computed.fontSize) || "0"} value={spacingPixels(style["letter-spacing"], computed.fontSize)} onChange={(e) => set("letter-spacing", px(e.target.value))} /><span className="pointer-events-none absolute right-1 top-2 text-[10px] text-muted-foreground">px</span></div>
           </ToolField>
           <ToolField label="Line Height">
-            <div className="relative w-20"><Input aria-label="Line Height (Multiplier)" className="h-8 pl-2 pr-6" type="number" step={0.1} min={0.8} placeholder={lineHeightMultiplier(computed.lineHeight, computed.fontSize) || "1.4"} value={lineHeightMultiplier(style["line-height"], computed.fontSize)} onChange={(e) => set("line-height", e.target.value)} /><span className="pointer-events-none absolute right-2 top-2 text-xs text-muted-foreground">×</span></div>
+            <div className="relative w-full"><Input aria-label="Line Height (Multiplier)" className="h-8 pl-1 pr-5 text-xs [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none" type="number" step={0.1} min={0.8} placeholder={lineHeightMultiplier(computed.lineHeight, computed.fontSize) || "1.4"} value={lineHeightMultiplier(style["line-height"], computed.fontSize)} onChange={(e) => set("line-height", e.target.value)} /><span className="pointer-events-none absolute right-1 top-2 text-[10px] text-muted-foreground">×</span></div>
           </ToolField>
-          </div>
         </div>
       </ToolGroup>
       <TextIconLinkPanel sel={sel} edits={edits} onChange={onChange} editsFor={editsFor} onScopeChange={onScopeChange} pages={pages} />
@@ -379,7 +375,7 @@ function BorderControls({ style, computed, side, swatches, reset, write }: {
   const width = value("width"), bstyle = value("style"), colour = value("color");
   return (
     <div>
-      <ToolHeader icon={SquareDashed} title="Border" menu={[{ label: "Restore Original", icon: RotateCcw, onSelect: reset }]} />
+      <ToolHeader icon={SquareDashed} title="Border" menu={[{ label: "Undo All Changes to Element", icon: Undo2, onSelect: reset }]} />
       <ToolGroup title="Border" icon={SquareDashed} defaultOpen>
         <ToolSegment className="flex w-full">
           {([["All Sides", "all"], ["Individual Sides", "individual"]] as const).map(([l, v]) => (
