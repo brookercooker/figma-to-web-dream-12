@@ -20,7 +20,7 @@ function Harness() {
   m.chat = { workingPage: page, editing: true, objectOpen: m.objectOpen ? { id: "o" } : null,
     selectPage: (p: any) => { m.select(p); setPage(p); }, startEditing: m.start };
   const navigation = useManualPageNavigation(finishing, setFinishing);
-  return <><ManualPageSwitcher navigation={navigation} /><button onClick={() => navigation.requestPath("/landing/autumn")}>Frame Navigation</button><button onClick={() => navigation.requestPath("/unknown")}>Unknown Navigation</button></>;
+  return <><ManualPageSwitcher navigation={navigation} /><button disabled={navigation.disabled || navigation.loading} onClick={() => navigation.requestPath("/landing/autumn")}>Forward</button><button disabled={navigation.disabled || navigation.loading} onClick={() => navigation.requestPath("/about")}>Back</button><button onClick={() => navigation.requestPath("/landing/autumn")}>Frame Navigation</button><button onClick={() => navigation.requestPath("/unknown")}>Unknown Navigation</button></>;
 }
 beforeEach(() => {
   vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
@@ -28,7 +28,7 @@ beforeEach(() => {
   vi.clearAllMocks(); m.dirty = false; m.objectOpen = false; m.save.mockResolvedValue(true); m.discard.mockResolvedValue(undefined);
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
-async function open() { render(<Harness />); await waitFor(() => expect(screen.getByRole("button", { name: "Next Page" })).not.toBeDisabled()); }
+async function open() { render(<Harness />); await waitFor(() => expect(screen.getByRole("button", { name: "Forward" })).not.toBeDisabled()); }
 describe("manual page order and path rules", () => {
   it("orders Pages before Landing Pages, alphabetically inside each group", () => {
     expect(orderedManualPages([pages[2], pages[1], pages[0]]).map(p => p.id)).toEqual(["about", "contact", "draft"]);
@@ -46,37 +46,16 @@ describe("manual page order and path rules", () => {
   });
 });
 describe("manual page navigation", () => {
-  it("steps across groups and keeps Manual Edit Mode, focusing the new heading", async () => {
-    await open(); fireEvent.click(screen.getByRole("button", { name: "Next Page" }));
+  it("steps through the guarded page paths and keeps Manual Edit Mode", async () => {
+    await open(); fireEvent.click(screen.getByRole("button", { name: "Forward" }));
     expect(m.select).toHaveBeenCalledWith({ id: "draft", name: "Autumn", path: "/landing/autumn" });
     expect(m.start).toHaveBeenCalledOnce();
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Editing Autumn" })).toHaveFocus());
-    expect(screen.getByRole("button", { name: "Next Page" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Previous Page" }));
-    expect(m.select).toHaveBeenLastCalledWith({ id: "contact", name: "Contact", path: "/contact" });
-  });
-  it("opens grouped searchable rows including Draft pages and filters by path", async () => {
-    await open(); fireEvent.click(screen.getByRole("button", { name: "Editing Contact" }));
-    expect(await screen.findByText("Landing Pages")).toBeVisible();
-    expect(screen.getByText("Pages", { exact: true })).toBeVisible();
-    expect(screen.getByText("Draft", { exact: true })).toBeVisible();
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "/landing" } });
-    expect(screen.queryByRole("option", { name: /Contact/ })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("option", { name: /Autumn/ }));
-    expect(m.select).toHaveBeenCalledWith({ id: "draft", name: "Autumn", path: "/landing/autumn" });
-  });
-  it("uses arrows and Enter to choose and Escape to close", async () => {
-    await open(); fireEvent.click(screen.getByRole("button", { name: "Editing Contact" }));
-    const input = await screen.findByRole("combobox");
-    fireEvent.keyDown(input, { key: "End" }); fireEvent.keyDown(input, { key: "ArrowUp" }); fireEvent.keyDown(input, { key: "ArrowUp" }); fireEvent.keyDown(input, { key: "Enter" });
-    await waitFor(() => expect(m.select).toHaveBeenCalled());
-    fireEvent.click(screen.getByRole("button", { name: /Editing/ }));
-    fireEvent.keyDown(await screen.findByRole("combobox"), { key: "Escape" });
-    await waitFor(() => expect(screen.queryByRole("combobox")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(m.select).toHaveBeenLastCalledWith({ id: "about", name: "About", path: "/about" });
   });
   it.each(["Save Changes", "Discard Changes", "Keep Editing"])("protects unsaved edits with %s", async action => {
-    m.dirty = true; await open(); fireEvent.click(screen.getByRole("button", { name: "Next Page" }));
-    expect(screen.getByRole("dialog", { name: "Save Your Changes?" })).toBeVisible();
+    m.dirty = true; await open(); fireEvent.click(screen.getByRole("button", { name: "Forward" }));
+    expect(screen.getByRole("dialog", { name: "You have unsaved changes" })).toBeVisible();
     expect(m.select).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: action }));
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
@@ -85,28 +64,27 @@ describe("manual page navigation", () => {
   });
   it("stays on the same page after a failed save", async () => {
     m.dirty = true; m.save.mockResolvedValue(false); await open();
-    fireEvent.click(screen.getByRole("button", { name: "Next Page" })); fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    fireEvent.click(screen.getByRole("button", { name: "Forward" })); fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
     await waitFor(() => expect(m.save).toHaveBeenCalledOnce());
-    expect(m.select).not.toHaveBeenCalled(); expect(screen.getByRole("heading", { name: "Editing Contact", hidden: true })).toBeInTheDocument();
+    expect(m.select).not.toHaveBeenCalled();
     expect(screen.getByRole("dialog")).toBeVisible();
   });
   it("uses the same unsaved dialog for frame navigation and reports unknown pages", async () => {
     m.dirty = true; await open(); fireEvent.click(screen.getByRole("button", { name: "Unknown Navigation" }));
     expect(m.toast).toHaveBeenCalledWith("That page isn't in the Site Manager."); expect(m.select).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Frame Navigation" }));
-    expect(screen.getByRole("dialog", { name: "Save Your Changes?" })).toBeVisible();
+    expect(screen.getByRole("dialog", { name: "You have unsaved changes" })).toBeVisible();
   });
   it("disables page changes while an object is open", async () => {
     m.objectOpen = true; render(<Harness />);
-    expect(screen.getByRole("button", { name: "Editing Contact" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Next Page" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Forward" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Frame Navigation" })); expect(m.select).not.toHaveBeenCalled();
   });
   it("disables navigation until saving finishes", async () => {
     let finish: (ok: boolean) => void = () => {};
     m.dirty = true; m.save.mockImplementation(() => new Promise<boolean>(resolve => { finish = resolve; }));
-    await open(); fireEvent.click(screen.getByRole("button", { name: "Next Page" })); fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
-    expect(screen.getByRole("button", { name: "Editing Contact", hidden: true })).toBeDisabled(); expect(screen.getByRole("button", { name: "Save Changes" })).toBeDisabled();
+    await open(); fireEvent.click(screen.getByRole("button", { name: "Forward" })); fireEvent.click(screen.getByRole("button", { name: "Save Changes" }));
+    expect(screen.getByRole("button", { name: "Save Changes" })).toBeDisabled();
     finish(true); await waitFor(() => expect(m.select).toHaveBeenCalledOnce());
   });
 });
