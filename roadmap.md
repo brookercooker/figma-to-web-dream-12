@@ -1,4 +1,6 @@
 # Roadmap — coded object import fidelity
+- [ ] Diagnose delayed preview Back, preserve in-place navigation for equivalent addresses, and verify timing without removing the safety fallback.
+- [ ] Arrange PreviewToolbar arrows left, Reload and centered selector in the middle, full-screen/new-tab right; preserve phone overflow and Manual rules.
 - [x] Restore non-phone Position/status layouts and add compact PreviewToolbar with shared page choices, existing navigation/fullscreen and draft-safe reload. All 169 affected tests pass; signed-in 1280/768/390/360 checks confirm toolbar fit, Send visibility and draft retention. Hosted frame link navigation remains covered by existing validated-location tests, not a live public-site check.
 - [x] Clear no-change preview cards after a 10-second grace without interrupting real build confirmation; regressions cover late commits, removed jobs and new requests. Signed-in browser with controlled replies confirms dismissal; live relay unavailable. Estimates/chat bar unchanged.
 - [x] Retain the picked preview page and working-page chip across same-tab reloads; explicit later picks win. Signed-in real Pages→Ask Claude selection keeps Draft chip and /draft frame on reload during a controlled request, then Homepage pick wins. All 960 tests pass; build OK. Public frame still requires separate login.
