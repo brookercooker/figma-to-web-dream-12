@@ -1,7 +1,7 @@
 export type WaitKind = "question" | "normal" | "bigger" | "library" | "submit" | "contentSubmit" | "save";
 export const WAIT_ESTIMATES: Record<WaitKind, readonly number[]> = {
   question: [20], normal: [40, 50], bigger: [75, 50], library: [55, 50],
-  submit: [50, 10], contentSubmit: [140, 10], save: [10],
+  submit: [30, 10], contentSubmit: [35, 10], save: [10],
 };
 export function detectWaitKind(message: string, planOnly = false): WaitKind {
   if (planOnly) return "question";
