@@ -72,7 +72,50 @@ it("a queued next job gets its own run and cannot inherit the previous commit or
   h.rerender({ state: first, frame: 0 }); expect(h.result.current.request?.ribbon?.current).toBe(2);
   const next = { ...first, job: { kind: "change", status: "working", startedAt: 40000 }, history: [...s.history, { role: "user" as const, ts: 40000, text: "Next change" }] };
   h.rerender({ state: next, frame: 35000 });
-  expect(h.result.current.request?.ribbon?.current).toBe(0); expect(h.result.current.request?.ribbon?.ready).toBe(false);
+  // A remains visible until finished; B is retained separately rather than replacing it.
+  expect(h.result.current.request?.ribbon?.current).toBe(2); expect(h.result.current.request?.ribbon?.ready).toBe(false);
+});
+it("matches the job ID instead of a newer unrelated commit and supports changes[]", () => {
+  const s: RelayState = { ...base(), job: { ...base().job, id: "A", status: "working", startedAt: 10000 }, changes: [{ id: "unrelated", sha: "other", at: 20000, request: "Other" }] };
+  const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  expect(h.result.current.request?.ribbon?.changed).toBe(false);
+  h.rerender({ state: { ...s, changes: [...(s.changes ?? []), { id: "A", sha: "a", request: "A" }] } });
+  expect(h.result.current.request?.ribbon?.changed).toBe(true);
+});
+it("uses timestamp fallback only for an older relay without job.id", () => {
+  const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  h.rerender({ state: { ...s, changes: [{ id: "legacy-entry", sha: "legacy", at: 15000, request: "Old relay change" }] } });
+  expect(h.result.current.request?.ribbon?.changed).toBe(true);
+});
+it("retains two ID-keyed runs across reload when B commits before A builds, then advances each independently", () => {
+  const a: RelayState = { ...base(), job: { id: "A", kind: "change", status: "working", startedAt: 10000 } };
+  const h = renderHook(({ state, frame }) => useWaitProgress(state, frame), { initialProps: { state: a, frame: 0 } });
+  const aCommit = { id: "A", sha: "a", at: 18000, request: "A" };
+  h.rerender({ state: { ...a, draft: { requests: [aCommit] } }, frame: 0 });
+  const b: RelayState = { ...a, job: { id: "B", kind: "change", status: "working", startedAt: 20000 }, previewChecking: true,
+    history: [...a.history, { role: "assistant", ts: 19000, text: "A changed" }, { role: "user", ts: 20000, text: "B change" }], draft: { requests: [aCommit, { id: "B", sha: "b", at: 28000, request: "B" }] } };
+  h.rerender({ state: b, frame: 0 }); expect(h.result.current.request?.ribbon?.elapsed).toBe(20);
+  h.unmount();
+  const reloaded = renderHook(({ state, frame }) => useWaitProgress(state, frame), { initialProps: { state: b, frame: 0 } });
+  expect(reloaded.result.current.request?.ribbon?.elapsed).toBe(20);
+  // A's exact build precedes B's commit, even though its notification arrives later.
+  const aBuilt: RelayState = { ...b, previewChecking: false, previewVersion: 2, previewBuiltAt: 25000 };
+  reloaded.rerender({ state: aBuilt, frame: 31000 }); expect(reloaded.result.current.request?.done).toBe(true);
+  act(() => vi.advanceTimersByTime(1800));
+  expect(reloaded.result.current.request?.ribbon?.elapsed).toBeCloseTo(11.75);
+  expect(reloaded.result.current.request?.ribbon?.ready).toBe(false);
+  reloaded.rerender({ state: { ...aBuilt, previewVersion: 3, previewBuiltAt: 33000 }, frame: 34000 });
+  expect(reloaded.result.current.request?.done).toBe(true);
+});
+it("prefers a change's authoritative builtAt over inference, and still requires a loaded frame", () => {
+  const s: RelayState = { ...base(), job: { id: "A", kind: "change", status: "working", startedAt: 10000 } };
+  const h = renderHook(({ state, frame }) => useWaitProgress(state, frame), { initialProps: { state: s, frame: 0 } });
+  const change = { id: "A", sha: "a", at: 20000, builtAt: 19000, request: "A" };
+  const inferred = { ...s, previewVersion: 3, previewBuiltAt: 30000, draft: { requests: [change] } };
+  h.rerender({ state: inferred, frame: 31000 }); expect(h.result.current.request?.ribbon?.ready).toBe(false);
+  const built = { ...inferred, draft: { requests: [{ ...change, builtAt: 32000 }] } };
+  h.rerender({ state: built, frame: 31000 }); expect(h.result.current.request?.done).not.toBe(true);
+  h.rerender({ state: built, frame: 33000 }); expect(h.result.current.request?.done).toBe(true);
 });
 it("restores commit/build stage across reload and waits for the newly loaded frame", () => {
   const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });

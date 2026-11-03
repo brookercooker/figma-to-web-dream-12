@@ -57,12 +57,12 @@ export type Finding = {
   accepted?: boolean;
 };
 
-export type Job = { kind?: string; planOnly?: boolean; status: string; startedAt: number; lastStep?: string; stepStartedAt?: number };
+export type Job = { id?: string; kind?: string; planOnly?: boolean; status: string; startedAt: number; lastStep?: string; stepStartedAt?: number };
 
 export type UploadRules = { maxFiles: number; maxBytes: number; accept: string };
 
 export type DraftRequest = {
-  id: string; request: string; source?: string; at?: number | string; sha?: string;
+  id: string; request: string; source?: string; at?: number | string; sha?: string; builtAt?: number;
   files?: string[]; siteFiles?: string[]; platformFiles?: string[]; setupFiles?: string[];
   notes?: string; decision?: unknown;
   /** Sent by redeployed relays only. */
@@ -80,6 +80,7 @@ export type RelayState = {
   /** True when the design service takes drawings (marks and a picture) with a request. */
   drawing?: boolean;
   history: Entry[];
+  changes?: DraftRequest[];
   publish?: { ok?: boolean; open: number; status?: string; willReview?: boolean };
   /** requests: the changes in the draft awaiting review (newer relays only). */
   draft?: { requests?: DraftRequest[]; review?: { state?: string; locked?: boolean; findings?: Finding[]; headline?: string; summary?: string; retry?: boolean } };
