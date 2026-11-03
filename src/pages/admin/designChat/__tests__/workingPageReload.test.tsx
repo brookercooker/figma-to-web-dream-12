@@ -45,7 +45,7 @@ describe("preview Back confirmation", () => {
       const hook = renderHook(useDesignChat, { wrapper });
       report(path, search); report("/team");
       act(() => hook.result.current.previewNav?.back());
-      expect(mocks.navigate).toHaveBeenLastCalledWith({ action: "to", path });
+      expect(mocks.navigate).toHaveBeenLastCalledWith({ action: "to", path: path + search });
       report(arrival, arrivalSearch);
       act(() => vi.advanceTimersByTime(NAV_FALLBACK_MS + 100));
       expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual([null, 0]);
