@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { RELAY, type RelayState, type Job } from "./helper";
-import { detectWaitKind, timedProgress, type WaitKind, type WaitView } from "./waitEstimates";
+import { ERROR_VISIBLE_MS, detectWaitKind, timedProgress, type WaitKind, type WaitView } from "./waitEstimates";
 
-type Track = { id: number; jobId?: string; job?: Job; version: number; kind: WaitKind; high: number; replyAt?: number; pausedAt?: number; paused: number; doneAt?: number; error?: boolean; hasBuild?: boolean; stageStart?: number; view?: WaitView; ribbonStage?: number; ribbonHigh?: number; committed?: boolean; built?: boolean; ready?: boolean; changeAt?: number; changeVersion?: number; changeBuiltAt?: number; lastVersion?: number; lastBuiltAt?: number; authoritativeBuiltAt?: number; frameBaseline?: number };
+type Track = { id: number; jobId?: string; job?: Job; version: number; kind: WaitKind; high: number; replyAt?: number; pausedAt?: number; paused: number; doneAt?: number; error?: boolean; errorAt?: number; errorPausedAt?: number; errorDismissed?: boolean; hasBuild?: boolean; stageStart?: number; view?: WaitView; ribbonStage?: number; ribbonHigh?: number; committed?: boolean; built?: boolean; ready?: boolean; changeAt?: number; changeVersion?: number; changeBuiltAt?: number; lastVersion?: number; lastBuiltAt?: number; authoritativeBuiltAt?: number; frameBaseline?: number };
 const terminal = /^(done|complete|completed|published|live)$/;
 const failed = /^(failed|error|blocked)$/;
 const stopped = /^(stopped|cancelled|canceled)$/;
@@ -16,6 +16,32 @@ function rememberTracks(tracks: Track[]) {
 export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0): { request: WaitView | null; submit: WaitView | null } {
   const [now, setNow] = useState(Date.now);
   const tracks = useRef<Track[]>(restoreTracks());
+  const interactionOwners = useRef(new Map<number, Set<object>>());
+  const dismiss = (id: number) => {
+    const track = tracks.current.find(t => t.id === id);
+    if (track) { track.errorDismissed = true; rememberTracks(tracks.current); setNow(Date.now()); }
+  };
+  const pause = (id: number, owner: object, active: boolean) => {
+    const track = tracks.current.find(t => t.id === id);
+    if (!track || track.errorDismissed) return;
+    const owners = interactionOwners.current.get(id) ?? new Set<object>();
+    if (active) owners.add(owner); else owners.delete(owner);
+    interactionOwners.current.set(id, owners);
+    if (owners.size) track.errorPausedAt ??= Date.now();
+    else if (track.errorPausedAt !== undefined) {
+      track.errorAt = (track.errorAt ?? Date.now()) + Math.max(0, Date.now() - track.errorPausedAt);
+      track.errorPausedAt = undefined;
+    }
+    rememberTracks(tracks.current); setNow(Date.now());
+  };
+  // A reload ends pointer/focus ownership, but retains time already spent paused.
+  useEffect(() => {
+    for (const t of tracks.current) if (t.errorPausedAt !== undefined) {
+      t.errorAt = (t.errorAt ?? Date.now()) + Math.max(0, Date.now() - t.errorPausedAt);
+      t.errorPausedAt = undefined;
+    }
+    rememberTracks(tracks.current);
+  }, []);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(timer); }, []);
   const currentJob = state?.job;
   if (!state) return { request: null, submit: null };
@@ -31,7 +57,7 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
     if (latestUser?.ts && state.previewChecking) tracks.current.push({ id: latestUser.ts, version: state.previewVersion, kind: detectWaitKind(latestUser.text), high: 0, paused: 0, hasBuild: true });
   }
   const matchesJob = (t: Track, job: Job) => t.jobId && job.id ? t.jobId === job.id : t.id === job.startedAt;
-  if (currentJob && !tracks.current.some(t => matchesJob(t, currentJob)) && (state.busy || state.previewChecking || currentStatus === "approval" || currentStatus === "queued")) {
+  if (currentJob && !tracks.current.some(t => matchesJob(t, currentJob)) && (state.busy || state.previewChecking || currentStatus === "approval" || currentStatus === "queued" || failed.test(currentStatus))) {
     const content = state.draft?.requests?.some(r => r.source === "content");
     const user = [...history].reverse().find(e => e.role === "user" && (!e.ts || e.ts <= currentJob.startedAt + 1000));
     tracks.current.push({ id: currentJob.startedAt, jobId: currentJob.id, job: currentJob, version: state.previewVersion, high: 0, paused: 0, frameBaseline: frameCompletedAt,
@@ -88,7 +114,10 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
     continue;
   }
   if (t.pausedAt !== undefined) { t.paused += Math.max(0, now - t.pausedAt); t.pausedAt = undefined; }
-  if (failed.test(status) || error || isSubmit && failed.test(state.draft?.review?.state ?? "")) t.error = true;
+  if (failed.test(status) || error || isSubmit && failed.test(state.draft?.review?.state ?? "")) {
+    t.error = true;
+    t.errorAt ??= error?.ts ?? now;
+  }
   if (!isSubmit && !t.replyAt && (reply?.ts || state.previewChecking && job?.stepStartedAt)) t.replyAt = reply?.ts ?? job?.stepStartedAt;
   // A question/no-change reply has no build stage. A reload with previewChecking is already in that stage.
   t.hasBuild ||= !!state.previewChecking || state.previewVersion > t.version || (t.kind !== "question" && !!t.replyAt && ((state.previewBuiltAt ?? 0) > t.replyAt || /^(building|build|previewChecking)$/.test(job?.lastStep ?? status)));
@@ -102,7 +131,12 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   if (t.doneAt) {
     if (now - t.doneAt > 1700) continue;
     view = { value: 1, label: isSubmit ? "Live" : "Done", done: true, fading: now - t.doneAt >= 1500 };
-  } else if (t.error) view = { value: t.high, label: "The change couldn't finish", error: true };
+  } else if (t.error) {
+    const elapsed = (t.errorPausedAt ?? now) - (t.errorAt ?? now);
+    if (t.errorDismissed || elapsed > ERROR_VISIBLE_MS + 200) continue;
+    view = { value: t.high, label: "The change couldn't finish", error: true, requestAt: t.id, fading: elapsed >= ERROR_VISIBLE_MS,
+      errorControls: { dismiss: () => dismiss(t.id), pause: (owner, active) => pause(t.id, owner, active) } };
+  }
   else {
     const stage = isSubmit ? /^(publishing|updating)$/.test(status) ? 1 : 0 : t.replyAt && hasBuild ? 1 : 0;
     if (!stage) t.stageStart ??= job?.stepStartedAt ?? t.id;

@@ -14,7 +14,8 @@ export function detectWaitKind(message: string, planOnly = false): WaitKind {
   if (/\?\s*$/.test(text) && !/\b(make|change|add|remove|replace|move|update|fix)\b/i.test(text)) return "question";
   return "normal";
 }
-export type WaitView = { value: number; label: string; error?: boolean; done?: boolean; fading?: boolean; ribbon?: import("./stageRibbon").RibbonState };
+export const ERROR_VISIBLE_MS = 12_000;
+export type WaitView = { value: number; label: string; error?: boolean; done?: boolean; fading?: boolean; requestAt?: number; errorControls?: { dismiss: () => void; pause: (owner: object, paused: boolean) => void; retry?: () => void; disabled?: boolean; note?: string }; ribbon?: import("./stageRibbon").RibbonState };
 export function stageShares(kind: WaitKind) {
   const estimates = WAIT_ESTIMATES[kind];
   const total = estimates.reduce((a, b) => a + b, 0);
