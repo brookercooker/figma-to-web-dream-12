@@ -73,7 +73,7 @@ it("removes only the selected nested object video and saves object content, neve
   if (!mocks.slot) throw new Error("Missing panel");
   const row = mocks.slot.querySelector('[data-section-row="section:video:0"]'); if (!row) throw new Error("Missing nested video");
   fireEvent.click(within(row as HTMLElement).getByRole("button", { name: "Video" }));
-  fireEvent.click(within(mocks.slot).getByLabelText("Saved Video Options").querySelector('button') as HTMLElement);
+  fireEvent.click(within(within(mocks.slot).getByLabelText("Saved Video Options")).getByRole("button", { name: "Delete Video" }));
   fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Delete Video" }));
   expect(mocks.hasChanges()).toBe(true); expect(mocks.writes).not.toHaveBeenCalled();
   act(() => mocks.history.undo()); expect(mocks.hasChanges()).toBe(false);
