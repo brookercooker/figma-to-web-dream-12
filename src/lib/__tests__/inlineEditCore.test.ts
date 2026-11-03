@@ -66,6 +66,7 @@ describe("inlineEditCore", () => {
   });
   it("does not rewrite parent HTML after replaying a nested override", () => {
     const root = categories(), replay = createReplay();
+    root.children[0].children[2].innerHTML = 'Explore <span>original</span>';
     const edits = { '0.2': 'Explore <span>original</span>', '0.2.0': 'changed' };
     replay.apply(root, edits);
     const observer = new MutationObserver(() => {}); observer.observe(root, {subtree:true,childList:true,attributes:true});
@@ -75,6 +76,10 @@ describe("inlineEditCore", () => {
   it("rejects unsafe CSS, javascript pictures, malformed styles and bad paths", () => {
     const { ok, rejected } = validateEdits({ 'style:0': '{"color":"url(evil)"}', 'style:1': '{"color":"javascript:evil"}', 'img:0': 'javascript:evil', '0.-1': 'wrong', 'style:2': '[]', 'style:3': '{"position":"fixed"}', '4': 42 });
     expect(ok).toEqual({}); expect(rejected).toHaveLength(7);
+  });
+  it.each([{ 'icon-position:0': 'middle' }, { 'icon-position:bad': 'before' }, { 'icon-position:0': 1 }, { 'icon-position:0': 'Before' }])("rejects unsafe placement in the shared core: %j", edits => {
+    expect(validateEdits(edits).ok).toEqual({});
+    expect(validateEdits(edits).rejected).toHaveLength(1);
   });
   it("cleans HTML at replay and fails closed for a malformed fingerprint", () => {
     const root = categories(), replay = createReplay();

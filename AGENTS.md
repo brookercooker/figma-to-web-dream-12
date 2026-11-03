@@ -1,5 +1,5 @@
 
-- In-place override replay and fingerprints use the standalone inlineEditCore module, shared verbatim with the public site; preserve original snapshots and treat fp keys as metadata so reset and code-change safety stay consistent.
+- Mirror inlineEditCore verbatim from Public 45d2c351: placement, icon-free fingerprints/paths and original snapshots. Do not fork it; its missing hidden/placeholder support needs Public reconciliation.
 - Link destinations use fingerprinted link overrides and capture-phase replay handlers; disable visitor handlers during manual editing so original code actions cannot override destinations or block selection.
 - Public-manifest pages are edited through FramedPageEditor, never local page copies; page overrides live in pages.inline_edits and shared-object overrides in object_registry.inline_edits, passed unchanged to public replay — keeps public markup authoritative without positional-key migration.
 - Header is shared chrome registered under component_key Header and discovered by the same fiber map; its separate page-canvas surface preserves existing page paths, suppresses visitor menus/actions during editing, and announces site-wide changes before saves; routed headers use objects-only replay so page overrides cannot affect chrome.
