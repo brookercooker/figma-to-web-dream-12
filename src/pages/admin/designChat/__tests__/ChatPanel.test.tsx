@@ -73,6 +73,15 @@ beforeEach(() => {
 });
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
+it("renders contextual helper suggestions instead of unconditional phone and draft links", () => {
+  mocks.busy = true; mocks.job = { id: "wait", kind: "change", status: "working", startedAt: Date.now() };
+  mocks.history = [{ role: "user", text: "Replace the video", ts: Date.now() }];
+  render(<MemoryRouter><ChatPanel /></MemoryRouter>);
+  expect(screen.getByRole("button", { name: "Add real videos to your library" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Look at other pages in your draft" })).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Write your next change" }));
+  expect(screen.getByRole("textbox")).toHaveFocus();
+});
 it("offers an opt-in Manual Edit hand-off under saved-content replies without sending to the helper", async () => {
   mocks.page = { id: "experiment", name: "Experiment", path: "/draft/experiment" };
   mocks.history = [{ role: "assistant", text: "This video is saved in Site Manager. Remove it there.", ts: 10 }];
