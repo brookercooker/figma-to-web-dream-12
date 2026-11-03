@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /** temporary: restore before real use. Applies everywhere, not just preview hosts. */
-export const REQUIRE_LOGIN = false;
+export const REQUIRE_LOGIN = true;
 export const SIGN_IN_REQUIRED = "Sign in to load or save this";
 export async function hasManagerUser(): Promise<boolean> {
   try {
