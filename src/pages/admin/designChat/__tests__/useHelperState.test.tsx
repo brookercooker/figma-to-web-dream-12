@@ -1,6 +1,8 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { helperPollDelay, useHelperState } from "../useHelperState";
+const auth = vi.hoisted(() => ({ user: true }));
+vi.mock("@/lib/authGate", () => ({ hasManagerUser: async () => auth.user, SIGN_IN_REQUIRED: "Sign in to load or save this" }));
 
 vi.mock("../helper", () => ({ RELAY: "https://relay.test", relayHeaders: async () => ({}) }));
 const idle = { busy: false, job: null, previewVersion: 0, history: [] };
@@ -13,6 +15,7 @@ const changeVisibility = async (value: string) => {
 };
 
 beforeEach(() => {
+  auth.user = true;
   vi.useFakeTimers();
   visibility = "visible";
   vi.spyOn(document, "visibilityState", "get").mockImplementation(() => visibility as DocumentVisibilityState);
@@ -36,6 +39,15 @@ describe("helper polling delays", () => {
 });
 
 describe("mounted helper polling", () => {
+  it("shows a sign-in note without polling the protected service signed out", async () => {
+    auth.user = false;
+    const { result, unmount } = renderHook(() => useHelperState(() => 4000));
+    await advance(0);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(result.current.offline).toBe(false);
+    expect(result.current.state?.history[0].text).toBe("Sign in to load or save this");
+    unmount();
+  });
   it("throttles hidden tabs including refreshSoon and immediately refreshes on visibility", async () => {
     visibility = "hidden";
     const { result, unmount } = renderHook(() => useHelperState(() => 1000));

@@ -5,6 +5,7 @@ import { setManifestBase, resetSiteManifestCache, isSafePublicFrameUrl } from ".
 import { previewExcluded, previewStage, type PreviewStage } from "./previewProgress";
 import { syncManifestPages } from "../manifestPageSync";
 import { previewAddressMatches, stripPreviewTokens } from "./previewHistory";
+import { hasManagerUser, SIGN_IN_REQUIRED } from "@/lib/authGate";
 
 /**
  * The draft preview and how it keeps up with changes.
@@ -104,6 +105,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
 
   const loadPreview = useCallback(async () => {
     if (loading.current) return;
+    if (!await hasManagerUser()) { setError(SIGN_IN_REQUIRED); return; }
     if (!EMBED_FN) { setError("The preview isn't set up yet."); return; }
     loading.current = true;
     clearTimeout(expiry.current);
