@@ -170,14 +170,13 @@ function AdminShell() {
       try {
         const ok = await saveAll();
         if (!ok) return;
-        if (had) { toast.success("Changes saved."); void requestObjectThumbnail(objectOpen.id, true).catch(() => {}); }
+        if (had) { void requestObjectThumbnail(objectOpen.id, true).catch(() => {}); }
         // Opened from Tools > Objects, saving stays in the object editor.
         if (objectOpen.from !== "objects") closeObject();
       } finally { finishingRef.current = false; setFinishing(false); }
       return;
     }
-    const ok = await finishEditing();
-    if (ok && had) toast.success("Changes saved.");
+    await finishEditing();
   };
   const location = useLocation();
   const navigate = useNavigate();
@@ -520,7 +519,7 @@ function AdminShell() {
             </div>
           )}
           <div hidden={manual || (chatCollapsed && !phone) || reviewShown} className={cn("min-h-0 flex-1", (manual || (chatCollapsed && !phone) || reviewShown) && "hidden")} aria-hidden={manual || (chatCollapsed && !phone) || reviewShown}>
-            <ChatPanel opening={phone && phoneChat.open && !reviewShown ? phoneChat.opening : 0} onDraw={phone ? drawFromPhoneChat : undefined} onAttention={phone ? () => { designChat.setReviewOpen(false); openPhoneChat(); } : undefined} />
+            <ChatPanel saveProgress={saveProgress} opening={phone && phoneChat.open && !reviewShown ? phoneChat.opening : 0} onDraw={phone ? drawFromPhoneChat : undefined} onAttention={phone ? () => { designChat.setReviewOpen(false); openPhoneChat(); } : undefined} />
           </div>
         </aside>
         {phone && !manual && !phoneChat.open && !designChat.drawing?.on && <PhoneChatButton working={phoneChat.working} unread={phoneChat.unread} onOpen={openPhoneChat} />}

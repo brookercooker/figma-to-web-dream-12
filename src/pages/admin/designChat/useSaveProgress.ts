@@ -15,7 +15,7 @@ export function useSaveProgress(saving: boolean, stillDirty = false) {
   }, []);
   if (saving && !lastSaving.current) t.current = { start: now, high: 0 };
   // Sync debt persists across reloads and outlives the Manual Edit toolbar.
-  if (!t.current && contentSyncPending()) t.current = { start: contentSyncStartedAt() ?? now, high: 0 };
+  if ((!t.current || t.current.done !== undefined) && contentSyncPending()) t.current = { start: contentSyncStartedAt() ?? now, high: 0 };
   lastSaving.current = saving;
   const track = t.current;
   if (!track) return null;
@@ -25,7 +25,7 @@ export function useSaveProgress(saving: boolean, stillDirty = false) {
   else if (!saving && stillDirty && !contentSyncPending()) progress = { value: track.high, label: "Your changes couldn't be saved", error: true };
   else if (!saving && !contentSyncPending()) {
     track.done ??= now;
-    if (now - track.done > 1700) return null;
+    if (now - track.done >= 1700) { t.current = null; return null; }
     progress = { value: 1, label: "Done", done: true, fading: now - track.done >= 1500 };
   } else {
     progress = timedProgress("save", 0, (now - track.start) / 1000, "Adding your edits to the draft", track.high);

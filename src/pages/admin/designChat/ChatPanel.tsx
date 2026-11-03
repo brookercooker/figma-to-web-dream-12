@@ -16,6 +16,7 @@ import { useModeSwitch } from "./ModeSwitchContext";
 import { useChatDraft } from "./useChatDraft";
 import WaitProgress from "./WaitProgress";
 import { useManagerLayout } from "./useManagerLayout";
+import type { WaitView } from "./waitEstimates";
 
 const SUGGESTIONS = [
   "Make the headline larger",
@@ -29,7 +30,7 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * The chat, always on the right of the Site Manager: what was said, the live "working on it" line, problems the person can
  * fix, the page they picked to work on, and the box to type in.
  */
-export default function ChatPanel({ opening = 0, onDraw, onAttention }: { opening?: number; onDraw?: () => void; onAttention?: () => void } = {}) {
+export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgress }: { opening?: number; onDraw?: () => void; onAttention?: () => void; saveProgress?: WaitView | null } = {}) {
   const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress } = useDesignChat();
   const modeSwitch = useModeSwitch();
   const { phone } = useManagerLayout();
@@ -196,7 +197,9 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
           </div>
         ))}
 
-        {working && job && state && !waitProgress?.request && !waitProgress?.submit && (
+        {saveProgress && <div role="status" className={cn("self-stretch text-xs text-muted-foreground transition-opacity duration-200 motion-reduce:transition-none", saveProgress.fading && "opacity-0", saveProgress.error && "text-destructive")}>{saveProgress.label}</div>}
+
+        {working && job && state && job.status !== "content" && !/^(content|content[-_]sync)$/i.test(job.kind) && !waitProgress?.request && !waitProgress?.submit && (
           <div role="status" className="self-stretch grid grid-cols-[auto_1fr_auto] items-center gap-x-2.5 gap-y-1 rounded-lg border bg-muted/60 px-3 py-2.5">
             <span className="flex gap-1" aria-hidden="true">
               {[0, 1, 2].map((n) => <i key={n} className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" style={{ animationDelay: `${n * 0.2}s` }} />)}
