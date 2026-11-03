@@ -8,6 +8,35 @@ import { timedProgress } from "../waitEstimates";
 const base = (): RelayState => ({ busy: true, job: { kind: "change", status: "working", startedAt: 10_000 }, previewVersion: 1, history: [{ role: "user", ts: 10_000, text: "Make the heading bigger" }] });
 beforeEach(() => { sessionStorage.clear(); vi.useFakeTimers(); vi.setSystemTime(30_000); });
 afterEach(() => vi.useRealTimers());
+it("shows an error for 12 seconds, fades, dismisses and retains the reload schedule", () => {
+  const s = base(); const one = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  const failure = { ...s, busy: false, job: { kind: "change", status: "failed", startedAt: 10000 } };
+  one.rerender({ state: failure }); expect(one.result.current.request?.error).toBe(true);
+  act(() => vi.advanceTimersByTime(8000)); one.unmount();
+  const two = renderHook(() => useWaitProgress(failure));
+  act(() => vi.advanceTimersByTime(3750)); expect(two.result.current.request?.fading).not.toBe(true);
+  act(() => vi.advanceTimersByTime(250)); expect(two.result.current.request?.fading).toBe(true);
+  act(() => vi.advanceTimersByTime(250)); expect(two.result.current.request).toBeNull();
+  two.unmount(); expect(renderHook(() => useWaitProgress(failure)).result.current.request).toBeNull();
+});
+it("pauses a failure deadline across multiple hovered/focused surfaces and dismisses explicitly", () => {
+  const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  h.rerender({ state: { ...s, job: { kind: "change", status: "error", startedAt: 10000 } } });
+  const a = {}, b = {};
+  act(() => { h.result.current.request?.errorControls?.pause(a, true); h.result.current.request?.errorControls?.pause(b, true); });
+  act(() => vi.advanceTimersByTime(20000)); expect(h.result.current.request?.error).toBe(true);
+  act(() => h.result.current.request?.errorControls?.pause(a, false));
+  act(() => vi.advanceTimersByTime(20000)); expect(h.result.current.request?.fading).not.toBe(true);
+  act(() => h.result.current.request?.errorControls?.pause(b, false));
+  act(() => vi.advanceTimersByTime(11750)); expect(h.result.current.request?.error).toBe(true);
+  act(() => h.result.current.request?.errorControls?.dismiss()); expect(h.result.current.request).toBeNull();
+});
+it("auto-dismisses review failures without offering an unsafe retry", () => {
+  const s = { ...base(), job: { kind: "review", status: "failed", startedAt: 10000 }, busy: false };
+  const h = renderHook(() => useWaitProgress(s)); expect(h.result.current.submit?.error).toBe(true);
+  expect(h.result.current.submit?.errorControls?.retry).toBeUndefined();
+  act(() => vi.advanceTimersByTime(12250)); expect(h.result.current.submit).toBeNull();
+});
 it("segments the existing estimate-driven level without changing easing or remaining time", () => {
   const s = base();
   const h = renderHook(({ state }: { state: RelayState }) => useWaitProgress(state), { initialProps: { state: s } });

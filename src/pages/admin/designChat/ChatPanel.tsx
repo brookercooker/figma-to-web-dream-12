@@ -39,7 +39,7 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgress }: { opening?: number; onDraw?: () => void; onAttention?: () => void; saveProgress?: WaitView | null } = {}) {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress, setDevice, setReviewOpen, previewPage, selectPage, startEditing, device, boxRef } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress, requestRetry, setDevice, setReviewOpen, previewPage, selectPage, startEditing, device, boxRef } = useDesignChat();
   const navigate = useNavigate();
   const handoffPage = workingPage?.id ? workingPage : previewPage;
   const openSavedContent = async (reply: string) => {
@@ -90,7 +90,8 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
 
   const busy = Boolean(state?.busy);
   const changing = !!state?.job && !/^(publish|review|content|content[-_]?sync)$/i.test(state.job.kind ?? "") && !/^(content|reviewing|publishing|updating)$/.test(state.job.status) && (busy || state.job.status === "approval" || state.job.status === "queued");
-  const queue = useChangeQueue(state, workingPage?.id ?? "", async body => { const result = await postToHelper("/send", body); refreshSoon(); return result; }, useCallback(() => setHint("Your queued changes were removed because you switched pages."), [setHint]));
+  const deliver = (body: Record<string, unknown>) => requestRetry ? requestRetry.sendPrepared(body) : postToHelper("/send", body);
+  const queue = useChangeQueue(state, workingPage?.id ?? "", async body => { const result = await deliver(body); refreshSoon(); return result; }, useCallback(() => setHint("Your queued changes were removed because you switched pages."), [setHint]));
   const [pageContext, setPageContext] = useState<{ id?: string; content?: unknown; type?: string; otherPages: boolean }>({ otherPages: false });
   const waitId = state?.job?.id ?? state?.job?.startedAt;
   useEffect(() => {
@@ -138,8 +139,8 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
   };
   const working = isWorking(state);
   const messages = useMemo(
-    () => (state?.history ?? []).map((e, i) => ({ e, i, shown: visibleText(e) })).filter((m) => m.shown !== null),
-    [state?.history],
+    () => [...(state?.history ?? []), ...(requestRetry?.localErrors ?? [])].sort((a, b) => (a.ts ?? 0) - (b.ts ?? 0)).map((e, i) => ({ e, i, shown: visibleText(e) })).filter((m) => m.shown !== null),
+    [state?.history, requestRetry?.localErrors.map(e => e.ts).join(",")],
   );
   const problems = problemsModel(state);
   const rules = state?.uploads ?? DEFAULT_UPLOADS;
@@ -213,7 +214,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
     if (changing || queue.items.length > 0) {
       queue.add(message, body); setText(""); attachments.clear(); refs.clearReferences(); drawing.cancel(); return;
     }
-    const res = await postToHelper("/send", body);
+    const res = await deliver(body);
     if (res.ok) {
       const took = Number(res.data?.marks ?? 0);
       const expected = hasDrawing && marks ? (marks as { marks: unknown[] }).marks.length : 0;
@@ -261,6 +262,10 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
             e.role === "error" && "self-stretch max-w-none bg-destructive/10 text-destructive",
           )}>
             {shown}
+            {e.role === "error" && requestRetry && e.ts !== undefined && !requestRetry.isReviewFailure(e.ts) && <div className="mt-1 text-xs">
+              {requestRetry.canRetry(e.ts) ? <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" disabled={requestRetry.disabled || editing} onClick={() => { void requestRetry.retry(e.ts ?? 0, () => waitProgress?.request?.errorControls?.dismiss()).then(result => { if (result && !result.ok) setHint(result.error, true); }); }}>Try Again</Button>
+                : <p>{requestRetry.retryNote(e.ts)}</p>}
+            </div>}
             {e.role === "assistant" && needsManualContentEdit(e.text) && handoffPage?.id && <div className="mt-2 space-y-1 text-xs text-muted-foreground">
               <p>This saved content can be changed here.</p>
               <Button type="button" variant="link" size="sm" className="h-auto whitespace-normal p-0 text-left text-xs" onClick={() => void openSavedContent(e.text)}>Edit in Manual Edit Mode</Button>
@@ -290,7 +295,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
             {suggestions.map(s => <Button key={s.id} type="button" variant="link" className="h-auto whitespace-normal p-0 text-left text-xs" onClick={() => runSuggestion(s.action)}>{s.label}</Button>)}
           </div>
         </div>}
-        {waitProgress?.request && !waitProgress.request.ribbon && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><WaitProgress progress={waitProgress.request} /></div>}
+        {waitProgress?.request && (!waitProgress.request.ribbon || waitProgress.request.error) && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><WaitProgress progress={waitProgress.request} /></div>}
         {waitProgress?.submit && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><WaitProgress progress={waitProgress.submit} /></div>}
         {queue.items.map((item, index) => <div key={item.id} data-queued-change className="self-end max-w-[92%] rounded-lg border bg-muted px-3 py-2 text-sm">
           <p className="whitespace-pre-wrap break-words">{item.message}</p>
@@ -432,7 +437,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
           {(offline || hint.text) && <span role="status" className={cn("flex-1 min-w-0 text-xs", phone && "order-last basis-full", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>
             {offline ? "Can't reach the design service right now. It will keep trying." : hint.text}
           </span>}
-          <Button type="submit" disabled={busy && !changing || offline || attachments.uploading} className="ml-auto gap-2">
+          <Button type="submit" disabled={busy && !changing || offline || attachments.uploading || requestRetry?.sending} className="ml-auto gap-2">
             <Send className="h-4 w-4" /> {changing ? "Queue it" : "Send"}
           </Button>
         </div>

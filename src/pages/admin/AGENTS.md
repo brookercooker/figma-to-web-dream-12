@@ -1,4 +1,5 @@
 # Site Manager (src/pages/admin) rules
+- Failed waits share persisted deadlines and interaction ownership; retry only captured prepared /send payloads, with a synchronous duplicate-send gate and history recovery, never reconstruct missing attachments or page context.
 
 - More Labels command lists stop wheel/touch propagation and contain overscroll in a viewport-bounded scroller, preserving native input without reaching the enclosing Dialog's document scroll lock or the page behind it.
 - Chat navigation exposes a separate optimistic destination for toolbar feedback and a 150ms cue; only validated matching locations update page data/history, superseded replies are ignored, and retained-frame navigation keeps its single fallback. After a Manager destination matches, ignore conflicting reports from that preview window for a non-extending 1.5s settling window; new requests, replacement/editor windows and expiry release the guard, since cross-origin SPA location/intent cannot be read from iframe.src.

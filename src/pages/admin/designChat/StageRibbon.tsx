@@ -2,8 +2,10 @@ import { cn } from "@/lib/utils";
 import type { WaitView } from "./waitEstimates";
 import WaitProgress from "./WaitProgress";
 import { elapsedTime, ribbonSegments } from "./stageRibbon";
+import WaitError from "./WaitError";
 
 export default function StageRibbon({ progress, thin = false, className }: { progress?: WaitView | null; thin?: boolean; className?: string }) {
+  if (progress?.error && progress.errorControls) return <WaitError progress={progress} className={className} />;
   if (!progress?.ribbon) return <WaitProgress progress={progress} thin={thin} className={className} />;
   const r = progress.ribbon;
   const label = progress.error || r.paused || progress.done ? progress.label : `${progress.label} · ${elapsedTime(r.elapsed)}`;

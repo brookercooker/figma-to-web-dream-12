@@ -17,6 +17,7 @@ import { emptyHistory, visit, step, canBack, canForward, previewAddressMatches, 
 import { observeContentSyncState } from "./contentSync";
 import { useChatDraft } from "./useChatDraft";
 import { useWaitProgress } from "./useWaitProgress";
+import { useRequestRetry } from "./useRequestRetry";
 
 /**
  * One place that holds the design chat's live state, so the chat (always on the right of the Site Manager), the preview
@@ -69,6 +70,7 @@ export function workingReducer(s: WorkingState, a: WorkingAction): WorkingState 
 
 export type DesignChat = {
   waitProgress?: ReturnType<typeof useWaitProgress>;
+  requestRetry?: ReturnType<typeof useRequestRetry>;
   chatDraft?: ReturnType<typeof useChatDraft>;
   mode: "chat" | "manual";
   state: RelayState | null;
@@ -148,7 +150,13 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (!offline) observeContentSyncState(state); }, [state, offline]);
   const [navNonce, setNavNonce] = useState(0);
   const preview = usePreview(state, previewPath, navNonce);
-  const waitProgress = useWaitProgress(state, preview.frameLoadedAt);
+  const requestRetry = useRequestRetry(state, offline, refreshSoon);
+  const trackedProgress = useWaitProgress(requestRetry.optimisticState, preview.frameLoadedAt) ?? { request: null, submit: null };
+  const failedRequest = trackedProgress.request;
+  const waitProgress = failedRequest?.error && failedRequest.errorControls && failedRequest.requestAt !== undefined
+    ? { ...trackedProgress, request: { ...failedRequest, errorControls: { ...failedRequest.errorControls,
+      retry: requestRetry.canRetry(failedRequest.requestAt) ? () => { void requestRetry.retry(failedRequest.requestAt ?? 0, failedRequest.errorControls?.dismiss ?? (() => {})); } : undefined,
+      disabled: requestRetry.disabled, note: requestRetry.retryNote(failedRequest.requestAt) } } } : trackedProgress;
   lastReload.current = preview.lastReloadAt;
 
   const [device, setDevice] = useState<Device>("desktop");
@@ -332,7 +340,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const chatDraft = useChatDraft();
 
   const value = useMemo<DesignChat>(() => ({
-    waitProgress,
+    waitProgress, requestRetry,
     previewDestination, previewNavigating,
     chatDraft,
     mode,
