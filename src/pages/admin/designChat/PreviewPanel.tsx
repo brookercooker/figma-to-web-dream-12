@@ -57,8 +57,8 @@ export default function PreviewPanel() {
   return (
     <section ref={sectionRef} className="flex h-full min-h-0 flex-col" aria-label="Preview">
       <ContentSyncNote previewFailed={previewFailed} />
-      <div className={cn("shrink-0 overflow-hidden bg-background transition-[height] duration-200 motion-reduce:transition-none", ribbon && !ribbon.fading ? phone ? "h-[6px]" : "h-10" : "h-0")}>
-        <StageRibbon progress={ribbon} thin={phone} className={phone ? undefined : "px-2 py-1"} />
+      <div className={cn("shrink-0 overflow-hidden bg-background transition-[height] duration-200 motion-reduce:transition-none", ribbon && !ribbon.fading ? phone ? "h-2" : "h-12" : "h-0")}>
+        <StageRibbon progress={ribbon} thin={phone} className={phone ? "pb-0.5" : "px-2 pt-1 pb-3"} />
       </div>
       <div ref={boxRef} className={cn("relative min-h-0 flex-1 bg-muted flex justify-center", coverFull && "fixed inset-0 z-50 bg-background")}>
 

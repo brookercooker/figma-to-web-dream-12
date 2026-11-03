@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [x] Ribbon spacing adds 8px below desktop/tablet and 2px on phone; phases follow per-run queued/running/own-commit/build/frame signals, with monotonic stages and unchanged estimated fill. Focused regressions cover running, queued, commits and second queued runs.
 - [x] Context-aware rotating While You Wait suggestions; pure helper uses saved-content/device/request/draft/wait/queue context, existing navigation/manual/focus actions only. Focused helper and chat tests pass; ribbon and queue unchanged.
 - [x] Exact job-ID SHA matching across draft.requests/changes, oldest pending run with independently persisted baselines; optional builtAt preferred and older timestamp fallback. Focused regressions cover B committing before A builds and reload recovery; no relay/public changes.
 - [x] Video Layout joined Alignment and Width controls, shared media alignment styling; existing delete confirmation/history preserved. 59 focused tests pass; real Experiment delete/Undo verified without saving; 1280/768/390 and narrow dark options fit without overflow. Public poster click remains unverified.

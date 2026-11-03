@@ -17,7 +17,7 @@ it("segments the existing estimate-driven level without changing easing or remai
   expect(h.result.current.request?.label).toBe("Making your change · about a minute left");
   h.rerender({ state: { ...s, previewChecking: true, history: [...s.history, { role: "assistant", text: "Changed", ts: 30_000 }] } });
   expect(h.result.current.request?.ribbon?.partial).toBe(h.result.current.request?.value);
-  expect(h.result.current.request?.label).toBe("Building the preview · about 50 sec left");
+  expect(h.result.current.request?.label).toBe("Making your change · about 50 sec left");
 });
 it("requires a commit for Change made and a confirmed frame for Ready, never filling early", () => {
   const s = base();
@@ -51,19 +51,21 @@ it("jumps at reply, waits for real build, then completes for 1.5s", () => {
   act(() => vi.advanceTimersByTime(1500)); expect(h.result.current.request?.fading).toBe(true);
   act(() => vi.advanceTimersByTime(250)); expect(h.result.current.request).toBeNull();
 });
-it("highlights Received until a timestamped SHA, ignores time and older commits", () => {
+it("shows Received done and making the change active while running, ignoring time and older commits", () => {
   const s = { ...base(), draft: { requests: [{ id: "old", sha: "old", at: 9999, request: "Old" }] } };
   const h = renderHook(() => useWaitProgress(s));
-  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  expect(h.result.current.request?.ribbon?.current).toBe(1);
+  expect(h.result.current.request?.ribbon?.received).toBe(true);
+  expect(h.result.current.request?.label).toMatch(/^Making your change/);
   act(() => vi.advanceTimersByTime(100000));
-  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  expect(h.result.current.request?.ribbon?.current).toBe(1);
   expect(h.result.current.request?.ribbon?.changed).toBe(false);
 });
 it("skips preview stages for a no-commit change reply", () => {
   const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
   h.rerender({ state: { ...s, busy: false, job: { ...s.job, kind: "change", startedAt: 10000, status: "done" }, history: [...s.history, { role: "assistant", text: "Nothing changed", ts: 30000 }] } });
   expect(h.result.current.request?.label).toBe("Done");
-  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  expect(h.result.current.request?.ribbon?.current).toBe(1);
   expect(h.result.current.request?.ribbon?.built).toBe(false);
 });
 it("a queued next job gets its own run and cannot inherit the previous commit or loaded frame", () => {
@@ -132,13 +134,54 @@ it("freezes highlighted stages on approval and error even if new metadata arrive
   const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
   const metadata = { requests: [{ id: "new", sha: "abc", at: 25000, request: "New" }] };
   h.rerender({ state: { ...s, draft: metadata, job: { kind: "change", status: "approval", startedAt: 10000 } } });
-  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  expect(h.result.current.request?.ribbon?.current).toBe(1);
   expect(h.result.current.request?.label).toBe("Waiting for your approval");
   h.rerender({ state: { ...s, draft: metadata, job: { kind: "change", status: "error", startedAt: 10000 } } });
-  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  expect(h.result.current.request?.ribbon?.current).toBe(1);
   expect(h.result.current.request?.error).toBe(true);
 });
 it("finishes a no-change question immediately on reply", () => { const s = base(); s.job = { kind: "question", status: "working", startedAt: 10_000 }; const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } }); h.rerender({ state: { ...s, busy: false, history: [...s.history, { role: "assistant", text: "Answer", ts: 30_000 }] } }); expect(h.result.current.request?.done).toBe(true); });
+it.each(["queued", "waiting", "approval"])("keeps Received active for a not-started %s request", status => {
+  const s: RelayState = { ...base(), job: { id: "A", kind: "change", status, startedAt: 10000 } };
+  const h = renderHook(() => useWaitProgress(s));
+  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  expect(h.result.current.request?.ribbon?.received).toBe(false);
+  expect(h.result.current.request?.label).toMatch(status === "approval" ? /^Waiting for your approval/ : /^Received/);
+});
+it("advances queued to running to own commit without regressions or estimated-stage labels", () => {
+  const queued: RelayState = { ...base(), job: { id: "A", kind: "change", status: "queued", startedAt: 10000 } };
+  const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: queued } });
+  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  const running = { ...queued, job: { ...queued.job, id: "A", kind: "change", startedAt: 10000, status: "running" } };
+  h.rerender({ state: running });
+  expect(h.result.current.request?.ribbon?.current).toBe(1);
+  expect(h.result.current.request?.ribbon?.received).toBe(true);
+  h.rerender({ state: { ...running, previewChecking: true, changes: [{ id: "B", sha: "other", at: 20000, request: "B" }] } });
+  expect(h.result.current.request?.label).toMatch(/^Making your change/);
+  const committed = { ...running, changes: [{ id: "A", sha: "own", at: 20000, request: "A" }] };
+  h.rerender({ state: committed });
+  expect(h.result.current.request?.ribbon?.current).toBe(2);
+  expect(h.result.current.request?.ribbon?.changed).toBe(true);
+  expect(h.result.current.request?.label).toMatch(/^Building the preview/);
+  h.rerender({ state: queued });
+  expect(h.result.current.request?.ribbon?.current).toBe(2);
+  expect(h.result.current.request?.label).toMatch(/^Building the preview/);
+});
+it("retains Received for a second queued run while the first builds and after it finishes", () => {
+  const a: RelayState = { ...base(), job: { id: "A", kind: "change", status: "working", startedAt: 10000 } };
+  const h = renderHook(({ state, frame }) => useWaitProgress(state, frame), { initialProps: { state: a, frame: 0 } });
+  const b: RelayState = { ...a, job: { id: "B", kind: "change", status: "queued", startedAt: 25000 }, previewChecking: true,
+    changes: [{ id: "A", sha: "a", at: 20000, request: "A" }], history: [...a.history, { role: "assistant", ts: 21000, text: "A changed" }, { role: "user", ts: 25000, text: "B" }] };
+  h.rerender({ state: b, frame: 0 });
+  expect(h.result.current.request?.ribbon?.current).toBe(2);
+  const tracks = JSON.parse(sessionStorage.getItem(`nova:wait-progress:${RELAY}`) ?? "[]");
+  expect(tracks.find((t: { jobId: string }) => t.jobId === "B").view.ribbon).toMatchObject({ current: 0, received: false, changed: false });
+  const built = { ...b, previewChecking: false, previewBuiltAt: 31000, previewVersion: 2 };
+  h.rerender({ state: built, frame: 32000 });
+  act(() => vi.advanceTimersByTime(1800));
+  expect(h.result.current.request?.ribbon?.current).toBe(0);
+  expect(h.result.current.request?.label).toMatch(/^Received/);
+});
 it("pauses for approval and resumes without counting the wait", () => { const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } }); const value = h.result.current.request?.value; h.rerender({ state: { ...s, job: { ...s.job, kind: "change", startedAt: 10_000, status: "approval" } } }); act(() => vi.advanceTimersByTime(30_000)); expect(h.result.current.request?.value).toBe(value); h.rerender({ state: s }); expect(h.result.current.request?.value).toBe(value); });
 it("freezes errors and clears stopped jobs", () => { const s = base(); const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } }); h.rerender({ state: { ...s, job: { kind: "change", status: "error", startedAt: 10_000 } } }); const value = h.result.current.request?.value; act(() => vi.advanceTimersByTime(5000)); expect(h.result.current.request?.value).toBe(value); expect(h.result.current.request?.error).toBe(true); h.rerender({ state: { ...s, job: { kind: "change", status: "stopped", startedAt: 10_000 } } }); expect(h.result.current.request).toBeNull(); });
 it("never replays completed history as a new wait", () => { const s = base(); s.busy = false; s.job = { kind: "change", status: "done", startedAt: 10_000 }; expect(renderHook(() => useWaitProgress(s)).result.current.request).toBeNull(); });
