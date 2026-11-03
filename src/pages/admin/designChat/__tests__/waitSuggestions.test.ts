@@ -22,3 +22,8 @@ it("replaces writing with queue review and requires genuinely other draft pages"
   expect(result.some(s => s.id === "queue")).toBe(true);
   expect(result.some(s => s.id === "draft")).toBe(true);
 });
+it("filters unavailable actions and shows saved-draft reminders only for long waits", () => {
+  expect(waitSuggestions({ ...base, available: ["reminder"], elapsed: 60 })).toEqual([]);
+  expect(waitSuggestions({ ...base, available: ["reminder"], elapsed: 61 })[0].id).toBe("reminder");
+  expect(waitSuggestions({ ...base, available: ["write"] }, ["write"])).toEqual([]);
+});

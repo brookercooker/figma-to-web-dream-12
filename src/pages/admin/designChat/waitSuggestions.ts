@@ -44,7 +44,8 @@ export function waitSuggestions(c: WaitContext, previous: string[] = []): WaitSu
   add("reminder", "Your draft stays saved when you leave", "reminder", 80, c.elapsed > 60);
   pool.sort((a, b) => b.score - a.score);
   let result = pool.slice(0, 3);
-  if (result.map(s => s.id).join("|") === previous.join("|") && result.length > 1) {
+  if (result.length && result.map(s => s.id).join("|") === previous.join("|")) {
+    if (result.length === 1) return [];
     result = pool.length > 3 ? [pool[0], pool[1], pool[3]] : [result[0], ...result.slice(1).reverse()];
     if (result.map(s => s.id).join("|") === previous.join("|")) result = result.slice(0, 1);
   }
