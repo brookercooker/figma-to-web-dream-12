@@ -9,7 +9,7 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 /** Relay publish.open is authoritative; chat messages are not a pending-change ledger. */
-export default function HeaderActions({ onExpand, menuItems = false }: { onExpand?: () => void; menuItems?: boolean }) {
+export default function HeaderActions({ onExpand, menuItems = false, showLabels = true }: { onExpand?: () => void; menuItems?: boolean; showLabels?: boolean }) {
   const [helpOpen, setHelpOpen] = useState(false);
   const { state, editing, previewLocation, workingPage, reviewOpen, setReviewOpen } = useDesignChat();
   const count = state?.publish?.open ?? 0;
@@ -22,17 +22,18 @@ export default function HeaderActions({ onExpand, menuItems = false }: { onExpan
     } catch { toast.error("The summary couldn't be copied. Try again."); }
   };
   if (menuItems) return <>
-    <DropdownMenuItem disabled={editing} onClick={() => { onExpand?.(); setReviewOpen(!reviewOpen); }}><ClipboardList className="mr-2 h-4 w-4" />Review Status{count > 0 && <span className="ml-auto rounded-full bg-review px-1.5 text-xs text-review-foreground">{count}</span>}</DropdownMenuItem>
+    <DropdownMenuItem disabled={editing} onClick={() => { onExpand?.(); setReviewOpen(!reviewOpen); }}><ClipboardList className="mr-2 h-4 w-4" />Status<span className="ml-auto pl-3 text-xs text-muted-foreground">{count > 0 ? `${count} ${count === 1 ? "change" : "changes"} waiting` : "No changes waiting"}</span></DropdownMenuItem>
     <DropdownMenuItem onSelect={e => { e.preventDefault(); setHelpOpen(true); }}><CircleHelp className="mr-2 h-4 w-4" />Help</DropdownMenuItem>
     <Dialog open={helpOpen} onOpenChange={setHelpOpen}><DialogContent><DialogHeader><DialogTitle>Help</DialogTitle></DialogHeader><p className="text-sm">Describe a change in chat, or choose Edit to change the page by hand. Save Changes saves your edits. Review Status lists changes waiting for review.</p><Button variant="outline" onClick={() => void copySummary()}><Copy className="h-4 w-4" />Copy Problem Summary</Button></DialogContent></Dialog>
   </>;
   return <TooltipProvider delayDuration={200}>
-    <div className="flex max-w-full shrink-0 flex-wrap items-center justify-center gap-1">
+    <div className="flex max-w-full shrink-0 items-center justify-center gap-1">
       <Tooltip><TooltipTrigger asChild>
         <span tabIndex={editing ? 0 : undefined}>
-          <Button variant={reviewOpen ? "secondary" : "ghost"} size="icon" className="relative h-8 w-8 shrink-0" aria-label={`Review Status${count ? `: ${count} Waiting` : ""}`} aria-pressed={reviewOpen} disabled={editing} onClick={() => { onExpand?.(); setReviewOpen(!reviewOpen); }}>
+          <Button variant={reviewOpen ? "secondary" : "ghost"} size={showLabels ? "sm" : "icon"} className={showLabels ? "h-8 shrink-0 gap-1.5 whitespace-nowrap px-2" : "h-8 w-8 shrink-0"} aria-label={`Review Status${count ? `: ${count} Waiting` : ""}`} aria-pressed={reviewOpen} disabled={editing} onClick={() => { onExpand?.(); setReviewOpen(!reviewOpen); }}>
             <ClipboardList className="h-4 w-4" aria-hidden />
-            {count > 0 && <span aria-hidden className="absolute -right-1 -top-1 min-w-4 rounded-full bg-review px-1 text-center text-[10px] leading-4 text-review-foreground">{count > 99 ? "99+" : count}</span>}
+            {showLabels && <span>Status</span>}
+            {showLabels && count > 0 && <span aria-hidden className="text-xs font-normal text-muted-foreground">{count}</span>}
           </Button>
         </span>
       </TooltipTrigger><TooltipContent>{editing ? "Finish editing before reviewing your changes." : reviewOpen ? "Back to Chat" : "Review Status"}</TooltipContent></Tooltip>
