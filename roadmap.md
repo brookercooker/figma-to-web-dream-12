@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Move chat ribbon above interactive preview; real commit/build/frame signals, isolated queued runs and reload recovery; only affected tests and signed-in controlled browser checks.
 - [x] Saved video list/panel deletion, staged undo/redo/discard, poster previews and chat Manual Edit hand-off; 89 affected tests pass, build OK. Real Experiment local delete/empty/Undo and 1280/768/390 options verified without saving; public poster click remains unavailable. Contract: docs/saved-video-editing.md. No library deletion or new relay/public behavior.
 - [x] Ribbon now decorates the existing estimate/remaining-time wording only; exact Public 45d2c351 core mirrored byte-for-byte, placement workaround removed; save/undo/reload/record and Material adapter tests pass (175 focused checks), build OK.
 - [ ] Restore hidden/placeholder compatibility: exact Public 45d2c351 core omits these older Manager kinds. Needs reconciled Public src/lib/inlineEditCore.ts retaining placement plus hidden/placeholder support; no unilateral shared-core fork.

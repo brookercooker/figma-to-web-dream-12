@@ -26,9 +26,9 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   }
   const submitJob = job?.kind === "publish" || job?.kind === "review" || /^(reviewing|publishing|updating)$/.test(status);
   const history = state.history ?? [];
-  if (!job && state.previewChecking && !track.current) {
+  if (!job && !track.current) {
     const latestUser = [...history].reverse().find(e => e.role === "user" && typeof e.ts === "number");
-    if (latestUser?.ts) track.current = restoreTrack(latestUser.ts) ?? { id: latestUser.ts, version: state.previewVersion, kind: detectWaitKind(latestUser.text), high: 0, paused: 0, hasBuild: true };
+    if (latestUser?.ts) track.current = restoreTrack(latestUser.ts) ?? (state.previewChecking ? { id: latestUser.ts, version: state.previewVersion, kind: detectWaitKind(latestUser.text), high: 0, paused: 0, hasBuild: true } : null);
   }
   const user = [...history].reverse().find(e => e.role === "user" && (!job || !e.ts || e.ts <= job.startedAt + 1000));
   const startId = job?.startedAt ?? track.current?.id;
@@ -45,7 +45,7 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   const commit = state.draft?.requests?.filter(r => r.source !== "content" && !!r.sha && Number(typeof r.at === "string" ? Date.parse(r.at) : r.at ?? 0) >= t.id)
     .sort((a, b) => Number(typeof a.at === "string" ? Date.parse(a.at) : a.at) - Number(typeof b.at === "string" ? Date.parse(b.at) : b.at))[0];
   // Missing SHA/timestamp is not evidence of a change. A reply or a timer cannot supply it.
-  if (!isSubmit && !t.error && t.pausedAt === undefined && !state.approval && status !== "approval") {
+  if (!isSubmit && !t.error && !failed.test(status) && !error && t.pausedAt === undefined && !state.approval && status !== "approval") {
     if (commit && !t.changeAt) {
       t.changeAt = Number(typeof commit.at === "string" ? Date.parse(commit.at) : commit.at);
       t.changeVersion = t.lastVersion ?? t.version;
