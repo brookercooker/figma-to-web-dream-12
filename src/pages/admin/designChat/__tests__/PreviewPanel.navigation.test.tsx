@@ -3,13 +3,14 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import PreviewPanel from "../PreviewPanel";
-import PreviewTools from "../PreviewTools";
+import PreviewToolbar from "../PreviewToolbar";
 import type { DesignChat } from "../DesignChatContext";
 import { rememberScroll } from "../frameScroll";
 
 const context = vi.hoisted(() => ({ chat: null as unknown }));
 vi.mock("../DesignChatContext", () => ({ useDesignChat: () => context.chat }));
 vi.mock("../DrawLayer", () => ({ default: () => <div>Drawing</div> }));
+vi.mock("../pageSelection", () => ({ loadManualPages: async () => [] }));
 afterEach(cleanup);
 
 function setup(overrides: Partial<DesignChat> = {}) {
@@ -72,7 +73,7 @@ describe("floating preview navigation", () => {
   it("puts Back/Forward in the toolbar with the existing callbacks and disabled states", () => {
     const { chat } = setup();
     cleanup();
-    const view = () => <PreviewTools showViewControls navOnly />;
+    const view = () => <PreviewToolbar onManualNavigate={vi.fn()} />;
     const { rerender } = render(view());
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     fireEvent.click(screen.getByRole("button", { name: "Forward" }));
@@ -85,7 +86,7 @@ describe("floating preview navigation", () => {
   });
   it("hides toolbar navigation while editing by hand", () => {
     setup({ editing: true }); cleanup();
-    render(<PreviewTools showViewControls navOnly />);
+    render(<PreviewToolbar onManualNavigate={vi.fn()} />);
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
   });
 });
