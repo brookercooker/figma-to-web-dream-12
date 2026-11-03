@@ -40,19 +40,19 @@ export function ToolHeader({ icon: Icon, title, subtitle, thumbnail, menu, child
   );
 }
 
-export function ToolGroup({ title, icon: Icon, summary, children }: {
-  title: string; icon?: LucideIcon; defaultOpen?: boolean; summary?: ReactNode; children: ReactNode;
+export function ToolGroup({ title, icon: Icon, summary, children, initiallyCollapsed = false }: {
+  title: string; icon?: LucideIcon; defaultOpen?: boolean; initiallyCollapsed?: boolean; summary?: ReactNode; children: ReactNode;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(!initiallyCollapsed);
   const flip = () => setOpen((o) => !o);
   return (
     <div className="border-t">
-      <button type="button" aria-expanded={open} onClick={flip} className="flex w-full items-center gap-2 py-2.5 text-left">
+      <Button variant="ghost" type="button" aria-expanded={open} onClick={flip} className="flex h-auto w-full items-center justify-start gap-2 rounded-none px-0 py-2.5 text-left hover:bg-transparent">
         {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />}
         <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{title}</span>
         <span className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">{!open && summary}</span>
         <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform", !open && "-rotate-90")} />
-      </button>
+      </Button>
       {open && <div className="space-y-3 pb-4 pt-1">{children}</div>}
     </div>
   );
