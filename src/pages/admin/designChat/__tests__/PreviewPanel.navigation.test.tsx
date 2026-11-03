@@ -70,6 +70,15 @@ describe("floating preview navigation", () => {
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Forward" })).toBeNull();
   });
+  it("retains the shown frame during navigation and clears the subtle cue on arrival", () => {
+    const { chat, view, rerender, container } = setup({ preview: { frames: [{ id: 1, url: "https://public.example/" }], shownId: 1, loaded: true, finish: vi.fn() } as any });
+    const frame = container.querySelector("iframe");
+    chat.previewNavigating = true; rerender(view());
+    expect(container.querySelector("iframe")).toBe(frame);
+    expect(screen.queryByLabelText("Preview Loading")).toBeNull();
+    chat.previewNavigating = false; rerender(view());
+    expect(container.querySelector("iframe")).toBe(frame);
+  });
   it("puts Back/Forward in the toolbar with the existing callbacks and disabled states", () => {
     const { chat } = setup();
     cleanup();

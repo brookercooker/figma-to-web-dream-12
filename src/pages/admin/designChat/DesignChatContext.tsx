@@ -106,6 +106,9 @@ export type DesignChat = {
   closeObject: () => void;
   /** The address the visitor is on inside the preview (null until the site reports one). */
   previewLocation: { path: string; search: string; notFound?: boolean } | null;
+  /** Requested address for instant toolbar feedback; reported location remains authoritative for page data. */
+  previewDestination?: string | null;
+  previewNavigating?: boolean;
   /** The Site Manager page at that address, if any. */
   previewPage: PreviewPage | null;
   previewPageLoading: boolean;
@@ -186,6 +189,14 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   }, [workingPage]);
   // Back/Forward/page choice move the mounted preview in place; a src change happens only as a single fallback.
   const pendingNav = useRef<{ expect: string; timer: ReturnType<typeof setTimeout> } | null>(null);
+  const [previewDestination, setPreviewDestination] = useState<string | null>(null);
+  const [previewNavigating, setPreviewNavigating] = useState(false);
+  const navigationCue = useRef<ReturnType<typeof setTimeout>>();
+  const clearNavigationCue = useCallback(() => {
+    clearTimeout(navigationCue.current);
+    setPreviewDestination(null);
+    setPreviewNavigating(false);
+  }, []);
   const shownPath = useRef<string | null>(null);
   // The page asked for sticks until the preview reports it (first-load race: the frame may still be on the home page).
   const target = useRef<{ path: string; tries: number } | null>(restoredPage ? { path: restoredPage.path, tries: 0 } : null);
@@ -194,14 +205,22 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const navigatePreview = useCallback((nav: PreviewNavigate, expect: string, fallback: () => void, sticky = true) => {
     debugNav("navigate", { action: nav.action, expect });
     target.current = nav.action === "to" && sticky ? { path: expect, tries: 0 } : null;
-    if (nav.action === "to" && shownPath.current && previewAddressMatches(expect, shownPath.current)) return; // already showing it (e.g. entering or leaving Manual Edit Mode)
+    const superseding = pendingNav.current !== null;
     if (pendingNav.current) { clearTimeout(pendingNav.current.timer); pendingNav.current = null; }
+    if (!superseding && nav.action === "to" && shownPath.current && previewAddressMatches(expect, shownPath.current)) { clearNavigationCue(); return; }
+    clearTimeout(navigationCue.current);
+    setPreviewDestination(expect);
+    setPreviewNavigating(false);
+    navigationCue.current = setTimeout(() => setPreviewNavigating(true), 150);
     if (!postPreviewNavigate(nav)) { debugNav("unavailable", { expect }); fallback(); return; }
     debugNav("posted", { action: nav.action, expect });
     const timer = setTimeout(() => { if (pendingNav.current?.timer === timer) { debugNav("timeout fallback", { expect }); pendingNav.current = null; fallback(); } }, NAV_FALLBACK_MS);
     pendingNav.current = { expect, timer };
-  }, []);
-  useEffect(() => () => { if (pendingNav.current) clearTimeout(pendingNav.current.timer); }, []);
+  }, [clearNavigationCue]);
+  useEffect(() => () => { if (pendingNav.current) clearTimeout(pendingNav.current.timer); clearTimeout(navigationCue.current); }, []);
+  useEffect(() => {
+    if (preview.error || (preview.frameLoadedAt && !pendingNav.current)) clearNavigationCue();
+  }, [preview.frameLoadedAt, preview.error, clearNavigationCue]);
   const selectPage = useCallback((page: WorkingPage) => {
     dispatch({ type: "select", page });
     navigatePreview({ action: "to", path: page.path }, page.path, () => { setPreviewPath(page.path); setNavNonce((n) => n + 1); });
@@ -245,7 +264,6 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
       const search = typeof d.search === "string" && d.search.length <= 300 ? stripPreviewTokens(d.search) : "";
       debugNav("location", { path: d.path, search, expect: pendingNav.current?.expect });
       const notFound = d.notFound === true;
-      setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search && Boolean(cur.notFound) === notFound ? cur : { path: d.path, search, ...(notFound ? { notFound: true } : {}) }));
       const t = target.current;
       if (t && !previewAddressMatches(t.path, d.path, search)) {
         // Still showing an earlier page: ask again (bounded) rather than adopt it.
@@ -253,14 +271,17 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
         return;
       }
       target.current = null;
+      const pending = pendingNav.current;
+      if (pending && !previewAddressMatches(pending.expect, d.path, search)) return;
+      setPreviewLocation((cur) => (cur && cur.path === d.path && cur.search === search && Boolean(cur.notFound) === notFound ? cur : { path: d.path, search, ...(notFound ? { notFound: true } : {}) }));
       rememberPath(d.path + search);
       shownPath.current = d.path + search;
-      const pending = pendingNav.current;
       if (pending && previewAddressMatches(pending.expect, d.path, search)) { debugNav("matched", { expect: pending.expect, path: d.path, search }); clearTimeout(pending.timer); pendingNav.current = null; }
+      clearNavigationCue();
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [rememberPath]);
+  }, [rememberPath, clearNavigationCue]);
   // Back/Forward: every address the preview reports is visited; arrivals from Back/Forward match the current entry and add nothing.
   const [history, setHistory] = useState<PreviewHistory>(emptyHistory);
   useEffect(() => {
@@ -272,6 +293,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
     if (editing) return; // the editor is on screen; leaving it goes through Save Changes / Discard Changes
     const r = step(historyRef.current, by);
     if (!r.address) return;
+    historyRef.current = r.history;
     setHistory(r.history);
     const address = r.address;
     debugNav("history step", { by, address });
@@ -289,12 +311,13 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<DesignChat>(() => ({
     waitProgress,
+    previewDestination, previewNavigating,
     chatDraft,
     mode,
     state, offline, refreshSoon, preview, device, setDevice, boxRef, editBoxRef,
     inFull: full || coverFull, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage,
     editing, startEditing, stopEditing, previewLocation, previewPage, previewPageLoading, previewRegistrable, drawing, objectOpen, openObject, closeObject, returnTo, refs, previewNav, reviewOpen, setReviewOpen, showPreviewPath,
-  }), [waitProgress, chatDraft, reviewOpen, showPreviewPath, mode, refs, previewNav, objectOpen, returnTo, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
+  }), [previewDestination, previewNavigating, waitProgress, chatDraft, reviewOpen, showPreviewPath, mode, refs, previewNav, objectOpen, returnTo, openObject, closeObject, previewLocation, previewPage, previewPageLoading, previewRegistrable, state, offline, refreshSoon, preview, device, full, coverFull, toggleFull, workingPage, selectPage, clearWorkingPage, editing, startEditing, stopEditing, drawing]);
 
   return <Ctx.Provider value={value}><ManifestReceiverFrame />{children}</Ctx.Provider>;
 }
