@@ -18,7 +18,8 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
       if (user?.ts) { a.userAt = user.ts; save(); }
     }
   }
-  const disabled = sending || offline || !!state?.busy || !!state?.approval || /^(queued|working|running|reviewing|publishing|updating)$/.test(state?.job?.status ?? "");
+  const awaiting = !!optimisticAt && (state?.job?.startedAt ?? 0) < optimisticAt && !history.some(e => e.role === "user" && (e.ts ?? 0) >= optimisticAt);
+  const disabled = sending || awaiting || offline || !!state?.busy || !!state?.approval || /^(queued|working|running|reviewing|publishing|updating)$/.test(state?.job?.status ?? "");
   const sendPrepared = async (body: Record<string, unknown>) => {
     const attempt = { body: structuredClone(body), after: Math.max(0, ...history.filter(e => e.role === "user").map(e => e.ts ?? 0)), sentAt: Date.now() };
     attempts.current.push(attempt); save();
@@ -26,7 +27,7 @@ export function useRequestRetry(state: RelayState | null, offline: boolean, refr
   };
   const attemptFor = (at: number) => {
     const user = [...history].reverse().find(e => e.role === "user" && (e.ts ?? Infinity) <= at + 1000);
-    return [...attempts.current].reverse().find(a => a.userAt === user?.ts || a.userAt === undefined && user?.text === a.body.message && (user.ts ?? 0) > a.after);
+    return [...attempts.current].reverse().find(a => user?.ts !== undefined && a.userAt === user.ts || a.userAt === undefined && user?.text === a.body.message && (user.ts ?? 0) > a.after);
   };
   const retry = async (at: number, clear: () => void) => {
     const attempt = attemptFor(at);
