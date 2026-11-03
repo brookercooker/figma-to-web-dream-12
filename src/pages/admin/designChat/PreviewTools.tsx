@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, ExternalLink, Maximize2, Minimize2, Monitor, Smartphone, Tablet, Send } from "lucide-react";
+import { Monitor, Smartphone, Tablet, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { postToHelper } from "./helper";
@@ -9,20 +9,11 @@ import WaitProgress from "./WaitProgress";
  * The buttons in the Site Manager's top bar that belong to the design chat: while the Preview tab is open, the size buttons
  * and Full screen; always, a link to the published site. Submit for review stays in the top bar (SubmitButton).
  */
-export default function PreviewTools({ showViewControls, tight = false, navOnly = false }: { showViewControls: boolean; tight?: boolean; navOnly?: boolean }) {
-  const { state, device, setDevice, inFull, toggleFull, previewNav, editing } = useDesignChat();
-  // Back/Forward live in the toolbar (never over the site); they are disabled while editing by hand.
-  const nav = showViewControls && previewNav && !editing && (
-    <div className="flex shrink-0 items-center gap-0.5" data-preview-nav>
-      <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={previewNav.back} disabled={!previewNav.canBack} aria-label="Back" title="Back"><ChevronLeft className="h-4 w-4" /></Button>
-      <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={previewNav.forward} disabled={!previewNav.canForward} aria-label="Forward" title="Forward"><ChevronRight className="h-4 w-4" /></Button>
-    </div>
-  );
-  if (navOnly) return nav || null;
+export default function PreviewTools({ showViewControls, tight = false }: { showViewControls: boolean; tight?: boolean }) {
+  const { device, setDevice } = useDesignChat();
 
   return (
     <div className="flex shrink-0 items-center gap-2">
-      {nav}
       {showViewControls && (
         <>
           {!tight && <ToggleGroup type="single" value={device} onValueChange={(v) => v && setDevice(v as Device)} variant="outline" size="sm"
@@ -31,18 +22,7 @@ export default function PreviewTools({ showViewControls, tight = false, navOnly 
             <ToggleGroupItem value="tablet" aria-label="Tablet Preview" title="Tablet Preview"><Tablet className="h-4 w-4" /></ToggleGroupItem>
             <ToggleGroupItem value="desktop" aria-label="Desktop Preview" title="Desktop Preview"><Monitor className="h-4 w-4" /></ToggleGroupItem>
           </ToggleGroup>}
-          <Button type="button" variant="outline" size="icon" className="h-9 w-9" onClick={toggleFull}
-            aria-label={inFull ? "Exit Full Screen" : "Full Screen"} title={inFull ? "Exit Full Screen" : "Full Screen"}>
-            {inFull ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
         </>
-      )}
-      {state?.liveUrl && !tight && (
-        <Button asChild variant="outline" size="icon" className="h-9 w-9">
-          <a href={state.liveUrl} target="_blank" rel="noopener noreferrer" aria-label="Open Published Site" title="Open Published Site">
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        </Button>
       )}
     </div>
   );
