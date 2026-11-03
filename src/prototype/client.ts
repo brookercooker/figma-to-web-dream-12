@@ -34,7 +34,10 @@ if (!db.catalog) {
   }));
 }
 
-export const supabase = reviewClient(cloud as any, hasManagerUser) as any;
+export const supabase = reviewClient(cloud as any, () => {
+  const path = typeof window === "undefined" ? "" : window.location.pathname;
+  return /^\/(manage|admin)(\/|$)/.test(path) ? hasManagerUser() : Promise.resolve(true);
+}) as any;
 
 export const adminCatalog = createPrototypeClient() as any;
 
