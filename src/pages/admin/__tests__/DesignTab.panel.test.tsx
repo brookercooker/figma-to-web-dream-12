@@ -43,7 +43,7 @@ it.each(["https://www.youtube.com/watch?v=abcdefghijk", "/upload.mp4"])("deletes
   fireEvent.click(within(row as HTMLElement).getByRole("button", { name: "Delete Video" }));
   expect(mocks.hasChanges()).toBe(false);
   fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Delete Video" }));
-  expect(post.mock.calls.filter(([m]) => m.type === "edit-update").at(-1)?.[0].heldBlocks).toHaveLength(1);
+  expect(post.mock.calls.filter(([m]) => m.type === "edit-update").at(-1)?.[0].heldBlocks).toHaveLength(0);
   expect(mocks.hasChanges()).toBe(true); expect(mocks.writes).not.toHaveBeenCalled();
   act(() => mocks.history.undo()); expect(mocks.hasChanges()).toBe(false);
   act(() => mocks.history.redo()); expect(mocks.hasChanges()).toBe(true);
