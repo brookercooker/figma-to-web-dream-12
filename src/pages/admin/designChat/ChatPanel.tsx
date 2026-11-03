@@ -335,7 +335,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention }: { openin
               <Mic className="h-4 w-4" />
             </Button>
           )}
-          {(offline || hint.text) && <span role="status" className={cn("flex-1 min-w-0 text-xs max-[1279px]:order-last max-[1279px]:basis-full", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>
+          {(offline || hint.text) && <span role="status" className={cn("flex-1 min-w-0 text-xs", phone && "order-last basis-full", offline || hint.bad ? "text-destructive" : "text-muted-foreground")}>
             {offline ? "Can't reach the design service right now. It will keep trying." : hint.text}
           </span>}
           <Button type="submit" disabled={busy || offline || attachments.uploading} className="ml-auto gap-2">

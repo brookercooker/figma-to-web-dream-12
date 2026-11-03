@@ -1,0 +1,52 @@
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import PreviewToolbar from "../PreviewToolbar";
+const m = vi.hoisted(() => ({ chat: {} as any, phone: false, select: vi.fn(), retry: vi.fn(), full: vi.fn() }));
+const pages = [{ id: "home", name: "Homepage", path: "/" }, { id: "draft", name: "Draft", path: "/draft" }];
+vi.mock("../DesignChatContext", () => ({ useDesignChat: () => m.chat }));
+vi.mock("../pageSelection", () => ({ loadManualPages: async () => pages }));
+vi.mock("../useManagerLayout", () => ({ useManagerLayout: () => ({ phone: m.phone }) }));
+beforeEach(() => {
+  vi.clearAllMocks(); m.phone = false;
+  m.chat = { editing: false, workingPage: pages[0], previewLocation: { path: "/draft", search: "?offer=1" }, selectPage: m.select,
+    preview: { retry: m.retry }, state: { liveUrl: "https://site.example/" }, toggleFull: m.full,
+    previewNav: { back: vi.fn(), forward: vi.fn(), canBack: false, canForward: true } };
+  Element.prototype.scrollIntoView = vi.fn();
+  Element.prototype.hasPointerCapture = vi.fn(() => false);
+});
+afterEach(cleanup);
+it("uses the reported current page for opening a new tab, including after navigation", async () => {
+  const view = render(<PreviewToolbar onManualNavigate={vi.fn()} />);
+  expect(screen.getByRole("link", { name: "Open Page in New Tab" })).toHaveAttribute("href", "https://site.example/draft?offer=1");
+  m.chat.previewLocation = { path: "/", search: "" }; view.rerender(<PreviewToolbar onManualNavigate={vi.fn()} />);
+  expect(screen.getByRole("link", { name: "Open Page in New Tab" })).toHaveAttribute("href", "https://site.example/");
+  fireEvent.click(screen.getByRole("button", { name: "Reload Preview" })); expect(m.retry).toHaveBeenCalledOnce();
+  expect(m.select).not.toHaveBeenCalled();
+});
+it("uses selectPage for deliberate picks so existing tab persistence is retained", async () => {
+  render(<PreviewToolbar onManualNavigate={vi.fn()} />);
+  await waitFor(() => expect(screen.getByRole("combobox", { name: "Preview Page" })).toHaveTextContent("Draft"));
+  fireEvent.click(screen.getByRole("combobox", { name: "Preview Page" }));
+  fireEvent.click(await screen.findByRole("option", { name: "Homepage /" }));
+  expect(m.select).toHaveBeenCalledWith(pages[0]);
+});
+it("routes manual picks through the existing unsaved guard and reloads without saving", async () => {
+  m.chat.editing = true;
+  const navigate = vi.fn(); const reloaded = vi.fn(); window.addEventListener("nova-manager-reload-editor", reloaded);
+  try {
+    render(<PreviewToolbar onManualNavigate={navigate} />);
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "Preview Page" })).toHaveTextContent("Homepage"));
+    fireEvent.click(screen.getByRole("combobox", { name: "Preview Page" }));
+    fireEvent.click(await screen.findByRole("option", { name: "Draft /draft" }));
+    expect(navigate).toHaveBeenCalledWith("/draft"); expect(m.select).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Reload Preview" }));
+    expect(reloaded).toHaveBeenCalledOnce(); expect(m.retry).not.toHaveBeenCalled();
+  } finally { window.removeEventListener("nova-manager-reload-editor", reloaded); }
+});
+it("keeps phone overflow actions usable with the existing callbacks", async () => {
+  m.phone = true; render(<PreviewToolbar onManualNavigate={vi.fn()} />);
+  fireEvent.keyDown(screen.getByRole("button", { name: "Preview Options" }), { key: "Enter" });
+  fireEvent.click(await screen.findByRole("menuitem", { name: "Full Screen" }));
+  expect(m.full).toHaveBeenCalledOnce();
+});

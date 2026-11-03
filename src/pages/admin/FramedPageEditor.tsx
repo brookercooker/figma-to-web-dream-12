@@ -62,6 +62,11 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [failure, setFailure] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const reload = () => setAttempt(n => n + 1);
+    window.addEventListener("nova-manager-reload-editor", reload);
+    return () => window.removeEventListener("nova-manager-reload-editor", reload);
+  }, []);
   const [height, setHeight] = useState(1200);
   const [heldCapable, setHeldCapable] = useState(false);
   const [moveCapable, setMoveCapable] = useState(false);

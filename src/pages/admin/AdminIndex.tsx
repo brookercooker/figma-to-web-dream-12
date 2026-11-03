@@ -33,13 +33,14 @@ import { referenceKey } from "./designChat/references";
 import { useManagerTitle } from "./useManagerTitle";
 import { useManagerLayout, useKeyboardInset, clampPanelWidth, PANEL_WIDTH_KEY } from "./designChat/useManagerLayout";
 import { DropdownMenu as MoreMenu, DropdownMenuContent as MoreMenuContent, DropdownMenuItem as MoreMenuItem, DropdownMenuTrigger as MoreMenuTrigger, DropdownMenuSeparator as MoreMenuSeparator, DropdownMenuLabel as MoreMenuLabel } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Maximize2, Monitor, Smartphone, Tablet, ExternalLink, MessageSquare, ListTree, LayoutTemplate } from "lucide-react";
+import { MoreHorizontal, Monitor, Smartphone, Tablet, MessageSquare, ListTree, LayoutTemplate } from "lucide-react";
 import type { Device } from "./designChat/DesignChatContext";
 import { usePhoneChat } from "./designChat/phoneChat";
 import { PhoneChatButton, PhoneChatHeader } from "./designChat/PhoneChatChrome";
 import "./libraryLayout.css";
 import WaitProgress from "./designChat/WaitProgress";
 import { useSaveProgress } from "./designChat/useSaveProgress";
+import PreviewToolbar from "./designChat/PreviewToolbar";
 
 const PagesTab = lazy(() => import("./PagesTab"));
 const ObjectsTab = lazy(() => import("./ObjectsTab"));
@@ -353,7 +354,7 @@ function AdminShell() {
               </nav>
 
               {phone && <ModeToggle compact onChat={() => { setPhonePane("main"); }} />}
-              {phone ? <PreviewTools showViewControls={tab === "preview"} navOnly /> : <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />}
+              {!phone && <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />}
 
               <div aria-hidden className={cn("h-9 w-px bg-border shrink-0", compact && "hidden")} />
               {!phone && !manual && !editing && <SubmitButton compact={compact} showProgress={false} />}
@@ -367,6 +368,7 @@ function AdminShell() {
           </header>
           <WaitProgress progress={saveProgress} className="shrink-0 border-b bg-background px-3 py-2" />
           {!phone && !manual && <WaitProgress progress={designChat.waitProgress?.submit} className="shrink-0 border-b bg-background px-3 py-2" />}
+          {tab === "preview" && <PreviewToolbar onManualNavigate={pageNavigation.requestPath} manualDisabled={pageNavigation.disabled} />}
 
           <ChangeMyPasswordDialog open={pwOpen} onOpenChange={setPwOpen} />
 
@@ -554,9 +556,9 @@ function AdminShell() {
   );
 }
 
-/** Phone toolbar overflow: preview size, full screen and the published site. */
+/** Phone top-bar overflow: account, tools, review and preview size. */
 function PhoneMoreMenu({ showView, isAdmin, onPassword, onReview }: { showView: boolean; isAdmin: boolean; onPassword: () => void; onReview: () => void }) {
-  const { device, setDevice, toggleFull, state, editing } = useDesignChat();
+  const { device, setDevice, state, editing } = useDesignChat();
   const navigate = useNavigate();
   const count = state?.publish?.open ?? 0;
   return (
@@ -583,11 +585,8 @@ function PhoneMoreMenu({ showView, isAdmin, onPassword, onReview }: { showView: 
                 <Icon className="mr-2 h-4 w-4" aria-hidden />{label}
               </MoreMenuItem>
             ))}
-            <MoreMenuSeparator />
-            <MoreMenuItem onClick={toggleFull}><Maximize2 className="mr-2 h-4 w-4" aria-hidden />Full Screen</MoreMenuItem>
           </>
         )}
-        {state?.liveUrl && <MoreMenuItem asChild><a href={state.liveUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="mr-2 h-4 w-4" aria-hidden />Open in New Tab</a></MoreMenuItem>}
       </MoreMenuContent>
     </MoreMenu>
   );

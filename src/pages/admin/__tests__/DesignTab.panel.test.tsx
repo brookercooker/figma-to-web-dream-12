@@ -65,6 +65,25 @@ it("footer text selection asks to edit the site-wide Footer without writing", as
   send("edit-select", { selection: { key: "0", scope: "Footer", kind: "text", tag: "p", text: "Contact us", style: {}, rect: {} } });
   expect(screen.getByRole("heading", { name: "Edit the Site Footer?" })).toBeInTheDocument();
 });
+it("replays held edits after a toolbar reload without writing them", async () => {
+  render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
+  const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+  const source = frame.contentWindow;
+  if (!source) throw new Error("Missing frame");
+  const send = (type: string, payload = {}) => act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", type, ...payload } })));
+  vi.spyOn(source, "postMessage").mockImplementation(() => {});
+  send("edit-ready", { capabilities: { heldBlocks: true } });
+  send("edit-change", { scope: "page", next: { "0": "My held wording" } });
+  mocks.writes.mockClear();
+  act(() => window.dispatchEvent(new Event("nova-manager-reload-editor")));
+  const next = screen.getByTitle("Public Page Editor") as HTMLIFrameElement;
+  expect(next).not.toBe(frame);
+  const win = next.contentWindow; if (!win) throw new Error("Missing reloaded frame");
+  const post = vi.spyOn(win, "postMessage").mockImplementation(() => {});
+  act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source: win, data: { source: "nova-site", type: "edit-ready", capabilities: { heldBlocks: true } } })));
+  expect(post.mock.calls.find(([message]) => message.type === "edit-init")?.[0].edits).toEqual({ "0": "My held wording" });
+  expect(mocks.hasChanges()).toBe(true); expect(mocks.writes).not.toHaveBeenCalled();
+});
 it("frame image Delete enters local history and Undo/Redo/Discard restore it without saving", async () => {
   render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
   const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;

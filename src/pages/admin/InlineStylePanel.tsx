@@ -14,6 +14,7 @@ import SelectedWording from "./SelectedWording";
 import MaterialIconField from "./MaterialIconField";
 import { spacingPixels, lineHeightMultiplier } from "./textUnits";
 import { SIDES, commonValue, isMixed, setAllSides, setBorderPart, sideValues, type BorderPart, type Side } from "./borderEdit";
+import { useManagerLayout } from "./designChat/useManagerLayout";
 
 const WEIGHTS = [["Light", "300"], ["Regular", "400"], ["Medium", "500"], ["Bold", "700"]] as const;
 
@@ -29,6 +30,7 @@ export default function InlineStylePanel({
   onChange: (next: InlineEdits) => void;
   onReplaceImage: () => void;
 }) {
+  const { phone } = useManagerLayout();
   // Words highlighted inside the selected text: style changes then apply to just those words.
   const range = useRef<Range | null>(null);
   const span = useRef<HTMLSpanElement | null>(null);
@@ -337,18 +339,18 @@ export default function InlineStylePanel({
         </div>
       </ToolGroup>
       <ToolGroup title="Position" icon={MoveVertical}>
-        <div className="flex flex-wrap items-end gap-x-2 gap-y-3 [&>*]:shrink-0 [&_label]:whitespace-nowrap">
+        <div className={`flex ${phone ? "flex-wrap" : "flex-nowrap"} items-end gap-x-2 gap-y-3 [&>*]:shrink-0 [&_label]:whitespace-nowrap`}>
           <ToolField label="Alignment"><ToolSegment className="shrink-0 [&>button]:w-7" onMouseDown={(e) => e.preventDefault()}>
             {([["left", AlignLeft], ["center", AlignCenter], ["right", AlignRight]] as const).map(([a, Icon]) => (
               <Button key={a} size="icon" variant={align === a ? "default" : "ghost"} title={`Align ${a[0].toUpperCase() + a.slice(1)}`} aria-label={`Align ${a[0].toUpperCase() + a.slice(1)}`} onClick={() => set("text-align", a)}><Icon className="h-3.5 w-3.5" /></Button>
             ))}
           </ToolSegment></ToolField>
-          <div className="flex basis-full flex-wrap gap-2">
+          <div className={`flex ${phone ? "basis-full flex-wrap" : "min-w-0 flex-1"} gap-2`}>
           <ToolField label="Letter Spacing">
-            <div className="relative w-20"><Input aria-label="Letter Spacing (px)" className="h-8 pr-6" type="number" step={0.1} placeholder={spacingPixels(computed.letterSpacing, computed.fontSize) || "0"} value={spacingPixels(style["letter-spacing"], computed.fontSize)} onChange={(e) => set("letter-spacing", px(e.target.value))} /><span className="pointer-events-none absolute right-2 top-2 text-xs text-muted-foreground">px</span></div>
+            <div className="relative w-20"><Input aria-label="Letter Spacing (px)" className="h-8 pl-2 pr-6" type="number" step={0.1} placeholder={spacingPixels(computed.letterSpacing, computed.fontSize) || "0"} value={spacingPixels(style["letter-spacing"], computed.fontSize)} onChange={(e) => set("letter-spacing", px(e.target.value))} /><span className="pointer-events-none absolute right-2 top-2 text-xs text-muted-foreground">px</span></div>
           </ToolField>
           <ToolField label="Line Height">
-            <div className="relative w-20"><Input aria-label="Line Height (Multiplier)" className="h-8 pr-6" type="number" step={0.1} min={0.8} placeholder={lineHeightMultiplier(computed.lineHeight, computed.fontSize) || "1.4"} value={lineHeightMultiplier(style["line-height"], computed.fontSize)} onChange={(e) => set("line-height", e.target.value)} /><span className="pointer-events-none absolute right-2 top-2 text-xs text-muted-foreground">×</span></div>
+            <div className="relative w-20"><Input aria-label="Line Height (Multiplier)" className="h-8 pl-2 pr-6" type="number" step={0.1} min={0.8} placeholder={lineHeightMultiplier(computed.lineHeight, computed.fontSize) || "1.4"} value={lineHeightMultiplier(style["line-height"], computed.fontSize)} onChange={(e) => set("line-height", e.target.value)} /><span className="pointer-events-none absolute right-2 top-2 text-xs text-muted-foreground">×</span></div>
           </ToolField>
           </div>
         </div>
