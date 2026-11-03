@@ -34,7 +34,7 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   if (currentJob && !tracks.current.some(t => matchesJob(t, currentJob)) && (state.busy || state.previewChecking || currentStatus === "approval" || currentStatus === "queued")) {
     const content = state.draft?.requests?.some(r => r.source === "content");
     const user = [...history].reverse().find(e => e.role === "user" && (!e.ts || e.ts <= currentJob.startedAt + 1000));
-    tracks.current.push({ id: currentJob.startedAt, jobId: currentJob.id, job: currentJob, version: state.previewVersion, high: 0, paused: 0,
+    tracks.current.push({ id: currentJob.startedAt, jobId: currentJob.id, job: currentJob, version: state.previewVersion, high: 0, paused: 0, frameBaseline: frameCompletedAt,
       kind: submitJob ? content ? "contentSubmit" : "submit" : detectWaitKind(user?.text ?? "", currentJob.planOnly || /^(question|plan|plan-only|planOnly)$/.test(currentJob.kind ?? "")) });
   }
   tracks.current.sort((a, b) => a.id - b.id);
@@ -60,11 +60,11 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
       t.changeVersion = t.lastVersion ?? t.version;
       t.changeBuiltAt = t.lastBuiltAt ?? 0;
       t.committed = true;
-      t.frameBaseline = frameCompletedAt;
+      t.frameBaseline ??= 0;
     }
     if (commit && typeof commit.builtAt === "number" && Number.isFinite(commit.builtAt)) t.authoritativeBuiltAt = commit.builtAt;
     if (t.changeAt) {
-      t.built ||= t.authoritativeBuiltAt !== undefined ? t.authoritativeBuiltAt >= t.changeAt : !state.previewChecking && ((state.previewBuiltAt ?? 0) > Math.max(t.changeAt, t.changeBuiltAt ?? 0) || state.previewVersion > (t.changeVersion ?? t.version));
+      t.built ||= t.authoritativeBuiltAt !== undefined ? t.authoritativeBuiltAt >= t.changeAt : !state.previewChecking && ((state.previewBuiltAt ?? 0) > Math.max(t.changeAt, t.changeBuiltAt ?? 0) || !(state.previewBuiltAt ?? 0) && state.previewVersion > (t.changeVersion ?? t.version));
       t.ready ||= !!t.built && frameCompletedAt > Math.max(t.changeAt, t.frameBaseline ?? 0, t.authoritativeBuiltAt ?? state.previewBuiltAt ?? 0);
     }
   }
