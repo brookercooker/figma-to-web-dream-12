@@ -16,6 +16,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 it("shows the requested page immediately without waiting for a location report", async () => {
+  m.chat.previewNav.canBack = true;
   const view = render(<PreviewToolbar onManualNavigate={vi.fn()} />);
   await waitFor(() => expect(screen.getByRole("combobox", { name: "Preview Page" })).toHaveTextContent("Draft"));
   m.chat.previewNav.back.mockImplementation(() => {
