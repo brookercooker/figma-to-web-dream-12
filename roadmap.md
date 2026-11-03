@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Saved video list/panel deletion, staged undo/redo/discard, poster previews and chat Manual Edit hand-off; no library deletion or new relay/public behavior.
 - [x] Ribbon now decorates the existing estimate/remaining-time wording only; exact Public 45d2c351 core mirrored byte-for-byte, placement workaround removed; save/undo/reload/record and Material adapter tests pass (175 focused checks), build OK.
 - [ ] Restore hidden/placeholder compatibility: exact Public 45d2c351 core omits these older Manager kinds. Needs reconciled Public src/lib/inlineEditCore.ts retaining placement plus hidden/placeholder support; no unilateral shared-core fork.
 - [x] Chat-only stage ribbon with commit/build/confirmed-frame completion, monotonic capped fill, elapsed time and phone strip; Submit/save bars and estimates unchanged. Missing timestamped draft SHA never claims Change made. Design canvas shell reachable but board content unavailable; implemented supplied spec.
