@@ -15,6 +15,7 @@ import TextIconLinkPanel from "./TextIconLinkPanel";
 import { spacingPixels, lineHeightMultiplier } from "./textUnits";
 import { SIDES, commonValue, isMixed, setAllSides, setBorderPart, sideValues, type BorderPart, type Side } from "./borderEdit";
 import { useManagerLayout } from "./designChat/useManagerLayout";
+import { withoutPath } from "@/lib/inlineEditCore";
 
 const WEIGHTS = [["Light", "300"], ["Regular", "400"], ["Medium", "500"], ["Bold", "700"]] as const;
 
@@ -176,6 +177,7 @@ export default function InlineStylePanel({
           </ToolField>
         </ToolGroup>
         <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-destructive hover:text-destructive" onClick={() => { const next = selectedImageDelete(sel, edits, edits[`hidden:${sel.key}`] === "1"); if (next) onChange(next); }}><Trash2 className="h-4 w-4" />{edits[`hidden:${sel.key}`] === "1" ? "Restore Image" : "Delete Image"}</Button>
+        <Button variant="outline" size="sm" className="h-auto w-full justify-start gap-2 whitespace-normal text-left" onClick={() => onChange(withoutPath(edits, sel.key))}><Undo2 className="h-4 w-4 shrink-0" />Undo All Changes to Image</Button>
       </div>
     );
   }
