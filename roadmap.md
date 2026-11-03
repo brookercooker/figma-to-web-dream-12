@@ -1,5 +1,5 @@
 # Roadmap — coded object import fidelity
-- [ ] Polish Chat picker filter layout and stable chip order; preserve matching/counts, image/video single selection, and Manual picker; run focused tests and verify desktop/phone.
+- [x] Polish Chat picker filter layout and stable chip order; 48 focused tests and automatic validation pass. Signed-in real picker verifies stable order, hierarchical Any/All results, pinned filters with grid scroll, wrapping at 600px and hidden-scrollbar single row at 390/360px. Matching/counts, media single selection and Manual picker unchanged.
 - [x] Chat preview object picker: independent label toggles, hierarchical Any/All matching, clear/reset and combined counts; preserve attached objects and Manual Edit picker behavior. Focused helper/component regressions added.
 - [x] Object picker label chips/list, any/all filters, recent labels and responsive right-panel/phone sheet; preserve exported helpers, callbacks and hidden selections. Pure filtering and picker regressions added.
 - [x] Temporary Manager review access turned off again; REQUIRE_LOGIN=true in src/lib/authGate.ts everywhere. Original login/staff checks restored, including Users and Developer Review redirects; switch, review banner code and central database/file/function/relay write boundaries retained. No backend changes.
