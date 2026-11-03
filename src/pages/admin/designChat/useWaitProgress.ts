@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { RELAY, type RelayState, type Job } from "./helper";
 import { ERROR_VISIBLE_MS, detectWaitKind, timedProgress, type WaitKind, type WaitView } from "./waitEstimates";
 
@@ -15,11 +15,12 @@ function rememberTracks(tracks: Track[]) {
 }
 export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0): { request: WaitView | null; submit: WaitView | null } {
   const [now, setNow] = useState(Date.now);
+  const [, redraw] = useReducer(n => n + 1, 0);
   const tracks = useRef<Track[]>(restoreTracks());
   const interactionOwners = useRef(new Map<number, Set<object>>());
   const dismiss = (id: number) => {
     const track = tracks.current.find(t => t.id === id);
-    if (track) { track.errorDismissed = true; rememberTracks(tracks.current); setNow(Date.now()); }
+    if (track) { track.errorDismissed = true; rememberTracks(tracks.current); setNow(Date.now()); redraw(); }
   };
   const pause = (id: number, owner: object, active: boolean) => {
     const track = tracks.current.find(t => t.id === id);
@@ -32,7 +33,7 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
       track.errorAt = (track.errorAt ?? Date.now()) + Math.max(0, Date.now() - track.errorPausedAt);
       track.errorPausedAt = undefined;
     }
-    rememberTracks(tracks.current); setNow(Date.now());
+    rememberTracks(tracks.current); setNow(Date.now()); redraw();
   };
   // A reload ends pointer/focus ownership, but retains time already spent paused.
   useEffect(() => {

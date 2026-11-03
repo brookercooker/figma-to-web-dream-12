@@ -151,7 +151,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   const [navNonce, setNavNonce] = useState(0);
   const preview = usePreview(state, previewPath, navNonce);
   const requestRetry = useRequestRetry(state, offline, refreshSoon);
-  const trackedProgress = useWaitProgress(requestRetry.optimisticState, preview.frameLoadedAt);
+  const trackedProgress = useWaitProgress(requestRetry.optimisticState, preview.frameLoadedAt) ?? { request: null, submit: null };
   const failedRequest = trackedProgress.request;
   const waitProgress = failedRequest?.error && failedRequest.errorControls && failedRequest.requestAt !== undefined
     ? { ...trackedProgress, request: { ...failedRequest, errorControls: { ...failedRequest.errorControls,
