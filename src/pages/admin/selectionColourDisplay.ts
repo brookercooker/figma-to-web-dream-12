@@ -1,4 +1,4 @@
-export const SELECTION_PALETTE = ["ink", "stone", "garnet", "brass", "sand", "cream", "white"] as const;
+export const SELECTION_PALETTE = ["ink", "stone", "garnet", "brass", "sand", "white"] as const;
 export const paletteColour = (token: typeof SELECTION_PALETTE[number]) => `hsl(var(--nova-${token === "white" ? "cream" : token}))`;
 
 /** Display-only conversion: never replace the colour sent by the frame or written by the user. */

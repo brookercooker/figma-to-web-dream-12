@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MATERIAL_ERROR, parseMaterialIcon } from "./materialIcon";
 
-export default function MaterialIconField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+export default function MaterialIconField({ value, onChange, nameOnly = false }: { value: string; onChange: (value: string) => void; nameOnly?: boolean }) {
   const [text, setText] = useState(value.startsWith("material:") ? value.split(":")[2] : "");
   const [error, setError] = useState("");
   const [helpHovered, setHelpHovered] = useState(false);
@@ -24,11 +24,14 @@ export default function MaterialIconField({ value, onChange }: { value: string; 
     <div className="flex items-center gap-1 text-[11px] text-muted-foreground"><label htmlFor="google-icon">Paste a Google Icon</label>
       <TooltipProvider delayDuration={0}><Tooltip open={helpHovered || helpFocused}><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-6 w-6" aria-label="Google Icon Help" onPointerEnter={() => setHelpHovered(true)} onPointerLeave={() => setHelpHovered(false)} onFocus={() => setHelpFocused(true)} onBlur={() => setHelpFocused(false)}><CircleHelp className="h-3.5 w-3.5" /></Button></TooltipTrigger><TooltipContent className="z-[10000] max-w-72">Find an icon at fonts.google.com/icons, open it, and copy the code under 'Inserting the icon'. Paste it here and the icon appears next to this item.</TooltipContent></Tooltip></TooltipProvider>
     </div>
-    <div className="flex items-center gap-2"><Input id="google-icon" value={text} placeholder="home or pasted icon code" onChange={e => {
-      setText(e.target.value); const parsed = parseMaterialIcon(e.target.value);
+    <div className="flex items-center gap-2"><Input id="google-icon" value={text} aria-invalid={!!error} aria-describedby={nameOnly ? "google-icon-help" : undefined} placeholder={nameOnly ? "home" : "home or pasted icon code"} onChange={e => {
+      setText(e.target.value);
+      if (nameOnly && e.target.value && !/^[a-zA-Z0-9_]+$/.test(e.target.value)) { setError("Use only letters, digits and underscores."); return; }
+      const parsed = parseMaterialIcon(e.target.value);
       if (!parsed) { setError(e.target.value ? MATERIAL_ERROR : ""); return; }
       setError(""); onChange(parsed.value);
     }} />{value.startsWith("material:") && <span aria-label={`${name} icon preview`} className={`material-symbols-${style} shrink-0`}>{name}</span>}</div>
+    {nameOnly && <p id="google-icon-help" className="text-xs text-muted-foreground">Paste an icon name from Google's Material Symbols, for example “home”.</p>}
     {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
   </div>;
 }
