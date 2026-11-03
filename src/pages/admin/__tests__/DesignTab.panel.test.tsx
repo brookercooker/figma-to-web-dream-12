@@ -71,6 +71,7 @@ it("replays held edits after a toolbar reload without writing them", async () =>
   const source = frame.contentWindow;
   if (!source) throw new Error("Missing frame");
   const send = (type: string, payload = {}) => act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", type, ...payload } })));
+  vi.spyOn(source, "postMessage").mockImplementation(() => {});
   send("edit-ready", { capabilities: { heldBlocks: true } });
   send("edit-change", { scope: "page", next: { "0": "My held wording" } });
   mocks.writes.mockClear();
@@ -78,7 +79,7 @@ it("replays held edits after a toolbar reload without writing them", async () =>
   const next = screen.getByTitle("Public Page Editor") as HTMLIFrameElement;
   expect(next).not.toBe(frame);
   const win = next.contentWindow; if (!win) throw new Error("Missing reloaded frame");
-  const post = vi.spyOn(win, "postMessage");
+  const post = vi.spyOn(win, "postMessage").mockImplementation(() => {});
   act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source: win, data: { source: "nova-site", type: "edit-ready", capabilities: { heldBlocks: true } } })));
   expect(post.mock.calls.find(([message]) => message.type === "edit-init")?.[0].edits).toEqual({ "0": "My held wording" });
   expect(mocks.hasChanges()).toBe(true); expect(mocks.writes).not.toHaveBeenCalled();

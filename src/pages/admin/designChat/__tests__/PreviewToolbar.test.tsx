@@ -46,7 +46,7 @@ it("routes manual picks through the existing unsaved guard and reloads without s
 });
 it("keeps phone overflow actions usable with the existing callbacks", async () => {
   m.phone = true; render(<PreviewToolbar onManualNavigate={vi.fn()} />);
-  fireEvent.pointerDown(screen.getByRole("button", { name: "Preview Options" }), { button: 0, ctrlKey: false, pointerType: "mouse" });
+  fireEvent.keyDown(screen.getByRole("button", { name: "Preview Options" }), { key: "Enter" });
   fireEvent.click(await screen.findByRole("menuitem", { name: "Full Screen" }));
   expect(m.full).toHaveBeenCalledOnce();
 });
