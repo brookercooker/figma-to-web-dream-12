@@ -73,6 +73,15 @@ beforeEach(() => {
 });
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
+it("offers an opt-in Manual Edit hand-off under saved-content replies without sending to the helper", async () => {
+  mocks.page = { id: "experiment", name: "Experiment", path: "/draft/experiment" };
+  mocks.history = [{ role: "assistant", text: "This video is saved in Site Manager. Remove it there.", ts: 10 }];
+  render(<MemoryRouter><ChatPanel /></MemoryRouter>);
+  expect(mocks.start).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Edit in Manual Edit Mode" }));
+  await waitFor(() => expect(mocks.start).toHaveBeenCalledOnce());
+  expect(mocks.select).toHaveBeenCalledWith(mocks.page); expect(mocks.post).not.toHaveBeenCalled();
+});
 
 describe("shared manual save feedback", () => {
   function Feedback({ saving, dirty = false }: { saving: boolean; dirty?: boolean }) {

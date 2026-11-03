@@ -26,8 +26,44 @@ beforeEach(() => {
   mocks.slot = document.createElement("div"); document.body.appendChild(mocks.slot);
   mocks.original.content = null; mocks.original.inline_edits = {};
   vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
+  HTMLElement.prototype.scrollIntoView = vi.fn();
 });
 afterEach(() => { cleanup(); mocks.slot?.remove(); mocks.slot = null; vi.unstubAllGlobals(); });
+it.each(["https://www.youtube.com/watch?v=abcdefghijk", "/upload.mp4"])("deletes saved %s from the list when the frame poster cannot be clicked, with undo/redo/discard and no library writes", async url => {
+  mocks.original.content = [{ id: "saved-video", type: "video", url, align: "left", width: 100 }];
+  mocks.writes.mockClear();
+  const view = render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
+  const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+  const source = frame.contentWindow; if (!source || !mocks.slot) throw new Error("Missing frame");
+  const post = vi.spyOn(source, "postMessage").mockImplementation(() => {});
+  act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", type: "edit-ready", capabilities: { heldBlocks: true } } })));
+  const row = mocks.slot.querySelector('[data-section-row="saved-video"]'); if (!row) throw new Error("Missing saved row");
+  fireEvent.click(within(row as HTMLElement).getByRole("button", { name: "Video" }));
+  expect(within(mocks.slot).getByLabelText("Saved Video Options")).toBeInTheDocument();
+  fireEvent.click(within(row as HTMLElement).getByRole("button", { name: "Delete Video" }));
+  expect(mocks.hasChanges()).toBe(false);
+  fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete Video" }));
+  expect(post.mock.calls.filter(([m]) => m.type === "edit-update").at(-1)?.[0].heldBlocks).toHaveLength(0);
+  expect(mocks.hasChanges()).toBe(true); expect(mocks.writes).not.toHaveBeenCalled();
+  act(() => mocks.history.undo()); expect(mocks.hasChanges()).toBe(false);
+  act(() => mocks.history.redo()); expect(mocks.hasChanges()).toBe(true);
+  await act(async () => mocks.discard()); expect(mocks.writes).not.toHaveBeenCalled();
+  expect(view.container.querySelector("video")).toBeNull();
+});
+it("confirms saved video deletion from its full-width options panel", async () => {
+  mocks.original.content = [{ id: "saved-video", type: "video", url: "/upload.mp4", align: "left", width: 100 }];
+  render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
+  const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+  const source = frame.contentWindow; if (!source || !mocks.slot) throw new Error("Missing frame");
+  vi.spyOn(source, "postMessage").mockImplementation(() => {});
+  for (const data of [{ type: "edit-ready", capabilities: { heldBlocks: true } }, { type: "edit-block-select", id: "saved-video" }]) act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", ...data } })));
+  const panel = within(mocks.slot).getByLabelText("Saved Video Options");
+  const button = within(panel).getByRole("button", { name: "Delete Video" });
+  expect(button).toHaveClass("w-full");
+  expect(button.nextElementSibling).toHaveTextContent("Undo All Changes to Video");
+  fireEvent.click(button); fireEvent.click(screen.getByRole("button", { name: "Cancel" })); expect(mocks.hasChanges()).toBe(false);
+  fireEvent.click(button); fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Delete Video" })); expect(mocks.hasChanges()).toBe(true);
+});
 it.each([["mobile", 390], ["tablet", 768], ["desktop", 1280]])("Manual Edit uses the chosen %s viewport without replacing the frame", async (device, width) => {
   mocks.chat = { device, drawing: {}, startEditing: vi.fn() };
   let virtualWidth = 0;
