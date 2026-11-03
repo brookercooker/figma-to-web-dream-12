@@ -8,14 +8,16 @@ import { isInternalPath } from "./designChat/registerPage";
 import { originalLink, validLinkHref, type InlineEdits, type LinkEdit } from "@/lib/inlineEditCore";
 import type { InlineSelection } from "@/components/InlineEditSurface";
 import { ToolField, ToolGroup } from "./designChat/ToolPanel";
+import { validTextLink } from "./textAdornment";
 
 const ERROR = "That address isn't allowed. Use a web address starting with https://, a page path starting with /, mailto:, tel: or #.";
 
-export default function InlineDestinationPanel({ selection, editsFor, onChange, pages }: {
+export default function InlineDestinationPanel({ selection, editsFor, onChange, pages, embedded = false }: {
   selection: InlineSelection | null;
   editsFor: (scope: string) => InlineEdits;
   onChange: (scope: string, next: InlineEdits) => void;
   pages: { id: string; name: string; path: string }[];
+  embedded?: boolean;
 }) {
   const target = selection?.link;
   const edits = target ? editsFor(target.scope) : {};
@@ -35,19 +37,21 @@ export default function InlineDestinationPanel({ selection, editsFor, onChange, 
   useEffect(() => { setAddress(destination); setError(""); }, [destination, target?.scope, target?.key]);
   useEffect(() => { setKind(detectLinkKind(destination)); }, [destination]);
   if (!target) return null;
+  const allowed = embedded ? validTextLink : validLinkHref;
   const save = (href: string, newTab = blank) => {
-    if (!validLinkHref(href)) { setError(ERROR); return; }
+    if (!allowed(href)) { setError(embedded ? "Use https://, mailto:, tel: or a site path starting with a single /." : ERROR); return; }
     setError(""); setAddress(href);
     onChange(target.scope, { ...edits, [key]: JSON.stringify({ href, ...(newTab ? { target: "_blank" } : {}) }) });
   };
   const apply = () => {
     if (address === destination && !error) return;
+    if (embedded && !address) { setError(""); onChange(target.scope, { ...edits, [key]: JSON.stringify({ unlinked: true }) }); return; }
     save(address);
   };
-  return <ToolGroup title="Link" icon={LinkIcon} defaultOpen>
+  const content = <>
     <div className="relative space-y-1" onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false); }}>
       <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground"><label htmlFor="link-address">Link Address</label><span>{kind === "email" ? "Email" : kind === "phone" ? "Phone" : kind === "page" ? `Page: ${pages.find(p => p.path === address)?.name ?? address}` : "Web Address"}</span></div>
-      <Input ref={addressRef} id="link-address" aria-label="Link Address" aria-expanded={open} type={kind === "email" ? "email" : kind === "phone" ? "tel" : "text"} value={kind === "email" || kind === "phone" ? address.replace(/^(mailto:|tel:)/i, "") : address} placeholder={kind === "email" ? "name@example.com" : kind === "phone" ? "Phone number" : "https://"} aria-invalid={!!error}
+      <Input ref={addressRef} id="link-address" aria-label="Link Address" aria-expanded={open} type={kind === "email" ? "email" : kind === "phone" ? "tel" : "text"} value={kind === "email" || kind === "phone" ? address.replace(/^(mailto:|tel:)/i, "") : address} placeholder={embedded && !destination ? "None" : kind === "email" ? "name@example.com" : kind === "phone" ? "Phone number" : "https://"} aria-invalid={!!error}
         onPointerDown={() => setOpen(true)} onFocus={() => setOpen(true)} onClick={() => setOpen(true)}
         onChange={(e) => { setAddress(linkAddress(kind, e.target.value)); setError(""); }} onBlur={apply}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); apply(); setOpen(false); } if (e.key === "Escape") setOpen(false); }} />
@@ -58,7 +62,7 @@ export default function InlineDestinationPanel({ selection, editsFor, onChange, 
     </div>
     {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
     <label className="flex items-center justify-between gap-2 text-xs">Open in New Tab
-      <Switch checked={blank} disabled={!validLinkHref(address) || !!edit?.unlinked} onCheckedChange={(on) => save(address, on)} />
+      <Switch checked={blank} disabled={!allowed(address) || !!edit?.unlinked} onCheckedChange={(on) => save(address, on)} />
     </label>
     <div className="flex flex-wrap gap-2">
       <Button type="button" size="sm" variant="ghost" className="gap-1 text-destructive hover:text-destructive" onClick={() => onChange(target.scope, { ...edits, [key]: JSON.stringify({ unlinked: true }) })}><Link2Off className="h-3.5 w-3.5" />Remove Link</Button>
@@ -66,5 +70,6 @@ export default function InlineDestinationPanel({ selection, editsFor, onChange, 
         const next = { ...edits }; delete next[key]; onChange(target.scope, next);
       }}>Restore Original Link</Button>}
     </div>
-  </ToolGroup>;
+  </>;
+  return embedded ? <div className="space-y-3">{content}</div> : <ToolGroup title="Link" icon={LinkIcon} defaultOpen>{content}</ToolGroup>;
 }

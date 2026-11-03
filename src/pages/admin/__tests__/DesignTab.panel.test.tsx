@@ -65,6 +65,30 @@ it("footer text selection asks to edit the site-wide Footer without writing", as
   send("edit-select", { selection: { key: "0", scope: "Footer", kind: "text", tag: "p", text: "Contact us", style: {}, rect: {} } });
   expect(screen.getByRole("heading", { name: "Edit the Site Footer?" })).toBeInTheDocument();
 });
+it("whole-text icon placement and links survive framed updates and Undo/Redo without writes", async () => {
+  render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
+  const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
+  const source = frame.contentWindow;
+  if (!source || !mocks.slot) throw new Error("Missing frame");
+  const post = vi.spyOn(source, "postMessage").mockImplementation(() => {});
+  const send = (type: string, payload = {}) => act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", type, ...payload } })));
+  send("edit-ready", { capabilities: { heldBlocks: true } });
+  send("edit-select", { selection: { key: "0", scope: "page", kind: "text", tag: "h2", text: "Nova", style: {}, rect: {} } });
+  mocks.writes.mockClear();
+  fireEvent.click(within(mocks.slot).getByRole("button", { name: "Icon & Link None" }));
+  fireEvent.click(within(mocks.slot).getByRole("button", { name: "Mail" }));
+  fireEvent.click(within(mocks.slot).getByRole("button", { name: "Before Text" }));
+  const address = within(mocks.slot).getByRole("textbox", { name: "Link Address" });
+  fireEvent.change(address, { target: { value: "/about" } }); fireEvent.keyDown(address, { key: "Enter" });
+  const next = { "icon:0": "Mail", "icon-position:0": "before", "link:0": JSON.stringify({ href: "/about" }) };
+  expect(post.mock.calls.filter(([m]) => m.type === "edit-update").at(-1)?.[0].edits).toEqual(next);
+  send("edit-change", { scope: "page", next: { ...next, "style:0": JSON.stringify({ color: "#853732" }) } });
+  act(() => mocks.history.undo());
+  expect(post.mock.calls.filter(([m]) => m.type === "edit-update").at(-1)?.[0].edits).toEqual(next);
+  act(() => mocks.history.redo());
+  expect(post.mock.calls.filter(([m]) => m.type === "edit-update").at(-1)?.[0].edits["icon-position:0"]).toBe("before");
+  expect(mocks.hasChanges()).toBe(true); expect(mocks.writes).not.toHaveBeenCalled();
+});
 it("replays held edits after a toolbar reload without writing them", async () => {
   render(<MemoryRouter><DesignTab embedded pageId="contact" /></MemoryRouter>);
   const frame = await screen.findByTitle("Public Page Editor") as HTMLIFrameElement;
