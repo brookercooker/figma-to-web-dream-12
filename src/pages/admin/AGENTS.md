@@ -23,3 +23,4 @@
 - Phone attention baselines the first loaded relay history; only later timestamps or new approval/review transitions can alert. Chat and Manual use the selected virtual device width in ScaledViewport without remounting the editor.
 - Successful public page/object lifecycle, metadata and redirect mutations use the existing contentSync queue with named notes; deferred deletion notifies after commit, keeping packages current without a second queue.
 - Chat draft text and selection live in DesignChatProvider above the stable composer; updates cannot erase typing/focus, and completed sends clear only their unchanged submitted draft.
+- The picked working-page descriptor is validated and restored from guarded tab sessionStorage into both the chip and initial preview path (not editing state); deliberate picks replace it and initial navigation is pinned so stale home reports cannot win after reload.

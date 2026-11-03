@@ -52,7 +52,7 @@ export function usePreview(state: RelayState | null, path: string | null = null,
   /** Where the visitor has gone inside the preview, used for the next fresh copy instead of `path`. */
   const remembered = useRef<string | null>(null);
   /** A page picked on purpose sticks until the preview reports it: earlier reports (e.g. the home page still loading) never override it. */
-  const pinned = useRef<string | null>(null);
+  const pinned = useRef<string | null>(path);
   const rememberPath = useCallback((p: string | null) => {
     if (pinned.current && p !== pinned.current && p?.split("?")[0] !== pinned.current) return;
     pinned.current = null;
