@@ -42,5 +42,5 @@
 - frameScroll records validated page-scroll per normalized path and sends restore-scroll on readiness, frame swap and mode return; hidden previews cannot overwrite editor positions. Build/page navigation cancels superseded preview timers to avoid redundant reloads.
 - User Management uses GET for user lists and POST for actions, and decodes function error responses centrally so failed requests explain their actual cause.
 - Image deletion merges public usage with saved page/object references, confirms single/bulk actions and reuses the five-second deferred delete; remove correct bucket files before rows and stop on storage failure.
-- Subdirectories have their own AGENTS.md (e.g. src/pages/admin); read it before changing files there.
+- Read nested AGENTS.md before edits; admin rules cover picker scroll-lock isolation.
 - Manager libraries share a content-width container and the existing label list in a dialog; narrow card layouts reuse all item actions so no separate data or action paths diverge.
