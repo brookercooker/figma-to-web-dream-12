@@ -45,7 +45,7 @@ describe("preview Back confirmation", () => {
       const hook = renderHook(useDesignChat, { wrapper });
       report(path, search); report("/team");
       act(() => hook.result.current.previewNav?.back());
-      expect(mocks.navigate).toHaveBeenLastCalledWith({ action: "back" });
+      expect(mocks.navigate).toHaveBeenLastCalledWith({ action: "to", path: path + search });
       report(arrival, arrivalSearch);
       act(() => vi.advanceTimersByTime(NAV_FALLBACK_MS + 100));
       expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual([null, 0]);
@@ -67,6 +67,61 @@ describe("preview Back confirmation", () => {
       expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual(["/", 1]);
       act(() => vi.advanceTimersByTime(NAV_FALLBACK_MS));
       expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual(["/", 1]);
+      hook.unmount();
+    } finally { frame.remove(); mocks.navigate.mockReturnValue(false); vi.useRealTimers(); }
+  });
+  it("Forward also falls back exactly once when the frame never answers", () => {
+    vi.useFakeTimers(); mocks.navigate.mockReturnValue(true);
+    const frame = document.createElement("iframe"); frame.src = "https://site.example/"; frame.dataset.sitePreview = "true"; document.body.appendChild(frame);
+    const report = (path: string) => act(() => window.dispatchEvent(new MessageEvent("message", { source: frame.contentWindow, origin: "https://site.example", data: { source: "nova-site", type: "location", path } })));
+    try {
+      const hook = renderHook(useDesignChat, { wrapper });
+      report("/"); report("/team");
+      act(() => hook.result.current.previewNav?.back());
+      report("/");
+      act(() => hook.result.current.previewNav?.forward());
+      expect(mocks.navigate).toHaveBeenLastCalledWith({ action: "to", path: "/team" });
+      act(() => vi.advanceTimersByTime(NAV_FALLBACK_MS));
+      expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual(["/team", 1]);
+      act(() => vi.advanceTimersByTime(NAV_FALLBACK_MS * 2));
+      expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual(["/team", 1]);
+      hook.unmount();
+    } finally { frame.remove(); mocks.navigate.mockReturnValue(false); vi.useRealTimers(); }
+  });
+  it("Back/Forward after the frame is replaced by a fresh copy go straight to the addresses, with no reload", () => {
+    vi.useFakeTimers(); mocks.navigate.mockReturnValue(true);
+    const make = () => { const f = document.createElement("iframe"); f.src = "https://site.example/"; f.dataset.sitePreview = "true"; document.body.appendChild(f); return f; };
+    let frame = make();
+    const report = (path: string, search = "") => act(() => window.dispatchEvent(new MessageEvent("message", { source: frame.contentWindow, origin: "https://site.example", data: { source: "nova-site", type: "location", path, search } })));
+    const toCalls = (path: string) => (mocks.navigate.mock.calls as unknown as [{ action: string; path?: string }][]).filter(([nav]) => nav.action === "to" && nav.path === path).length;
+    try {
+      const hook = renderHook(useDesignChat, { wrapper });
+      report("/", "?__lovable_token=secret"); report("/about"); report("/team");
+      // loadPreview made a brand-new frame (no browser history) and dropped the old one; it opens on the remembered page.
+      frame.remove(); frame = make(); report("/team");
+      mocks.navigate.mockClear();
+      act(() => hook.result.current.previewNav?.back());
+      expect(mocks.navigate).toHaveBeenCalledTimes(1);
+      expect(mocks.navigate).toHaveBeenLastCalledWith({ action: "to", path: "/about" });
+      report("/about");
+      act(() => hook.result.current.previewNav?.back());
+      expect(mocks.navigate).toHaveBeenLastCalledWith({ action: "to", path: "/" });
+      report("/", "?__lovable_token=secret");
+      act(() => hook.result.current.previewNav?.forward());
+      expect(mocks.navigate).toHaveBeenLastCalledWith({ action: "to", path: "/about" });
+      report("/about");
+      act(() => vi.advanceTimersByTime(NAV_FALLBACK_MS * 3));
+      expect(toCalls("/about")).toBe(2); // once for Back, once for Forward: never re-sent
+      expect(mocks.preview.mock.calls.at(-1)?.slice(1)).toEqual([null, 0]); // no fallback reload
+      expect(hook.result.current.previewNav?.canBack).toBe(true);
+      expect(hook.result.current.previewNav?.canForward).toBe(true);
+      act(() => hook.result.current.previewNav?.forward());
+      expect(mocks.navigate).toHaveBeenLastCalledWith({ action: "to", path: "/team" });
+      report("/team");
+      expect(hook.result.current.previewNav?.canForward).toBe(false);
+      const remembered = mocks.preview.mock.results.at(-1)?.value.rememberPath as ReturnType<typeof vi.fn>;
+      expect(JSON.stringify(remembered.mock.calls)).not.toContain("__lovable");
+      expect(JSON.stringify(mocks.navigate.mock.calls)).not.toContain("__lovable");
       hook.unmount();
     } finally { frame.remove(); mocks.navigate.mockReturnValue(false); vi.useRealTimers(); }
   });

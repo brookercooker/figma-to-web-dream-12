@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { emptyHistory, visit, step, canBack, canForward, normalizePreviewAddress, previewAddressMatches } from "../previewHistory";
+import { emptyHistory, visit, step, canBack, canForward, normalizePreviewAddress, previewAddressMatches, stripPreviewTokens } from "../previewHistory";
 
 describe("preview history", () => {
   it("keeps Forward available after Back reports an equivalent Homepage address", () => {
@@ -45,5 +45,28 @@ describe("preview history", () => {
     const h = visit(emptyHistory, "/");
     expect(step(h, -1).address).toBeNull();
     expect(step(h, 1).address).toBeNull();
+  });
+});
+
+describe("preview credential stripping", () => {
+  it.each([
+    ["/?__lovable_token=abc", "/"],
+    ["/about?__lovable_token=abc&b=2", "/about?b=2"],
+    ["/about?a=1&__lovable_token=abc&__lovable_other=z", "/about?a=1"],
+    ["/about?%5F%5Flovable_token=abc&a=1", "/about?a=1"],
+    ["/about?lovable_token=keep&x__lovable_y=keep", "/about?lovable_token=keep&x__lovable_y=keep"],
+    ["/about", "/about"],
+  ])("strips only __lovable_* parameters from %s", (input, out) => {
+    expect(stripPreviewTokens(input)).toBe(out);
+  });
+  it("matches a first page reported with the token against a later arrival without it", () => {
+    expect(normalizePreviewAddress("/home?__lovable_token=abc")).toBe("/");
+    expect(previewAddressMatches("/?__lovable_token=abc", "/")).toBe(true);
+    expect(previewAddressMatches("/", "/", "?__lovable_token=abc")).toBe(true);
+  });
+  it("never stores the token in history", () => {
+    const h = visit(visit(emptyHistory, "/?__lovable_token=abc&x=1"), "/team");
+    expect(h.entries).toEqual(["/?x=1", "/team"]);
+    expect(visit(h, "/team?__lovable_token=new")).toBe(h);
   });
 });
