@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [ ] Make Chat preview Back/Forward respond optimistically; measure before/after, preserve frame navigation and guards, test history and delayed loading cue. Real public frame timing blocked by separate hosted login.
 - [x] Fix Chat picker More Labels native scrolling in a viewport-bounded popover; 53 focused tests and automatic validation pass. Signed-in real 14-label picker verifies wheel, small trackpad-style deltas, keyboard and 375px touch swipes without page scrolling. Folder grouping, matching and Manual picker unchanged.
 - [x] Polish Chat picker filter layout and stable chip order; 48 focused tests and automatic validation pass. Signed-in real picker verifies stable order, hierarchical Any/All results, pinned filters with grid scroll, wrapping at 600px and hidden-scrollbar single row at 390/360px. Matching/counts, media single selection and Manual picker unchanged.
 - [x] Chat preview object picker: independent label toggles, hierarchical Any/All matching, clear/reset and combined counts; preserve attached objects and Manual Edit picker behavior. Focused helper/component regressions added.

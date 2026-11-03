@@ -20,7 +20,7 @@ const WIDTH: Record<Device, string> = { mobile: "390px", tablet: "768px", deskto
  * screen, submit) are in the top bar, see PreviewTools.tsx.
  */
 export default function PreviewPanel() {
-  const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing, editing, waitProgress } = useDesignChat();
+  const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing, editing, waitProgress, previewNavigating } = useDesignChat();
   const { phone } = useManagerLayout();
   const ribbon = !editing && waitProgress?.request?.ribbon ? waitProgress.request : null;
   const location = useLocation();
@@ -80,7 +80,7 @@ export default function PreviewPanel() {
                 try { if (frame.contentWindow?.location.origin !== new URL(frame.src).origin) return; } catch { /* Cross-origin public document. */ }
                 loadedFrames.current.add(frame); preview.finish(f.id); previewContentLoaded(frame);
               }}
-              className={cn("absolute inset-0 h-full w-full border-0 bg-background", f.id !== preview.shownId && preview.shownId !== 0 && "invisible")}
+              className={cn("absolute inset-0 h-full w-full border-0 bg-background", !editing && previewNavigating && "opacity-90", f.id !== preview.shownId && preview.shownId !== 0 && "invisible")}
             />
           ))}
           </ScaledViewport>

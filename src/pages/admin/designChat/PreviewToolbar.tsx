@@ -24,7 +24,9 @@ export default function PreviewToolbar({ onManualNavigate, manualDisabled = fals
     window.addEventListener(MANIFEST_CHANGED, load); window.addEventListener(CONTENT_SAVED, load);
     return () => { stale = true; window.removeEventListener(MANIFEST_CHANGED, load); window.removeEventListener(CONTENT_SAVED, load); };
   }, []);
-  const path = chat.editing ? chat.workingPage?.path ?? "/" : chat.previewLocation?.path ?? chat.workingPage?.path ?? "/";
+  const destination = !chat.editing ? chat.previewDestination : null;
+  const path = chat.editing ? chat.workingPage?.path ?? "/" : destination?.split("?")[0] ?? chat.previewLocation?.path ?? chat.workingPage?.path ?? "/";
+  const search = destination ? (destination.includes("?") ? destination.slice(destination.indexOf("?")) : "") : chat.previewLocation?.search ?? "";
   const current = pages.find(page => page.path === path || (path === "/home" && page.path === "/"));
   const name = current?.name ?? (chat.workingPage?.path === path ? chat.workingPage.name : path);
   const manualIndex = pages.findIndex(page => page.path === path);
@@ -42,7 +44,7 @@ export default function PreviewToolbar({ onManualNavigate, manualDisabled = fals
   let href: string | undefined;
   try {
     const base = chat.state?.liveUrl;
-    if (base) href = publicPreviewPage(base, path + (!chat.editing ? chat.previewLocation?.search ?? "" : ""));
+    if (base) href = publicPreviewPage(base, path + (!chat.editing ? search : ""));
   } catch { /* No usable public address yet. */ }
   const fullLabel = chat.inFull ? "Exit Full Screen" : "Full Screen";
   const FullIcon = chat.inFull ? Minimize2 : Maximize2;
