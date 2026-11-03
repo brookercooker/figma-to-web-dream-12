@@ -300,7 +300,7 @@ describe("public page save/discard integration", () => {
     fireEvent.click(down);
     await waitFor(() => expect(order()).toEqual(["second", "first"]));
     stubReloadedFrame();
-    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Site Header", "Page Content", "Video", "Image", "Site Footer"]);
+    expect([...list.querySelectorAll("li")].map(el => el.querySelector("button")?.textContent ?? el.textContent)).toEqual(["Site Header", "Page Content", "Video", "Image", "Site Footer"]);
     for (const slot of ["site-header", "site-footer"]) expect(list.querySelector(`[data-section-row="${slot}"] [aria-label="Move Up"], [data-section-row="${slot}"] [aria-label="Move Down"], [data-section-row="${slot}"] [aria-label="Delete Block"]`)).toBeNull();
     const imageRow = [...list.querySelectorAll("li")].find(el => el.textContent === "Image");
     const imageButton = imageRow?.querySelector("button");
@@ -314,7 +314,7 @@ describe("public page save/discard integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Delete Section" }));
     await waitFor(() => expect(order()).toEqual(["first"]));
     stubReloadedFrame();
-    expect([...list.querySelectorAll("li")].map(el => el.textContent)).toEqual(["Site Header", "Page Content", "Image", "Site Footer"]);
+    expect([...list.querySelectorAll("li")].map(el => el.querySelector("button")?.textContent ?? el.textContent)).toEqual(["Site Header", "Page Content", "Image", "Site Footer"]);
     s.unmount();
   });
   it("moves held components around page content without reload and restores saved order on discard", async () => {
