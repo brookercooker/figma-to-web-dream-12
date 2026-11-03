@@ -9,6 +9,8 @@
 import { supabase as cloud } from "@/integrations/supabase/client";
 import { createPrototypeClient, db, uid } from "./engine";
 import { products } from "@/data/products";
+import { hasManagerUser } from "@/lib/authGate";
+import { reviewClient } from "./reviewClient";
 
 /** Product catalog rows (shape of the former `catalog` view). */
 if (!db.catalog) {
@@ -32,7 +34,7 @@ if (!db.catalog) {
   }));
 }
 
-export const supabase = cloud as any;
+export const supabase = reviewClient(cloud as any, hasManagerUser) as any;
 
 export const adminCatalog = createPrototypeClient() as any;
 
