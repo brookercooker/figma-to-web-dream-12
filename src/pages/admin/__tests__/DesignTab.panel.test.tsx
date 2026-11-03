@@ -59,6 +59,12 @@ it("confirms saved video deletion from its full-width options panel", async () =
   vi.spyOn(source, "postMessage").mockImplementation(() => {});
   for (const data of [{ type: "edit-ready", capabilities: { heldBlocks: true } }, { type: "edit-block-select", id: "saved-video" }]) act(() => window.dispatchEvent(new MessageEvent("message", { origin: "https://public.example.com", source, data: { source: "nova-site", ...data } })));
   const panel = within(mocks.slot).getByLabelText("Saved Video Options");
+  fireEvent.click(within(panel).getByRole("button", { name: "Align Right" }));
+  expect(mocks.hasChanges()).toBe(true);
+  act(() => mocks.history.undo()); expect(mocks.hasChanges()).toBe(false);
+  fireEvent.click(within(panel).getByRole("button", { name: "Medium" }));
+  expect(within(panel).getByRole("spinbutton", { name: "Video Width" })).toHaveValue(50);
+  act(() => mocks.history.undo()); expect(mocks.hasChanges()).toBe(false);
   const button = within(panel).getByRole("button", { name: "Delete Video" });
   expect(button).toHaveClass("w-full");
   expect(button.nextElementSibling).toHaveTextContent("Undo All Changes to Video");
