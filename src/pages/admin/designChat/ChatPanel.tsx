@@ -107,11 +107,10 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
   }, [changing, handoffPage?.id]);
   const previousSet = useRef<string[]>([]);
   const suggestionRun = useRef<string | number | undefined>();
-  useEffect(() => {
-    if (!waitId || suggestionRun.current === waitId) return;
+  if (waitId && suggestionRun.current !== waitId) {
     suggestionRun.current = waitId;
-    try { previousSet.current = JSON.parse(sessionStorage.getItem("nova:wait-suggestions") ?? "[]"); } catch { previousSet.current = []; }
-  }, [waitId]);
+    try { const saved = JSON.parse(sessionStorage.getItem("nova:wait-suggestions") ?? "[]"); previousSet.current = Array.isArray(saved) ? saved.filter(id => typeof id === "string") : []; } catch { previousSet.current = []; }
+  }
   const suggestions = waitSuggestions({
     page: handoffPage, editable: !!handoffPage?.id && !!modeSwitch && pageContext.id === handoffPage.id,
     content: pageContext.id === handoffPage?.id ? pageContext.content : undefined,
@@ -119,7 +118,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
     otherDraftPages: (state?.draft?.requests ?? []).flatMap(r => r.page && r.page.path !== handoffPage?.path ? [r.page.path] : []),
     otherPages: pageContext.otherPages, previewLoaded: !!preview.loaded, device, elapsed: waitProgress?.request?.ribbon?.elapsed ?? (now - (state?.job?.startedAt ?? now)) / 1000,
     request: [...(state?.history ?? [])].reverse().find(e => e.role === "user")?.text ?? "", queued: queue.items.length > 0, previewReady: !!waitProgress?.request?.ribbon?.ready,
-    available: ["write", "queue", "library", "pages", "reminder", ...(setDevice ? ["phone", "tablet"] as WaitAction[] : []), ...(setReviewOpen ? ["draft"] as WaitAction[] : []), ...(modeSwitch && handoffPage?.id ? ["manual", "videos"] as WaitAction[] : []), ...(boxRef?.current ? ["preview"] as WaitAction[] : [])],
+    available: ["write", "library", "pages", "reminder", ...(queue.items.some(item => item.status !== "sending") ? ["queue"] as WaitAction[] : []), ...(setDevice ? ["phone", "tablet"] as WaitAction[] : []), ...(setReviewOpen ? ["draft"] as WaitAction[] : []), ...(modeSwitch && handoffPage?.id ? ["manual", "videos"] as WaitAction[] : []), ...(boxRef?.current ? ["preview"] as WaitAction[] : [])],
   }, previousSet.current);
   const suggestionKey = suggestions.map(s => s.id).join("|");
   useEffect(() => {
@@ -283,7 +282,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
           </div>
         )}
 
-        {(changing || waitProgress?.request && !waitProgress.request.done && !waitProgress.request.error) && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5 space-y-3">
+        {(changing || waitProgress?.request && !waitProgress.request.error && !waitProgress.request.fading) && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5 space-y-3">
           <p className="font-medium">Your change is on its way · {elapsedTime(waitProgress?.request?.ribbon?.elapsed ?? (now - (job?.startedAt ?? now)) / 1000)}</p>
           <p className="text-xs text-muted-foreground">You don't need to watch. Keep going, and we'll tell you the moment the preview is ready.</p>
           <p className="text-[11px] uppercase text-muted-foreground">While you wait</p>

@@ -33,7 +33,7 @@ export function waitSuggestions(c: WaitContext, previous: string[] = []): WaitSu
   const mentions = (words: string) => new RegExp(`\\b(${words})\\b`, "i").test(c.request);
   add("saved-videos", "Check video alignment or delete a video", "videos", mentions("video|youtube") ? 110 : 85, video && !!c.editable);
   add("video-library", "Add real videos to your library", "library", 95, mentions("video|youtube"));
-  add("manual", image ? "Fix a typo or swap an image yourself" : kinds.has("icon") ? "Adjust text or icons yourself" : "Fix a typo in Manual Edit Mode", "manual", mentions("text|heading|image|photo|icon|color|colour|link|form") ? 100 : 60, !!c.editable && kinds.size > 0);
+  add("manual", image ? "Fix a typo or swap an image yourself" : kinds.has("icon") ? "Adjust text or icons yourself" : "Fix a typo in Manual Edit Mode", "manual", mentions("text|heading|image|photo|icon|color|colour|link|form") ? 100 : 60, !!c.editable && ["image", "text", "heading", "icon", "faq", "form"].some(kind => kinds.has(kind)));
   add("phone", "Check this page on a phone", "phone", mentions("phone|mobile") ? 105 : 70, c.previewLoaded && c.device !== "mobile" && c.device !== "phone");
   add("tablet", "Check this page on a tablet", "tablet", 55, c.previewLoaded && c.device !== "tablet");
   add("draft", "Look at other pages in your draft", "draft", 75, c.draftCount > 0 && c.otherDraftPages.length > 0);
