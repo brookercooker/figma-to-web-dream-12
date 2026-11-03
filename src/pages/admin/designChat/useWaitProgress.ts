@@ -20,7 +20,11 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   const job = state?.job;
   if (!state) return { request: null, submit: null };
   const status = job?.status ?? "";
-  const submitJob = job?.kind === "publish" || job?.kind === "review" || /^(reviewing|publishing|updating|content)$/.test(status);
+  // Draft sync has its own save indicator, including after a tracker reload.
+  if (status === "content" || /^content(?:[-_]?sync)?$/i.test(job?.kind ?? "")) {
+    track.current = null; rememberTrack(null); return { request: null, submit: null };
+  }
+  const submitJob = job?.kind === "publish" || job?.kind === "review" || /^(reviewing|publishing|updating)$/.test(status);
   const history = state.history ?? [];
   if (!job && state.previewChecking && !track.current) {
     const latestUser = [...history].reverse().find(e => e.role === "user" && typeof e.ts === "number");
@@ -33,7 +37,7 @@ export function useWaitProgress(state: RelayState | null, frameCompletedAt = 0):
   if (job && track.current?.id !== job.startedAt && (state.busy || state.previewChecking || status === "approval" || status === "queued")) {
     const content = state.draft?.requests?.some(r => r.source === "content");
     track.current = restoreTrack(job.startedAt) ?? { id: job.startedAt, version: state.previewVersion, high: 0, paused: 0,
-      kind: submitJob ? content || status === "content" ? "contentSubmit" : "submit" : detectWaitKind(user?.text ?? "", job.planOnly || /^(question|plan|plan-only|planOnly)$/.test(job.kind ?? "")) };
+      kind: submitJob ? content ? "contentSubmit" : "submit" : detectWaitKind(user?.text ?? "", job.planOnly || /^(question|plan|plan-only|planOnly)$/.test(job.kind ?? "")) };
   }
   const t = track.current;
   if (!t) return { request: null, submit: null };

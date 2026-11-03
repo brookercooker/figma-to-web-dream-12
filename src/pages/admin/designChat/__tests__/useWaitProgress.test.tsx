@@ -2,6 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useWaitProgress } from "../useWaitProgress";
 import type { RelayState } from "../helper";
+import { RELAY } from "../helper";
 const base = (): RelayState => ({ busy: true, job: { kind: "change", status: "working", startedAt: 10_000 }, previewVersion: 1, history: [{ role: "user", ts: 10_000, text: "Make the heading bigger" }] });
 beforeEach(() => { sessionStorage.clear(); vi.useFakeTimers(); vi.setSystemTime(30_000); });
 afterEach(() => vi.useRealTimers());
@@ -24,4 +25,52 @@ it("reloads during preview build even when the relay has cleared its job", () =>
   h.rerender({ state: building }); const value = h.result.current.request?.value; h.unmount();
   const reloaded = renderHook(() => useWaitProgress(building)); expect(reloaded.result.current.request?.value).toBe(value); expect(value).toBeGreaterThan(40 / 90);
 });
-it("uses content-copy timing and jumps to Publishing then Live", () => { const s = base(); s.job = { kind: "publish", status: "content", startedAt: 10_000 }; s.draft = { requests: [{ id: "edit", request: "Edit", source: "content" }] }; const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } }); expect(h.result.current.submit?.value).toBeCloseTo(35 / 45 * (1 - Math.exp(-20 / 35 * 1.6))); h.rerender({ state: { ...s, job: { kind: "publish", status: "publishing", startedAt: 10_000, stepStartedAt: 30_000 } } }); expect(h.result.current.submit?.value).toBeCloseTo(35 / 45); h.rerender({ state: { ...s, publish: { open: 0, status: "live" } } }); expect(h.result.current.submit?.done).toBe(true); });
+it.each([
+  { kind: "publish", status: "content" },
+  { kind: "content", status: "working" },
+  { kind: "content-sync", status: "working" },
+  { kind: "contentSync", status: "done" },
+])("excludes draft-sync jobs from both progress tracks: $kind/$status", (job) => {
+  const s: RelayState = { ...base(), job: { ...job, startedAt: 10_000 }, previewChecking: true };
+  const h = renderHook(() => useWaitProgress(s));
+  expect(h.result.current).toEqual({ request: null, submit: null });
+  act(() => vi.advanceTimersByTime(1000));
+  expect(h.result.current).toEqual({ request: null, submit: null });
+});
+it.each(["contentSubmit", "normal"])("drops a persisted %s track when reloading a content job", (kind) => {
+  const key = `nova:wait-progress:${RELAY}`;
+  sessionStorage.setItem(key, JSON.stringify({ id: 10_000, version: 1, kind, high: 0.3, paused: 0 }));
+  const s: RelayState = { ...base(), job: { kind: "publish", status: "content", startedAt: 10_000 } };
+  const h = renderHook(() => useWaitProgress(s));
+  expect(h.result.current).toEqual({ request: null, submit: null });
+  expect(sessionStorage.getItem(key)).toBeNull();
+});
+it("clears an existing request track when draft sync starts", () => {
+  const s = base();
+  const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  expect(h.result.current.request?.value).toBeGreaterThan(0);
+  h.rerender({ state: { ...s, job: { kind: "content", status: "content", startedAt: 30_000 } } });
+  expect(h.result.current).toEqual({ request: null, submit: null });
+});
+it("uses contentSubmit timing for a real review and jumps to Publishing then Live", () => {
+  const s = base();
+  s.job = { kind: "review", status: "reviewing", startedAt: 10_000 };
+  s.draft = { requests: [{ id: "edit", request: "Edit", source: "content" }] };
+  const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  expect(h.result.current.request).toBeNull();
+  expect(h.result.current.submit?.value).toBeCloseTo(35 / 45 * (1 - Math.exp(-20 / 35 * 1.6)));
+  h.rerender({ state: { ...s, job: { kind: "publish", status: "publishing", startedAt: 10_000, stepStartedAt: 30_000 } } });
+  expect(h.result.current.submit?.value).toBeCloseTo(35 / 45);
+  h.rerender({ state: { ...s, publish: { open: 0, status: "live" } } });
+  expect(h.result.current.submit?.done).toBe(true);
+});
+it.each(["review", "publish"])("keeps plain %s jobs on the submit estimate", (kind) => {
+  const s: RelayState = { ...base(), job: { kind, status: "reviewing", startedAt: 10_000 } };
+  const h = renderHook(({ state }) => useWaitProgress(state), { initialProps: { state: s } });
+  expect(h.result.current.request).toBeNull();
+  expect(h.result.current.submit?.value).toBeCloseTo(30 / 40 * (1 - Math.exp(-20 / 30 * 1.6)));
+  h.rerender({ state: { ...s, job: { kind, status: "publishing", startedAt: 10_000, stepStartedAt: 30_000 } } });
+  expect(h.result.current.submit?.value).toBeCloseTo(30 / 40);
+  h.rerender({ state: { ...s, publish: { open: 0, status: "live" } } });
+  expect(h.result.current.submit?.done).toBe(true);
+});
