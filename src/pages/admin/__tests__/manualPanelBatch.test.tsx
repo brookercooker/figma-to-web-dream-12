@@ -75,6 +75,19 @@ it("image size controls share a grid and destructive actions occupy separate ful
   expect(actions).toHaveClass("flex-col");
   expect([...actions?.children ?? []]).toEqual([screen.getByRole("button", { name: "Delete Image" }), screen.getByRole("button", { name: "Undo All Changes to Image" })]);
 });
+it("expands and collapses a selected FAQ through the frame action without creating edits", () => {
+  const open = vi.fn(), change = vi.fn();
+  const snapshot = { key: "0.1", scope: "page", kind: "text" as const, tag: "button", text: "Question", expandable: { path: "0", open: false } };
+  const sel = remoteSelection(snapshot, undefined, undefined, open);
+  const view = render(<InlineStylePanel sel={sel} edits={{}} onChange={change} onReplaceImage={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "Expand Item" }));
+  expect(open).toHaveBeenLastCalledWith(true);
+  expect(change).not.toHaveBeenCalled();
+  view.rerender(<InlineStylePanel sel={remoteSelection({ ...snapshot, expandable: { path: "0", open: true } }, undefined, undefined, open)} edits={{}} onChange={change} onReplaceImage={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "Collapse Item" }));
+  expect(open).toHaveBeenLastCalledWith(false);
+  expect(change).not.toHaveBeenCalled();
+});
 it("image keyboard deletion ignores text fields and shows restore", () => {
   const snapshot = { key: "0", scope: "page", kind: "image" as const, tag: "img", context: { role: "image", section: "Categories" }, attrs: { src: "/light.jpg", alt: "Pendant" } };
   expect(validSnapshot(snapshot)).toBe(true);
