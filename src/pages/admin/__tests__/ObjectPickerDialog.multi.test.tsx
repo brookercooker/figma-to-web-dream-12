@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import ObjectPickerDialog from "../ObjectPickerDialog";
 import { rememberTopDropAnchor } from "../designChat/TopDropPanel";
-vi.mock("@/prototype/client", () => ({ supabase: { from: () => { const q: any = { select: () => q, is: () => q, order: () => Promise.resolve({ data: [{ id: "a", name: "Categories" }, { id: "b", name: "About Us" }] }) }; return q; } } }));
+vi.mock("@/prototype/client", () => ({ supabase: { from: () => { const q: any = { select: () => q, is: () => q, order: () => Promise.resolve({ data: [{ id: "a", name: "Categories", labels: ["Hero", "Photo", "Core"] }, { id: "b", name: "About Us", labels: ["Footer", "Editorial", "Team"] }] }) }; return q; } } }));
 vi.mock("../ObjectThumbnail", () => ({ default: () => null }));
 afterEach(cleanup);
 it("toggles thumbnails without adding or closing and adds all chosen objects together", async () => {
@@ -17,4 +17,37 @@ it("toggles thumbnails without adding or closing and adds all chosen objects tog
   fireEvent.click(screen.getByRole("button", { name: "Categories", hidden: true })); fireEvent.click(screen.getByRole("button", { name: "About Us", hidden: true }));
   fireEvent.click(screen.getByRole("button", { name: "Add 2 Objects", hidden: true }));
   expect(many).toHaveBeenCalledWith([{ id: "a", name: "Categories" }, { id: "b", name: "About Us" }]);
+});
+it("retains hidden selections and adds every selected object after filtering", async () => {
+  const many = vi.fn();
+  render(<ObjectPickerDialog open onOpenChange={vi.fn()} onPick={vi.fn()} onPickMany={many} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Categories", hidden: true }));
+  fireEvent.click(screen.getByRole("button", { name: "About Us", hidden: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Hero 1", hidden: true }));
+  expect(screen.getByRole("status", { hidden: true })).toHaveTextContent("Showing 1 of 2 objects · 1 selected hidden by filters");
+  fireEvent.click(screen.getByRole("button", { name: "Add 2 Objects", hidden: true }));
+  expect(many).toHaveBeenCalledWith([{ id: "a", name: "Categories" }, { id: "b", name: "About Us" }]);
+});
+it("filters through the label list and remembers recently selected labels", async () => {
+  render(<ObjectPickerDialog open onOpenChange={vi.fn()} onPick={vi.fn()} onPickMany={vi.fn()} />);
+  await screen.findByRole("button", { name: "Categories", hidden: true });
+  fireEvent.click(screen.getByRole("button", { name: "More Labels 1", hidden: true }));
+  fireEvent.click(screen.getByRole("checkbox", { name: "Hero", hidden: true }));
+  fireEvent.click(screen.getByRole("checkbox", { name: "Footer", hidden: true }));
+  expect(screen.getByRole("button", { name: "Show 2 Objects", hidden: true })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "All Labels", hidden: true }));
+  fireEvent.click(screen.getByRole("button", { name: "Show 0 Objects", hidden: true }));
+  expect(screen.getByText("No objects match these filters.")).toBeInTheDocument();
+  expect(JSON.parse(localStorage.getItem("nova:picker-recent-labels") ?? "[]")).toEqual(["footer", "hero"]);
+});
+it("preserves single-pick callbacks and resets filters and selections on reopening", async () => {
+  const one = vi.fn(), close = vi.fn();
+  const view = render(<ObjectPickerDialog open onOpenChange={close} onPick={one} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Categories", hidden: true }));
+  expect(one).toHaveBeenCalledWith({ id: "a", name: "Categories" });
+  fireEvent.change(screen.getByPlaceholderText("Search by name or label"), { target: { value: "missing" } });
+  view.rerender(<ObjectPickerDialog open={false} onOpenChange={close} onPick={one} />);
+  view.rerender(<ObjectPickerDialog open onOpenChange={close} onPick={one} />);
+  expect(await screen.findByRole("button", { name: "Categories", hidden: true })).toBeInTheDocument();
+  expect(screen.getByPlaceholderText("Search by name or label")).toHaveValue("");
 });

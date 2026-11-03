@@ -1,4 +1,5 @@
 # Roadmap — coded object import fidelity
+- [x] Object picker label chips/list, any/all filters, recent labels and responsive right-panel/phone sheet; preserve exported helpers, callbacks and hidden selections. Pure filtering and picker regressions added.
 - [x] Temporary Manager review access turned off again; REQUIRE_LOGIN=true in src/lib/authGate.ts everywhere. Original login/staff checks restored, including Users and Developer Review redirects; switch, review banner code and central database/file/function/relay write boundaries retained. No backend changes.
 - [x] Ribbon spacing adds 8px below desktop/tablet and 2px on phone; phases follow per-run queued/running/own-commit/build/frame signals, with monotonic stages and unchanged estimated fill. Focused regressions cover running, queued, commits and second queued runs.
 - [x] Context-aware rotating While You Wait suggestions; pure helper uses saved-content/device/request/draft/wait/queue context, existing navigation/manual/focus actions only. Focused helper and chat tests pass; ribbon and queue unchanged.
