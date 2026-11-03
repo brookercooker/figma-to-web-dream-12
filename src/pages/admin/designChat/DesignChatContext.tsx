@@ -143,7 +143,7 @@ export function DesignChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (!offline) observeContentSyncState(state); }, [state, offline]);
   const [navNonce, setNavNonce] = useState(0);
   const preview = usePreview(state, previewPath, navNonce);
-  const waitProgress = useWaitProgress(state, preview.completedAt);
+  const waitProgress = useWaitProgress(state, preview.frameLoadedAt);
   lastReload.current = preview.lastReloadAt;
 
   const [device, setDevice] = useState<Device>("desktop");
