@@ -3,14 +3,14 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import DesignTab from "../DesignTab";
 
-const mocks = vi.hoisted(() => ({ chat: null as any, remote: true, slot: null as HTMLElement | null, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
+const mocks = vi.hoisted(() => ({ objectContent: null as unknown, chat: null as any, remote: true, slot: null as HTMLElement | null, path: "/draft", save: null as any, discard: null as any, add: null as any, history: null as any, hasChanges: null as any, failSave: false, writes: vi.fn(), original: { content: null as unknown, inline_edits: {} as Record<string, string> } }));
 vi.mock("../siteManifest", async (importOriginal) => ({ ...await importOriginal<typeof import("../siteManifest")>(), loadSiteManifest: () => Promise.reject(new Error("fixture")), manifestHasPage: () => mocks.remote, draftEmbedUrl: () => "https://public.example.com/?embed=fixture" }));
 vi.mock("../designChat/EditorSlot", () => ({ useEditorSlot: () => ({ slot: mocks.slot, saveAll: vi.fn(), registerSave: (cb: any) => mocks.save = cb, registerDiscard: (cb: any) => mocks.discard = cb, registerHasChanges: (cb: any) => mocks.hasChanges = cb, registerHistory: (cb: any) => mocks.history = cb, registerAdd: (cb: any) => mocks.add = cb }) }));
 vi.mock("../designChat/DesignChatContext", () => ({ useDesignChatOptional: () => mocks.chat }));
 vi.mock("../designChat/contentSync", () => ({ notifyContentEdited: vi.fn() }));
 vi.mock("@/prototype/client", () => ({ supabase: { from: (table: string) => {
-  const data = table === "pages" ? [{ id: "contact", path: mocks.path, name: "Contact", updated_at: "original-date", ...mocks.original }, { id: "about", path: "/about", name: "About", updated_at: "about-date", content: [{ id: "about-image", type: "image", url: "/about.jpg", align: "left", width: 100 }], inline_edits: {} }] : [];
-  const q: any = { select: () => q, is: () => q, order: () => Promise.resolve({ data }), update: (patch: any) => { mocks.writes(table, patch); return { eq: () => Promise.resolve({ error: mocks.failSave ? { message: "Could not save" } : null }) }; }, then: (cb: any) => Promise.resolve({ data }).then(cb) }; return q;
+  const data = table === "pages" ? [{ id: "contact", path: mocks.path, name: "Contact", updated_at: "original-date", ...mocks.original }, { id: "about", path: "/about", name: "About", updated_at: "about-date", content: [{ id: "about-image", type: "image", url: "/about.jpg", align: "left", width: 100 }], inline_edits: {} }] : mocks.objectContent ? [{ id: "object", name: "Saved Object", component_key: null, status: "Ready", content: mocks.objectContent, inline_edits: {} }] : [];
+  const q: any = { select: () => q, is: () => q, order: () => Promise.resolve({ data }), update: (patch: any) => { mocks.writes(table, patch); return { eq: () => { const result = { data: [{ id: "saved" }], error: mocks.failSave ? { message: "Could not save" } : null }; return Object.assign(Promise.resolve(result), { select: async () => result }); } }; }, then: (cb: any) => Promise.resolve({ data }).then(cb) }; return q;
 } } }));
 vi.mock("@/components/Header", () => ({ default: () => null }));
 vi.mock("@/components/Footer", () => ({ default: () => null }));
@@ -23,6 +23,7 @@ vi.mock("../TagsPanel", () => ({ default: () => null }));
 vi.mock("../PageMiniPreview", () => ({ default: () => null }));
 beforeEach(() => {
   mocks.chat = null;
+  mocks.objectContent = null;
   mocks.slot = document.createElement("div"); document.body.appendChild(mocks.slot);
   mocks.original.content = null; mocks.original.inline_edits = {};
   vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
@@ -63,6 +64,23 @@ it("confirms saved video deletion from its full-width options panel", async () =
   expect(button.nextElementSibling).toHaveTextContent("Undo All Changes to Video");
   fireEvent.click(button); fireEvent.click(screen.getByRole("button", { name: "Cancel" })); expect(mocks.hasChanges()).toBe(false);
   fireEvent.click(button); fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Delete Video" })); expect(mocks.hasChanges()).toBe(true);
+});
+it("removes only the selected nested object video and saves object content, never the library", async () => {
+  mocks.objectContent = [{ id: "section", type: "free", text: "Keep this text", videos: [{ id: "clip", url: "https://youtu.be/abcdefghijk" }, { id: "keep", url: "/keep.mp4" }] }];
+  mocks.writes.mockClear();
+  render(<MemoryRouter><DesignTab embedded pageId="contact" objectId="object" /></MemoryRouter>);
+  await screen.findByTitle("Public Page Editor");
+  if (!mocks.slot) throw new Error("Missing panel");
+  const row = mocks.slot.querySelector('[data-section-row="section:video:0"]'); if (!row) throw new Error("Missing nested video");
+  fireEvent.click(within(row as HTMLElement).getByRole("button", { name: "Video" }));
+  fireEvent.click(within(mocks.slot).getByLabelText("Saved Video Options").querySelector('button') as HTMLElement);
+  fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Delete Video" }));
+  expect(mocks.hasChanges()).toBe(true); expect(mocks.writes).not.toHaveBeenCalled();
+  act(() => mocks.history.undo()); expect(mocks.hasChanges()).toBe(false);
+  act(() => mocks.history.redo());
+  await act(async () => { expect(await mocks.save()).toBe(true); });
+  expect(mocks.writes).toHaveBeenCalledWith("object_registry", expect.objectContaining({ content: [{ id: "section", type: "free", text: "Keep this text", videos: [{ id: "keep", url: "/keep.mp4" }] }] }));
+  expect(mocks.writes.mock.calls.every(([table]) => table === "object_registry")).toBe(true);
 });
 it.each([["mobile", 390], ["tablet", 768], ["desktop", 1280]])("Manual Edit uses the chosen %s viewport without replacing the frame", async (device, width) => {
   mocks.chat = { device, drawing: {}, startEditing: vi.fn() };

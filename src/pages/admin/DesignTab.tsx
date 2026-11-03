@@ -771,10 +771,10 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
       try { await dropCopies([...pendingCopies.current]); } catch (error) { discarded.current = false; toast.error(error instanceof Error ? error.message : "Couldn't remove the unused copies."); throw error; }
       if (baseline) {
         setPages((cur) => cur.map((p) => p.id === baseline.id ? baseline : p));
-        setBlocks(parsePageContent(baseline.content)); setInlineEdits(baseline.inline_edits ?? {});
+        setBlocks(objectId ? parseSections(originalContent.current) as unknown as Block[] : parsePageContent(baseline.content)); setInlineEdits(baseline.inline_edits ?? {});
       }
       setObjectEdits(structuredClone(originalObjects.current));
-      editState.current = { blocks: parsePageContent(baseline?.content), inlineEdits: baseline?.inline_edits ?? {}, objectEdits: structuredClone(originalObjects.current) };
+      editState.current = { blocks: objectId ? parseSections(originalContent.current) as unknown as Block[] : parsePageContent(baseline?.content), inlineEdits: baseline?.inline_edits ?? {}, objectEdits: structuredClone(originalObjects.current) };
       cleanState.current = structuredClone(editState.current); resetHistory();
       framedApi.current?.exit();
       setTweaksPending(false); setDirty(false); setActiveId("");
