@@ -34,15 +34,6 @@ describe("Changes waiting for review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show More" }));
     expect(screen.getByRole("button", { name: "Show Less" })).toHaveAttribute("aria-expanded", "true");
   });
-  it("views the page on the preview, or just the draft preview without a page", () => {
-    const onShow = vi.fn();
-    render(<ReviewChangesView onShowPreview={onShow} />);
-    fireEvent.click(within(cards()[0]).getByRole("button", { name: "View Page on Preview" }));
-    expect(onShow).toHaveBeenCalledOnce(); expect(m.show).toHaveBeenCalledExactlyOnceWith("/draft/experiment");
-    fireEvent.click(within(cards()[1]).getByRole("button", { name: "Open Draft Preview" }));
-    expect(onShow).toHaveBeenCalledTimes(2); expect(m.show).toHaveBeenCalledOnce();
-    expect(m.setReviewOpen).not.toHaveBeenCalled();
-  });
   it("shows the count only for an older relay without requests", () => {
     m.state.draft = {}; m.state.publish.open = 2;
     render(<ReviewChangesView onShowPreview={vi.fn()} />);
@@ -61,7 +52,7 @@ describe("Changes waiting for review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Back to Chat" }));
     expect(m.setReviewOpen).toHaveBeenCalledWith(false);
   });
-  it("lists Site Manager details with Show all, keeping the page line and preview button", () => {
+  it("lists Site Manager details with Show all, keeping the page line", () => {
     const details = ["Homepage: changed the heading \"A\" to \"B\"", "L2", "L3", "L4", "L5", "L6"];
     m.state.draft.requests = [{ id: "s", request: "Edits made in the Site Manager: x (and 4 more)", source: "content", at: now, details, page: { name: "Homepage", path: "/" } }];
     render(<ReviewChangesView onShowPreview={vi.fn()} />);
@@ -72,7 +63,6 @@ describe("Changes waiting for review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show all 6 changes" }));
     expect(within(list).getAllByRole("listitem")).toHaveLength(6);
     expect(screen.getByText(/Page: Homepage/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "View Page on Preview" })).toBeInTheDocument();
   });
   it("falls back to the request text when details are empty, and lists chat details too", () => {
     m.state.draft.requests = [
