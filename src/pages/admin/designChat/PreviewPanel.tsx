@@ -6,7 +6,8 @@ import { DESKTOP_VIRTUAL_WIDTH } from "./previewScale";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDesignChat, type Device } from "./DesignChatContext";
-import PreviewProgress from "./PreviewProgress";
+import StageRibbon from "./StageRibbon";
+import { useManagerLayout } from "./useManagerLayout";
 import DrawLayer from "./DrawLayer";
 import { usePreviewEdits, previewContentLoaded } from "./previewEdits";
 import { usePreviewScroll } from "./frameScroll";
@@ -19,7 +20,9 @@ const WIDTH: Record<Device, string> = { mobile: "390px", tablet: "768px", deskto
  * screen, submit) are in the top bar, see PreviewTools.tsx.
  */
 export default function PreviewPanel() {
-  const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing, editing } = useDesignChat();
+  const { preview, device, boxRef, inFull, coverFull, toggleFull, drawing, editing, waitProgress } = useDesignChat();
+  const { phone } = useManagerLayout();
+  const ribbon = !editing && waitProgress?.request?.ribbon ? waitProgress.request : null;
   const location = useLocation();
   const [updated, setUpdated] = useState(false);
   // Desktop is the starting size; only a later choice of Desktop counts as the person asking for it on a narrow screen.
@@ -54,6 +57,9 @@ export default function PreviewPanel() {
   return (
     <section ref={sectionRef} className="flex h-full min-h-0 flex-col" aria-label="Preview">
       <ContentSyncNote previewFailed={previewFailed} />
+      <div className={cn("shrink-0 overflow-hidden bg-background transition-[height] duration-200 motion-reduce:transition-none", ribbon && !ribbon.fading ? phone ? "h-[6px]" : "h-10" : "h-0")}>
+        <StageRibbon progress={ribbon} thin={phone} className={phone ? undefined : "px-2 py-1"} />
+      </div>
       <div ref={boxRef} className={cn("relative min-h-0 flex-1 bg-muted flex justify-center", coverFull && "fixed inset-0 z-50 bg-background")}>
 
 
@@ -74,7 +80,7 @@ export default function PreviewPanel() {
                 try { if (frame.contentWindow?.location.origin !== new URL(frame.src).origin) return; } catch { /* Cross-origin public document. */ }
                 loadedFrames.current.add(frame); preview.finish(f.id); previewContentLoaded(frame);
               }}
-              className={cn("absolute inset-0 h-full w-full border-0 bg-background transition-opacity duration-300 motion-reduce:transition-none", pending && "opacity-[0.58]", f.id !== preview.shownId && preview.shownId !== 0 && "invisible")}
+              className={cn("absolute inset-0 h-full w-full border-0 bg-background", f.id !== preview.shownId && preview.shownId !== 0 && "invisible")}
             />
           ))}
           </ScaledViewport>
@@ -89,9 +95,8 @@ export default function PreviewPanel() {
             </div>
           </div>
         )}
-        {preview.error && <div role="alert" className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-background p-6 text-center text-sm text-muted-foreground">{preview.error}<Button type="button" variant="outline" onClick={preview.retry}>Retry</Button></div>}
+        {preview.error && <div role="alert" className="absolute right-3 top-3 z-30 flex items-center gap-3 rounded-md border bg-background p-2 text-sm text-muted-foreground">{preview.error}<Button type="button" variant="outline" onClick={preview.retry}>Retry</Button></div>}
         {updated && visible && !pending && <div role="status" className="pointer-events-none absolute right-3 top-3 z-30 rounded-full border bg-background px-3 py-1.5 text-xs shadow-sm">Your Preview Is Updated</div>}
-        {pending && preview.progressStage && <PreviewProgress stage={preview.progressStage} elapsedMs={preview.elapsedMs} />}
 
         {inFull && !drawing.capturing && (
           <Button type="button" size="sm" aria-label="Exit Full Screen" title="Exit Full Screen" className="absolute right-4 top-4 z-40 gap-2 bg-foreground/80 text-background shadow-sm hover:bg-foreground/90" onClick={toggleFull}>

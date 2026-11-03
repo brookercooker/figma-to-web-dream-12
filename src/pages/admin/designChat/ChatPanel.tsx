@@ -17,7 +17,6 @@ import { useChatDraft } from "./useChatDraft";
 import WaitProgress from "./WaitProgress";
 import { useManagerLayout } from "./useManagerLayout";
 import type { WaitView } from "./waitEstimates";
-import StageRibbon from "./StageRibbon";
 import { elapsedTime } from "./stageRibbon";
 import { useChangeQueue } from "./useChangeQueue";
 import { useNavigate } from "react-router-dom";
@@ -245,7 +244,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
             <Button type="button" variant="link" className="h-auto p-0 text-xs" onClick={() => textRef.current?.focus()}>Write your next change</Button>
           </div>
         </div>}
-        {waitProgress?.request && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><StageRibbon progress={waitProgress.request} /></div>}
+        {waitProgress?.request && !waitProgress.request.ribbon && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><WaitProgress progress={waitProgress.request} /></div>}
         {waitProgress?.submit && <div className="self-stretch rounded-lg border bg-muted/60 px-3 py-2.5"><WaitProgress progress={waitProgress.submit} /></div>}
         {queue.items.map((item, index) => <div key={item.id} className="self-end max-w-[92%] rounded-lg border bg-muted px-3 py-2 text-sm">
           <p className="whitespace-pre-wrap break-words">{item.message}</p>
