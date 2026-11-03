@@ -484,9 +484,10 @@ function AdminShell() {
             <TooltipProvider delayDuration={200}>
               <DropdownMenu onOpenChange={open => { if (open) setChatCollapsed(false); }}>
                 <Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild>
-                  <Button variant={tab === "pages" ? "secondary" : "ghost"} size="icon" className="h-8 w-8 shrink-0"
+                  <Button variant={tab === "pages" ? "secondary" : "ghost"} size={!phone && !(chatCollapsed && !manual) ? "sm" : "icon"} className={!phone && !(chatCollapsed && !manual) ? "h-8 shrink-0 gap-1.5 whitespace-nowrap px-2" : "h-8 w-8 shrink-0"}
                     aria-label="Tools" aria-pressed={tab === "pages"} aria-current={tab === "pages" ? "page" : undefined} onClick={() => setChatCollapsed(false)}>
                     <Wrench className="h-4 w-4" aria-hidden />
+                    {!phone && !(chatCollapsed && !manual) && <span>Tools</span>}
                   </Button>
                 </DropdownMenuTrigger></TooltipTrigger><TooltipContent>Tools</TooltipContent></Tooltip>
                 <DropdownMenuContent align="start">
@@ -500,7 +501,7 @@ function AdminShell() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </TooltipProvider>
-            <HeaderActions onExpand={() => setChatCollapsed(false)} />
+            <HeaderActions onExpand={() => setChatCollapsed(false)} showLabels={!phone && !(chatCollapsed && !manual)} />
             <div className={cn("flex-1", chatCollapsed && !manual && "hidden")} />
             {manual && <ManualHistoryControls disabled={finishing} />}
             {!manual && !chatCollapsed && !phone && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded onClick={() => setChatCollapsed(true)}>
@@ -564,7 +565,7 @@ function PhoneMoreMenu({ showView, isAdmin, onPassword, onReview }: { showView: 
   return (
     <MoreMenu>
       <MoreMenuTrigger asChild>
-        <Button type="button" variant="ghost" size="icon" className="relative h-9 w-9 shrink-0" aria-label={`More Options${count ? `: ${count} Waiting` : ""}`} title="More Options"><MoreHorizontal className="h-4 w-4" />{count > 0 && <span className="absolute -right-1 -top-1 rounded-full bg-review px-1 text-[10px] text-review-foreground">{count > 99 ? "99+" : count}</span>}</Button>
+        <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label={`More Options${count ? `: ${count} Waiting` : ""}`} title="More Options"><MoreHorizontal className="h-4 w-4" /></Button>
       </MoreMenuTrigger>
       <MoreMenuContent align="end">
         <MoreMenuLabel>Account</MoreMenuLabel>
