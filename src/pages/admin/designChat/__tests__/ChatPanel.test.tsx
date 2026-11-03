@@ -78,7 +78,7 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 it("keeps a working retry on the failed history message after the indicator disappears", () => {
   const retry = vi.fn().mockResolvedValue({ ok: true });
-  mocks.retry = { canRetry: () => true, isReviewFailure: () => false, retry, disabled: false };
+  mocks.retry = { canRetry: () => true, isReviewFailure: () => false, retry, disabled: false, localErrors: [] };
   mocks.history = [{ role: "user", text: "Make the lamp larger", ts: 1000 }, { role: "error", text: "Failed", ts: 1100 }];
   mocks.wait = { request: { error: true, label: "The change couldn't finish", value: 0 }, submit: null };
   const view = render(<MemoryRouter><ChatPanel /></MemoryRouter>);
