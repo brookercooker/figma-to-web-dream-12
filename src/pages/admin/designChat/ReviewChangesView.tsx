@@ -6,12 +6,31 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useDesignChat } from "./DesignChatContext";
 import { SubmitButton } from "./PreviewTools";
 import ReviewProblems from "./ReviewProblems";
-import type { DraftRequest } from "./helper";
+import { supabase } from "@/prototype/client";
+import { FindingsList } from "../DeveloperFindings";
+import { postToHelper, type DraftRequest } from "./helper";
+import { developerFindings } from "./logic";
 import { atMs, CHANGE_LABEL, changeKind, changeTitle, newestFirst, relativeTime, waitingLine } from "./reviewChanges";
 
 /** Changes waiting for review, from the relay's draft.requests only (never the chat history). Replaces the chat in the left column. */
 export default function ReviewChangesView(_props: { onShowPreview: () => void }) {
-  const { state, setReviewOpen } = useDesignChat();
+  const { state, setReviewOpen, refreshSoon } = useDesignChat();
+  // Staff only: the review's findings and "Fix this for me" are never shown to other people.
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (!data?.user) return;
+        const { data: role } = await (supabase as any).rpc("has_role", { _user_id: data.user.id, _role: "admin" });
+        if (live) setIsAdmin(!!role);
+      } catch { /* not staff */ }
+    })();
+    return () => { live = false; };
+  }, []);
+  const findings = isAdmin ? developerFindings(state) : [];
+  const fixIds = async (ids: string[]) => { await postToHelper("/fix", { findingIds: ids }); refreshSoon(); };
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 30_000); return () => clearInterval(t); }, []);
   const requests = state?.draft?.requests;
@@ -29,6 +48,7 @@ export default function ReviewChangesView(_props: { onShowPreview: () => void })
         {!requests && count > 0 && <p className="text-xs text-muted-foreground">Individual change details aren't available from the design service yet.</p>}
         <SubmitButton />
         <ReviewProblems />
+        {findings.length > 0 && <div role="region" aria-label="Review Findings"><FindingsList items={findings} onFix={fixIds} /></div>}
         {requests && requests.length > 0 && (
           <TooltipProvider delayDuration={200}>
             <ul className="space-y-2" aria-label="Changes">

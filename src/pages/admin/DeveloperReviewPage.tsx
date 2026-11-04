@@ -5,25 +5,17 @@ import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { RELAY, RELAY_IS_HOSTED, relayHeaders } from "./designChat/helper";
 import { useHelperState } from "./designChat/useHelperState";
-import { FindingsList } from "./DeveloperFindings";
-import { developerFindings } from "./designChat/logic";
-import { postToHelper } from "./designChat/helper";
 import { REQUIRE_LOGIN } from "@/lib/authGate";
 
 function ReviewErrorDetails() {
-  const { state, refreshSoon } = useHelperState(() => 4000);
+  const { state } = useHelperState(() => 4000);
   const review = state?.draft?.review;
-  const items = developerFindings(state);
-  if (review?.state !== "error" && !items.length) return null;
-  const fixIds = async (ids: string[]) => { await postToHelper("/fix", { findingIds: ids }); refreshSoon(); };
+  if (review?.state !== "error") return null;
   return (
-    <div role="region" aria-label={review?.state === "error" ? "Review Error Details" : "Review Findings"} className="border-b px-6 py-4 space-y-2 text-sm">
-      {review?.state === "error" && <>
-        <p className="font-medium whitespace-pre-wrap break-words">{review.headline || "No reason was reported by the design service."}</p>
-        {review.summary && <p className="whitespace-pre-wrap break-words">{review.summary}</p>}
-        <p className="text-xs text-muted-foreground">{review.retry === true ? "Staff can retry this themselves" : "Needs a Developer"}</p>
-      </>}
-      <FindingsList items={items} onFix={fixIds} />
+    <div role="region" aria-label="Review Error Details" className="border-b px-6 py-4 space-y-2 text-sm">
+      <p className="font-medium whitespace-pre-wrap break-words">{review.headline || "No reason was reported by the design service."}</p>
+      {review.summary && <p className="whitespace-pre-wrap break-words">{review.summary}</p>}
+      <p className="text-xs text-muted-foreground">{review.retry === true ? "Staff can retry this themselves" : "Needs a Developer"}</p>
     </div>
   );
 }
