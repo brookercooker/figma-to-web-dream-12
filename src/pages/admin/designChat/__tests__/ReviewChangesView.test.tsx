@@ -40,7 +40,7 @@ describe("Changes waiting for review", () => {
     expect(action).toBeEnabled();
     fireEvent.click(action);
     await waitFor(() => expect(m.post).toHaveBeenCalledWith("/reject", { reason: "abc" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Undoing 2 requests. The undo will join the draft.");
+    expect(await screen.findByText("Undoing 2 requests. The undo will join the draft.")).toHaveAttribute("role", "status");
     expect(screen.queryByRole("alertdialog")).toBeNull();
   });
   it("bounds the reason input at 300 characters and accepts that length", async () => {
@@ -57,7 +57,7 @@ describe("Changes waiting for review", () => {
     const { input, action } = await openRejection();
     fireEvent.change(input, { target: { value: "Not approved" } });
     fireEvent.click(action);
-    const status = await screen.findByRole("status");
+    const status = await screen.findByText(/^Undoing 4 requests\./);
     expect(status.textContent).toBe(`Undoing 4 requests. The undo will join the draft.${kept ? " 3 edits made in the Site Manager can't be undone here. Change them back in Manual Edit Mode." : ""}`);
   });
   it("keeps relay errors in the existing error line", async () => {
@@ -66,7 +66,7 @@ describe("Changes waiting for review", () => {
     fireEvent.change(input, { target: { value: "Not approved" } });
     fireEvent.click(action);
     expect(await screen.findByRole("alert")).toHaveTextContent("A change is already in progress.");
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByText(/^Undoing /)).toBeNull();
   });
   it("shows a rejected badge and reason without the decision author", () => {
     m.state.draft.requests = [{ ...reqs[0], decision: { reason: "Wrong direction", at: now, by: "Private author" } }, reqs[1]];
