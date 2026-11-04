@@ -207,7 +207,7 @@ export default function LibraryPicker({ kind, label, Icon, active, showLabel, cl
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-[repeat(auto-fill,minmax(260px,1fr))]">
                 {shown.map((r) => (
                   <LibraryCard key={r.ref.id} item={r.ref} labels={r.labels} note={r.note} selected={addedIds.has(r.ref.id)} FallbackIcon={FallbackIcon} colorOf={colorOf} onPick={() => onPick(r.ref)}
                     thumbnail={kind === "images" ? <LibraryImageThumbnail className="absolute inset-0 h-full w-full object-contain object-center" candidates={tileSrcCandidates({

@@ -10,7 +10,7 @@ export function rememberTopDropAnchor(button: HTMLElement) { requestedAnchor = b
 
 /** Classes for the component selector panel: drops down under the top toolbar, ~200ms, fade only with reduced motion. */
 export const TOP_DROP_PANEL_CLASS =
-  "fixed z-50 flex w-full max-w-[720px] max-h-[70vh] flex-col gap-0 overflow-hidden rounded-b-lg border bg-background p-0 shadow-lg duration-200 ease-out " +
+  "fixed z-50 flex w-full max-w-[1040px] max-h-[70vh] flex-col gap-0 overflow-hidden rounded-b-lg border bg-background p-0 shadow-lg duration-200 ease-out " +
   "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 " +
   "data-[state=open]:slide-in-from-top-2 data-[state=closed]:slide-out-to-top-2 " +
   "motion-reduce:[--tw-enter-translate-y:0] motion-reduce:[--tw-exit-translate-y:0]";
