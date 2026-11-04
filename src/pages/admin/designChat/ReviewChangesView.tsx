@@ -30,8 +30,16 @@ export default function ReviewChangesView(_props: { onShowPreview: () => void })
     return () => { live = false; };
   }, []);
   const findings = isAdmin ? developerFindings(state) : [];
-  const rejectAll = async (): Promise<string | null> => {
-    const res = await postToHelper("/reject", {});
+  const [rejectStatus, setRejectStatus] = useState<string | null>(null);
+  const rejectAll = async (reason: string): Promise<string | null> => {
+    setRejectStatus(null);
+    const res = await postToHelper("/reject", { reason });
+    if (res.ok) {
+      const { undoing, kept } = res.data ?? {};
+      if (Number.isInteger(undoing) && undoing >= 0) {
+        setRejectStatus(`Undoing ${undoing} requests. The undo will join the draft.${Number.isInteger(kept) && kept > 0 ? ` ${kept} edits made in the Site Manager can't be undone here. Change them back in Manual Edit Mode.` : ""}`);
+      }
+    }
     refreshSoon();
     return res.ok ? null : "The changes weren't rejected. " + (res.error || "The design service didn't accept the request.");
   };
@@ -54,6 +62,7 @@ export default function ReviewChangesView(_props: { onShowPreview: () => void })
         <SubmitButton />
         <ReviewProblems />
         {isAdmin && reviewBlocked(state) && <div role="region" aria-label="Review Findings"><FindingsList items={findings} onFix={fixIds} onReject={rejectAll} /></div>}
+        {isAdmin && rejectStatus && <p role="status" className="text-xs text-muted-foreground">{rejectStatus}</p>}
         {requests && requests.length > 0 && (
           <TooltipProvider delayDuration={200}>
             <ul className="space-y-2" aria-label="Changes">
@@ -74,10 +83,13 @@ function ChangeCard({ r, now }: { r: DraftRequest; now: number }) {
   const details = (r.details ?? []).filter((d) => typeof d === "string" && d.trim());
   // Site Manager request text repeats its first lines, so the list replaces it.
   const showBody = !(details.length && title) && !!body;
+  const decision = r.decision;
+  const reason = decision && typeof decision === "object" && !Array.isArray(decision) && "reason" in decision && typeof decision.reason === "string" ? decision.reason.trim() : "";
   return (
     <li data-change-id={r.id} className="space-y-2 rounded-lg border p-3">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="secondary" className="font-normal">{CHANGE_LABEL[changeKind(r)]}</Badge>
+        {reason && <Badge variant="destructive">Rejected</Badge>}
         {Number.isFinite(ms) && (
           <Tooltip><TooltipTrigger asChild>
             <time tabIndex={0} dateTime={new Date(ms).toISOString()} className="text-xs text-muted-foreground">{relativeTime(ms, now)}</time>
@@ -88,6 +100,7 @@ function ChangeCard({ r, now }: { r: DraftRequest; now: number }) {
       {showBody && <p className={`whitespace-pre-wrap break-words ${more ? "" : "line-clamp-3"}`}>{body}</p>}
       {showBody && long && <button type="button" className="text-xs underline underline-offset-2" aria-expanded={more} onClick={() => setMore(!more)}>{more ? "Show Less" : "Show More"}</button>}
       {details.length > 0 && <ChangeDetails details={details} />}
+      {reason && <p className="text-xs break-words whitespace-pre-wrap">Reason: {reason}</p>}
       {r.page && <p className="truncate text-xs text-muted-foreground" title={`${r.page.name} ${r.page.path}`}>Page: {r.page.name} <span className="font-mono">{r.page.path}</span></p>}
     </li>
   );
