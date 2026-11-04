@@ -351,8 +351,8 @@ function AdminShell() {
               </nav>
 
               {phone && (
-                <Button type="button" size="icon" data-capture-primary className="h-9 w-9 shrink-0" aria-label="Capture" title="Capture" onClick={() => navigate("/manage/capture")}>
-                  <Camera className="h-4 w-4" aria-hidden />
+                <Button type="button" size="sm" data-capture-primary className="h-9 shrink-0 gap-1.5 px-2.5" aria-label="Capture" title="Capture" onClick={() => navigate("/manage/capture")}>
+                  <Camera className="h-4 w-4" aria-hidden />Capture
                 </Button>
               )}
               {phone && <ModeToggle compact onChat={() => { setPhonePane("main"); }} />}
