@@ -33,7 +33,8 @@ export default function PreviewTools({ showViewControls, tight = false }: { show
 /** Reminders shown as a plain bulleted list before submitting; nothing needs to be ticked. */
 export const SUBMIT_CHECKLIST = [
   "You've looked at your changes in the preview on every page they affect.",
-  "The wording, pictures and links are correct.",
+  "The wording and pictures are correct.",
+  "Buttons and links go to the right place.",
   "The changes look right on phone and desktop sizes.",
 ] as const;
 
