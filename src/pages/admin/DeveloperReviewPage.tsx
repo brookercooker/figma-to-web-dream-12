@@ -5,6 +5,7 @@ import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { RELAY, RELAY_IS_HOSTED, relayHeaders } from "./designChat/helper";
 import { useHelperState } from "./designChat/useHelperState";
+import DeveloperFindings from "./DeveloperFindings";
 import { REQUIRE_LOGIN } from "@/lib/authGate";
 
 function ReviewErrorDetails() {
@@ -69,6 +70,7 @@ export default function DeveloperReviewPage() {
         </div>
       </header>
       {isAdmin && <ReviewErrorDetails />}
+      {isAdmin && <DeveloperFindings />}
       {!isAdmin ? <div className="p-6 text-sm text-muted-foreground">Sign in to load or save this. Developer review requires an authorized account.</div> : RELAY_IS_HOSTED ? (
         <iframe
           ref={iframeRef}

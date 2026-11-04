@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fileProblem, fmtDur, fmtSize, isWorking, problemsModel, visibleText, withPath, workHint, workLabel } from "../logic";
+import { developerFindings, fileProblem, fmtDur, fmtSize, isWorking, problemsModel, visibleText, withPath, workHint, workLabel } from "../logic";
 import type { Finding, RelayState } from "../helper";
 
 const base: RelayState = { busy: false, job: null, previewVersion: 0, history: [] };
@@ -84,26 +84,16 @@ describe("problemsModel", () => {
     expect(problemsModel(base)).toBeNull();
     expect(problemsModel({ ...blocked([finding()]), busy: true })).toBeNull();
   });
-  it("lists problems the person can fix", () => {
-    const m = problemsModel(blocked([finding()]));
-    expect(m?.title).toBe("These changes can't go live yet.");
-    expect(m?.items.map((f) => f.id)).toEqual(["f1"]);
-    expect(m?.devNote).toBeUndefined();
+  it("only says a developer will review blocked changes, whatever the findings are", () => {
+    const m = problemsModel(blocked([finding(), finding({ id: "b", file: ".github/x" })]));
+    expect(m).toEqual({ title: "These changes need to be reviewed by a developer.", sub: "They can't go live until a developer reviews them. There is nothing you need to change.", items: [] });
+    expect(problemsModel(blocked([finding()], true))?.items).toEqual([]);
   });
-  it("leaves out low problems and accepted ones", () => {
-    const m = problemsModel(blocked([finding({ id: "a", severity: "low" }), finding({ id: "b", accepted: true }), finding({ id: "c", severity: "medium", area: "efficiency" }), finding({ id: "d" })]));
-    expect(m?.items.map((f) => f.id)).toEqual(["d"]);
-  });
-  it("sends developer-only problems to one line", () => {
-    const m = problemsModel(blocked([finding({ id: "a" }), finding({ id: "b", fix: "A developer should move this to a server function." }), finding({ id: "c", file: ".github/workflows/x.yml" })]));
-    expect(m?.items.map((f) => f.id)).toEqual(["a"]);
-    expect(m?.devNote).toBe("2 more items need a developer's review before this can go live.");
-  });
-  it("says a developer is needed when nothing can be fixed by the person, or when the draft is locked", () => {
-    expect(problemsModel(blocked([finding({ file: ".github/x" })]))?.title).toMatch(/developer needs to review/);
-    const locked = problemsModel(blocked([finding()], true));
-    expect(locked?.title).toMatch(/developer needs to review/);
-    expect(locked?.items).toEqual([]);
+  it("gives the Developer Review page every unresolved blocking finding", () => {
+    const s = blocked([finding({ id: "a" }), finding({ id: "b", severity: "low" }), finding({ id: "c", accepted: true }), finding({ id: "d", file: ".github/x" })]);
+    expect(developerFindings(s).map((f) => f.id)).toEqual(["a", "d"]);
+    expect(developerFindings(base)).toEqual([]);
+    expect(developerFindings({ ...s, busy: true })).toEqual([]);
   });
   it("explains a review that couldn't finish", () => {
     const m = problemsModel({ ...base, publish: { ok: false, open: 1, status: "error" } });

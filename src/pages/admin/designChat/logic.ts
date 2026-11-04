@@ -92,9 +92,18 @@ export function missingField(fields: ApprovalField[] | null, answers: Record<str
 }
 
 // ---- problems after a review stops the changes ------------------------------------------------
-const DEV_FIX = /^(an? developer|have an? developer|ask an? developer)/i;
 const blocking = (f: Finding) => !f.accepted && (f.severity === "high" || (f.severity === "medium" && f.area === "security"));
-const userFixable = (f: Finding) => !DEV_FIX.test(String(f.fix || "").trim()) && !String(f.file || "").startsWith(".github");
+
+/** True when the automatic review stopped the changes for problems. People only see that a developer will review them. */
+export function reviewBlocked(s: RelayState | null): boolean {
+  const r = s?.draft?.review;
+  return !!s && !s.busy && (s.publish?.open ?? 0) > 0 && s.publish?.status === "blocked" && r?.state === "failure";
+}
+
+/** Every unresolved problem the review found, including developer-only ones. Only the Developer Review page shows these. */
+export function developerFindings(s: RelayState | null): Finding[] {
+  return reviewBlocked(s) ? (s!.draft!.review!.findings || []).filter(blocking) : [];
+}
 
 export type ProblemsModel = { title: string; sub: string; items: Finding[]; devNote?: string };
 
@@ -115,17 +124,7 @@ export function problemsModel(s: RelayState | null): ProblemsModel | null {
       devNote: "If it keeps happening, a developer can see the details on the Developer Review page." };
   }
   if (p.status === "blocked" && r && r.state === "failure") {
-    const all = (r.findings || []).filter(blocking);
-    const mine = r.locked ? [] : all.filter(userFixable);
-    const dev = r.locked ? Math.max(1, all.length) : all.length - mine.length;
-    if (!mine.length) return { title: "A developer needs to review this before it can go live.", sub: "There is nothing you need to change.", items: [] };
-    const model: ProblemsModel = {
-      title: "These changes can't go live yet.",
-      sub: `Fix ${mine.length === 1 ? "this" : "these"}, then press Submit for Review again. You can also send a new request to change or remove it.`,
-      items: mine,
-    };
-    if (dev) model.devNote = dev === 1 ? "One more item needs a developer's review before this can go live." : `${dev} more items need a developer's review before this can go live.`;
-    return model;
+    return { title: "These changes need to be reviewed by a developer.", sub: "They can't go live until a developer reviews them. There is nothing you need to change.", items: [] };
   }
   return null;
 }
