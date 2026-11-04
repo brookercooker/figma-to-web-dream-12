@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import type { Finding } from "./designChat/helper";
 
 /** What the automatic review found, with "Fix this for me". Developer Review only; everyone else just sees that a review is needed. */
-export function FindingsList({ items, onFix }: { items: Finding[]; onFix: (ids: string[]) => Promise<void> }) {
-  if (!items.length) return null;
+export function FindingsList({ items, onFix, onReject }: { items: Finding[]; onFix: (ids: string[]) => Promise<void>; onReject?: () => Promise<string | null> }) {
+  const [confirm, setConfirm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!items.length && !onReject) return null;
   return (
     <div className="space-y-2">
       <h2 className="font-semibold">Review Findings</h2>
@@ -22,6 +26,24 @@ export function FindingsList({ items, onFix }: { items: Finding[]; onFix: (ids: 
         <Button type="button" size="sm" onClick={(ev) => { (ev.currentTarget as HTMLButtonElement).disabled = true; void onFix(items.map((f) => f.id)); }}>
           Fix All {items.length} for me
         </Button>
+      )}
+      {onReject && (
+        <>
+          <Button type="button" size="sm" variant="destructive" onClick={() => { setError(null); setConfirm(true); }}>Reject Changes</Button>
+          {error && <p role="alert" className="text-xs text-destructive">{error}</p>}
+          <AlertDialog open={confirm} onOpenChange={setConfirm}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Reject These Changes?</AlertDialogTitle>
+                <AlertDialogDescription>None of the changes waiting for review will go on the public site. Use this only when no part of them should be implemented.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => { void onReject().then(setError); }}>Reject Changes</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       )}
     </div>
   );
