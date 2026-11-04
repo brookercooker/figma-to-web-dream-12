@@ -62,13 +62,7 @@ export function SubmitConfirmDialog({ open, onOpenChange }: { open: boolean; onO
           <AlertDialogDescription asChild>
             <div className="space-y-2 text-sm text-muted-foreground">
               {reviewOn ? <>
-                <p>This sends all {changes} waiting in your draft for review.</p>
-                <ul className="list-disc space-y-1 pl-5">
-                  <li>Your changes are reviewed automatically first.</li>
-                  <li>Anything the automatic review can't approve may be sent to a developer to look at.</li>
-                  <li className="font-medium text-foreground">Any changes that are approved will be put on the public site.</li>
-                  <li>Until then they stay in the draft preview, and visitors won't see them. You can keep working while the review runs.</li>
-                </ul>
+                <p>Your {changes} will be reviewed automatically, and anything it can't approve may go to a developer. <span className="font-medium text-foreground">Approved changes are put on the public site.</span></p>
               </> : <>
                 <p>This puts all {changes} waiting in your draft on the public site right away.</p>
                 <p className="font-medium text-foreground">Visitors will see these changes as soon as publishing finishes.</p>

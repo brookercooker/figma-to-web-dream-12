@@ -26,10 +26,9 @@ describe("Submit for Review", () => {
     render(<SubmitButton />);
     fireEvent.click(screen.getByRole("button", { name: "Submit for Review" }));
     const dialog = await screen.findByRole("alertdialog");
-    expect(dialog).toHaveTextContent("sends all 1 change waiting in your draft for review");
-    expect(dialog).toHaveTextContent("Your changes are reviewed automatically first.");
-    expect(dialog).toHaveTextContent("may be sent to a developer to look at");
-    expect(dialog).toHaveTextContent("Any changes that are approved will be put on the public site.");
+    expect(dialog).toHaveTextContent("Your 1 change will be reviewed automatically");
+    expect(dialog).toHaveTextContent("anything it can't approve may go to a developer");
+    expect(dialog).toHaveTextContent("Approved changes are put on the public site.");
   });
   it("shows the checklist as a plain bulleted list with nothing to tick", async () => {
     render(<SubmitButton />);
