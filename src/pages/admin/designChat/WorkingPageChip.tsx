@@ -5,7 +5,7 @@ import { useDesignChat } from "./DesignChatContext";
 /**
  * Which page the person is on. Manual Edit Mode shows the page being edited; Chat Mode shows the picked
  * working page (which can be cleared), or else the page currently open in the preview.
- * Desktop shows it at the top of the left panel above the mode switch; phones keep it in the chat composer.
+ * Desktop shows it just below the Chat / Manual Edit mode switch; phones keep it in the chat composer.
  */
 export default function WorkingPageChip({ className }: { className?: string }) {
   const { workingPage, clearWorkingPage, previewPage, previewLocation, mode } = useDesignChat();

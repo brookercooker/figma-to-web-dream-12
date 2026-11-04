@@ -321,7 +321,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
         onDragLeave={() => { dragDepth.current = Math.max(0, dragDepth.current - 1); if (!dragDepth.current) setDragging(false); }}
         onDrop={(e) => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth.current = 0; setDragging(false); attachments.add(e.dataTransfer.files); }}
       >
-        {/* On larger screens this chip sits at the top of the panel, above the mode switch (see AdminIndex). */}
+        {/* On larger screens this chip sits just below the mode switch (see AdminIndex). */}
         {phone && <WorkingPageChip />}
 
         {drawing.strokes.length > 0 && (

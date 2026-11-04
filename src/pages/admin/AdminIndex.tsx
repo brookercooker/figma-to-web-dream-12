@@ -515,9 +515,9 @@ function AdminShell() {
             </Button>}
           </div>
           {phone && phonePane === "main" && manual && tab === "preview" && sheet === "peek" && <p className="px-3 pb-2 text-xs text-muted-foreground">Tap something on the page to edit it.</p>}
-          {/* The page the chat is working on, at the top above the mode switch. */}
-          {!phone && (manual || !chatCollapsed) && <WorkingPageChip className="mx-2 mt-2 shrink-0" />}
           {!phone && !reviewShown && <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />}
+          {/* Which page you're on, just below the Chat / Manual Edit switch. */}
+          {!phone && (manual || !chatCollapsed) && <WorkingPageChip className="mx-2 my-2 shrink-0" />}
           <ContentSyncNote />
           {reviewShown && <ReviewChangesView onShowPreview={() => { if (tab !== "preview") navigate("/manage/preview"); }} />}
           {manual && workingPage && (
