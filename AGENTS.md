@@ -46,4 +46,4 @@
 - Read nested AGENTS.md; admin rules cover picker scrolling and authoritative retry snapshots to preserve context.
 - Manager libraries share a content-width container and the existing label list in a dialog; narrow card layouts reuse all item actions so no separate data or action paths diverge.
 - Blocked reviews show people only "These changes need to be reviewed by a developer." (problemsModel, no finding list, no fix buttons); "Fix this for me" and per-finding details (FindingsList, developerFindings) appear only for admin accounts inside the Changes Waiting for Review view, never in the chat or for other people.
-- Admins can Reject Changes (POST /reject, confirmed) from the review findings when no part should go live; the relay must implement /reject.
+- Admins reject via POST /reject with a 3–300-character reason; show undo/kept counts and validated decision reasons; Manual edits stay.
