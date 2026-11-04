@@ -3,12 +3,15 @@ import { matchesLabelFilter } from "./labelPath";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Play, Loader2, Trash2, Plus } from "lucide-react";
+import { Search, Play, Loader2, Trash2, Plus, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/prototype/client";
-import { withRouteIframe } from "./routeSnapshot";
-import { classifyDestination, getStaticRoutes, type LinkStatus, type LinkType, isComingSoonPath } from "./routeTable";
+import { buildAuditRows, pageProblems, statusLabel, unscannedDestinations, FOOTER_LOCATION, HEADER_LOCATION, type LinkStatus, type PageProblem, type PageScan } from "./publicLinkAudit";
+import { scanPublicPages } from "./publicLinkScan";
+import { draftEmbedUrl, loadSiteManifest } from "./siteManifest";
+import { publicPreviewBase } from "./designChat/publicPreviewUrl";
+import { isInternalPath, pageKey } from "./designChat/registerPage";
 import CreatePageDialog from "./CreatePageDialog";
 import TagsPanel from "./TagsPanel";
 import LabelPicker from "./LabelPicker";
@@ -16,8 +19,10 @@ import SelectionBar from "./SelectionBar";
 
 interface DbPage { id: string; slug_id: string; name: string; path: string; archived_at?: string | null; }
 
-const HEADER_LOCATION = "Header mega-menu";
-const FOOTER_LOCATION = "Footer";
+/** Older scans stored the header as "Header mega-menu"; it still sorts first. */
+const LEGACY_HEADER = "Header mega-menu";
+/** Destinations found on pages that the scan also loads to check, at most this many per scan. */
+const MAX_EXTRA_DESTINATIONS = 150;
 
 interface Row {
   id: string;
@@ -25,8 +30,8 @@ interface Row {
   location: string;
   link_text: string;
   destination: string;
-  status: LinkStatus;
-  type: LinkType;
+  status: LinkStatus | string;
+  type: string;
   is_chrome: boolean;
   is_deleted: boolean;
   dismissed: boolean;
@@ -36,61 +41,20 @@ interface Row {
   last_seen_at: string;
 }
 
-const STATUS_COLORS: Record<LinkStatus, string> = {
+const STATUS_COLORS: Record<string, string> = {
   Registered: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
   Pending: "bg-brass/20 text-brass border-brass/40",
   Broken: "bg-destructive/15 text-destructive border-destructive/40",
   External: "bg-sky-500/15 text-sky-700 border-sky-500/30",
   "Self-Referencing": "bg-amber-500/15 text-amber-700 border-amber-500/30",
+  Unchecked: "bg-muted text-muted-foreground border-border",
 };
-
-/** Classify a chrome anchor into a synthetic site-wide location. */
-function chromeLocationFor(el: Element): string | null {
-  if (el.closest('footer, [role="contentinfo"]')) return FOOTER_LOCATION;
-  if (el.closest('header, nav, [role="banner"], [role="navigation"]')) return HEADER_LOCATION;
-  return null;
-}
-
-function identityKey(location: string, text: string) {
-  return `${location}::${text.toLowerCase().trim()}`;
-}
-
-function shouldScanRoute(route: string) {
-  return !!route && !route.startsWith("/admin") && route !== "*" && route !== "/";
-}
-
-async function scanPage(route: string): Promise<{
-  anchors: Array<{ href: string; text: string; location: string; isChrome: boolean }>;
-  empty: boolean;
-}> {
-  const result = await withRouteIframe(route, (doc) => {
-    const all = Array.from(doc.querySelectorAll("a[href]")) as HTMLAnchorElement[];
-    const main = doc.querySelector("main");
-    const mainText = (main?.textContent || "").trim();
-    const looksLike404 = /page not found|404/i.test(mainText) && mainText.length < 400;
-    const empty = !main || mainText.length < 20 || looksLike404;
-    return {
-      anchors: all.map((a) => {
-        const chromeLoc = chromeLocationFor(a);
-        return {
-          href: a.getAttribute("href") || "",
-          text: (a.textContent || "").trim().slice(0, 120),
-          location: chromeLoc ?? route,
-          isChrome: !!chromeLoc,
-        };
-      }),
-      empty,
-    };
-  }, 1400);
-  return result ?? { anchors: [], empty: true };
-}
-
-async function checkExternal(url: string): Promise<"ok" | "fail" | "unverified"> {
-  try {
-    await fetch(url, { method: "HEAD", mode: "no-cors" });
-    return "unverified";
-  } catch { return "fail"; }
-}
+const STATUS_ORDER: LinkStatus[] = ["Registered", "Pending", "Broken", "External", "Self-Referencing", "Unchecked"];
+const PROBLEM_TEXT: Record<PageProblem["problem"], string> = {
+  "not-found": "Page not found on the public site",
+  "coming-soon": "Shows the Coming Soon placeholder",
+  unreachable: "Didn't load in time, so its links weren't checked",
+};
 
 export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
   const [scanning, setScanning] = useState(false);
@@ -99,16 +63,16 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
   const [lastRun, setLastRun] = useState<Date | null>(null);
   const [scannedPages, setScannedPages] = useState<string[]>([]);
   const [q, setQ] = useState("");
-  const [statusFilter, setStatusFilter] = useState<LinkStatus | "all">("all");
-  const [typeFilter, setTypeFilter] = useState<LinkType | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [prefill, setPrefill] = useState<string | null>(null);
+  const [problems, setProblems] = useState<PageProblem[]>([]);
 
 
   const livePages = useMemo(() => pages.filter((p) => !p.archived_at), [pages]);
-  const dbPagePaths = useMemo(() => new Set(livePages.map((p) => p.path).filter(Boolean)), [livePages]);
 
   // ---- Load persisted results on mount ----
   const loadPersisted = async () => {
@@ -119,6 +83,8 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
     setRows((rowData ?? []) as Row[]);
     if (metaData?.last_ran_at) setLastRun(new Date(metaData.last_ran_at));
     if (metaData?.scanned_pages) setScannedPages(metaData.scanned_pages);
+    const saved = (metaData?.summary as { problems?: unknown } | null)?.problems;
+    setProblems(Array.isArray(saved) ? saved.filter((p): p is PageProblem => !!p && typeof p.path === "string" && typeof p.problem === "string") : []);
   };
   useEffect(() => { loadPersisted(); }, []);
 
@@ -126,80 +92,56 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
     setScanning(true);
     setProgress(0);
     try {
-      const staticPaths = getStaticRoutes()
-        .filter((r) => !r.isRedirectToComingSoon && !r.path.includes(":") && shouldScanRoute(r.path))
-        .map((r) => r.path);
-      const dbPaths = livePages.map((p) => p.path).filter(shouldScanRoute);
-      const routes = Array.from(new Set([...dbPaths, ...staticPaths]));
+      // The public site itself, at the same address the preview uses (never the Site Manager's own page copies).
+      let base: string;
+      try { base = draftEmbedUrl() ?? publicPreviewBase(null); }
+      catch { toast.error("Couldn't reach the public site. Open the Preview once, then try again."); return; }
+      const siteOrigin = new URL(base).origin;
 
-      // Aggregate by the exact diff identity: location + link text.
-      //  - Chrome links use fixed site-wide labels (Header mega-menu/Footer).
-      //  - In-page links use the single page path as their location, so a link
-      //    found on /home and /team becomes two stable rows, not one joined row.
-      type Agg = {
-        location: string;
-        link_text: string;
-        destination: string;
-        is_chrome: boolean;
-        source_pages: Set<string>;
-      };
-      const seen = new Map<string, Agg>();
+      // Every page the public site has (its manifest) plus every page kept in the database.
+      let manifestPaths: string[] = [];
+      try { manifestPaths = (await loadSiteManifest()).pages.map((p) => p.path); }
+      catch { toast.warning("Couldn't read the public site's page list. Scanning the pages saved here only."); }
+      const routes = [...new Set([...manifestPaths, ...livePages.map((p) => p.path)].filter(Boolean).map(pageKey))]
+        .filter((path) => !isInternalPath(path)).sort();
 
-      for (let i = 0; i < routes.length; i++) {
-        const route = routes[i];
-        const { anchors, empty } = await scanPage(route);
-        if (empty) { setProgress(Math.round(((i + 1) / routes.length) * 100)); continue; }
-        for (const a of anchors) {
-          if (!a.text) continue; // skip empty-text links (icons w/o labels)
-          const bucketLocation = a.isChrome ? a.location : route;
-          const key = identityKey(bucketLocation, a.text);
-          let entry = seen.get(key);
-          if (!entry) {
-            entry = {
-              location: bucketLocation,
-              link_text: a.text,
-              destination: a.href,
-              is_chrome: a.isChrome,
-              source_pages: new Set<string>(),
-            };
-            seen.set(key, entry);
-          }
-          if (!a.isChrome) entry.source_pages.add(route);
-        }
-        setProgress(Math.round(((i + 1) / routes.length) * 100));
+      // Pass 1: every page. Pass 2: destinations those pages link to that weren't in the list (to tell missing from Coming Soon).
+      const pages = await scanPublicPages(base, routes, (done) => setProgress(Math.round((done / routes.length) * 80)));
+      const extra = unscannedDestinations(pages, siteOrigin).slice(0, MAX_EXTRA_DESTINATIONS);
+      const extraScans = extra.length ? await scanPublicPages(base, extra, (done) => setProgress(80 + Math.round((done / extra.length) * 20))) : [];
+      setProgress(100);
+      const results = new Map<string, PageScan>([...pages, ...extraScans].map((p) => [pageKey(p.path), p]));
+      const reached = pages.filter((p) => p.status !== "unreachable").length;
+      if (reached === 0) {
+        toast.error("None of the public site's pages answered. Check the Preview loads, then try again. Saved results were kept.");
+        return;
       }
-
-      // Classify each aggregated row.
-      const classified = [...seen.entries()].map(([key, r]) => {
-        const cls = classifyDestination(r.destination, r.location, dbPagePaths);
-        let status = cls.status;
-        if (status === "Self-Referencing" && r.is_chrome) status = "Registered";
-        return {
-          key,
-          ...r,
-          source_pages: [...r.source_pages].sort(),
-          status,
-          type: cls.type,
-          destinationNorm: cls.normalized,
-        };
-      });
+      const classified = buildAuditRows(pages, results, siteOrigin).map((r) => ({ ...r, key: r.identity_key }));
+      const foundProblems = pageProblems(pages);
 
       // ---- DIFF against persisted rows ----
       const { data: existing } = await (supabase as any)
         .from("link_audit_rows").select("*");
-      const existingByKey = new Map<string, Row>((existing ?? []).map((r: Row) => [r.identity_key, r]));
+      // Rows saved by the old scanner (which read the Site Manager's own page copies) used "location::text" keys.
+      // Their labels carry over to the matching new row; the old rows themselves are then removed.
+      const isLegacy = (r: Row) => r.identity_key.split("::").length === 2;
+      const legacy = ((existing ?? []) as Row[]).filter(isLegacy);
+      const legacyByKey = new Map(legacy.map((r) => [r.identity_key, r]));
+      const legacyFor = (c: { location: string; link_text: string }) =>
+        legacyByKey.get(`${c.location === HEADER_LOCATION ? LEGACY_HEADER : c.location}::${c.link_text.toLowerCase().trim()}`);
+      const existingByKey = new Map<string, Row>(((existing ?? []) as Row[]).filter((r) => !isLegacy(r)).map((r) => [r.identity_key, r]));
       const nowIso = new Date().toISOString();
       const seenKeys = new Set<string>();
 
       const upserts: any[] = [];
       for (const c of classified) {
         seenKeys.add(c.key);
-        const prev = existingByKey.get(c.key);
+        const prev = existingByKey.get(c.key) ?? legacyFor(c);
         upserts.push({
           identity_key: c.key,
           location: c.location,
           link_text: c.link_text,
-          destination: c.destinationNorm,
+          destination: c.destination,
           status: c.status,
           type: c.type,
           is_chrome: c.is_chrome,
@@ -221,13 +163,20 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
         if (error) { toast.error(error.message); throw error; }
       }
 
-      // Mark rows not in this scan as deleted (only ones that weren't already dismissed).
-      const deletedKeys = [...existingByKey.keys()].filter((k) => !seenKeys.has(k));
+      // Mark rows not in this scan as deleted. A page that didn't load this time keeps its rows as they were.
+      const notLoaded = new Set(pages.filter((p) => p.status === "unreachable").map((p) => pageKey(p.path)));
+      const deletedKeys = [...existingByKey.values()]
+        .filter((r) => !seenKeys.has(r.identity_key) && !(!r.is_chrome && notLoaded.has(r.location)))
+        .map((r) => r.identity_key);
       if (deletedKeys.length > 0) {
         const { error } = await (supabase as any)
           .from("link_audit_rows")
-          .update({ is_deleted: true, last_seen_at: existingByKey.get(deletedKeys[0])!.last_seen_at })
+          .update({ is_deleted: true })
           .in("identity_key", deletedKeys);
+        if (error) toast.error(error.message);
+      }
+      if (legacy.length > 0) {
+        const { error } = await (supabase as any).from("link_audit_rows").delete().in("id", legacy.map((r) => r.id));
         if (error) toast.error(error.message);
       }
 
@@ -238,20 +187,17 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
         Broken: classified.filter((r) => r.status === "Broken").length,
         External: classified.filter((r) => r.status === "External").length,
         SelfRef: classified.filter((r) => r.status === "Self-Referencing").length,
+        Unchecked: classified.filter((r) => r.status === "Unchecked").length,
+        problems: foundProblems,
+        source: siteOrigin,
       };
       await (supabase as any).from("link_audit_meta").upsert({
         id: 1, last_ran_at: nowIso, summary, scanned_pages: routes,
       }, { onConflict: "id" });
 
       await loadPersisted();
-
-      // External reachability (in-memory only, not persisted).
-      const externals = classified.filter((r) => r.status === "External");
-      await Promise.all(externals.map(async (r) => {
-        if (/^(mailto:|tel:)/i.test(r.destinationNorm)) return;
-        await checkExternal(r.destinationNorm);
-      }));
-      toast.success(`Scanned ${routes.length} page(s) — ${upserts.length} link(s) tracked`);
+      const skipped = routes.length - reached;
+      toast.success(`Scanned ${reached} public page${reached === 1 ? "" : "s"}: ${upserts.length} link${upserts.length === 1 ? "" : "s"} tracked${skipped ? `. ${skipped} page${skipped === 1 ? "" : "s"} didn't load` : ""}.`);
     } finally {
       setScanning(false);
     }
@@ -302,8 +248,8 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
     const s = new Set<string>();
     rows.forEach((r) => s.add(r.location));
     return [...s].sort((a, b) => {
-      if (a === HEADER_LOCATION) return -1;
-      if (b === HEADER_LOCATION) return 1;
+      if (a === HEADER_LOCATION || a === LEGACY_HEADER) return -1;
+      if (b === HEADER_LOCATION || b === LEGACY_HEADER) return 1;
       if (a === FOOTER_LOCATION) return -1;
       if (b === FOOTER_LOCATION) return 1;
       return a.localeCompare(b);
@@ -329,26 +275,28 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
   }, [activeRows]);
 
   const counts = useMemo(() => {
-    const c = { Registered: 0, Pending: 0, Broken: 0, External: 0, SelfRef: 0 };
+    const c = { Registered: 0, Pending: 0, Broken: 0, External: 0, SelfRef: 0, Unchecked: 0 };
     activeRows.forEach((r) => {
       if (r.status === "Registered") c.Registered++;
       else if (r.status === "Pending") c.Pending++;
       else if (r.status === "Broken") c.Broken++;
       else if (r.status === "External") c.External++;
       else if (r.status === "Self-Referencing") c.SelfRef++;
+      else if (r.status === "Unchecked") c.Unchecked++;
     });
     return c;
   }, [activeRows]);
+  /** Types actually present, so the filter never lists empty choices. */
+  const types = useMemo(() => [...new Set(rows.map((r) => r.type).filter(Boolean))].sort(), [rows]);
 
   const orphans = useMemo(() => {
     if (activeRows.length === 0) return [];
     const incoming = new Set<string>();
     activeRows.forEach((r) => {
-      if (!r.destination) return;
-      incoming.add(r.destination);
-      if (isComingSoonPath(r.destination)) incoming.add("/coming-soon");
+      if (!r.destination || !r.destination.startsWith("/")) return;
+      incoming.add(pageKey(r.destination));
     });
-    return livePages.filter((p) => !!p.path && !incoming.has(p.path));
+    return livePages.filter((p) => !!p.path && !incoming.has(pageKey(p.path)));
   }, [activeRows, livePages]);
 
   const brokenDestinations = useMemo(() => {
@@ -381,21 +329,37 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
       <div className="flex items-center gap-3 flex-wrap p-4 border rounded-lg bg-muted/20">
         <Button onClick={runScan} disabled={scanning} className="gap-2">
           {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-          {scanning ? `Scanning… ${progress}%` : "Scan All Pages"}
+          {scanning ? `Scanning… ${progress}%` : "Scan the Public Site"}
         </Button>
         <div className="text-xs text-muted-foreground">
-          {lastRun ? `Last scan: ${lastRun.toLocaleString()} · ${scannedPages.length} page(s)` : "No scans yet — click Scan to begin."}
+          {lastRun ? `Last scan: ${lastRun.toLocaleString()} · ${scannedPages.length} page${scannedPages.length === 1 ? "" : "s"}` : "No scans yet. Click Scan the Public Site to begin."}
+          <span className="block">Checks the links visitors actually see, by loading each page of the public site. Links to other sites aren't checked.</span>
         </div>
       </div>
 
+      {problems.length > 0 && (
+        <section className="space-y-2" aria-labelledby="audit-problems">
+          <h3 id="audit-problems" className="flex items-center gap-1.5 text-sm font-medium"><AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden />Pages That Didn't Load ({problems.length})</h3>
+          <div className="border rounded-lg divide-y">
+            {problems.map((p) => (
+              <div key={p.path} className="p-3 flex items-center gap-3 flex-wrap text-sm">
+                <span className="font-mono text-xs">{p.path}</span>
+                <span className="text-muted-foreground text-xs">{PROBLEM_TEXT[p.problem] ?? p.problem}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {rows.length > 0 && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <SummaryCard label="Registered" value={counts.Registered} />
-            <SummaryCard label="Pending (Supernova CC)" value={counts.Pending} />
+          <div className={`grid grid-cols-2 gap-3 ${counts.Unchecked ? "md:grid-cols-6" : "md:grid-cols-5"}`}>
+            <SummaryCard label="Working" value={counts.Registered} />
             <SummaryCard label="Broken" value={counts.Broken} tone={counts.Broken ? "bad" : undefined} />
-            <SummaryCard label="External" value={counts.External} />
-            <SummaryCard label="Self-referencing" value={counts.SelfRef} tone={counts.SelfRef ? "warn" : undefined} />
+            <SummaryCard label="Coming Soon" value={counts.Pending} />
+            <SummaryCard label="Other Sites" value={counts.External} />
+            <SummaryCard label="Same Page" value={counts.SelfRef} />
+            {counts.Unchecked > 0 && <SummaryCard label="Couldn't Check" value={counts.Unchecked} tone="warn" />}
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -408,17 +372,15 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
               <option value="all">All Locations</option>
               {locations.map((l) => <option key={l} value={l}>{l}</option>)}
             </select>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)}
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Status"
               className="text-sm border rounded px-2 h-9 bg-background">
               <option value="all">All Statuses</option>
-              {(["Registered","Pending","Broken","External","Self-Referencing"] as LinkStatus[]).map((s) =>
-                <option key={s} value={s}>{s}</option>)}
+              {STATUS_ORDER.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
             </select>
-            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as any)}
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} aria-label="Type"
               className="text-sm border rounded px-2 h-9 bg-background">
               <option value="all">All Types</option>
-              {(["Static page","Supernova CC","External","Unknown"] as LinkType[]).map((t) =>
-                <option key={t} value={t}>{t}</option>)}
+              {types.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
             <span className="text-xs text-muted-foreground">{filtered.length} results</span>
           </div>
@@ -462,7 +424,7 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
                     />
                   </th>
                   <th className="text-left px-3 py-2">Link Text</th>
-                  <th className="text-left px-3 py-2">Links from</th>
+                  <th className="text-left px-3 py-2">Found On</th>
                   <th className="text-left px-3 py-2">Destination</th>
                   <th className="text-left px-3 py-2">Status</th>
                   <th className="text-left px-3 py-2">Type</th>
@@ -485,7 +447,7 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
                       />
                     </td>
                     <td className="px-3 py-2 text-xs">
-                      <div className="truncate" title={r.link_text}>{r.link_text || <span className="opacity-60">—</span>}</div>
+                      <div className="truncate" title={r.link_text}>{r.link_text || <span className="italic opacity-60">No wording</span>}</div>
                       {r.is_deleted && (
                         <span className="inline-block mt-1 text-[10px] px-1.5 py-0.5 rounded border border-destructive/40 text-destructive bg-destructive/10">
                           Deleted
@@ -494,7 +456,7 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
                     </td>
                     <td className="px-3 py-2 text-xs">
                       {r.is_chrome ? (
-                        <span className="font-medium">{r.location}</span>
+                        <span className="font-medium" title="Shown on every page">{r.location === LEGACY_HEADER ? HEADER_LOCATION : r.location} <span className="font-normal text-muted-foreground">(every page)</span></span>
                       ) : r.location ? (
                         <span className="block truncate font-mono text-[11px]" title={r.location}>{r.location}</span>
                       ) : (
@@ -503,8 +465,8 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
                     </td>
                     <td className="px-3 py-2 font-mono text-xs break-all">{r.destination || <span className="opacity-60">—</span>}</td>
                     <td className="px-3 py-2">
-                      <span className={`inline-block px-2 py-0.5 rounded border text-[10px] font-medium ${STATUS_COLORS[r.status]}`}>
-                        {r.status}
+                      <span className={`inline-block px-2 py-0.5 rounded border text-[10px] font-medium ${STATUS_COLORS[r.status] ?? STATUS_COLORS.Unchecked}`}>
+                        {statusLabel(r.status)}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-xs">{r.type}</td>
@@ -540,13 +502,13 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
 
           {deletedRows.length > 0 && (
             <div className="text-xs text-muted-foreground">
-              {deletedRows.length} row(s) marked <strong>Deleted</strong> from prior scans (excluded from stats above).
+              {deletedRows.length} link{deletedRows.length === 1 ? "" : "s"} marked <strong>Deleted</strong>: found by an earlier scan but no longer on the site (not counted above).
             </div>
           )}
 
           {brokenDestinations.length > 0 && (
             <section className="space-y-2">
-              <h3 className="text-sm font-medium">Missing pages ({brokenDestinations.length})</h3>
+              <h3 className="text-sm font-medium">Links to Missing Pages ({brokenDestinations.length})</h3>
               <div className="border rounded-lg divide-y">
                 {brokenDestinations.map((r) => (
                   <div key={r.destination} className="p-3 flex items-center gap-3 flex-wrap">
@@ -562,7 +524,7 @@ export default function LinkAuditView({ pages }: { pages: DbPage[] }) {
 
           {orphans.length > 0 && (
             <section className="space-y-2">
-              <h3 className="text-sm font-medium">Orphaned pages ({orphans.length})</h3>
+              <h3 className="text-sm font-medium">Pages Nothing Links To ({orphans.length})</h3>
               <div className="border rounded-lg divide-y">
                 {orphans.map((p) => (
                   <div key={p.id} className="p-3 text-sm flex items-center gap-3">
