@@ -1,7 +1,11 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import ReviewChangesView from "../ReviewChangesView";
-const m = vi.hoisted(() => ({ state: null as any, setReviewOpen: vi.fn(), show: vi.fn(), post: vi.fn() }));
+const m = vi.hoisted(() => ({ state: null as any, setReviewOpen: vi.fn(), show: vi.fn(), post: vi.fn(), admin: false }));
+vi.mock("@/prototype/client", () => ({ supabase: {
+  auth: { getUser: async () => ({ data: { user: { id: "staff" } } }) },
+  rpc: async () => ({ data: m.admin }),
+} }));
 vi.mock("../DesignChatContext", () => ({ useDesignChat: () => ({ state: m.state, refreshSoon: vi.fn(), setReviewOpen: m.setReviewOpen, showPreviewPath: m.show }) }));
 vi.mock("../helper", () => ({ postToHelper: m.post }));
 const now = Date.now();
@@ -11,10 +15,76 @@ const reqs = [
   { id: "c", request: "Developer tweak", source: "developer", at: now - 7200_000 },
   { id: "d", request: "Dependency update", source: "chat", at: now - 10_800_000, files: [], siteFiles: [], platformFiles: ["p"] },
 ];
-beforeEach(() => { vi.clearAllMocks(); m.state = { busy: false, history: [], publish: { ok: true, open: 4 }, draft: { requests: reqs } }; });
+beforeEach(() => { vi.clearAllMocks(); m.admin = false; m.state = { busy: false, history: [], publish: { ok: true, open: 4 }, draft: { requests: reqs } }; });
 afterEach(cleanup);
 const cards = () => Array.from(document.querySelectorAll("[data-change-id]")) as HTMLElement[];
 describe("Changes waiting for review", () => {
+  const openRejection = async () => {
+    m.admin = true;
+    m.state.publish.status = "blocked";
+    m.state.draft.review = { state: "failure", findings: [] };
+    render(<ReviewChangesView onShowPreview={vi.fn()} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Reject Changes" }));
+    const dialog = screen.getByRole("alertdialog");
+    return { input: within(dialog).getByRole("textbox", { name: "Reason" }), action: within(dialog).getByRole("button", { name: "Reject Changes" }) };
+  };
+  it("requires at least three trimmed reason characters before posting the reason", async () => {
+    m.post.mockResolvedValue({ ok: true, data: { id: "undo", undoing: 2, kept: 0 } });
+    const { input, action } = await openRejection();
+    expect(action).toBeDisabled();
+    fireEvent.change(input, { target: { value: " ab " } });
+    expect(action).toBeDisabled();
+    fireEvent.click(action);
+    expect(m.post).not.toHaveBeenCalled();
+    fireEvent.change(input, { target: { value: " abc " } });
+    expect(action).toBeEnabled();
+    fireEvent.click(action);
+    await waitFor(() => expect(m.post).toHaveBeenCalledWith("/reject", { reason: "abc" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Undoing 2 requests. The undo will join the draft.");
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+  it("bounds the reason input at 300 characters and accepts that length", async () => {
+    m.post.mockResolvedValue({ ok: true, data: { undoing: 1, kept: 0 } });
+    const { input, action } = await openRejection();
+    expect(input).toHaveAttribute("maxlength", "300");
+    fireEvent.change(input, { target: { value: "x".repeat(300) } });
+    expect(action).toBeEnabled();
+    fireEvent.click(action);
+    await waitFor(() => expect(m.post).toHaveBeenCalledWith("/reject", { reason: "x".repeat(300) }));
+  });
+  it.each([0, 3])("reports undo counts and only explains kept Manual edits when positive (%s)", async (kept) => {
+    m.post.mockResolvedValue({ ok: true, data: { id: "undo", undoing: 4, kept } });
+    const { input, action } = await openRejection();
+    fireEvent.change(input, { target: { value: "Not approved" } });
+    fireEvent.click(action);
+    const status = await screen.findByRole("status");
+    expect(status.textContent).toBe(`Undoing 4 requests. The undo will join the draft.${kept ? " 3 edits made in the Site Manager can't be undone here. Change them back in Manual Edit Mode." : ""}`);
+  });
+  it("keeps relay errors in the existing error line", async () => {
+    m.post.mockResolvedValue({ ok: false, error: "A change is already in progress." });
+    const { input, action } = await openRejection();
+    fireEvent.change(input, { target: { value: "Not approved" } });
+    fireEvent.click(action);
+    expect(await screen.findByRole("alert")).toHaveTextContent("A change is already in progress.");
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+  it("shows a rejected badge and reason without the decision author", () => {
+    m.state.draft.requests = [{ ...reqs[0], decision: { reason: "Wrong direction", at: now, by: "Private author" } }, reqs[1]];
+    render(<ReviewChangesView onShowPreview={vi.fn()} />);
+    const rejected = document.querySelector('[data-change-id="a"]') as HTMLElement;
+    expect(within(rejected).getByText("Chat Request")).toBeInTheDocument();
+    expect(within(rejected).getByText("Rejected")).toBeInTheDocument();
+    expect(within(rejected).getByText("Reason: Wrong direction")).toBeInTheDocument();
+    expect(screen.queryByText("Private author")).toBeNull();
+    expect(within(cards()[0]).queryByText("Rejected")).toBeNull();
+  });
+  it.each([undefined, null, "rejected", [], { reason: 7 }, { reason: "  " }])("ignores absent or malformed decisions (%j)", (decision) => {
+    m.state.draft.requests = [{ ...reqs[0], decision }];
+    render(<ReviewChangesView onShowPreview={vi.fn()} />);
+    expect(screen.getByText("Make the headline larger")).toBeInTheDocument();
+    expect(screen.queryByText("Rejected")).toBeNull();
+    expect(screen.queryByText(/^Reason:/)).toBeNull();
+  });
   it("lists relay requests newest first with source badges", () => {
     render(<ReviewChangesView onShowPreview={vi.fn()} />);
     expect(cards().map((c) => c.dataset.changeId)).toEqual(["b", "a", "c", "d"]);
