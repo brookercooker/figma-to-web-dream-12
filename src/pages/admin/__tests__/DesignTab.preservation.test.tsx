@@ -71,12 +71,14 @@ describe("public page save/discard integration", () => {
   it("opens null-id site chrome through the registry lookup", async () => {
     const s = await openRemote(true, true);
     s.send("edit-object-click", { objectId: null, componentKey: "Header", name: "Header", slot: "site-header", siteWide: true });
-    fireEvent.click(screen.getByRole("button", { name: "Edit Object" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open in Object Editor" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open and Edit Everywhere" }));
     await waitFor(() => expect(mocks.openObject).toHaveBeenCalledWith("site-header", undefined, { slot: "site-header" }));
   });
   it.each(["discard", "undo-save", "leave"])("transports a coded-slot copy without status UI and cleans it on %s", async action => {
     const s = await openRemote(true, true);
     s.send("edit-object-click", { objectId: "categories", componentKey: "Categories", name: "Categories", slot: "code:home-categories" });
+    fireEvent.click(await screen.findByRole("button", { name: "Open in Object Editor" }));
     fireEvent.click(await screen.findByRole("button", { name: "Make a Copy for This Page" }));
     await waitFor(() => expect(s.post).toHaveBeenLastCalledWith(expect.objectContaining({ type: "edit-update", objectSwaps: { "code:home-categories": { id: "copy", status: "Ready", name: "Categories (Contact)", component_key: "Categories", content: { sections: [] }, inline_edits: { "0": "Original" } } } }), "https://public.example.com"));
     expect(mocks.writes).toHaveBeenCalledWith("object_registry", expect.objectContaining({ status: "Ready" }));

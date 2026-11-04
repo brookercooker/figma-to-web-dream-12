@@ -64,27 +64,63 @@ describe("edit-object-click", () => {
 
 describe("object dialogs", () => {
   const props = { pageName: "Homepage", busy: false, onOpen: vi.fn(), onCopy: vi.fn(), onCancel: vi.fn() };
-  it("object used elsewhere offers Edit Object, copy and cancel, naming the other pages", () => {
+  const next = () => fireEvent.click(screen.getByRole("button", { name: "Open in Object Editor" }));
+  it("first says it's a shared object edited separately, with Open in Object Editor and Cancel", () => {
     render(<ObjectClickDialog {...props} ask={{ ...click, kind: "shared", usedOn: ["Homepage", "About"] }} />);
-    expect(screen.getByRole("heading", { name: "Edit About Us?" })).toBeInTheDocument();
-    expect(screen.getByText("About Us must be edited in the object editor and is also used on About. Edit it everywhere, or make a copy just for Homepage?")).toBeInTheDocument();
-    expect(screen.getAllByRole("button").filter(b => b.textContent).map(b => b.textContent)).toEqual(["Edit Object", "Make a Copy for This Page", "Cancel", "Close"]);
-    fireEvent.click(screen.getByRole("button", { name: "Make a Copy for This Page" }));
-    expect(props.onCopy).toHaveBeenCalled();
+    expect(screen.getByRole("heading", { name: "Shared Object" })).toBeInTheDocument();
+    expect(screen.getByText("About Us is an object, so it's edited separately in the object editor, not here on the page.")).toBeInTheDocument();
+    expect(screen.getAllByRole("button").filter(b => b.textContent).map(b => b.textContent)).toEqual(["Open in Object Editor", "Cancel", "Close"]);
+    expect(props.onOpen).not.toHaveBeenCalled();
   });
-  it("opens straight away when used only on this page or a page-only copy; asks otherwise", () => {
+  it("then warns which other pages change, and still lets the person open it or make a copy", () => {
+    props.onOpen.mockClear(); props.onCopy.mockClear();
+    render(<ObjectClickDialog {...props} ask={{ ...click, kind: "shared", usedOn: ["Homepage", "About"] }} />);
+    next();
+    expect(screen.getByRole("heading", { name: "Before You Open About Us" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("About Us is also used on About. Changes you make in the object editor will show up on those pages too. To change it only on Homepage, make a copy instead.");
+    expect(screen.getAllByRole("button").filter(b => b.textContent).map(b => b.textContent)).toEqual(["Open and Edit Everywhere", "Make a Copy for This Page", "Back", "Cancel", "Close"]);
+    fireEvent.click(screen.getByRole("button", { name: "Make a Copy for This Page" }));
+    expect(props.onCopy).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole("button", { name: "Open and Edit Everywhere" }));
+    expect(props.onOpen).toHaveBeenCalledOnce();
+  });
+  it("Back returns to the first step", () => {
+    render(<ObjectClickDialog {...props} ask={{ ...click, kind: "shared", usedOn: ["Homepage", "About"] }} />);
+    next();
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByRole("heading", { name: "Shared Object" })).toBeInTheDocument();
+  });
+  it.each([
+    ["used only on this page", { kind: "shared" as const, usedOn: ["Homepage"] }],
+    ["a page-only copy", { kind: "copy" as const, usedOn: ["Homepage"] }],
+  ])("%s also asks, then says changes only affect this page, with no copy option", (_label, extra) => {
+    render(<ObjectClickDialog {...props} ask={{ ...click, ...extra }} />);
+    expect(screen.getByRole("heading", { name: "Object" })).toBeInTheDocument();
+    next();
+    expect(screen.getByRole("alert")).toHaveTextContent("About Us is only used on Homepage, so changes you make in the object editor only affect this page.");
+    expect(screen.getByRole("button", { name: "Open Object Editor" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Make a Copy for This Page" })).toBeNull();
+  });
+  it("when usage can't be told, it warns it may be used elsewhere and offers a copy", () => {
+    render(<ObjectClickDialog {...props} ask={{ ...click, kind: "shared", usedOn: null }} />);
+    next();
+    expect(screen.getByRole("alert")).toHaveTextContent("may also be used on other pages");
+    expect(screen.getByRole("button", { name: "Make a Copy for This Page" })).toBeInTheDocument();
+  });
+  it("keeps the old open-or-ask rule available for other callers", () => {
     expect(objectClickAction("shared", ["Homepage"], "Homepage")).toBe("open");
-    expect(objectClickAction("shared", [], "Homepage")).toBe("open");
     expect(objectClickAction("copy", ["Homepage"], "Homepage")).toBe("open");
     expect(objectClickAction("shared", ["Homepage", "About"], "Homepage")).toBe("ask");
-    expect(objectClickAction("shared", null, "Homepage")).toBe("ask");
     expect(objectClickAction("site", [], "Homepage")).toBe("ask");
     expect(otherPagesUsing(["Homepage", "About", "About"], "Homepage")).toEqual(["About"]);
   });
   it("site header warns about the whole site", () => {
     render(<ObjectClickDialog {...props} ask={{ ...click, componentKey: "Header", kind: "site", usedOn: [] }} />);
-    expect(screen.getByRole("heading", { name: "Edit the Site Header?" })).toBeInTheDocument();
-    expect(screen.getByText(/appears on every page/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Site Header" })).toBeInTheDocument();
+    expect(screen.getByText(/shared by every page/)).toBeInTheDocument();
+    next();
+    expect(screen.getByRole("heading", { name: "Before You Open the Site Header" })).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("change the header on every page of the site");
     expect(screen.queryByRole("button", { name: "Make a Copy for This Page" })).toBeNull();
   });
 });

@@ -51,7 +51,7 @@ import { editMap, stripHeldObjects, type HeldObjectData } from "./framedPageProt
 import { draftEmbedUrl } from "./siteManifest";
 import { usePageEditorSurface } from "./usePageEditorSurface";
 import { remoteSnapshot } from "./remoteSelection";
-import { applySwap, copyName, objectClickKind, objectClickAction, objectSwaps as swapsOf, unusedCopies, type ObjectClick } from "./objectClick";
+import { applySwap, copyName, objectClickKind, objectSwaps as swapsOf, unusedCopies, type ObjectClick } from "./objectClick";
 import ObjectClickDialog, { type ObjectAsk } from "./ObjectClickDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import ResetEditsAction from "./ResetEditsAction";
@@ -1103,7 +1103,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     const kind = objectClickKind(click, editState.current.inlineEdits, !!click.objectId && siteWideIds.current.has(click.objectId));
     const here = page?.name ?? "";
     if (kind === "site") { setObjectAsk({ ...click, kind, usedOn: [] }); return; }
-    if (kind === "copy" && click.objectId) { openObjectEditor(click.objectId, click.slot); return; }
+    // Every object click asks first (ObjectClickDialog), so it's clear objects are edited separately from the page.
+    if (kind === "copy") { setObjectAsk({ ...click, kind, usedOn: here ? [here] : [] }); return; }
     // Every page that uses it: saved page content and swaps, plus code placements in the public manifest.
     const fromPages = pages.filter((p) => click.objectId && JSON.stringify([p.content ?? null, p.inline_edits ?? null]).includes(click.objectId)).map((p) => p.name);
     const key = click.componentKey ?? (click.objectId ? heldObjects?.[click.objectId]?.component_key : null);
@@ -1111,8 +1112,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     const fromSite = key ? findObjectUsages(key).then((u) => u.map((x) => x.name)).catch(() => null) : Promise.resolve(null);
     void fromSite.then((site) => {
       const usedOn = site === null && ![...fromPages, ...observed].some((n) => n !== here) ? null : [...new Set([...(site ?? []), ...fromPages, ...observed, here].filter(Boolean))];
-      if (objectClickAction(kind, usedOn, here) === "open" && click.objectId) openObjectEditor(click.objectId, click.slot);
-      else setObjectAsk({ ...click, kind, usedOn });
+      setObjectAsk({ ...click, kind, usedOn });
     });
   };
   /** The page slot the object was opened from, so Save can scroll the page back to it. */
