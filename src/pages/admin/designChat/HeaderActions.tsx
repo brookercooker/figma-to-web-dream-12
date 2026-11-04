@@ -8,8 +8,18 @@ import { useState } from "react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-/** Relay publish.open is authoritative; chat messages are not a pending-change ledger. */
-export default function HeaderActions({ onExpand, menuItems = false, showLabels = true }: { onExpand?: () => void; menuItems?: boolean; showLabels?: boolean }) {
+/** Review Status as a Tools menu item: expands the column first, then toggles the review view. */
+export function StatusMenuItem({ onExpand }: { onExpand?: () => void }) {
+  const { state, editing, reviewOpen, setReviewOpen } = useDesignChat();
+  const count = state?.publish?.open ?? 0;
+  return <DropdownMenuItem disabled={editing} aria-label={`Review Status${count ? `: ${count} Waiting` : ""}`} onClick={() => { onExpand?.(); setReviewOpen(!reviewOpen); }}>
+    <ClipboardList className="mr-2 h-4 w-4" aria-hidden />Status
+    <span className="ml-auto pl-3 text-xs text-muted-foreground">{count > 0 ? `${count} ${count === 1 ? "change" : "changes"} waiting` : "No changes waiting"}</span>
+  </DropdownMenuItem>;
+}
+
+/** Relay publish.open is authoritative; chat messages are not a pending-change ledger. `hideStatus` leaves Status to the Tools menu. */
+export default function HeaderActions({ onExpand, menuItems = false, showLabels = true, hideStatus = false }: { onExpand?: () => void; menuItems?: boolean; showLabels?: boolean; hideStatus?: boolean }) {
   const [helpOpen, setHelpOpen] = useState(false);
   const { state, editing, previewLocation, workingPage, reviewOpen, setReviewOpen } = useDesignChat();
   const count = state?.publish?.open ?? 0;
@@ -24,11 +34,11 @@ export default function HeaderActions({ onExpand, menuItems = false, showLabels 
   if (menuItems) return <>
     <DropdownMenuItem disabled={editing} onClick={() => { onExpand?.(); setReviewOpen(!reviewOpen); }}><ClipboardList className="mr-2 h-4 w-4" />Status<span className="ml-auto pl-3 text-xs text-muted-foreground">{count > 0 ? `${count} ${count === 1 ? "change" : "changes"} waiting` : "No changes waiting"}</span></DropdownMenuItem>
     <DropdownMenuItem onSelect={e => { e.preventDefault(); setHelpOpen(true); }}><CircleHelp className="mr-2 h-4 w-4" />Help</DropdownMenuItem>
-    <Dialog open={helpOpen} onOpenChange={setHelpOpen}><DialogContent><DialogHeader><DialogTitle>Help</DialogTitle></DialogHeader><p className="text-sm">Describe a change in chat, or choose Edit to change the page by hand. Save Changes saves your edits. Review Status lists changes waiting for review.</p><Button variant="outline" onClick={() => void copySummary()}><Copy className="h-4 w-4" />Copy Problem Summary</Button></DialogContent></Dialog>
+    <Dialog open={helpOpen} onOpenChange={setHelpOpen}><DialogContent><DialogHeader><DialogTitle>Help</DialogTitle></DialogHeader><p className="text-sm">Describe a change in chat, or choose Edit to change the page by hand. Save Changes saves your edits. Status lists changes waiting for review.</p><Button variant="outline" onClick={() => void copySummary()}><Copy className="h-4 w-4" />Copy Problem Summary</Button></DialogContent></Dialog>
   </>;
   return <TooltipProvider delayDuration={200}>
     <div className="flex max-w-full shrink-0 items-center justify-center gap-1">
-      <Tooltip><TooltipTrigger asChild>
+      {!hideStatus && <Tooltip><TooltipTrigger asChild>
         <span tabIndex={editing ? 0 : undefined}>
           <Button variant={reviewOpen ? "secondary" : "ghost"} size={showLabels ? "sm" : "icon"} className={showLabels ? "h-8 shrink-0 gap-1.5 whitespace-nowrap px-2" : "h-8 w-8 shrink-0"} aria-label={`Review Status${count ? `: ${count} Waiting` : ""}`} aria-pressed={reviewOpen} disabled={editing} onClick={() => { onExpand?.(); setReviewOpen(!reviewOpen); }}>
             <ClipboardList className="h-4 w-4" aria-hidden />
@@ -36,7 +46,7 @@ export default function HeaderActions({ onExpand, menuItems = false, showLabels 
             {showLabels && count > 0 && <span aria-hidden className="text-xs font-normal text-muted-foreground">{count}</span>}
           </Button>
         </span>
-      </TooltipTrigger><TooltipContent>{editing ? "Finish editing before reviewing your changes." : reviewOpen ? "Back to Chat" : "Review Status"}</TooltipContent></Tooltip>
+      </TooltipTrigger><TooltipContent>{editing ? "Finish editing before reviewing your changes." : reviewOpen ? "Back to Chat" : "Review Status"}</TooltipContent></Tooltip>}
       <Popover>
         <Tooltip><TooltipTrigger asChild><PopoverTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Help"><CircleHelp className="h-4 w-4" aria-hidden /></Button>
@@ -47,7 +57,7 @@ export default function HeaderActions({ onExpand, menuItems = false, showLabels 
             <li>In Chat Mode, describe what you want changed. In Manual Edit Mode, change text, pictures and links yourself.</li>
             <li>In Manual Edit Mode, open Objects in the top bar, pick objects, then choose Add N Objects. Pictures and videos are also in the top bar.</li>
             <li>Discard Changes means undo everything since you last saved.</li>
-            <li>Save Changes (top right) saves your hand edits and returns to Chat Mode. The Review Status button lists the changes waiting for review.</li>
+            <li>Save Changes (top right) saves your hand edits and returns to Chat Mode. Tools, then Status, lists the changes waiting for review.</li>
             <li>If something looks wrong, pause and share a problem summary with the site owner before submitting.</li>
           </ul>
           <Button variant="outline" size="sm" onClick={() => void copySummary()}><Copy className="h-4 w-4" aria-hidden />Copy Problem Summary</Button>

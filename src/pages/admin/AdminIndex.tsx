@@ -10,7 +10,7 @@ import {
 import { FileText, Box, Image as ImageIcon, Video as VideoLucide, Shield, UserCircle2, KeyRound, LogOut, Camera, Eye, PanelLeftClose, PanelLeftOpen, Save, Trash2, Code, Loader2, Wrench } from "lucide-react";
 import ChangeMyPasswordDialog from "./ChangeMyPasswordDialog";
 import ChatPanel from "./designChat/ChatPanel";
-import PreviewTools, { SubmitButton } from "./designChat/PreviewTools";
+import PreviewTools, { SubmitButton, SubmitConfirmDialog } from "./designChat/PreviewTools";
 import { DesignChatProvider, useDesignChat } from "./designChat/DesignChatContext";
 import { EditorSlotProvider, useEditorSlot } from "./designChat/EditorSlot";
 import ConfirmDialog from "./ConfirmDialog";
@@ -18,7 +18,8 @@ import LibraryPicker from "./designChat/LibraryPicker";
 import { toast } from "sonner";
 import { ModeSwitchProvider } from "./designChat/ModeSwitchContext";
 import ModeToggle from "./designChat/ModeToggle";
-import HeaderActions from "./designChat/HeaderActions";
+import HeaderActions, { StatusMenuItem } from "./designChat/HeaderActions";
+import WorkingPageChip from "./designChat/WorkingPageChip";
 import ContentSyncNote from "./designChat/ContentSyncNote";
 import ReviewChangesView from "./designChat/ReviewChangesView";
 import { HEADER_HEIGHT_CLASS } from "./designChat/layout";
@@ -73,7 +74,7 @@ function TabSkeleton() {
 
 /**
  * The Site Manager: the design chat column always on the left, topped by the account menu and collapsible to a thin rail.
- * Tools (Pages and Capture) lives in the left header; the top bar starts with Preview, Objects, Images and Videos,
+ * Tools (Capture and Status) and Pages live in the left header; on phones Capture is also a top-bar button. The top bar starts with Preview, Objects, Images and Videos,
  * with Submit for Review at the right. Choosing a page in Pages points the chat at it. The chat and the
  * preview are kept alive while another tab is open, so nothing restarts when someone switches.
  */
@@ -349,6 +350,11 @@ function AdminShell() {
                 })}
               </nav>
 
+              {phone && (
+                <Button type="button" size="icon" data-capture-primary className="h-9 w-9 shrink-0" aria-label="Capture" title="Capture" onClick={() => navigate("/manage/capture")}>
+                  <Camera className="h-4 w-4" aria-hidden />
+                </Button>
+              )}
               {phone && <ModeToggle compact onChat={() => { setPhonePane("main"); }} />}
               {!phone && <PreviewTools showViewControls={tab === "preview"} tight={squeeze >= 2} />}
 
@@ -479,24 +485,29 @@ function AdminShell() {
             <TooltipProvider delayDuration={200}>
               <DropdownMenu onOpenChange={open => { if (open) setChatCollapsed(false); }}>
                 <Tooltip><TooltipTrigger asChild><DropdownMenuTrigger asChild>
-                  <Button variant={tab === "pages" ? "secondary" : "ghost"} size={!phone && !(chatCollapsed && !manual) ? "sm" : "icon"} className={!phone && !(chatCollapsed && !manual) ? "h-8 shrink-0 gap-1.5 whitespace-nowrap px-2" : "h-8 w-8 shrink-0"}
-                    aria-label="Tools" aria-pressed={tab === "pages"} aria-current={tab === "pages" ? "page" : undefined} onClick={() => setChatCollapsed(false)}>
+                  <Button variant="ghost" size={!phone && !(chatCollapsed && !manual) ? "sm" : "icon"} className={!phone && !(chatCollapsed && !manual) ? "h-8 shrink-0 gap-1.5 whitespace-nowrap px-2" : "h-8 w-8 shrink-0"}
+                    aria-label="Tools" onClick={() => setChatCollapsed(false)}>
                     <Wrench className="h-4 w-4" aria-hidden />
                     {!phone && !(chatCollapsed && !manual) && <span>Tools</span>}
                   </Button>
                 </DropdownMenuTrigger></TooltipTrigger><TooltipContent>Tools</TooltipContent></Tooltip>
                 <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => navigate("/manage/pages")} aria-current={tab === "pages" ? "page" : undefined}
-                    className={tab === "pages" ? "bg-primary text-primary-foreground focus:bg-primary focus:text-primary-foreground" : undefined}>
-                    <FileText className="mr-2 h-4 w-4" aria-hidden />Pages
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/manage/capture")}>
                     <Camera className="mr-2 h-4 w-4" aria-hidden />Capture
                   </DropdownMenuItem>
+                  <StatusMenuItem onExpand={() => setChatCollapsed(false)} />
                 </DropdownMenuContent>
               </DropdownMenu>
+              {/* Pages sits where Status used to be; Status now lives in the Tools menu. */}
+              <Tooltip><TooltipTrigger asChild>
+                <Button variant={tab === "pages" ? "secondary" : "ghost"} size={!phone && !(chatCollapsed && !manual) ? "sm" : "icon"} className={!phone && !(chatCollapsed && !manual) ? "h-8 shrink-0 gap-1.5 whitespace-nowrap px-2" : "h-8 w-8 shrink-0"}
+                  aria-label="Pages" aria-pressed={tab === "pages"} aria-current={tab === "pages" ? "page" : undefined} onClick={() => navigate("/manage/pages")}>
+                  <FileText className="h-4 w-4" aria-hidden />
+                  {!phone && !(chatCollapsed && !manual) && <span>Pages</span>}
+                </Button>
+              </TooltipTrigger><TooltipContent>Pages</TooltipContent></Tooltip>
             </TooltipProvider>
-            <HeaderActions onExpand={() => setChatCollapsed(false)} showLabels={!phone && !(chatCollapsed && !manual)} />
+            <HeaderActions hideStatus onExpand={() => setChatCollapsed(false)} showLabels={!phone && !(chatCollapsed && !manual)} />
             <div className={cn("flex-1", chatCollapsed && !manual && "hidden")} />
             {manual && <ManualHistoryControls disabled={finishing} />}
             {!manual && !chatCollapsed && !phone && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" aria-label="Collapse Chat" title="Collapse Chat" aria-expanded onClick={() => setChatCollapsed(true)}>
@@ -504,6 +515,8 @@ function AdminShell() {
             </Button>}
           </div>
           {phone && phonePane === "main" && manual && tab === "preview" && sheet === "peek" && <p className="px-3 pb-2 text-xs text-muted-foreground">Tap something on the page to edit it.</p>}
+          {/* The page the chat is working on, at the top above the mode switch. */}
+          {!phone && !manual && !chatCollapsed && <WorkingPageChip className="mx-2 mt-2 shrink-0" />}
           {!phone && !reviewShown && <ModeToggle collapsed={chatCollapsed && !manual} onChat={() => setChatCollapsed(false)} />}
           <ContentSyncNote />
           {reviewShown && <ReviewChangesView onShowPreview={() => { if (tab !== "preview") navigate("/manage/preview"); }} />}
@@ -547,7 +560,11 @@ function PhoneMoreMenu({ showView, isAdmin, onPassword, onReview }: { showView: 
   const { device, setDevice, state, editing } = useDesignChat();
   const navigate = useNavigate();
   const count = state?.publish?.open ?? 0;
+  // The confirmation lives outside the menu, so it stays open after the menu closes.
+  const [submitConfirm, setSubmitConfirm] = useState(false);
   return (
+    <>
+    <SubmitConfirmDialog open={submitConfirm} onOpenChange={setSubmitConfirm} />
     <MoreMenu>
       <MoreMenuTrigger asChild>
         <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label={`More Options${count ? `: ${count} Waiting` : ""}`} title="More Options"><MoreHorizontal className="h-4 w-4" /></Button>
@@ -559,9 +576,8 @@ function PhoneMoreMenu({ showView, isAdmin, onPassword, onReview }: { showView: 
         <MoreMenuItem onClick={() => supabase.auth.signOut()}><LogOut className="mr-2 h-4 w-4" />Sign Out</MoreMenuItem>
         <MoreMenuSeparator /><MoreMenuLabel>Tools</MoreMenuLabel>
         <MoreMenuItem onClick={() => navigate("/manage/pages")}><FileText className="mr-2 h-4 w-4" />Pages</MoreMenuItem>
-        <MoreMenuItem onClick={() => navigate("/manage/capture")}><Camera className="mr-2 h-4 w-4" />Capture</MoreMenuItem>
         <HeaderActions menuItems onExpand={onReview} />
-        {!editing && <div className="px-2 py-1"><SubmitButton /></div>}
+        {!editing && <div className="px-2 py-1"><SubmitButton onRequestSubmit={() => setSubmitConfirm(true)} /></div>}
         <MoreMenuSeparator />
         {showView && (
           <>
@@ -575,5 +591,6 @@ function PhoneMoreMenu({ showView, isAdmin, onPassword, onReview }: { showView: 
         )}
       </MoreMenuContent>
     </MoreMenu>
+    </>
   );
 }

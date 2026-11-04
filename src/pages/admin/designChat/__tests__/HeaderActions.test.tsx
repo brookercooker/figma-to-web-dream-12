@@ -31,6 +31,11 @@ describe("Left-header actions", () => {
     m.editing = true; render(<HeaderActions />);
     expect(screen.getByRole("button", { name: "Review Status: 2 Waiting" })).toBeDisabled();
   });
+  it("leaves Status to the Tools menu when hideStatus is set", () => {
+    render(<HeaderActions hideStatus />);
+    expect(screen.queryByRole("button", { name: /Review Status/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Help" })).toBeInTheDocument();
+  });
   it("has no undo button", () => {
     render(<HeaderActions />);
     expect(screen.queryByRole("button", { name: /undo/i })).toBeNull();

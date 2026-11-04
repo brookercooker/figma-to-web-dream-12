@@ -52,7 +52,11 @@ describe("Site Manager mode cues", () => {
     const view = render(app());
     const input = screen.getByLabelText("Held Chat Text"); fireEvent.change(input, { target: { value: "Keep this request" } });
     expect(screen.getByRole("radio", { name: "Chat Mode" })).toHaveAttribute("aria-checked", "true");
-    expect(document.querySelector("[data-mode-switch]")?.previousElementSibling).toContainElement(screen.getByRole("button", { name: "Account Menu" }));
+    // The working-page chip sits at the top, between the header and the mode switch.
+    const chip = screen.getByLabelText("Page the chat is working on");
+    expect(document.querySelector("[data-mode-switch]")?.previousElementSibling).toBe(chip);
+    expect(chip.previousElementSibling).toContainElement(screen.getByRole("button", { name: "Account Menu" }));
+    expect(chip).toHaveTextContent("Working on Homepage");
     const submit = screen.getByRole("button", { name: "Submit for Review" });
     expect(document.querySelector("header")).toContainElement(submit);
     expect(screen.getAllByRole("button", { name: "Submit for Review" })).toHaveLength(1);

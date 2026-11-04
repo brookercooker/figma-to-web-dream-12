@@ -11,7 +11,7 @@ vi.mock("../designChat/DesignChatContext", () => ({
 vi.mock("../designChat/EditorSlot", () => ({ EditorSlotProvider: ({ children }: any) => children,
   useEditorSlot: () => ({ setSlot: vi.fn(), saveAll: vi.fn(async () => true), discardAll: vi.fn(), hasChanges: () => false }) }));
 vi.mock("../designChat/ChatPanel", () => ({ default: () => <div>chat</div> }));
-vi.mock("../designChat/PreviewTools", () => ({ default: () => null, SubmitButton: () => null }));
+vi.mock("../designChat/PreviewTools", () => ({ default: () => null, SubmitButton: () => null, SubmitConfirmDialog: () => null }));
 vi.mock("../designChat/LibraryPicker", () => ({ default: ({ label, onPick, onOpenFull }: any) => (
   <span><button aria-haspopup="dialog" aria-label={label} onClick={() => onPick({ kind: "image", id: "x", name: "X", url: "u", labels: [] })}>{label}</button>
     <button onClick={onOpenFull}>Manage {label}</button></span>) }));
@@ -62,20 +62,28 @@ describe("top bar library buttons", () => {
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/videos");
     expect(m.add).not.toHaveBeenCalled();
   });
-  it("Preview and Tools Pages still navigate", async () => {
+  it("Preview and the Pages button still navigate", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "Preview" }));
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/preview");
-    fireEvent.keyDown(screen.getByRole("button", { name: "Tools" }), { key: "ArrowDown" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Pages" }));
+    const pages = screen.getByRole("button", { name: "Pages" });
+    expect(document.querySelector("[data-chat-header]")).toContainElement(pages);
+    fireEvent.click(pages);
     expect(screen.getByTestId("where")).toHaveTextContent("/manage/pages");
-    expect(screen.getByRole("button", { name: "Tools" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("button", { name: "Tools" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Pages" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Pages" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Tools" })).not.toHaveAttribute("aria-pressed");
+  });
+  it("Tools holds Capture and Status, not Pages", async () => {
+    open();
+    fireEvent.keyDown(screen.getByRole("button", { name: "Tools" }), { key: "ArrowDown" });
+    expect(await screen.findByRole("menuitem", { name: "Capture" })).toBeVisible();
+    expect(screen.getByRole("menuitem", { name: /Review Status/ })).toBeVisible();
+    expect(screen.queryByRole("menuitem", { name: "Pages" })).toBeNull();
   });
   it.each([false, true])("Tools Capture preserves its destination while editing=%s", async (editing) => {
     m.editing = editing;
     open();
-    expect(screen.queryByRole("button", { name: "Pages" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Capture" })).toBeNull();
     fireEvent.keyDown(screen.getByRole("button", { name: "Tools" }), { key: "ArrowDown" });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Capture" }));
@@ -86,13 +94,12 @@ describe("top bar library buttons", () => {
     open();
     const tools = screen.getByRole("button", { name: "Tools" });
     expect(tools).toBeVisible();
-    expect(tools).toHaveAttribute("aria-pressed", "false");
     expect(document.querySelector("[data-chat-header]")).toContainElement(tools);
     expect(document.querySelector("[data-top-bar]")).not.toContainElement(tools);
     fireEvent.keyDown(tools, { key: "ArrowDown" });
-    expect(await screen.findByRole("menuitem", { name: "Pages" })).toBeVisible();
-    fireEvent.keyDown(screen.getByRole("menuitem", { name: "Pages" }), { key: "Escape" });
-    await waitFor(() => expect(screen.queryByRole("menuitem", { name: "Pages" })).toBeNull());
+    expect(await screen.findByRole("menuitem", { name: "Capture" })).toBeVisible();
+    fireEvent.keyDown(screen.getByRole("menuitem", { name: "Capture" }), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("menuitem", { name: "Capture" })).toBeNull());
     await waitFor(() => expect(tools).toHaveFocus());
   });
 });

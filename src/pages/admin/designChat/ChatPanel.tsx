@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Box, FileText, Film, Image as ImageIcon, Loader2, Mic, Paperclip, Pencil, Send, X } from "lucide-react";
+import { Box, Film, Image as ImageIcon, Loader2, Mic, Paperclip, Pencil, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ import { needsManualContentEdit, rememberContentHandoff } from "./savedContentHa
 import { waitSuggestions, type WaitAction } from "./waitSuggestions";
 import { supabase } from "@/prototype/client";
 import { loadModePages } from "./pageSelection";
+import WorkingPageChip from "./WorkingPageChip";
 
 const SUGGESTIONS = [
   "Make the headline larger",
@@ -39,7 +40,7 @@ const fmtTime = (ts?: number) => (ts ? new Date(ts).toLocaleTimeString([], { hou
  * fix, the page they picked to work on, and the box to type in.
  */
 export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgress }: { opening?: number; onDraw?: () => void; onAttention?: () => void; saveProgress?: WaitView | null } = {}) {
-  const { state, offline, refreshSoon, workingPage, clearWorkingPage, drawing, editing, preview, refs, chatDraft, waitProgress, requestRetry, setDevice, setReviewOpen, previewPage, selectPage, startEditing, device, boxRef } = useDesignChat();
+  const { state, offline, refreshSoon, workingPage, drawing, editing, preview, refs, chatDraft, waitProgress, requestRetry, setDevice, setReviewOpen, previewPage, selectPage, startEditing, device, boxRef } = useDesignChat();
   const navigate = useNavigate();
   const handoffPage = workingPage?.id ? workingPage : previewPage;
   const openSavedContent = async (reply: string) => {
@@ -320,20 +321,8 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
         onDragLeave={() => { dragDepth.current = Math.max(0, dragDepth.current - 1); if (!dragDepth.current) setDragging(false); }}
         onDrop={(e) => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth.current = 0; setDragging(false); attachments.add(e.dataTransfer.files); }}
       >
-        {workingPage && (
-          <div className="flex items-center gap-2 rounded-md border bg-muted py-1 pl-2.5 pr-1 text-xs" aria-label="Page the chat is working on">
-            <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-            <span className="min-w-0 flex-1 truncate">
-              <span className="text-muted-foreground">Working on </span>
-              <strong>{workingPage.name}</strong>
-              <span className="ml-1.5 font-mono text-muted-foreground">{workingPage.path}</span>
-            </span>
-            <button type="button" aria-label="Stop Working on This Page" title="Stop Working on This Page" onClick={clearWorkingPage}
-              className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-border hover:text-foreground">
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        )}
+        {/* On larger screens this chip sits at the top of the panel, above the mode switch (see AdminIndex). */}
+        {phone && <WorkingPageChip />}
 
         {drawing.strokes.length > 0 && (
           <div className="flex items-center gap-2 rounded-md border bg-muted py-1 pl-2.5 pr-1 text-xs" aria-label="Your drawing on the preview">
@@ -350,7 +339,11 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
         )}
 
         {refs.references.length > 0 && (
-          <div className="flex flex-wrap gap-1.5" aria-label="Library items for this request">
+          <div className="rounded-md border border-primary/40 bg-primary/5 p-2" aria-label="Library items for this request">
+            <p className="mb-1.5 text-xs font-semibold" data-references-heading>
+              Selected ({refs.references.length}) · Claude will use {refs.references.length === 1 ? "this item" : "these items"} in your next message
+            </p>
+            <div className="flex flex-wrap gap-1.5">
             {refs.references.map((r) => {
               const Icon = r.kind === "image" ? ImageIcon : r.kind === "video" ? Film : Box;
               return (
@@ -365,6 +358,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
                 </span>
               );
             })}
+            </div>
           </div>
         )}
 
