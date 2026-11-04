@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Box, Film, Image as ImageIcon, Loader2, Mic, Paperclip, Pencil, Send, X } from "lucide-react";
+import { Box, CheckCircle2, Film, Image as ImageIcon, Loader2, Mic, Paperclip, Pencil, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -7,7 +7,7 @@ import ApprovalCard from "./ApprovalCard";
 import ReviewProblems from "./ReviewProblems";
 import { DEFAULT_UPLOADS, postToHelper } from "./helper";
 import { useDesignChat } from "./DesignChatContext";
-import { fmtDur, fmtSize, isWorking, problemsModel, visibleText, workHint, workLabel } from "./logic";
+import { fmtDur, fmtSize, isWorking, LIVE_NOTE, problemsModel, visibleText, workHint, workLabel } from "./logic";
 import { useAttachments } from "./useAttachments";
 import { useHint } from "./useHint";
 import { useVoice } from "./useVoice";
@@ -259,9 +259,11 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
             "max-w-[92%] rounded-lg px-3 py-2 whitespace-pre-wrap break-words leading-snug",
             e.role === "user" && "self-end bg-primary text-primary-foreground",
             e.role === "assistant" && "self-start bg-muted",
-            e.role === "note" && "self-stretch max-w-none bg-amber-50 text-amber-900 text-xs",
+            e.role === "note" && shown !== LIVE_NOTE && "self-stretch max-w-none bg-amber-50 text-amber-900 text-xs",
+            e.role === "note" && shown === LIVE_NOTE && "self-stretch max-w-none flex items-center gap-1.5 border border-review/40 bg-review/10 text-review text-xs font-medium",
             e.role === "error" && "self-stretch max-w-none bg-destructive/10 text-destructive",
-          )}>
+          )} data-live-note={e.role === "note" && shown === LIVE_NOTE ? "" : undefined}>
+            {e.role === "note" && shown === LIVE_NOTE && <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />}
             {shown}
             {e.role === "error" && requestRetry && e.ts !== undefined && !requestRetry.isReviewFailure(e.ts) && <div className="mt-1 text-xs">
               {requestRetry.canRetry(e.ts) ? <Button type="button" variant="link" size="sm" className="h-auto p-0 text-xs" disabled={requestRetry.disabled || editing} onClick={() => { void requestRetry.retry(e.ts ?? 0, () => waitProgress?.request?.errorControls?.dismiss()).then(result => { if (result && !result.ok) setHint(result.error, true); }); }}>Try Again</Button>

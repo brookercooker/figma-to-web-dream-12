@@ -14,10 +14,12 @@ export const fmtDur = (ms: number) => {
 export const fmtSize = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
 
 // ---- the chat history: only what the person can use ------------------------------------------
+/** Shown when the draft goes live; styled in the Submit for Review green. */
+export const LIVE_NOTE = "Your changes are live.";
 const NOTES: [RegExp, (text: string) => string][] = [
   [/paused for a check-in/i, () => "This change is paused for a check-in that can only be answered in the builder's own editor. Someone with access to the builder's editor needs to continue it there, or you can try rewording the request."],
   [/taking longer than 15 minutes/i, () => "This is taking longer than usual. It may still finish. You can press Submit for Review later to put your changes live."],
-  [/^The draft is published/i, () => "Your changes are live."],
+  [/^The draft is published/i, () => LIVE_NOTE],
   [/^Approval (granted|declined)/i, (t) => t],
 ];
 
