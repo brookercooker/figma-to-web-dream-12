@@ -4,19 +4,32 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DeveloperReviewPage from "../DeveloperReviewPage";
 import type { RelayState } from "../designChat/helper";
 
-const mocks = vi.hoisted(() => ({ review: undefined as RelayState["draft"], admin: true, require: true, signedIn: true }));
+const mocks = vi.hoisted(() => ({ review: undefined as RelayState["draft"], admin: true, require: true, signedIn: true, hosted: true }));
 vi.mock("@/lib/authGate", () => ({ get REQUIRE_LOGIN() { return mocks.require; } }));
 vi.mock("@/prototype/client", () => ({ supabase: {
   auth: { getUser: async () => ({ data: { user: mocks.signedIn ? { id: "staff" } : null } }) },
   rpc: async () => ({ data: mocks.admin }),
 } }));
-vi.mock("../designChat/helper", () => ({ RELAY: "https://design.example", RELAY_IS_HOSTED: true, relayHeaders: async () => ({}) }));
+vi.mock("../designChat/helper", () => ({ RELAY: "https://design.example", get RELAY_IS_HOSTED() { return mocks.hosted; }, relayHeaders: async () => ({}) }));
 vi.mock("../designChat/useHelperState", () => ({ useHelperState: () => ({ state: { draft: mocks.review } }) }));
-beforeEach(() => { mocks.admin = true; mocks.review = undefined; mocks.require = true; mocks.signedIn = true; });
+beforeEach(() => { mocks.admin = true; mocks.review = undefined; mocks.require = true; mocks.signedIn = true; mocks.hosted = true; });
 afterEach(cleanup);
 const open = () => render(<MemoryRouter><DeveloperReviewPage /></MemoryRouter>);
 
 describe("Developer Review error details", () => {
+  it("opens the draft site in a safe new tab for an admin with the hosted relay", async () => {
+    open();
+    const link = await screen.findByRole("link", { name: "Open Draft Site" });
+    expect(link).toHaveAttribute("href", window.location.origin + "/manage/preview");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+  it("does not offer the draft site link without the hosted relay", async () => {
+    mocks.hosted = false;
+    open();
+    await screen.findByText("The developer review needs the hosted design service.");
+    expect(screen.queryByRole("link", { name: "Open Draft Site" })).toBeNull();
+  });
   it("restores the original signed-out redirect with login required", async () => {
     mocks.signedIn = false;
     render(<MemoryRouter initialEntries={["/manage/developer"]}><Routes>
@@ -33,6 +46,7 @@ describe("Developer Review error details", () => {
     expect(await screen.findByText(/Sign in to load or save this/)).toBeVisible();
     expect(screen.queryByText("Private review details")).toBeNull();
     expect(screen.queryByTitle("Developer Review")).toBeNull();
+    expect(screen.queryByRole("link", { name: "Open Draft Site" })).toBeNull();
   });
   it.each([true, false, undefined])("shows exact service details and retry classification (%s)", async (retry) => {
     mocks.review = { review: { state: "error", headline: "GitHub refused commit abc123.", summary: "Missing actions:write.\nWorkflow review.yml could not start.", retry } };

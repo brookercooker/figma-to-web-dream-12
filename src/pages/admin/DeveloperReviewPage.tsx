@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { RELAY, RELAY_IS_HOSTED, relayHeaders } from "./designChat/helper";
@@ -23,6 +23,7 @@ function ReviewErrorDetails() {
 export default function DeveloperReviewPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const draftSiteUrl = window.location.origin + "/manage/preview";
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data, error }: any) => {
@@ -47,13 +48,13 @@ export default function DeveloperReviewPage() {
       const token = key ? headers[key].replace(/^Bearer /, "") : "";
       if (!token) return;
       iframeRef.current?.contentWindow?.postMessage(
-        { type: "nova-dev-token", token, page: window.location.origin + "/manage/preview" },
+        { type: "nova-dev-token", token, page: draftSiteUrl },
         relayOrigin,
       );
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [isAdmin]);
+  }, [isAdmin, draftSiteUrl]);
 
   if (isAdmin === null) return <div className="min-h-screen" />;
   if (REQUIRE_LOGIN && !isAdmin) return <Navigate to="/manage/pages" replace />;
@@ -61,11 +62,19 @@ export default function DeveloperReviewPage() {
   return (
     <div className="h-screen flex flex-col">
       <header className="sticky top-0 z-30 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="w-full px-6 py-3 flex items-center gap-4">
-          <Button asChild variant="ghost" size="sm" className="gap-2">
+        <div className="w-full px-3 min-[480px]:px-6 py-3 flex items-center gap-2 min-[480px]:gap-4">
+          <Button asChild variant="ghost" size="sm" className="gap-2 shrink-0">
             <Link to="/manage/pages"><ArrowLeft className="w-4 h-4" /> Site Manager</Link>
           </Button>
           <h1 className="text-base font-medium tracking-tight">Developer Review</h1>
+          {isAdmin && RELAY_IS_HOSTED && (
+            <Button asChild variant="outline" size="sm" className="ml-auto shrink-0 gap-2 px-2 min-[480px]:px-3">
+              <a href={draftSiteUrl} target="_blank" rel="noopener noreferrer" aria-label="Open Draft Site">
+                <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                <span className="hidden min-[480px]:inline">Open Draft Site</span>
+              </a>
+            </Button>
+          )}
         </div>
       </header>
       {isAdmin && <ReviewErrorDetails />}
