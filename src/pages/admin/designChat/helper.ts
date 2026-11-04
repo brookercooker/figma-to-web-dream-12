@@ -67,7 +67,9 @@ export type UploadRules = { maxFiles: number; maxBytes: number; accept: string }
 export type DraftRequest = {
   id: string; request: string; source?: string; at?: number | string; sha?: string; builtAt?: number;
   files?: string[]; siteFiles?: string[]; platformFiles?: string[]; setupFiles?: string[];
-  notes?: string; decision?: unknown;
+  notes?: string;
+  /** Rejected requests carry { reason, at, by }; older relays omit it. Validate unknown relay data before displaying it. */
+  decision?: unknown;
   /** Sent by redeployed relays only. */
   page?: { name: string; path: string } | null;
   /** Plain lines saying what changed; empty for older requests. */
