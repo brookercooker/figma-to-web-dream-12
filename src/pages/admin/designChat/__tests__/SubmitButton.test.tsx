@@ -12,38 +12,33 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-const tickAll = (dialog: HTMLElement) => { for (const box of within(dialog).getAllByRole("checkbox")) fireEvent.click(box); };
-
 describe("Submit for Review", () => {
   it.each([false, true])("asks for confirmation before submitting when compact=%s", async (compact) => {
     render(<SubmitButton compact={compact} />);
     fireEvent.click(screen.getByRole("button", { name: "Submit for Review" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(m.post).not.toHaveBeenCalled();
-    tickAll(dialog);
     fireEvent.click(within(dialog).getByRole("button", { name: "Submit for Review" }));
     await vi.waitFor(() => expect(m.refresh).toHaveBeenCalledTimes(1));
     expect(m.post).toHaveBeenCalledExactlyOnceWith("/publish");
   });
-  it("explains what submitting does and that approved changes go on the public site", async () => {
+  it("explains the automatic review, the developer fallback and that approved changes go public", async () => {
     render(<SubmitButton />);
     fireEvent.click(screen.getByRole("button", { name: "Submit for Review" }));
     const dialog = await screen.findByRole("alertdialog");
-    expect(dialog).toHaveTextContent("sends all 1 change waiting in your draft to a reviewer");
+    expect(dialog).toHaveTextContent("sends all 1 change waiting in your draft for review");
+    expect(dialog).toHaveTextContent("Your changes are reviewed automatically first.");
+    expect(dialog).toHaveTextContent("may be sent to a developer to look at");
     expect(dialog).toHaveTextContent("Any changes that are approved will be put on the public site.");
   });
-  it("keeps the confirm button off until every checklist item is ticked", async () => {
+  it("shows the checklist as a plain bulleted list with nothing to tick", async () => {
     render(<SubmitButton />);
     fireEvent.click(screen.getByRole("button", { name: "Submit for Review" }));
     const dialog = await screen.findByRole("alertdialog");
-    const boxes = within(dialog).getAllByRole("checkbox");
-    expect(boxes).toHaveLength(SUBMIT_CHECKLIST.length);
-    const confirm = within(dialog).getByRole("button", { name: "Submit for Review" });
-    expect(confirm).toBeDisabled();
-    boxes.slice(0, -1).forEach((box) => fireEvent.click(box));
-    expect(confirm).toBeDisabled();
-    fireEvent.click(boxes[boxes.length - 1]);
-    expect(confirm).toBeEnabled();
+    expect(within(dialog).queryAllByRole("checkbox")).toHaveLength(0);
+    const list = within(dialog).getByRole("list", { name: "Submission Checklist" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(SUBMIT_CHECKLIST.length);
+    expect(within(dialog).getByRole("button", { name: "Submit for Review" })).toBeEnabled();
   });
   it("Cancel closes the dialog without submitting", async () => {
     render(<SubmitButton />);
@@ -73,7 +68,7 @@ describe("Submit for Review", () => {
     render(<SubmitConfirmDialog open onOpenChange={() => {}} />);
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent("on the public site right away");
-    expect(within(dialog).getByRole("button", { name: "Publish" })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "Publish" })).toBeEnabled();
     cleanup();
     render(<SubmitButton />);
     expect(screen.getByRole("button", { name: "Publish" })).toBeEnabled();

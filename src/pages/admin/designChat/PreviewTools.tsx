@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Monitor, Smartphone, Tablet, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { postToHelper } from "./helper";
@@ -31,29 +30,26 @@ export default function PreviewTools({ showViewControls, tight = false }: { show
   );
 }
 
-/** Things to check before submitting; every box must be ticked before the confirm button turns on. */
+/** Reminders shown as a plain bulleted list before submitting; nothing needs to be ticked. */
 export const SUBMIT_CHECKLIST = [
-  "I looked at my changes in the preview on every page they affect.",
+  "You've looked at your changes in the preview on every page they affect.",
   "The wording, pictures and links are correct.",
-  "I checked how the changes look on phone and desktop sizes.",
+  "The changes look right on phone and desktop sizes.",
 ] as const;
 
 /**
- * Explains what Submit for Review (or Publish) does and asks the person to run through the checklist first.
+ * Explains what Submit for Review (or Publish) does: an automatic review first, a developer for anything it can't approve.
  * Controlled, so a host that outlives its opener (the phone overflow menu) can keep it open.
  */
 export function SubmitConfirmDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { state, refreshSoon } = useDesignChat();
-  const [checked, setChecked] = useState<boolean[]>(() => SUBMIT_CHECKLIST.map(() => false));
   const [sending, setSending] = useState(false);
-  useEffect(() => { if (open) setChecked(SUBMIT_CHECKLIST.map(() => false)); }, [open]);
   const count = state?.publish?.open ?? 0;
   const reviewOn = state?.review?.enabled !== false;
   const label = reviewOn ? "Submit for Review" : "Publish";
   const changes = `${count} ${count === 1 ? "change" : "changes"}`;
-  const allChecked = checked.every(Boolean);
   const confirm = async () => {
-    if (!allChecked || sending) return;
+    if (sending) return;
     setSending(true);
     try { await postToHelper("/publish"); refreshSoon(); onOpenChange(false); }
     finally { setSending(false); }
@@ -66,9 +62,13 @@ export function SubmitConfirmDialog({ open, onOpenChange }: { open: boolean; onO
           <AlertDialogDescription asChild>
             <div className="space-y-2 text-sm text-muted-foreground">
               {reviewOn ? <>
-                <p>This sends all {changes} waiting in your draft to a reviewer. Until a reviewer approves them, they stay in the draft preview and visitors won't see them.</p>
-                <p className="font-medium text-foreground">Any changes that are approved will be put on the public site.</p>
-                <p>You can keep working while the review runs. If something needs fixing, you'll see it here before anything goes live.</p>
+                <p>This sends all {changes} waiting in your draft for review.</p>
+                <ul className="list-disc space-y-1 pl-5">
+                  <li>Your changes are reviewed automatically first.</li>
+                  <li>Anything the automatic review can't approve may be sent to a developer to look at.</li>
+                  <li className="font-medium text-foreground">Any changes that are approved will be put on the public site.</li>
+                  <li>Until then they stay in the draft preview, and visitors won't see them. You can keep working while the review runs.</li>
+                </ul>
               </> : <>
                 <p>This puts all {changes} waiting in your draft on the public site right away.</p>
                 <p className="font-medium text-foreground">Visitors will see these changes as soon as publishing finishes.</p>
@@ -76,18 +76,15 @@ export function SubmitConfirmDialog({ open, onOpenChange }: { open: boolean; onO
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <fieldset className="space-y-2 rounded-md border p-3" aria-label="Submission Checklist">
-          <legend className="px-1 text-sm font-semibold">Before You Submit</legend>
-          {SUBMIT_CHECKLIST.map((item, i) => (
-            <label key={item} className="flex cursor-pointer items-start gap-2 text-sm">
-              <Checkbox className="mt-0.5" checked={checked[i]} onCheckedChange={(v) => setChecked((c) => c.map((x, j) => (j === i ? v === true : x)))} />
-              <span>{item}</span>
-            </label>
-          ))}
-        </fieldset>
+        <section className="rounded-md border p-3" aria-labelledby="submit-checklist-heading">
+          <h3 id="submit-checklist-heading" className="mb-1.5 text-sm font-semibold">Before You Submit, Check That:</h3>
+          <ul className="list-disc space-y-1 pl-5 text-sm" aria-label="Submission Checklist">
+            {SUBMIT_CHECKLIST.map((item) => <li key={item}>{item}</li>)}
+          </ul>
+        </section>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={sending}>Cancel</AlertDialogCancel>
-          <Button type="button" variant="review" disabled={!allChecked || sending} onClick={() => void confirm()}>
+          <Button type="button" variant="review" disabled={sending} onClick={() => void confirm()}>
             <Send className="h-4 w-4" aria-hidden />{sending ? "Sending…" : label}
           </Button>
         </AlertDialogFooter>
