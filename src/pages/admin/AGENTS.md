@@ -1,4 +1,5 @@
 # Site Manager (src/pages/admin) rules
+- Developer Review's admin/hosted-only header link shares its draft-site URL with the token message, keeping destinations aligned without changing the handshake.
 - Failed waits share persisted deadlines and interaction ownership; retry only captured prepared /send payloads, with a synchronous duplicate-send gate and history recovery, never reconstruct missing attachments or page context.
 
 - More Labels command lists stop wheel/touch propagation and contain overscroll in a viewport-bounded scroller, preserving native input without reaching the enclosing Dialog's document scroll lock or the page behind it.
