@@ -609,9 +609,9 @@ export default function PagesTab() {
                     return (
                       <button
                         onClick={() => choosePage(p)}
-                        aria-label={`Ask Claude To Change It: ${p.name}`}
+                        aria-label={`Change It in Chat: ${p.name}`}
                         aria-pressed={chosen}
-                        title="Ask Claude To Change It"
+                        title="Change It in Chat"
                         className={`p-1.5 rounded border inline-flex ${chosen ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted"}`}
                       >
                         <MessageSquare className="w-4 h-4" />

@@ -57,8 +57,8 @@ export function ModeSwitchProvider({ children }: { children: ReactNode }) {
     <Context.Provider value={{ requestChat, requestManual }}>
       {children}
       <ConfirmDialog open={pending !== null} onOpenChange={(open) => { if (!open && !savingRef.current) complete(false); }}
-        title={pending === "chat" ? "You have unsaved changes" : state?.busy ? "Claude Is Still Working on a Change" : "A Review Is Running"}
-        description={<>{pending === "chat" ? "Save your edits before leaving Manual Edit Mode, discard them, or keep editing." : state?.busy ? "Claude's change may affect this page. Continue editing by hand, or cancel and stay in Chat Mode." : <><p>{reviewedRequests(state?.draft?.requests, state?.publish?.open ?? 0)}</p><p className="mt-2">You can keep editing. Your edits are saved when you finish, and added to the site after this review is done.</p></>}{error && <p role="alert" className="mt-2 text-destructive">{error}</p>}</>}
+        title={pending === "chat" ? "You have unsaved changes" : state?.busy ? "A Chat Change Is Still in Progress" : "A Review Is Running"}
+        description={<>{pending === "chat" ? "Save your edits before leaving Manual Edit Mode, discard them, or keep editing." : state?.busy ? "That change may affect this page. Continue editing by hand, or cancel and stay in Chat Mode." : <><p>{reviewedRequests(state?.draft?.requests, state?.publish?.open ?? 0)}</p><p className="mt-2">You can keep editing. Your edits are saved when you finish, and added to the site after this review is done.</p></>}{error && <p role="alert" className="mt-2 text-destructive">{error}</p>}</>}
         destructive={false} confirmLabel={pending === "chat" ? "Save Changes" : state?.busy ? "Continue Editing" : "Keep Editing"}
         cancelLabel={pending === "chat" ? "Keep Editing" : "Cancel"} busy={saving}
         secondaryLabel={pending === "chat" ? "Discard Changes" : undefined}

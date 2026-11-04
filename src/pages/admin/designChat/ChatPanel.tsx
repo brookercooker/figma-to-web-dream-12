@@ -239,7 +239,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
             <p>Describe a change to the site. You'll see it in the Preview tab. To work on one page, pick it in the Pages tab. Nothing goes live until you press Submit for Review.</p>
             <p>
               {state?.review?.mode === "simulated"
-                ? "Demo mode: your changes are checked once together by fixed rules, not by Claude reading the code, and they go live automatically if the check passes."
+                ? "Demo mode: your changes are checked once together by fixed rules, not by an AI reading the code, and they go live automatically if the check passes."
                 : "When you submit, your changes are checked once together, and they go live automatically if the check passes."}
             </p>
             <p>Try one of these:</p>
@@ -341,7 +341,7 @@ export default function ChatPanel({ opening = 0, onDraw, onAttention, saveProgre
         {refs.references.length > 0 && (
           <div className="rounded-md border border-primary/40 bg-primary/5 p-2" aria-label="Library items for this request">
             <p className="mb-1.5 text-xs font-semibold" data-references-heading>
-              Selected ({refs.references.length}) · Claude will use {refs.references.length === 1 ? "this item" : "these items"} in your next message
+              Selected ({refs.references.length}) · Sent with your next message
             </p>
             <div className="flex flex-wrap gap-1.5">
             {refs.references.map((r) => {

@@ -74,7 +74,7 @@ describe("Site Manager mode cues", () => {
     expect(screen.getByRole("region", { name: "Page Editing Options" })).toBeVisible();
     m.manual = false; view.rerender(app());
     expect(input).toBeVisible(); expect(input).toHaveValue("Keep this request"); expect(m.mounts).toBe(1);
-    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Chat Mode. Claude makes the changes.");
+    expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Chat Mode. Describe a change and the builder makes it.");
     expect(document.querySelector("[data-manual-chat-bar]")).toBeNull();
   });
   it.each([false, true])("removes redundant visible prompts in manual=%s", (manual) => {
@@ -82,19 +82,19 @@ describe("Site Manager mode cues", () => {
     expect(container.innerHTML).not.toMatch(/Ask Claude Instead|Want Claude To Do This\?|Editing By Hand/);
     expect(container.querySelector('[title*="Ask Claude Instead"], [aria-label*="Ask Claude Instead"]')).toBeNull();
   });
-  it("shows the ongoing Claude notice in the tools only while busy in Manual Mode", async () => {
+  it("shows the ongoing chat-change notice in the tools only while busy in Manual Mode", async () => {
     m.manual = true; m.busy = true; const view = render(app());
     const notice = screen.getByRole("status");
-    expect(notice).toHaveTextContent("Claude Is Still Working on a Change");
+    expect(notice).toHaveTextContent("A Chat Change Is Still in Progress");
     expect(notice).toBeVisible();
     expect(notice.querySelector("svg")).toHaveClass("animate-spin");
     expect(screen.getByRole("complementary", { name: "Manual Mode" })).toContainElement(notice);
     expect(document.querySelector("main")).not.toContainElement(notice);
     await waitFor(() => expect(screen.getByTestId("canvas")).toBeVisible());
     m.busy = false; view.rerender(app());
-    expect(screen.queryByText("Claude Is Still Working on a Change")).toBeNull();
+    expect(screen.queryByText("A Chat Change Is Still in Progress")).toBeNull();
     m.busy = true; m.manual = false; view.rerender(app());
-    expect(screen.queryByText("Claude Is Still Working on a Change")).toBeNull();
+    expect(screen.queryByText("A Chat Change Is Still in Progress")).toBeNull();
   });
   it.each([false, true])("gives the top bar and the chat header one shared fixed height (manual: %s)", (manual) => {
     m.manual = manual; render(app());

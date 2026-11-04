@@ -98,7 +98,7 @@ function AdminShell() {
   useEffect(() => {
     if (previousMode.current === mode) return;
     previousMode.current = mode;
-    setAnnouncement(manual ? "Manual Edit Mode. You are editing by hand." : "Chat Mode. Claude makes the changes.");
+    setAnnouncement(manual ? "Manual Edit Mode. You are editing by hand." : "Chat Mode. Describe a change and the builder makes it.");
     if (manual) editingHeaderRef.current?.focus();
     else if (window.innerWidth >= 640) requestAnimationFrame(() => document.querySelector<HTMLTextAreaElement>('textarea[aria-label="Describe a Change"]')?.focus());
   }, [mode, manual]);
@@ -523,7 +523,7 @@ function AdminShell() {
           {manual && workingPage && (
             <div className="flex min-h-0 flex-1 flex-col">
               <div ref={editingHeaderRef} tabIndex={-1} className={cn("flex shrink-0 flex-col gap-2", (objectOpen || designChat.state?.busy) && "border-b px-3 py-3", phone && phonePane === "main" && "hidden")}>
-                {designChat.state?.busy && <p role="status" className="flex items-center gap-1.5 text-xs font-medium"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />Claude Is Still Working on a Change</p>}
+                {designChat.state?.busy && <p role="status" className="flex items-center gap-1.5 text-xs font-medium"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />A Chat Change Is Still in Progress</p>}
                 {objectOpen
                   ? <ObjectEditorHeader info={objectInfo} backLabel={objectOpen.from === "objects" ? "Back to Objects" : `Back to ${workingPage.name}`} disabled={finishing} onLeave={leaveObject} />
                   : null}

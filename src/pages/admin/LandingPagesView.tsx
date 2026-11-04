@@ -502,7 +502,7 @@ export default function LandingPagesView() {
                 <th className="px-3 py-2 text-center">Copy</th>
                 <th className="px-3 py-2 text-left">Labels</th>
                 <th className="px-3 py-2 text-left">Last Mod</th>
-                <th className="px-2 py-2 text-center"><span className="sr-only">Ask Claude</span></th>
+                <th className="px-2 py-2 text-center"><span className="sr-only">Change in Chat</span></th>
                 <th className="px-2 py-2 text-center"><span className="sr-only">Open</span></th>
                 <th className="px-2 py-2 text-center"><span className="sr-only">More</span></th>
               </tr>
@@ -609,9 +609,9 @@ export default function LandingPagesView() {
                         const chosen = designChat.workingPage?.path === (r.path.startsWith("/") ? r.path : `/${r.path}`);
                         return (
                           <button onClick={() => choosePage(r)}
-                            aria-label={`Ask Claude To Change It: ${r.name}`}
+                            aria-label={`Change It in Chat: ${r.name}`}
                             aria-pressed={chosen}
-                            title="Ask Claude To Change It"
+                            title="Change It in Chat"
                             className={`p-1.5 rounded border inline-flex ${chosen ? "bg-primary text-primary-foreground border-primary" : "hover:bg-muted"}`}>
                             <MessageSquare className="w-4 h-4" />
                           </button>
