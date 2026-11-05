@@ -1,0 +1,21 @@
+ALTER POLICY pages_authenticated_read_all ON public.pages USING (public.is_site_user());
+ALTER POLICY images_authenticated_read_all ON public.images USING (public.is_site_user());
+ALTER POLICY videos_authenticated_read_all ON public.videos USING (public.is_site_user());
+ALTER POLICY objects_authenticated_read_all ON public.objects USING (public.is_site_user());
+ALTER POLICY page_objects_authenticated_read ON public.page_objects USING (public.is_site_user());
+ALTER POLICY tags_authenticated_read ON public.tags USING (public.is_site_user());
+ALTER POLICY page_redirects_authenticated_read ON public.page_redirects USING (public.is_site_user());
+ALTER POLICY ipu_authenticated_read ON public.image_page_usages USING (public.is_site_user());
+ALTER POLICY opu_authenticated_read ON public.object_page_usages USING (public.is_site_user());
+ALTER POLICY vpu_authenticated_read ON public.video_page_usages USING (public.is_site_user());
+ALTER POLICY design_messages_authenticated_read ON public.design_messages USING (public.is_site_user());
+ALTER POLICY design_messages_authenticated_insert ON public.design_messages WITH CHECK (public.is_site_user());
+ALTER POLICY chat_requests_authenticated_read ON public.chat_requests USING (public.is_site_user());
+ALTER POLICY chat_requests_authenticated_insert ON public.chat_requests WITH CHECK (public.is_site_user());
+ALTER POLICY chat_requests_authenticated_update ON public.chat_requests USING (public.is_site_user()) WITH CHECK (public.is_site_user());
+ALTER POLICY pages_anon_public_read ON public.pages USING (archived_at IS NULL AND page_type <> 'landing' AND build_status = 'ready');
+ALTER POLICY object_registry_anon_public_read ON public.object_registry USING (archived_at IS NULL);
+DROP POLICY page_redirects_anon_public_read ON public.page_redirects;
+-- PUBLIC's inherited execute grant must also be removed for the anon revoke to be effective.
+REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, service_role;
