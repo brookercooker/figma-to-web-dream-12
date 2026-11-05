@@ -13,6 +13,20 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Submit for Review", () => {
+  it.each(["draft", "publish"])("blocks %s undo-pending even when review is otherwise allowed", (location) => {
+    m.state.publish.willReview = true;
+    if (location === "draft") m.state.draft = { gate: { status: "undo-pending", reason: "Wait for the rejected change to be undone." } };
+    else Object.assign(m.state.publish, { status: "undo-pending", reason: "Wait for the rejected change to be undone." });
+    render(<SubmitButton />);
+    expect(screen.getByRole("button", { name: "Submit for Review" })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent("Wait for the rejected change to be undone.");
+  });
+  it("blocks a confirmation already open when the undo gate arrives", () => {
+    m.state.draft = { gate: { status: "undo-pending", reason: "Undo not ready." } };
+    render(<SubmitConfirmDialog open onOpenChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Submit for Review" }));
+    expect(m.post).not.toHaveBeenCalled();
+  });
   it.each([false, true])("asks for confirmation before submitting when compact=%s", async (compact) => {
     render(<SubmitButton compact={compact} />);
     fireEvent.click(screen.getByRole("button", { name: "Submit for Review" }));

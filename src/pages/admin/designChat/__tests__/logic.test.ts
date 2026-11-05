@@ -79,6 +79,9 @@ describe("the working line", () => {
 });
 
 describe("problemsModel", () => {
+  it("reports the undo gate reason even while busy with no open requests", () => {
+    expect(problemsModel({ ...base, busy: true, publish: { open: 0 }, draft: { gate: { status: "undo-pending", reason: "Undo commit is still pending." } } })).toEqual({ title: "Undo not in yet", sub: "Undo commit is still pending.", items: [] });
+  });
   it("shows nothing when nothing is wrong or a job is running", () => {
     expect(problemsModel(null)).toBeNull();
     expect(problemsModel(base)).toBeNull();
