@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
 import { supabase } from "@/prototype/client";
 import { Button } from "@/components/ui/button";
 import { RELAY, RELAY_IS_HOSTED, relayHeaders } from "./designChat/helper";
@@ -23,7 +23,16 @@ function ReviewErrorDetails() {
 export default function DeveloperReviewPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const tokenRef = useRef("");
+  const tokenPromise = useRef<Promise<void> | null>(null);
+  const [frameLoading, setFrameLoading] = useState(true);
   const draftSiteUrl = window.location.origin + "/manage/preview";
+  const sendToken = useCallback(() => {
+    if (!tokenRef.current) return;
+    let origin: string;
+    try { origin = new URL(RELAY).origin; } catch { return; }
+    iframeRef.current?.contentWindow?.postMessage({ type: "nova-dev-token", token: tokenRef.current, page: draftSiteUrl }, origin);
+  }, [draftSiteUrl]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data, error }: any) => {
@@ -35,26 +44,33 @@ export default function DeveloperReviewPage() {
     });
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!RELAY_IS_HOSTED) return;
     let relayOrigin: string;
     try { relayOrigin = new URL(RELAY).origin; } catch { return; }
-    const onMessage = async (e: MessageEvent) => {
+    let live = true;
+    // Warm authentication while the staff check runs, not after the child asks.
+    tokenPromise.current = relayHeaders().then((headers) => {
+      const key = Object.keys(headers).find((k) => k.toLowerCase() === "authorization");
+      if (live) { tokenRef.current = key ? headers[key].replace(/^Bearer /, "") : ""; sendToken(); }
+    }).catch(() => {});
+    const onMessage = (e: MessageEvent) => {
       if (e.source !== iframeRef.current?.contentWindow) return;
       if (e.origin !== relayOrigin) return;
+      if (e.data?.type === "nova-dev-ready") { setFrameLoading(false); return; }
       if (e.data?.type !== "nova-dev-need-token") return;
-      const headers = await relayHeaders();
-      const key = Object.keys(headers).find((k) => k.toLowerCase() === "authorization");
-      const token = key ? headers[key].replace(/^Bearer /, "") : "";
-      if (!token) return;
-      iframeRef.current?.contentWindow?.postMessage(
-        { type: "nova-dev-token", token, page: draftSiteUrl },
-        relayOrigin,
-      );
+      if (tokenRef.current) sendToken();
+      else void tokenPromise.current?.then(() => { if (live) sendToken(); });
     };
     window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [isAdmin, draftSiteUrl]);
+    return () => { live = false; tokenRef.current = ""; window.removeEventListener("message", onMessage); };
+  }, [sendToken]);
+
+  useEffect(() => {
+    if (!isAdmin || !RELAY_IS_HOSTED) return;
+    const timer = setTimeout(() => setFrameLoading(false), 20_000);
+    return () => clearTimeout(timer);
+  }, [isAdmin]);
 
   if (isAdmin === null) return <div className="min-h-screen" />;
   if (REQUIRE_LOGIN && !isAdmin) return <Navigate to="/manage/pages" replace />;
@@ -79,13 +95,19 @@ export default function DeveloperReviewPage() {
       </header>
       {isAdmin && <ReviewErrorDetails />}
       {!isAdmin ? <div className="p-6 text-sm text-muted-foreground">Sign in to load or save this. Developer review requires an authorized account.</div> : RELAY_IS_HOSTED ? (
+        <div className="relative min-h-0 flex-1">
         <iframe
           ref={iframeRef}
           title="Developer Review"
           referrerPolicy="no-referrer"
           src={`${RELAY}/dev`}
-          className="flex-1 w-full border-0"
+          onLoad={sendToken}
+          className="h-full w-full border-0"
         />
+        {frameLoading && <div role="status" className="absolute inset-0 flex items-center justify-center gap-2 bg-background text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />Loading the draft…
+        </div>}
+        </div>
       ) : (
         <div className="flex-1 flex items-center justify-center p-6 text-center text-sm text-muted-foreground">
           The developer review needs the hosted design service.

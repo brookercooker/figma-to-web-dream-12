@@ -1,22 +1,53 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import DeveloperReviewPage from "../DeveloperReviewPage";
 import type { RelayState } from "../designChat/helper";
 
-const mocks = vi.hoisted(() => ({ review: undefined as RelayState["draft"], admin: true, require: true, signedIn: true, hosted: true }));
+const mocks = vi.hoisted(() => ({ review: undefined as RelayState["draft"], admin: true, require: true, signedIn: true, hosted: true, headers: vi.fn() }));
 vi.mock("@/lib/authGate", () => ({ get REQUIRE_LOGIN() { return mocks.require; } }));
 vi.mock("@/prototype/client", () => ({ supabase: {
   auth: { getUser: async () => ({ data: { user: mocks.signedIn ? { id: "staff" } : null } }) },
   rpc: async () => ({ data: mocks.admin }),
 } }));
-vi.mock("../designChat/helper", () => ({ RELAY: "https://design.example", get RELAY_IS_HOSTED() { return mocks.hosted; }, relayHeaders: async () => ({}) }));
+vi.mock("../designChat/helper", () => ({ RELAY: "https://design.example", get RELAY_IS_HOSTED() { return mocks.hosted; }, relayHeaders: mocks.headers }));
 vi.mock("../designChat/useHelperState", () => ({ useHelperState: () => ({ state: { draft: mocks.review } }) }));
-beforeEach(() => { mocks.admin = true; mocks.review = undefined; mocks.require = true; mocks.signedIn = true; mocks.hosted = true; });
-afterEach(cleanup);
+beforeEach(() => { mocks.admin = true; mocks.review = undefined; mocks.require = true; mocks.signedIn = true; mocks.hosted = true; mocks.headers.mockReset().mockResolvedValue({ Authorization: "Bearer test-token" }); });
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 const open = () => render(<MemoryRouter><DeveloperReviewPage /></MemoryRouter>);
 
 describe("Developer Review error details", () => {
+  it("answers token requests synchronously from warmed auth and also on load", async () => {
+    open();
+    const frame = await screen.findByTitle("Developer Review") as HTMLIFrameElement;
+    const post = vi.spyOn(frame.contentWindow as Window, "postMessage");
+    fireEvent(window, new MessageEvent("message", { source: frame.contentWindow, origin: "https://design.example", data: { type: "nova-dev-need-token" } }));
+    expect(post).toHaveBeenCalledWith({ type: "nova-dev-token", token: "test-token", page: window.location.origin + "/manage/preview" }, "https://design.example");
+    post.mockClear();
+    fireEvent.load(frame);
+    expect(post).toHaveBeenCalledOnce();
+    expect(mocks.headers).toHaveBeenCalledOnce();
+  });
+  it("only trusted child ready messages remove the loading cover", async () => {
+    open();
+    const frame = await screen.findByTitle("Developer Review") as HTMLIFrameElement;
+    fireEvent(window, new MessageEvent("message", { source: frame.contentWindow, origin: "https://other.example", data: { type: "nova-dev-ready" } }));
+    expect(screen.getByText("Loading the draft…")).toBeInTheDocument();
+    fireEvent(window, new MessageEvent("message", { source: window, origin: "https://design.example", data: { type: "nova-dev-ready" } }));
+    expect(screen.getByText("Loading the draft…")).toBeInTheDocument();
+    fireEvent(window, new MessageEvent("message", { source: frame.contentWindow, origin: "https://design.example", data: { type: "nova-dev-ready" } }));
+    expect(screen.queryByText("Loading the draft…")).toBeNull();
+  });
+  it("limits the loading cover to 20 seconds", async () => {
+    vi.useFakeTimers();
+    open();
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(screen.getByText("Loading the draft…")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(19_999));
+    expect(screen.getByText("Loading the draft…")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(1));
+    expect(screen.queryByText("Loading the draft…")).toBeNull();
+  });
   it("opens the draft site in a safe new tab for an admin with the hosted relay", async () => {
     open();
     const link = await screen.findByRole("link", { name: "Open Draft Site" });

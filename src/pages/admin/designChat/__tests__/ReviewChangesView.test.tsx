@@ -19,6 +19,21 @@ beforeEach(() => { vi.clearAllMocks(); m.admin = false; m.state = { busy: false,
 afterEach(cleanup);
 const cards = () => Array.from(document.querySelectorAll("[data-change-id]")) as HTMLElement[];
 describe("Changes waiting for review", () => {
+  it("shows the undo gate reason and prevents submission", () => {
+    m.state.draft.gate = { status: "undo-pending", reason: "The undo has not landed." };
+    m.state.publish.willReview = true;
+    render(<ReviewChangesView onShowPreview={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "Submit for Review" })).toBeDisabled();
+    expect(screen.getAllByText("The undo has not landed.").length).toBeGreaterThan(0);
+  });
+  it("labels undo requests and marks requests waiting for their undo", () => {
+    m.state.draft.requests = [{ ...reqs[0], undoPending: true }, { ...reqs[1], isUndo: true }];
+    render(<ReviewChangesView onShowPreview={vi.fn()} />);
+    expect(within(cards().find(c => c.dataset.changeId === "a") as HTMLElement).getByText("Undo Not in Yet")).toBeInTheDocument();
+    const undo = cards().find(c => c.dataset.changeId === "b") as HTMLElement;
+    expect(within(undo).getByText("Developer Undo")).toBeInTheDocument();
+    expect(within(undo).queryByText("Manual Edit")).toBeNull();
+  });
   const openRejection = async () => {
     m.admin = true;
     m.state.publish.status = "blocked";
@@ -51,6 +66,7 @@ describe("Changes waiting for review", () => {
     expect(action).toBeEnabled();
     fireEvent.click(action);
     await waitFor(() => expect(m.post).toHaveBeenCalledWith("/reject", { reason: "x".repeat(300) }));
+    expect(await screen.findByText("Undoing 1 request. The undo will join the draft.")).toHaveAttribute("role", "status");
   });
   it.each([0, 3])("reports undo counts and only explains kept Manual edits when positive (%s)", async (kept) => {
     m.post.mockResolvedValue({ ok: true, data: { id: "undo", undoing: 4, kept } });

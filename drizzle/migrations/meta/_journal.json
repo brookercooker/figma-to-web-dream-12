@@ -43,6 +43,13 @@
       "when": 1793401386502,
       "tag": "0005_deprecate_object_work_status",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793894487202,
+      "tag": "0006_qa_nov5_staff_and_public_access",
+      "breakpoints": true
     }
   ]
 }

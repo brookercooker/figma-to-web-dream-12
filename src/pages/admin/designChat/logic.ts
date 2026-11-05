@@ -107,8 +107,17 @@ export function developerFindings(s: RelayState | null): Finding[] {
 
 export type ProblemsModel = { title: string; sub: string; items: Finding[]; devNote?: string };
 
+export function undoPendingGate(s: RelayState | null): boolean {
+  return s?.draft?.gate?.status === "undo-pending" || s?.publish?.status === "undo-pending";
+}
+export function undoPendingReason(s: RelayState | null): string {
+  const reason = s?.draft?.gate?.reason ?? s?.publish?.reason;
+  return typeof reason === "string" && reason.trim() ? reason : "The rejected change's undo hasn't joined the draft yet.";
+}
+
 /** What to show after a failed review: only what the person can act on. Anything that needs a developer is one line. */
 export function problemsModel(s: RelayState | null): ProblemsModel | null {
+  if (undoPendingGate(s)) return { title: "Undo not in yet", sub: undoPendingReason(s), items: [] };
   if (!s || s.busy) return null;
   const p = s.publish;
   const r = s.draft?.review;

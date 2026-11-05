@@ -37,7 +37,7 @@ export default function ReviewChangesView(_props: { onShowPreview: () => void })
     if (res.ok) {
       const { undoing, kept } = res.data ?? {};
       if (Number.isInteger(undoing) && undoing >= 0) {
-        setRejectStatus(`Undoing ${undoing} requests. The undo will join the draft.${Number.isInteger(kept) && kept > 0 ? ` ${kept} edits made in the Site Manager can't be undone here. Change them back in Manual Edit Mode.` : ""}`);
+        setRejectStatus(`Undoing ${undoing} ${undoing === 1 ? "request" : "requests"}. The undo will join the draft.${Number.isInteger(kept) && kept > 0 ? ` ${kept} edits made in the Site Manager can't be undone here. Change them back in Manual Edit Mode.` : ""}`);
       }
     }
     refreshSoon();
@@ -88,7 +88,8 @@ function ChangeCard({ r, now }: { r: DraftRequest; now: number }) {
   return (
     <li data-change-id={r.id} className="space-y-2 rounded-lg border p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge variant="secondary" className="font-normal">{CHANGE_LABEL[changeKind(r)]}</Badge>
+        <Badge variant="secondary" className="font-normal">{r.isUndo === true ? "Developer Undo" : CHANGE_LABEL[changeKind(r)]}</Badge>
+        {r.undoPending === true && <Badge variant="secondary">Undo Not in Yet</Badge>}
         {reason && <Badge variant="destructive">Rejected</Badge>}
         {Number.isFinite(ms) && (
           <Tooltip><TooltipTrigger asChild>

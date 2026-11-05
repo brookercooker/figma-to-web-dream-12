@@ -70,6 +70,8 @@ export type DraftRequest = {
   notes?: string;
   /** Rejected requests carry { reason, at, by }; older relays omit it. Validate unknown relay data before displaying it. */
   decision?: unknown;
+  undoPending?: boolean;
+  isUndo?: boolean;
   /** Sent by redeployed relays only. */
   page?: { name: string; path: string } | null;
   /** Plain lines saying what changed; empty for older requests. */
@@ -86,9 +88,9 @@ export type RelayState = {
   drawing?: boolean;
   history: Entry[];
   changes?: DraftRequest[];
-  publish?: { ok?: boolean; open: number; status?: string; willReview?: boolean };
+  publish?: { ok?: boolean; open: number; status?: string; willReview?: boolean; reason?: string };
   /** requests: the changes in the draft awaiting review (newer relays only). */
-  draft?: { requests?: DraftRequest[]; review?: { state?: string; locked?: boolean; findings?: Finding[]; headline?: string; summary?: string; retry?: boolean } };
+  draft?: { gate?: { status?: string; reason?: string }; requests?: DraftRequest[]; review?: { state?: string; locked?: boolean; findings?: Finding[]; headline?: string; summary?: string; retry?: boolean } };
   review?: { enabled?: boolean; mode?: string };
   liveUrl?: string | null;
   embedEnabled?: boolean;
