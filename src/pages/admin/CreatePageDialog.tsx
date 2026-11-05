@@ -57,7 +57,7 @@ export default function CreatePageDialog({
       }).select("id,slug_id,path,name").single();
       if (error) throw error;
       notifyContentEdited([pageChangeNote("Added", data)]);
-      toast.success(`Page "${data.name}" is live at ${data.path}`);
+      toast.success(`Created "${data.name}" as a Draft at ${data.path}. It goes live once it's marked Ready and published.`);
       onCreated?.(data);
       onOpenChange(false);
     } catch (e: any) {
@@ -72,7 +72,7 @@ export default function CreatePageDialog({
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
             Give your page a name and we'll create it for you — you can add its
-            content next. It'll be available right away.
+            content next. It starts as a Draft and goes live once it's marked Ready and published.
           </p>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Page Name</label>

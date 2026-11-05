@@ -1,0 +1,28 @@
+import { ReactNode, useEffect, useRef, useState } from "react";
+
+/** Retain grid geometry while unmounting distant card contents. */
+export default function LibraryWindow({ children, kind }: { children: () => ReactNode; kind: "image" | "video" }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(typeof IntersectionObserver === "undefined");
+  const [height, setHeight] = useState<number>();
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry) setNear(entry.isIntersecting);
+    }, { rootMargin: "600px" });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !near || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      const next = el.getBoundingClientRect().height;
+      if (next > 0) setHeight(next);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [near]);
+  return <div ref={ref} data-library-window={kind} className={near ? "min-w-0" : kind === "image" ? "min-w-0 aspect-square" : "min-w-0 aspect-video"} style={!near && height ? { height, aspectRatio: "auto" } : undefined}>{near ? children() : null}</div>;
+}
