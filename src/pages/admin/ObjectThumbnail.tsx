@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SignedThumbImg } from "./signedThumb";
 import { requestObjectThumbnail } from "./objectThumbnailCapture";
+import { useInertPreview } from "./useInertPreview";
 
 /** Saved previews are preferred; missing captures queue once when visible for every object. */
 export default function ObjectThumbnail({ id, storedThumb }: { id: string; storedThumb?: string | null }) {
   const cell = useRef<HTMLDivElement>(null);
+  useInertPreview(cell);
   const [captured, setCaptured] = useState<string | null>(null);
   const qc = useQueryClient();
   useEffect(() => {

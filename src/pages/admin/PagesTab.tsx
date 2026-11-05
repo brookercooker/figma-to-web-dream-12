@@ -128,8 +128,12 @@ export default function PagesTab() {
   };
   const [creating, setCreating] = useState(false);
 
+  const loadGeneration = useRef(0);
   const load = async () => {
-    const { data } = await (supabase as any).from("pages").select("*").order("updated_at", { ascending: false });
+    const generation = ++loadGeneration.current;
+    const { data, error } = await (supabase as any).from("pages").select("*").order("updated_at", { ascending: false });
+    if (generation !== loadGeneration.current) return;
+    if (error) { toast.error(error.message); return; }
     setPages((data ?? []).map((p: any) => ({ ...p, tags: p.tags ?? [] })));
   };
   useEffect(() => {
@@ -138,7 +142,7 @@ export default function PagesTab() {
     const refreshList = () => { void load(); };
     window.addEventListener(PAGES_SYNCED, refreshList);
     window.addEventListener(MANIFEST_CHANGED, refreshList);
-    return () => { window.removeEventListener(PAGES_SYNCED, refreshList); window.removeEventListener(MANIFEST_CHANGED, refreshList); };
+    return () => { ++loadGeneration.current; window.removeEventListener(PAGES_SYNCED, refreshList); window.removeEventListener(MANIFEST_CHANGED, refreshList); };
   }, []);
 
   // Keep the list fresh when the tab regains focus or the manager comes back into view.

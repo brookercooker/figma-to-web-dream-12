@@ -2,6 +2,7 @@ import { ThumbnailContext } from "@/lib/thumbnail";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { objectRegistry } from "@/components/objects/registry";
 import ObjectSections, { parseSections } from "@/components/ObjectSections";
+import { useInertPreview } from "./useInertPreview";
 
 const BASE_W = 1280;
 const BASE_H = 800;
@@ -11,6 +12,7 @@ export default function ObjectMiniPreview({
   componentKey, content, thumbnailUrl, width = 96, height = 60,
 }: { componentKey?: string | null; content?: unknown; thumbnailUrl?: string | null; width?: number; height?: number }) {
   const ref = useRef<HTMLDivElement>(null);
+  useInertPreview(ref);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -61,6 +63,7 @@ export default function ObjectMiniPreview({
 /** Generic scaled-down, lazy, non-interactive preview frame. */
 export function MiniFrame({ render, width = 96, height = 60 }: { render: () => React.ReactNode; width?: number; height?: number }) {
   const ref = useRef<HTMLDivElement>(null);
+  useInertPreview(ref);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const el = ref.current;
