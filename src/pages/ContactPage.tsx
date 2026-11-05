@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/db";
 import { FunctionsHttpError } from "@supabase/supabase-js";
+import { TRADE_DOCUMENT_ACCEPT, tradeDocumentProblem } from "@/lib/tradeDocumentRules";
 
 const showroomOptions = [
   "No preference",
@@ -115,8 +116,6 @@ type FieldErrors = Partial<Record<keyof ContactValues, string>> & {
   salesTaxCert?: string;
 };
 
-const MAX_CERT_BYTES = 10 * 1024 * 1024;
-const CERT_ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.heic";
 
 const emptyForm: ContactValues = {
   name: "",
@@ -173,8 +172,9 @@ const ContactPage = () => {
     if (isTrade && taxExempt) {
       if (!certFile) {
         nextErrors.salesTaxCert = "Please upload your sales tax certificate";
-      } else if (certFile.size > MAX_CERT_BYTES) {
-        nextErrors.salesTaxCert = "File must be smaller than 10 MB";
+      } else {
+        const problem = tradeDocumentProblem(certFile);
+        if (problem) nextErrors.salesTaxCert = problem;
       }
     }
     if (!result.success || Object.keys(nextErrors).length > 0) {
@@ -449,7 +449,7 @@ const ContactPage = () => {
                         id="contact-sales-tax-cert"
                         name="salesTaxCert"
                         type="file"
-                        accept={CERT_ACCEPT}
+                        accept={TRADE_DOCUMENT_ACCEPT}
                         onChange={(e) => pickCert(e.target.files?.[0] ?? null)}
                         aria-invalid={Boolean(errors.salesTaxCert)}
                         aria-describedby={
@@ -458,7 +458,7 @@ const ContactPage = () => {
                         className="cursor-pointer file:mr-3 file:text-xs file:text-muted-foreground"
                       />
                       <p className="text-xs text-muted-foreground">
-                        PDF or image, up to 10 MB.
+                        PDF, JPG or PNG, up to 10 MB.
                       </p>
                       {errors.salesTaxCert && (
                         <p
