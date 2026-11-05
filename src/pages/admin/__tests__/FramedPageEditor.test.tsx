@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest";
 import FramedPageEditor, { type FramedEditorController, type FramedPageEditorProps } from "../FramedPageEditor";
 import { editFrameUrl } from "../framedPageProtocol";
-import { remoteSelection, remoteExpansion, selectionComputedStyle } from "../remoteSelection";
+import { remoteSelection, remoteExpansion, remoteTextRestore, selectionComputedStyle } from "../remoteSelection";
 import { originalLink } from "@/lib/inlineEditCore";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.unstubAllGlobals(); });
@@ -55,6 +55,27 @@ describe("public edit-frame guards", () => {
   });
 });
 describe("edit-frame protocol", () => {
+  it.each(["page", "object:fixture"])("retains first reported coded wording for %s text changes", (scope) => {
+    const s = setup(); s.receive("edit-ready");
+    s.receive("edit-select", { selection: { key: "0", scope, kind: "text", tag: "p", text: "Original code", style: {}, rect: {} } });
+    s.receive("edit-select", { selection: { key: "0", scope, kind: "text", tag: "p", text: "Typed once", style: {}, rect: {} } });
+    s.receive("edit-change", { scope, next: { "0": "My edit" } });
+    expect(s.props.onChange).toHaveBeenLastCalledWith(scope, { "0": "My edit", "orig:0": "Original code" });
+  });
+  it("restores stale wording with the current baseline through the normal save callback", () => {
+    const s = setup({ edits: { "0": "My edit", "orig:0": "Old code" } }); s.receive("edit-ready");
+    s.receive("edit-select", { selection: { key: "0", scope: "page", kind: "text", tag: "p", text: "New code", originalText: "New code", style: {}, rect: {} } });
+    s.receive("edit-stale", { keys: ["0"], current: { "0": "New code" } }, "https://wrong.example");
+    let selected = vi.mocked(s.props.onSelect).mock.lastCall?.[0];
+    if (!selected) throw new Error("Expected selection");
+    expect(remoteTextRestore(selected.el)).toBeUndefined();
+    s.receive("edit-stale", { keys: ["0"], current: { "0": "New code" } });
+    selected = vi.mocked(s.props.onSelect).mock.lastCall?.[0];
+    if (!selected) throw new Error("Expected stale selection");
+    act(() => remoteTextRestore(selected.el)?.restore());
+    expect(s.send).toHaveBeenCalledWith({ source: "nova-manager", type: "edit-restore", key: "0", orig: "New code" }, "https://public.example.com");
+    expect(s.props.onChange).toHaveBeenLastCalledWith("page", { "0": "My edit", "orig:0": "New code" });
+  });
   it("gates expansion on capability and current selection without changing edits", () => {
     const s = setup();
     const selection = { key: "0.1", scope: "page", kind: "text", tag: "button", style: {}, rect: {}, expandable: { path: "0", open: false } };

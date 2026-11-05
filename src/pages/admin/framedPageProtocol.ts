@@ -1,6 +1,7 @@
 import { isSafePublicFrameUrl } from "./siteManifest";
 import { validateEdits, type InlineEdits } from "@/lib/inlineEditCore";
 import { PAGE_CONTENT, isPageContent } from "./pageContentOrder";
+import { isTextEditKey } from "./textEditOrigins";
 
 export function editFrameUrl(base: string | null | undefined, path: string): string | null {
   if (window.self !== window.top || !isSafePublicFrameUrl(base) || !/^\/(?!\/)/.test(path) || /[\\\u0000-\u001f]/.test(path)) return null;
@@ -16,8 +17,15 @@ export function trustedEditMessage(event: MessageEvent, frame: HTMLIFrameElement
 }
 export function editMap(value: unknown): InlineEdits | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const { ok, rejected } = validateEdits(value);
-  return rejected.length ? null : ok;
+  const transport: InlineEdits = {}, core: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if ((key.startsWith("orig:") && isTextEditKey(key.slice(5))) || (key.startsWith("text:") && isTextEditKey(key))) {
+      if (typeof item !== "string" || item.length > 100000) return null;
+      transport[key] = item;
+    } else core[key] = item;
+  }
+  const { ok, rejected } = validateEdits(core);
+  return rejected.length ? null : { ...ok, ...transport };
 }
 export const HELD_BLOCKS_MAX = 50;
 export const HELD_BLOCKS_MAX_BYTES = 500_000;

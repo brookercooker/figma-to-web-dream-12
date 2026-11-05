@@ -33,7 +33,7 @@ import { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineSco
 import InlineStylePanel from "./InlineStylePanel";
 import InlineEditSafetyPanel from "./InlineEditSafetyPanel";
 import InlineDestinationPanel from "./InlineDestinationPanel";
-import { withoutPath } from "@/lib/inlineEditCore";
+import { removeInlinePath as withoutPath, retainTextOrigins } from "./textEditOrigins";
 import type { InlineReports } from "@/components/InlineEditSurface";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import { objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";
@@ -263,6 +263,8 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     // Fingerprints alone must not turn a rejected/no-op frame command into an Undo step.
     const meaningful = (map: InlineEdits) => Object.fromEntries(Object.entries(map).filter(([key]) => !key.startsWith("fp:")));
     const previous = scope === "page" ? editState.current.inlineEdits : editState.current.objectEdits[scope] ?? {};
+    const reported = inlineSel && remoteSnapshot(inlineSel.el);
+    next = retainTextOrigins(previous, next, reported?.scope === scope && reported.originalText !== undefined ? { [reported.key]: reported.originalText } : {});
     if (sameEditState(meaningful(previous), meaningful(next)) && !Object.keys(next).some(key => key.startsWith("fp:") && previous[key] !== next[key])) return;
     remote = remote || !!(inlineSel && remoteSnapshot(inlineSel.el));
     const snapshot = inlineSel && remoteSnapshot(inlineSel.el);

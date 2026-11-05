@@ -8,6 +8,7 @@ export interface SelectionSnapshot {
   side?: InlineSelection["side"];
   tag: string;
   text?: string;
+  originalText?: string;
   context?: string | { section?: string; role?: string };
   html?: string;
   rect?: Partial<DOMRectInit>;
@@ -24,6 +25,8 @@ export interface WordRange { key: string; scope: string; collapsed: boolean; tex
 export interface RemoteFormatting { range: WordRange | null; format: (command: FormatCommand, value?: string) => void }
 const formatting = new WeakMap<HTMLElement, RemoteFormatting>();
 const expansions = new WeakMap<HTMLElement, { setOpen: (open: boolean) => void }>();
+const restorations = new WeakMap<HTMLElement, { restore: () => void }>();
+export const remoteTextRestore = (el: HTMLElement) => restorations.get(el);
 export const remoteExpansion = (el: HTMLElement) => expansions.get(el);
 export const remoteFormatting = (el: HTMLElement) => formatting.get(el);
 export function validWordRange(value: unknown): value is WordRange {
@@ -51,6 +54,7 @@ export function validSnapshot(value: unknown): value is SelectionSnapshot {
   if ((s.kind as string) === "field") s.kind = "input"; // Older frames called form fields "field".
   return validPath(s.key) && typeof s.scope === "string" && !!s.scope &&
     ["text", "image", "video", "divider", "locked", "input"].includes(s.kind) && typeof s.tag === "string" && /^[a-z][a-z0-9-]*$/i.test(s.tag) &&
+    (s.originalText === undefined || (typeof s.originalText === "string" && s.originalText.length <= 100000)) &&
     (s.text === undefined || typeof s.text === "string") && (s.context === undefined || typeof s.context === "string" ||
       (!!s.context && typeof s.context === "object" && !Array.isArray(s.context) &&
         (s.context.section === undefined || typeof s.context.section === "string") &&
@@ -61,7 +65,7 @@ export function validSnapshot(value: unknown): value is SelectionSnapshot {
 }
 
 /** Detached, inert DOM supports read-only panel queries, never impersonates a live Range. */
-export function remoteSelection(snapshot: SelectionSnapshot, query?: EditQuery, words?: RemoteFormatting, expand?: (open: boolean) => void): InlineSelection {
+export function remoteSelection(snapshot: SelectionSnapshot, query?: EditQuery, words?: RemoteFormatting, expand?: (open: boolean) => void, restore?: () => void): InlineSelection {
   const el = document.createElement(snapshot.tag);
   if (snapshot.html !== undefined) el.innerHTML = clean(snapshot.html);
   else el.textContent = snapshot.text ?? "";
@@ -70,6 +74,7 @@ export function remoteSelection(snapshot: SelectionSnapshot, query?: EditQuery, 
     if (typeof value === "string") el.setAttribute(key, value);
   }
   snapshots.set(el, snapshot);
+  if (restore) restorations.set(el, { restore });
   if (words) formatting.set(el, words);
   if (snapshot.expandable && expand) expansions.set(el, { setOpen: expand });
   el.getBoundingClientRect = () => {
