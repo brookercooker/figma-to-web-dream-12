@@ -7,8 +7,8 @@ const canonical = (value: unknown): unknown => Array.isArray(value) ? value.map(
   ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, v]) => [key, canonical(v)])) : value;
 export const sameEditState = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 export function inlineEditAction(scope: string, before: InlineEdits, after: InlineEdits): EditAction {
-  const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(key => before[key] !== after[key] && !key.startsWith("fp:"));
-  const parsed = keys.length === 1 ? parseKey(keys[0]) : null;
+  const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(key => before[key] !== after[key] && !key.startsWith("fp:") && !key.startsWith("orig:"));
+  const parsed = keys.length === 1 ? parseKey(keys[0].startsWith("text:") ? keys[0].slice(5) : keys[0]) : null;
   if (parsed?.kind === "html" && (before[keys[0]] ?? "").replace(/<[^>]*>/g, "") === (after[keys[0]] ?? "").replace(/<[^>]*>/g, "")) return { label: "style change" };
   if (parsed?.kind === "html") return {
     label: "text change", mergeKey: `${scope}|${parsed.kind}|${parsed.path}`,

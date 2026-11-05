@@ -93,7 +93,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const destination = useRef<Window | null>(null);
   const sentState = useRef("");
   const originals = useRef<Record<string, Record<string, string>>>({});
-  const stale = useRef<Record<string, string>>({});
+  const stale = useRef<Record<string, Record<string, string>>>({});
   const post = (type: string, payload: Record<string, unknown> = {}) => {
     const current = frame.current?.contentWindow ?? destination.current;
     destination.current = current;
@@ -128,13 +128,13 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   } : undefined, (() => {
     const edits = snapshot.scope === "page" ? latest.current.edits : latest.current.objectEdits[snapshot.scope] ?? {};
     const key = edits[`text:${snapshot.key}`] !== undefined ? `text:${snapshot.key}` : snapshot.key;
-    const current = stale.current[key];
+    const current = stale.current[snapshot.scope]?.[key];
     if (snapshot.kind !== "text" || current === undefined || edits[key] === undefined) return undefined;
     return () => {
       if (!ready.current || exited.current || selectedSnapshot.current?.key !== snapshot.key || selectedSnapshot.current?.scope !== snapshot.scope) return;
       post("edit-restore", { key, orig: current });
       const next = { ...edits, [`orig:${key}`]: current };
-      delete stale.current[key];
+      delete stale.current[snapshot.scope][key];
       originals.current[snapshot.scope] = { ...originals.current[snapshot.scope], [snapshot.key]: current };
       latest.current.onChange(snapshot.scope, next);
       selectSnapshot(snapshot);
@@ -209,7 +209,8 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
           if (typeof key !== "string" || !isTextEditKey(key) || typeof data.current[key] !== "string" || data.current[key].length > 100000) return;
           next[key] = data.current[key];
         }
-        stale.current = next;
+        const scope = typeof data.scope === "string" && data.scope ? data.scope : latest.current.objectScope ? `object:${latest.current.objectScope.objectId}` : selectedSnapshot.current?.scope ?? "page";
+        stale.current[scope] = next;
         if (selectedSnapshot.current) selectSnapshot(selectedSnapshot.current);
       } else if (data.type === "edit-range" && rangeCapable.current) {
         const snapshot = selectedSnapshot.current;
@@ -229,6 +230,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
             const original = snapshot.originalText ?? (!hasEdit ? snapshot.text : undefined);
             if (original !== undefined) scopeOriginals[snapshot.key] = original;
           }
+          snapshot.originalText = scopeOriginals[snapshot.key];
         }
         if (selectedSnapshot.current?.key !== snapshot.key || selectedSnapshot.current?.scope !== snapshot.scope) wordRange.current = null;
         selectedSnapshot.current = snapshot;
