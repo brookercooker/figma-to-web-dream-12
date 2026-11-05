@@ -25,6 +25,6 @@ export default function ObjectThumbnail({ id, storedThumb }: { id: string; store
     return () => { stale = true; observer.disconnect(); };
   }, [id, storedThumb, qc]);
   return <div ref={cell} className="h-full w-full overflow-hidden rounded-lg bg-muted" aria-hidden>
-    <SignedThumbImg url={storedThumb || captured} alt="" loading="lazy" className="h-full w-full object-cover object-top" fallback={<div className="h-full w-full bg-muted" />} />
+    <SignedThumbImg url={storedThumb || captured} alt="" loading="lazy" width={400} height={250} decoding="async" className="h-full w-full object-cover object-top" fallback={<div className="h-full w-full bg-muted" />} />
   </div>;
 }

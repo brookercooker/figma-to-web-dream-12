@@ -373,7 +373,7 @@ export default function ObjectsTab() {
         <div className="w-full overflow-x-auto">
           <table className="nova-object-table w-full text-sm border-collapse table-fixed min-w-[1012px]">
             <colgroup>
-              <col style={{ width: 40 }} />
+              <col style={{ width: 60 }} />
               <col style={{ width: 116 }} />
               <col style={{ minWidth: 200 }} />
               <col style={{ width: 110 }} />

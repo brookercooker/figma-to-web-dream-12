@@ -56,6 +56,7 @@ import ObjectClickDialog, { type ObjectAsk } from "./ObjectClickDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import ResetEditsAction from "./ResetEditsAction";
 import type { FrameSection } from "./frameSections";
+import { hasOwnSections } from "./pageSectionPresence";
 import { findObjectUsages } from "./objectUsages";
 import { frameObjectPaths } from "./frameObjectUsages";
 import { pageKey } from "./designChat/registerPage";
@@ -1077,7 +1078,7 @@ export default function DesignTab({ embedded = false, pageId, onNavigate, object
     </ol>
     {(() => { const list=orderedPageContent(blocks); const i=list.findIndex(b=>b.id===activeId); const b=list[i]; return !b || isPageContent(b) ? null : <div className="flex flex-wrap gap-1">{blockTools(b,i)}</div>; })()}
     </>}
-    {!designedObject && !blocks.some(b => !isPageContent(b)) && !(visibleFrameSections?.some(s => s.kind !== "site")) && <p className="text-xs text-muted-foreground">No sections yet. Add a picture or video from the top bar.</p>}
+    {!designedObject && !hasOwnSections(blocks.some(b => !isPageContent(b)), visibleFrameSections) && <p className="text-xs text-muted-foreground">No sections yet. Add a picture or video from the top bar.</p>}
     {designedObject && (
       <p className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
         Each section's layout is under Section Layout when you select it. A few settings are still only in the{" "}

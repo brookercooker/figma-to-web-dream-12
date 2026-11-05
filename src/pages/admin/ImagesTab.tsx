@@ -958,7 +958,7 @@ export default function ImagesTab() {
                       setFailedTileSources((current) => ({ ...current, [img.id]: failed }));
                       if (candidates.every((src) => failed.includes(src))) markBroken(img.id);
                     }}
-                    width={320} height={320}
+                    width={400} height={400}
                     className="w-full aspect-square object-contain cursor-pointer bg-muted"
                     loading="lazy" decoding="async" fetchPriority="low" />
 

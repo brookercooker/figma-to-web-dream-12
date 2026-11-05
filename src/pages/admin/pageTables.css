@@ -1,7 +1,7 @@
 .manager-page-table-area { container-type: inline-size; container-name: page-table; }
 .manager-page-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
 .manager-page-table th, .manager-page-table td { min-width: 0; }
-.manager-page-table th:first-child, .manager-page-table td:first-child { width: 32px; }
+.manager-page-table th:first-child, .manager-page-table td:first-child { width: 52px; }
 .manager-page-table th:nth-child(2), .manager-page-table td:nth-child(2) { width: 116px; }
 .manager-page-table th:nth-child(4), .manager-page-table td:nth-child(4) { width: 96px; }
 .manager-page-table th:nth-last-child(-n+3), .manager-page-table td:nth-last-child(-n+3) { width: 40px; position: sticky; background: hsl(var(--background)); z-index: 1; }

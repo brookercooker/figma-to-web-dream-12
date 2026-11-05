@@ -1,4 +1,5 @@
 # Site Manager (src/pages/admin) rules
+- Libraries release distant media-card contents with reserved geometry; mini previews are inert with observed tab-stop removal. Pages refetch on focus/mutations and discard superseded reads, so stale responses cannot resurrect deleted rows.
 - Phone Manual toolbar keeps libraries in the overflow using the same EditorSlot actions; icon-only Capture and 44px controls keep both modes within the viewport.
 - Undo-pending draft gates disable every Submit control and display the relay reason; request undo flags only label cards, never grant authority.
 - Developer Review shares the header draft URL with its token message; warm auth before mounting, answer trusted child requests/load from memory, and bound the trusted-ready loading cover to 20 seconds to avoid handshake stalls.
