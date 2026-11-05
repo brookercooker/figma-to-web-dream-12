@@ -1,3 +1,4 @@
+import LibraryWindow from "./LibraryWindow";
 import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import { matchesLabelFilter } from "./labelPath";
 import { supabase } from "@/prototype/client";
@@ -889,8 +890,7 @@ export default function VideoTab() {
             const sel = selected.has(v.id);
             const isJustAdded = justAddedIds.includes(v.id);
             return (
-              <div
-                key={v.id}
+              <LibraryWindow key={v.id} kind="video">{() => <div
                 draggable
                 onDragStart={(e) => onTileDragStart(e, v.id)}
                 className={`relative group border rounded overflow-hidden hover:shadow-lg cursor-grab active:cursor-grabbing ${sel ? "ring-2 ring-primary" : ""} ${isJustAdded ? "ring-2 ring-primary/70" : ""}`}
@@ -953,6 +953,7 @@ export default function VideoTab() {
                     alt={v.alt_text || v.name}
                     className="absolute inset-0 w-full h-full object-cover"
                     loading="lazy"
+                    width={400} height={225}
                     decoding="async"
                     fallback={
                       <div className="absolute inset-0 w-full h-full flex items-center justify-center text-muted-foreground">
@@ -1013,7 +1014,7 @@ export default function VideoTab() {
                     </span>
                   </div>
                 </div>
-              </div>
+              </div>}</LibraryWindow>
             );
           })}
         </div>
