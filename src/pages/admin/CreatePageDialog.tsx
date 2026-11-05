@@ -13,10 +13,7 @@ import { pageChangeNote } from "./contentChangeNotes";
  * Guided add-page flow.
  * - Live-normalizes the name to a Lovable-friendly slug and shows the resulting route.
  * - Checks the pages table for duplicate slugs before submit.
- * - On save, inserts the page. The dynamic /:slug route in App.tsx serves any DB page
- *   via SimplePage immediately — no rebuild required.
- * - Lovable's platform-side route picker isn't publicly integrable, so this is the best
- *   "immediately live within the app" hook we have; see the note rendered in the dialog.
+ * - On save, inserts a Draft; public availability requires Ready and publishing.
  */
 export default function CreatePageDialog({
   open, onOpenChange, initialName, onCreated,
@@ -53,7 +50,7 @@ export default function CreatePageDialog({
     setSaving(true);
     try {
       const { data, error } = await (supabase as any).from("pages").insert({
-        name: name.trim(), path: route, description: "", notes: "", tags: [],
+        name: name.trim(), path: route, description: "", notes: "", tags: [], build_status: "draft",
       }).select("id,slug_id,path,name").single();
       if (error) throw error;
       notifyContentEdited([pageChangeNote("Added", data)]);
