@@ -57,7 +57,7 @@ export default function ModeToggle({ collapsed = false, onChat, compact = false 
     else await enter();
   };
   return <>
-    {compact ? <Button type="button" variant={mode === "manual" ? "secondary" : "outline"} size="sm" className="shrink-0 gap-1 px-2 text-xs" data-mode-switch aria-pressed={mode === "manual"} onClick={() => void change(mode === "manual" ? "chat" : "manual")}><Pencil className="h-4 w-4" aria-hidden />{mode === "manual" ? "Done Editing" : "Edit"}</Button> : <ToggleGroup type="single" value={mode} onValueChange={(next) => void change(next)} aria-label="Editing Mode" data-mode-switch
+    {compact ? <Button type="button" variant={mode === "manual" ? "secondary" : "outline"} size="sm" className="h-11 shrink-0 gap-1 px-2 text-xs" data-mode-switch aria-pressed={mode === "manual"} onClick={() => void change(mode === "manual" ? "chat" : "manual")}><Pencil className="h-4 w-4" aria-hidden />{mode === "manual" ? "Done Editing" : "Edit"}</Button> : <ToggleGroup type="single" value={mode} onValueChange={(next) => void change(next)} aria-label="Editing Mode" data-mode-switch
       className={cn("shrink-0 gap-1 border-b bg-background p-2", collapsed ? "flex-col" : "grid w-full grid-cols-2")}>
       {([{ value: "chat", label: "Chat Mode", Icon: MessageSquare }, { value: "manual", label: "Manual Edit Mode", Icon: Pencil }] as const).map(({ value, label, Icon }) => <ToggleGroupItem key={value} value={value} aria-label={label} title={label}
         onKeyDown={(event) => {

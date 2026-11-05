@@ -314,11 +314,11 @@ function AdminShell() {
         {/* Right: the top bar and whichever tab is open. */}
         <div data-picker-area className={cn("flex min-h-0 min-w-0 flex-1 flex-col", phone && manual && phonePane === "side" && "flex-none")}>
           <header data-top-bar className={cn("z-30 w-full shrink-0 border-b bg-background", HEADER_HEIGHT_CLASS)}>
-            <div ref={rowRef} className="flex h-full w-full items-center gap-1 px-2 sm:gap-3 sm:px-4">
+            <div ref={rowRef} className={cn("flex h-full w-full items-center px-2 sm:gap-3 sm:px-4", phone && !manual ? "gap-0" : "gap-1")}>
               <nav ref={navRef} className="flex-1 min-w-0 flex flex-nowrap items-center gap-1 overflow-hidden" aria-label="Site Manager Sections">
-                {TABS.map(({ key, label, Icon }) => {
+                {TABS.filter(({ key }) => !phone || !manual || key === "preview").map(({ key, label, Icon }) => {
                   const active = tab === key;
-                  const className = `inline-flex shrink-0 items-center gap-2 whitespace-nowrap ${compact ? (active && squeeze < 3 ? "px-2.5" : "w-8 px-0") : "px-3"} py-2 rounded-md text-sm font-medium transition-colors border ${
+                  const className = `inline-flex shrink-0 items-center gap-2 whitespace-nowrap ${phone ? "h-11 w-11 px-0" : compact ? (active && squeeze < 3 ? "px-2.5" : "w-8 px-0") : "px-3"} py-2 rounded-md text-sm font-medium transition-colors border ${
                     active
                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                       : "bg-transparent text-muted-foreground border-transparent hover:bg-muted hover:text-foreground"
@@ -351,8 +351,8 @@ function AdminShell() {
               </nav>
 
               {phone && (
-                <Button type="button" size="sm" data-capture-primary className="h-9 shrink-0 gap-1.5 px-2.5" aria-label="Capture" title="Capture" onClick={() => navigate("/manage/capture")}>
-                  <Camera className="h-4 w-4" aria-hidden />Capture
+                <Button type="button" size="sm" data-capture-primary className="h-11 w-11 shrink-0 px-0" aria-label="Capture" title="Capture" onClick={() => navigate("/manage/capture")}>
+                  <Camera className="h-4 w-4" aria-hidden />
                 </Button>
               )}
               {phone && <ModeToggle compact onChat={() => { setPhonePane("main"); }} />}
@@ -361,7 +361,7 @@ function AdminShell() {
               <div aria-hidden className={cn("h-9 w-px bg-border shrink-0", compact && "hidden")} />
               {!phone && !manual && !editing && <SubmitButton compact={compact} showProgress={false} />}
               {manual && (
-                <Button type="button" size="sm" data-save-changes variant={dirty ? "default" : "outline"} className="shrink-0 gap-1.5" aria-label="Save Changes" title="Save Changes" disabled={finishing || !dirty} onClick={() => void saveChanges()}>
+                <Button type="button" size="sm" data-save-changes variant={dirty ? "default" : "outline"} className={cn("shrink-0 gap-1.5", phone && "h-11")} aria-label="Save Changes" title="Save Changes" disabled={finishing || !dirty} onClick={() => void saveChanges()}>
                   <Save className="h-4 w-4" aria-hidden />{finishing ? "Saving…" : layout.labels && !compact ? "Save Changes" : "Save"}
                 </Button>
               )}
@@ -557,7 +557,9 @@ function AdminShell() {
 
 /** Phone top-bar overflow: account, tools, review and preview size. */
 function PhoneMoreMenu({ showView, isAdmin, onPassword, onReview }: { showView: boolean; isAdmin: boolean; onPassword: () => void; onReview: () => void }) {
-  const { device, setDevice, state, editing } = useDesignChat();
+  const { device, setDevice, state, editing, mode, objectOpen } = useDesignChat();
+  const { requestAdd } = useEditorSlot();
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
   const count = state?.publish?.open ?? 0;
   // The confirmation lives outside the menu, so it stays open after the menu closes.
@@ -567,9 +569,22 @@ function PhoneMoreMenu({ showView, isAdmin, onPassword, onReview }: { showView: 
     <SubmitConfirmDialog open={submitConfirm} onOpenChange={setSubmitConfirm} />
     <MoreMenu>
       <MoreMenuTrigger asChild>
-        <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0" aria-label={`More Options${count ? `: ${count} Waiting` : ""}`} title="More Options"><MoreHorizontal className="h-4 w-4" /></Button>
+        <Button ref={triggerRef} type="button" variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label={`More Options${count ? `: ${count} Waiting` : ""}`} title="More Options"><MoreHorizontal className="h-4 w-4" /></Button>
       </MoreMenuTrigger>
       <MoreMenuContent align="end">
+        {mode === "manual" && <>
+          <MoreMenuLabel>Libraries</MoreMenuLabel>
+          {TABS.filter(({ key }) => key !== "preview").map(({ key, label, Icon }) => (
+            <MoreMenuItem key={key} className="min-h-[44px]" onSelect={() => {
+              if (showView && !objectOpen && (key === "objects" || key === "images" || key === "videos")) {
+                if (triggerRef.current) rememberTopDropAnchor(triggerRef.current);
+                if (requestAdd(key)) return;
+              }
+              navigate(`/manage/${key}`);
+            }}><Icon className="mr-2 h-4 w-4" aria-hidden />{label}</MoreMenuItem>
+          ))}
+          <MoreMenuSeparator />
+        </>}
         <MoreMenuLabel>Account</MoreMenuLabel>
         {isAdmin && <><MoreMenuItem onClick={() => navigate("/admin/users")}><Shield className="mr-2 h-4 w-4" />User Management</MoreMenuItem><MoreMenuItem onClick={() => navigate("/manage/developer")}><Code className="mr-2 h-4 w-4" />Developer Review</MoreMenuItem></>}
         <MoreMenuItem onClick={onPassword}><KeyRound className="mr-2 h-4 w-4" />Change Password</MoreMenuItem>
