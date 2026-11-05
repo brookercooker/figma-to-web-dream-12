@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { retainTextOrigins } from "../textEditOrigins";
+import { retainTextOrigins, removeInlinePath } from "../textEditOrigins";
 import { editMap } from "../framedPageProtocol";
 import { withoutPath } from "@/lib/inlineEditCore";
 import { inlineEditAction, ManualEditHistory } from "../designChat/manualEditHistory";
@@ -19,6 +19,7 @@ describe("coded text originals", () => {
     expect(retainTextOrigins(edits, withoutPath(edits, "0.1"))).toEqual({ "text:0.2": "Second", "orig:text:0.2": "Second code" });
     expect(retainTextOrigins(edits, {})).toEqual({});
     expect(retainTextOrigins(edits, { "orig:0.1": "Code" })).toEqual({});
+    expect(removeInlinePath(edits, "0.2")).toEqual({ "0.1": "Edit", "orig:0.1": "Code", "style:0.1": "{}" });
   });
   it("accepts only valid text metadata without changing or interpreting it", () => {
     const edits = { "0": "Edit", "orig:0": "<script>data only</script>", "text:0.1": "Edit two", "orig:text:0.1": "Code two" };

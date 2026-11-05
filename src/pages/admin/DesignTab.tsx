@@ -33,8 +33,7 @@ import { readStyle, styleKey, type InlineChunk, type InlineEdits, type InlineSco
 import InlineStylePanel from "./InlineStylePanel";
 import InlineEditSafetyPanel from "./InlineEditSafetyPanel";
 import InlineDestinationPanel from "./InlineDestinationPanel";
-import { withoutPath } from "@/lib/inlineEditCore";
-import { retainTextOrigins } from "./textEditOrigins";
+import { removeInlinePath as withoutPath, retainTextOrigins } from "./textEditOrigins";
 import type { InlineReports } from "@/components/InlineEditSurface";
 import { insertPickedBlock, pageInsertPosition } from "./pageInsertion";
 import { objectFramePath, type ObjectEditTarget } from "./framedPageProtocol";

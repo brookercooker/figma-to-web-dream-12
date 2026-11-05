@@ -1,4 +1,4 @@
-import { parseKey, type InlineEdits } from "@/lib/inlineEditCore";
+import { parseKey, withoutPath, type InlineEdits } from "@/lib/inlineEditCore";
 
 /** Text aliases stay transport-only until the shared public core supports them. */
 export function isTextEditKey(key: string): boolean {
@@ -6,6 +6,9 @@ export function isTextEditKey(key: string): boolean {
 }
 export function textEditPath(key: string): string | undefined {
   return isTextEditKey(key) ? key.startsWith("text:") ? key.slice(5) : key : undefined;
+}
+export function removeInlinePath(edits: InlineEdits, path: string): InlineEdits {
+  return Object.fromEntries(Object.entries(withoutPath(edits, path)).filter(([key]) => textEditPath(key.startsWith("orig:") ? key.slice(5) : key) !== path));
 }
 /** Existing originals survive frame replies; removed wording removes its metadata too. */
 export function retainTextOrigins(previous: InlineEdits, next: InlineEdits, originals: Record<string, string> = {}): InlineEdits {

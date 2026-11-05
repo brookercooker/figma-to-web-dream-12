@@ -200,6 +200,9 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         const next = editMap(data.next);
         if (next) {
           const previous = data.scope === "page" ? latest.current.edits : latest.current.objectEdits[data.scope] ?? {};
+          for (const [key, value] of Object.entries(previous)) {
+            if (key.startsWith("orig:") && next[key.slice(5)] !== undefined) next[key] = value;
+          }
           latest.current.onChange(data.scope, retainTextOrigins(previous, next, originals.current[data.scope]));
         }
       } else if (data.type === "edit-stale") {
