@@ -575,7 +575,7 @@ function PhoneMoreMenu({ showView, isAdmin, onPassword, onReview }: { showView: 
         {mode === "manual" && <>
           <MoreMenuLabel>Libraries</MoreMenuLabel>
           {TABS.filter(({ key }) => key !== "preview").map(({ key, label, Icon }) => (
-            <MoreMenuItem key={key} className="min-h-11" onSelect={() => {
+            <MoreMenuItem key={key} className="min-h-[44px]" onSelect={() => {
               if (showView && !objectOpen && (key === "objects" || key === "images" || key === "videos")) {
                 if (triggerRef.current) rememberTopDropAnchor(triggerRef.current);
                 if (requestAdd(key)) return;
