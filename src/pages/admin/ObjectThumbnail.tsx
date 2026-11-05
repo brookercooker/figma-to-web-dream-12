@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SignedThumbImg } from "./signedThumb";
 import { requestObjectThumbnail } from "./objectThumbnailCapture";
+import { useInertPreview } from "./useInertPreview";
 
 /** Saved previews are preferred; missing captures queue once when visible for every object. */
 export default function ObjectThumbnail({ id, storedThumb }: { id: string; storedThumb?: string | null }) {
   const cell = useRef<HTMLDivElement>(null);
+  useInertPreview(cell);
   const [captured, setCaptured] = useState<string | null>(null);
   const qc = useQueryClient();
   useEffect(() => {
@@ -23,6 +25,6 @@ export default function ObjectThumbnail({ id, storedThumb }: { id: string; store
     return () => { stale = true; observer.disconnect(); };
   }, [id, storedThumb, qc]);
   return <div ref={cell} className="h-full w-full overflow-hidden rounded-lg bg-muted" aria-hidden>
-    <SignedThumbImg url={storedThumb || captured} alt="" loading="lazy" className="h-full w-full object-cover object-top" fallback={<div className="h-full w-full bg-muted" />} />
+    <SignedThumbImg url={storedThumb || captured} alt="" loading="lazy" width={400} height={250} decoding="async" className="h-full w-full object-cover object-top" fallback={<div className="h-full w-full bg-muted" />} />
   </div>;
 }

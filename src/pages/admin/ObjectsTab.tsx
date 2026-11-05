@@ -373,7 +373,7 @@ export default function ObjectsTab() {
         <div className="w-full overflow-x-auto">
           <table className="nova-object-table w-full text-sm border-collapse table-fixed min-w-[1012px]">
             <colgroup>
-              <col style={{ width: 40 }} />
+              <col style={{ width: 60 }} />
               <col style={{ width: 116 }} />
               <col style={{ minWidth: 200 }} />
               <col style={{ width: 110 }} />
@@ -509,7 +509,7 @@ export default function ObjectsTab() {
                         onClick={() => navigate(`/manage/preview?editObject=${encodeURIComponent(obj.id)}`)}
                         aria-label="Edit Object"
                         title="Edit Object"
-                        className="inline-flex items-center justify-center p-1.5 rounded border hover:bg-muted"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded border hover:bg-muted"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -521,7 +521,7 @@ export default function ObjectsTab() {
                         rel="noopener noreferrer"
                         aria-label="Open in New Tab"
                         title="Open in New Tab"
-                        className="inline-flex items-center justify-center p-1.5 rounded border hover:bg-muted"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded border hover:bg-muted"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
@@ -529,7 +529,7 @@ export default function ObjectsTab() {
                     <td className="px-1 py-3">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="p-1.5 rounded border hover:bg-muted" aria-label="More Actions" title="More">
+                          <button className="inline-flex min-h-11 min-w-11 items-center justify-center p-1.5 rounded border hover:bg-muted" aria-label="More Actions" title="More">
                             <MoreHorizontal className="w-4 h-4" />
                           </button>
                         </DropdownMenuTrigger>

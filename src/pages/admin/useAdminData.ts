@@ -81,7 +81,8 @@ export function usePageObjectsLinks() {
 // Buckets that are public: their URLs never expire, so no signing is needed.
 const PUBLIC_BUCKETS = new Set(["images-web", "videos-web"]);
 
-// Batched thumbnail URLs with Supabase image transform.
+// This project's storage does not enable image transformation (render endpoint
+// returns 400). Prefer existing web images, signing private paths normally.
 export function useImageThumbnails(bucket: string, paths: string[], width = 320) {
   const key = [...paths].sort().join("|");
   return useQuery({
@@ -92,9 +93,7 @@ export function useImageThumbnails(bucket: string, paths: string[], width = 320)
       const map: Record<string, string> = {};
       if (PUBLIC_BUCKETS.has(bucket)) {
         paths.forEach((p) => {
-          const { data } = (supabase as any).storage.from(bucket).getPublicUrl(p, {
-            transform: { width, resize: "contain", quality: 70 },
-          });
+          const { data } = (supabase as any).storage.from(bucket).getPublicUrl(p);
           if (data?.publicUrl) map[p] = data.publicUrl;
         });
         return map;
@@ -105,9 +104,7 @@ export function useImageThumbnails(bucket: string, paths: string[], width = 320)
         const chunk = paths.slice(i, i + chunkSize);
         const { data, error } = await (supabase as any).storage
           .from(bucket)
-          .createSignedUrls(chunk, 60 * 60 * 24 * 7, {
-            transform: { width, resize: "contain", quality: 70 },
-          });
+          .createSignedUrls(chunk, 60 * 60 * 24 * 7);
         if (error) continue;
         (data ?? []).forEach((d: any) => {
           if (d?.path && d?.signedUrl) map[d.path] = d.signedUrl;

@@ -6,5 +6,5 @@ export default function LibraryImageThumbnail({ candidates, className = "", onSo
   const [failed, setFailed] = useState(new Set<string>());
   const src = candidates.find(url => !failed.has(url));
   if (!src) return <span className={`grid place-items-center bg-muted ${className}`} aria-label="Image Preview Unavailable"><ImageIcon className="h-6 w-6 text-muted-foreground" aria-hidden /></span>;
-  return <img key={src} src={src} alt="" loading="lazy" className={className} onLoad={() => onSource?.(src)} onError={() => setFailed(previous => new Set([...previous, src]))} />;
+  return <img key={src} src={src} alt="" loading="lazy" width={400} height={400} decoding="async" className={className} onLoad={() => onSource?.(src)} onError={() => setFailed(previous => new Set([...previous, src]))} />;
 }

@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useId, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,7 @@ export default function FilterBar({
   action?: ReactNode;
 }) {
   const [customOpen, setCustomOpen] = useState(false);
+  const archivedId = useId();
   const hasCustom = !!(dateFrom || dateTo);
   const customLabel = hasCustom
     ? `${dateFrom || "…"} → ${dateTo || "…"}`
@@ -178,8 +179,10 @@ export default function FilterBar({
       {onShowArchivedChange && (
         <>
           <div className="h-6 w-px bg-border mx-1" aria-hidden="true" />
-          <label className="text-xs flex items-center gap-1.5 font-medium text-muted-foreground">
+          <label htmlFor={archivedId} className="text-xs flex min-h-11 items-center gap-1.5 font-medium text-muted-foreground">
             <input
+              id={archivedId}
+              aria-label="Show Archived"
               type="checkbox"
               checked={!!showArchived}
               onChange={(e) => onShowArchivedChange(e.target.checked)}

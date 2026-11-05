@@ -1,3 +1,4 @@
+import LibraryWindow from "./LibraryWindow";
 import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import { matchesLabelFilter } from "./labelPath";
 import { supabase } from "@/prototype/client";
@@ -375,8 +376,8 @@ export default function ImagesTab() {
       .map((i) => i.web_path).filter(Boolean) as string[],
     [shown],
   );
-  const { data: publicThumbs = {} } = useImageThumbnails("images-web", publicThumbPaths, 320);
-  const { data: gatedThumbs = {} } = useImageThumbnails(GATED_BUCKET, gatedThumbPaths, 320);
+  const { data: publicThumbs = {} } = useImageThumbnails("images-web", publicThumbPaths, 400);
+  const { data: gatedThumbs = {} } = useImageThumbnails(GATED_BUCKET, gatedThumbPaths, 400);
   const thumbUrls = useMemo(
     () => ({ ...(publicThumbs as Record<string, string>), ...(gatedThumbs as Record<string, string>) }),
     [publicThumbs, gatedThumbs],
@@ -877,7 +878,7 @@ export default function ImagesTab() {
           const broken = brokenIds.has(img.id);
           const isJustAdded = justAddedIds.includes(img.id);
           return (
-            <div key={img.id}
+            <LibraryWindow key={img.id} kind="image">{() => <div
               draggable
               onDragStart={(e) => onTileDragStart(e, img.id)}
               className={`relative group border rounded overflow-hidden hover:shadow-lg cursor-grab active:cursor-grabbing ${sel ? "ring-2 ring-primary" : ""} ${isJustAdded ? "ring-2 ring-primary/70" : ""} ${broken ? "border-destructive/60" : ""}`}
@@ -957,7 +958,7 @@ export default function ImagesTab() {
                       setFailedTileSources((current) => ({ ...current, [img.id]: failed }));
                       if (candidates.every((src) => failed.includes(src))) markBroken(img.id);
                     }}
-                    width={320} height={320}
+                    width={400} height={400}
                     className="w-full aspect-square object-contain cursor-pointer bg-muted"
                     loading="lazy" decoding="async" fetchPriority="low" />
 
@@ -991,7 +992,7 @@ export default function ImagesTab() {
                   </span>
                 </div>
               </div>
-            </div>
+            </div>}</LibraryWindow>
           );
         })}
       </div>

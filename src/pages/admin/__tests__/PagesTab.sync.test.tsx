@@ -27,6 +27,14 @@ vi.mock("../WorkStatusPopover", () => ({ default: () => null }));
 
 beforeEach(() => { cleanup(); state.rows = []; state.error = null; state.notify.mockClear(); state.load.mockClear(); state.choose.mockClear(); state.start.mockClear(); });
 describe("Pages list synchronization", () => {
+  it("removes externally deleted rows when the window regains focus", async () => {
+    state.rows = [{ id: "gone", name: "Deleted Outside Manager", path: "/external", tags: [], build_status: "ready", archived_at: null }];
+    render(<MemoryRouter><PagesTab /></MemoryRouter>);
+    await screen.findByRole("button", { name: "Deleted Outside Manager" });
+    state.rows = [];
+    act(() => window.dispatchEvent(new Event("focus")));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Deleted Outside Manager" })).toBeNull());
+  });
   it("archives from the portalled menu without opening the page and queues its named change", async () => {
     state.rows = [{ id: "race", name: "Race Test Page", path: "/race-test-page", tags: [], build_status: "ready", archived_at: null }];
     render(<MemoryRouter initialEntries={["/manage/pages"]}><PagesTab /></MemoryRouter>);

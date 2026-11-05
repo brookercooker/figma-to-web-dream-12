@@ -13,10 +13,7 @@ import { pageChangeNote } from "./contentChangeNotes";
  * Guided add-page flow.
  * - Live-normalizes the name to a Lovable-friendly slug and shows the resulting route.
  * - Checks the pages table for duplicate slugs before submit.
- * - On save, inserts the page. The dynamic /:slug route in App.tsx serves any DB page
- *   via SimplePage immediately — no rebuild required.
- * - Lovable's platform-side route picker isn't publicly integrable, so this is the best
- *   "immediately live within the app" hook we have; see the note rendered in the dialog.
+ * - On save, inserts a Draft; public availability requires Ready and publishing.
  */
 export default function CreatePageDialog({
   open, onOpenChange, initialName, onCreated,
@@ -53,11 +50,11 @@ export default function CreatePageDialog({
     setSaving(true);
     try {
       const { data, error } = await (supabase as any).from("pages").insert({
-        name: name.trim(), path: route, description: "", notes: "", tags: [],
+        name: name.trim(), path: route, description: "", notes: "", tags: [], build_status: "draft",
       }).select("id,slug_id,path,name").single();
       if (error) throw error;
       notifyContentEdited([pageChangeNote("Added", data)]);
-      toast.success(`Page "${data.name}" is live at ${data.path}`);
+      toast.success(`Created "${data.name}" as a Draft at ${data.path}. It goes live once it's marked Ready and published.`);
       onCreated?.(data);
       onOpenChange(false);
     } catch (e: any) {
@@ -72,7 +69,7 @@ export default function CreatePageDialog({
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
             Give your page a name and we'll create it for you — you can add its
-            content next. It'll be available right away.
+            content next. It starts as a Draft and goes live once it's marked Ready and published.
           </p>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Page Name</label>
