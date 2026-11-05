@@ -1,4 +1,5 @@
 # Site Manager (src/pages/admin) rules
+- Text origin metadata is transport-only outside the verbatim core: retain first reported coded wording with its edit, remove orphan metadata, and handle trusted stale/restore messages through existing history/save paths.
 - Libraries release distant media-card contents with reserved geometry; mini previews are inert with observed tab-stop removal. Pages refetch on focus/mutations and discard superseded reads, so stale responses cannot resurrect deleted rows.
 - Use only bun.lock; keep compatible patched dependency overrides and handle Zod's major migration separately. Storage transforms are unavailable here, so thumbnail signing uses existing web assets without render requests.
 - Phone Manual toolbar keeps libraries in the overflow using the same EditorSlot actions; icon-only Capture and 44px controls keep both modes within the viewport.

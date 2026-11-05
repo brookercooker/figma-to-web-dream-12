@@ -8,6 +8,7 @@ import { manualNavigationPath } from "./designChat/manualPageNavigation";
 import { acceptFrameScroll, restoreFrameScroll } from "./designChat/frameScroll";
 import { parseFrameSections, type FrameSection } from "./frameSections";
 import { rememberFrameObjects } from "./frameObjectUsages";
+import { isTextEditKey, retainTextOrigins, textEditPath } from "./textEditOrigins";
 
 export interface FramedEditorController { exit: () => void; query: EditQuery; scrollToSlot?: (slot: string) => void; scrollToSection?: (key: string) => void; sectionAction?: (key: string, action: "up" | "down" | "delete") => void }
 export interface FramedPageEditorProps {
@@ -91,6 +92,8 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   const wordRange = useRef<WordRange | null>(null);
   const destination = useRef<Window | null>(null);
   const sentState = useRef("");
+  const originals = useRef<Record<string, Record<string, string>>>({});
+  const stale = useRef<Record<string, string>>({});
   const post = (type: string, payload: Record<string, unknown> = {}) => {
     const current = frame.current?.contentWindow ?? destination.current;
     destination.current = current;
@@ -122,7 +125,21 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
   } : undefined, expandCapable.current && snapshot.expandable ? (open) => {
     if (!ready.current || exited.current || selectedSnapshot.current?.key !== snapshot.key || selectedSnapshot.current?.scope !== snapshot.scope) return;
     post("edit-expand", { scope: snapshot.scope, path: snapshot.expandable?.path, open });
-  } : undefined));
+  } : undefined, (() => {
+    const edits = snapshot.scope === "page" ? latest.current.edits : latest.current.objectEdits[snapshot.scope] ?? {};
+    const key = edits[`text:${snapshot.key}`] !== undefined ? `text:${snapshot.key}` : snapshot.key;
+    const current = stale.current[key];
+    if (snapshot.kind !== "text" || current === undefined || edits[key] === undefined) return undefined;
+    return () => {
+      if (!ready.current || exited.current || selectedSnapshot.current?.key !== snapshot.key || selectedSnapshot.current?.scope !== snapshot.scope) return;
+      post("edit-restore", { key, orig: current });
+      const next = { ...edits, [`orig:${key}`]: current };
+      delete stale.current[key];
+      originals.current[snapshot.scope] = { ...originals.current[snapshot.scope], [snapshot.key]: current };
+      latest.current.onChange(snapshot.scope, next);
+      selectSnapshot(snapshot);
+    };
+  })()));
   useLayoutEffect(() => {
     if (!origin || !target) { setStatus("failed"); return; }
     ready.current = false; exited.current = false; setStatus("loading"); setFailure(null);
@@ -130,6 +147,7 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
     moveCapableRef.current = false; setMoveCapable(false);
     sectionsCapable.current = false; sectionsRef.current = []; latest.current.onSections?.(null);
     rangeCapable.current = false; selectedSnapshot.current = null; wordRange.current = null;
+    stale.current = {};
     expandCapable.current = false;
     latest.current.onReport?.({});
     destination.current = frame.current?.contentWindow ?? null;
@@ -179,7 +197,20 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
       } else if (data.type === "page-scroll") {
         acceptFrameScroll(event, frame.current, latest.current.path);
       } else if (data.type === "edit-change" && typeof data.scope === "string" && data.scope) {
-        const next = editMap(data.next); if (next) latest.current.onChange(data.scope, next);
+        const next = editMap(data.next);
+        if (next) {
+          const previous = data.scope === "page" ? latest.current.edits : latest.current.objectEdits[data.scope] ?? {};
+          latest.current.onChange(data.scope, retainTextOrigins(previous, next, originals.current[data.scope]));
+        }
+      } else if (data.type === "edit-stale") {
+        if (!Array.isArray(data.keys) || data.keys.length > 1000 || !data.current || typeof data.current !== "object" || Array.isArray(data.current)) return;
+        const next: Record<string, string> = {};
+        for (const key of data.keys) {
+          if (typeof key !== "string" || !isTextEditKey(key) || typeof data.current[key] !== "string" || data.current[key].length > 100000) return;
+          next[key] = data.current[key];
+        }
+        stale.current = next;
+        if (selectedSnapshot.current) selectSnapshot(selectedSnapshot.current);
       } else if (data.type === "edit-range" && rangeCapable.current) {
         const snapshot = selectedSnapshot.current;
         if (!snapshot || !validWordRange(data) || data.key !== snapshot.key || data.scope !== snapshot.scope) return;
@@ -190,6 +221,15 @@ export default function FramedPageEditor(props: FramedPageEditorProps) {
         if (data.selection === null) { selectedSnapshot.current = null; wordRange.current = null; latest.current.onSelect(null); return; }
         if (!validSnapshot(data.selection)) return;
         const snapshot: SelectionSnapshot = structuredClone(data.selection);
+        if (snapshot.kind === "text") {
+          const scopeOriginals = originals.current[snapshot.scope] ??= {};
+          if (scopeOriginals[snapshot.key] === undefined) {
+            const edits = snapshot.scope === "page" ? latest.current.edits : latest.current.objectEdits[snapshot.scope] ?? {};
+            const hasEdit = Object.keys(edits).some(key => textEditPath(key) === snapshot.key);
+            const original = snapshot.originalText ?? (!hasEdit ? snapshot.text : undefined);
+            if (original !== undefined) scopeOriginals[snapshot.key] = original;
+          }
+        }
         if (selectedSnapshot.current?.key !== snapshot.key || selectedSnapshot.current?.scope !== snapshot.scope) wordRange.current = null;
         selectedSnapshot.current = snapshot;
         selectSnapshot(snapshot);
