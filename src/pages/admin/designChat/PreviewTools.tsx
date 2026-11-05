@@ -6,6 +6,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { postToHelper } from "./helper";
 import { useDesignChat, type Device } from "./DesignChatContext";
 import WaitProgress from "./WaitProgress";
+import { undoPendingGate, undoPendingReason } from "./logic";
 
 /**
  * Device size stays with the component pickers; navigation lives in PreviewToolbar.
@@ -50,7 +51,7 @@ export function SubmitConfirmDialog({ open, onOpenChange }: { open: boolean; onO
   const label = reviewOn ? "Submit for Review" : "Publish";
   const changes = `${count} ${count === 1 ? "change" : "changes"}`;
   const confirm = async () => {
-    if (sending) return;
+    if (sending || undoPendingGate(state)) return;
     setSending(true);
     try { await postToHelper("/publish"); refreshSoon(); onOpenChange(false); }
     finally { setSending(false); }
@@ -79,7 +80,7 @@ export function SubmitConfirmDialog({ open, onOpenChange }: { open: boolean; onO
         </section>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={sending}>Cancel</AlertDialogCancel>
-          <Button type="button" variant="review" disabled={sending} onClick={() => void confirm()}>
+          <Button type="button" variant="review" disabled={sending || undoPendingGate(state)} onClick={() => void confirm()}>
             <Send className="h-4 w-4" aria-hidden />{sending ? "Sending…" : label}
           </Button>
         </AlertDialogFooter>
@@ -97,13 +98,14 @@ export function SubmitButton({ compact = false, showProgress = true, onRequestSu
   const [confirmOpen, setConfirmOpen] = useState(false);
   const p = state?.publish ?? { ok: true, open: 0 };
   const reviewOn = state?.review?.enabled;
-  const submitDisabled = !state || state.busy || p.open === 0 || (!p.ok && !p.willReview);
+  const undoPending = undoPendingGate(state);
+  const submitDisabled = !state || state.busy || p.open === 0 || (!p.ok && !p.willReview) || undoPending;
   const label = reviewOn === false ? "Publish" : "Submit for Review";
   return (
     <div className="shrink-0"><Button type="button" variant="review" size="sm" className={compact ? "w-9 shrink-0 px-0" : "shrink-0"} aria-label={label} title={label} disabled={submitDisabled} onClick={() => (onRequestSubmit ? onRequestSubmit() : setConfirmOpen(true))}>
       <Send className="h-4 w-4" aria-hidden />
       {!compact && label}
-    </Button>{showProgress && <WaitProgress progress={waitProgress?.submit} className="mt-2 w-full max-w-64" />}
+    </Button>{undoPending && <p role="status" className="mt-1 max-w-64 text-xs text-muted-foreground">{undoPendingReason(state)}</p>}{showProgress && <WaitProgress progress={waitProgress?.submit} className="mt-2 w-full max-w-64" />}
     {!onRequestSubmit && <SubmitConfirmDialog open={confirmOpen} onOpenChange={setConfirmOpen} />}</div>
   );
 }
